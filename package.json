@@ -14,11 +14,19 @@
     "typecheck": "turbo typecheck",
     "clean": "turbo clean && rm -rf node_modules",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\" --ignore-path .gitignore"
+    "format": "turbo format && prettier --write '*.{cjs,json}' --ignore-unknown --no-error-on-unmatched-pattern",
+    "format:check": "turbo format:check && prettier --check '*.{cjs,json}' --ignore-unknown --no-error-on-unmatched-pattern"
   },
   "devDependencies": {
+    "@types/react": "19.2.3",
+    "@types/react-dom": "19.2.3",
     "prettier": "^3.7.4",
-    "turbo": "^2.6.2"
+    "turbo": "^2.6.2",
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   },
   "packageManager": "pnpm@10.0.0",
   "engines": {
