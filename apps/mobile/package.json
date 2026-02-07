@@ -1,18 +1,18 @@
 {
   "name": "@fomo/mobile",
+  "version": "1.0.0",
   "private": true,
   "main": "expo-router/entry",
-  "version": "1.0.0",
   "scripts": {
-    "dev": "expo start",
     "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
-    "typecheck": "tsc --noEmit",
-    "lint": "expo lint",
     "clean": "rm -rf .expo ios android",
+    "dev": "expo start",
     "format": "prettier --write '**/*.{ts,tsx,js,jsx,json,md}' --ignore-path .gitignore",
-    "format:check": "prettier --check '**/*.{ts,tsx,js,jsx,json,md}' --ignore-path .gitignore"
+    "format:check": "prettier --check '**/*.{ts,tsx,js,jsx,json,md}' --ignore-path .gitignore",
+    "ios": "expo start --ios",
+    "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
+    "web": "expo start --web"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -33,11 +33,11 @@
     "expo-web-browser": "~15.0.10",
     "react-native": "0.81.5",
     "react-native-gesture-handler": "~2.28.0",
-    "react-native-worklets": "0.5.1",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
-    "react-native-web": "~0.21.0"
+    "react-native-web": "~0.21.0",
+    "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
     "eslint": "^9.25.0",

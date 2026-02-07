@@ -6,30 +6,34 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo dev",
-    "dev:web": "turbo dev --filter=@fomo/web",
-    "dev:mobile": "turbo dev --filter=@fomo/mobile",
-    "dev:backend": "turbo dev --filter=@fomo/backend",
-    "convex:dev": "turbo run dev --filter=@fomo/backend",
+    "build": "turbo build",
+    "clean": "turbo clean && rm -rf node_modules",
     "convex:codegen": "turbo run codegen --filter=@fomo/backend",
     "convex:deploy": "turbo run deploy --filter=@fomo/backend",
-    "build": "turbo build",
-    "typecheck": "turbo typecheck",
-    "clean": "turbo clean && rm -rf node_modules",
-    "lint": "turbo lint",
+    "convex:dev": "turbo run dev --filter=@fomo/backend",
+    "dev": "turbo dev",
+    "dev:backend": "turbo dev --filter=@fomo/backend",
+    "dev:mobile": "turbo dev --filter=@fomo/mobile",
+    "dev:web": "turbo dev --filter=@fomo/web",
     "format": "turbo format && prettier --write '*.{cjs,json}' --ignore-unknown --no-error-on-unmatched-pattern",
-    "format:check": "turbo format:check && prettier --check '*.{cjs,json}' --ignore-unknown --no-error-on-unmatched-pattern"
+    "format:check": "turbo format:check && prettier --check '*.{cjs,json}' --ignore-unknown --no-error-on-unmatched-pattern",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck"
+  },
+  "dependencies": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@types/react": "19.2.3",
     "@types/react-dom": "19.2.3",
     "prettier": "^3.7.4",
+    "prettier-plugin-organize-imports": "^4.3.0",
+    "prettier-plugin-packagejson": "^3.0.0",
+    "prettier-plugin-sort-json": "^4.2.0",
+    "prettier-plugin-tailwindcss": "^0.7.2",
     "turbo": "^2.8.3",
     "typescript": "^5"
-  },
-  "dependencies": {
-    "react": "19.2.3",
-    "react-dom": "19.2.3"
   },
   "packageManager": "pnpm@10.0.0",
   "engines": {
