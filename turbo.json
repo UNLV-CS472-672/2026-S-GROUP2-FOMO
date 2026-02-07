@@ -16,6 +16,12 @@
     "format": {},
     "clean": {
       "cache": false
+    },
+    "codegen": {
+      "cache": false
+    },
+    "deploy": {
+      "cache": false
     }
   }
 }
