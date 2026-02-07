@@ -1,0 +1,27 @@
+{
+  "name": "fomo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:web": "turbo dev --filter=@fomo/web",
+    "dev:mobile": "turbo dev --filter=@fomo/mobile",
+    "dev:backend": "turbo dev --filter=@fomo/backend",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "clean": "turbo clean && rm -rf node_modules",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\" --ignore-path .gitignore"
+  },
+  "devDependencies": {
+    "prettier": "^3.7.4",
+    "turbo": "^2.6.2"
+  },
+  "packageManager": "pnpm@10.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
