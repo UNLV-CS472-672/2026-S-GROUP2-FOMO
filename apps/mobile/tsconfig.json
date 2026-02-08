@@ -3,9 +3,15 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": [
+        "src/*"
+      ]
     }
   },
   "extends": "expo/tsconfig.base",
-  "include": ["src/**/*", ".expo/types/**/*.ts", "expo-env.d.ts"]
+  "include": [
+    "src/**/*",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ]
 }

@@ -1,11 +1,10 @@
-import { Image } from "expo-image";
-import { Platform, StyleSheet } from "react-native";
+import { Platform } from "react-native";
 
 import { HelloWave } from "@/components/hello-wave";
 import ParallaxScrollView from "@/components/parallax-scroll-view";
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
-import { Link } from "expo-router";
+import { Link } from "@/components/link";
+import { Image } from "@/components/image";
+import { Text, View } from "react-native";
 
 export default function HomeScreen() {
   return (
@@ -14,34 +13,48 @@ export default function HomeScreen() {
       headerImage={
         <Image
           source={require("@/assets/images/partial-react-logo.png")}
-          style={styles.reactLogo}
+          className="absolute bottom-0 left-0 h-[178px] w-[290px]"
         />
       }
     >
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
+      {/* Title */}
+      <View className="flex-row items-center gap-2">
+        <Text className="text-[32px] leading-8 font-bold text-app-text">
+          Welcome!
+        </Text>
         <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
+      </View>
+
+      {/* Step 1 */}
+      <View className="mb-2 gap-2">
+        <Text className="text-[20px] font-bold text-app-text">
+          Step 1: Try it
+        </Text>
+
+        <Text className="text-base leading-6 text-app-text">
           Edit{" "}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText>{" "}
+          <Text className="text-base leading-6 font-semibold">
+            app/(tabs)/index.tsx
+          </Text>{" "}
           to see changes. Press{" "}
-          <ThemedText type="defaultSemiBold">
+          <Text className="text-base leading-6 font-semibold">
             {Platform.select({
               ios: "cmd + d",
               android: "cmd + m",
               web: "F12",
             })}
-          </ThemedText>{" "}
+          </Text>{" "}
           to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
+        </Text>
+      </View>
+
+      {/* Step 2 */}
+      <View className="mb-2 gap-2">
         <Link href="/modal">
           <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
+            <Text className="text-[20px] font-bold text-app-text!">
+              Step 2: Explore
+            </Text>
           </Link.Trigger>
           <Link.Preview />
           <Link.Menu>
@@ -66,42 +79,30 @@ export default function HomeScreen() {
           </Link.Menu>
         </Link>
 
-        <ThemedText>
+        <Text className="text-base leading-6 text-app-text">
           {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
+        </Text>
+      </View>
+
+      {/* Step 3 */}
+      <View className="mb-2 gap-2">
+        <Text className="text-[20px] font-bold text-app-text">
+          Step 3: Get a fresh start
+        </Text>
+
+        <Text className="text-base leading-6 text-app-text">
           {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">
+          <Text className="text-base leading-6 font-semibold">
             npm run reset-project
-          </ThemedText>{" "}
-          to get a fresh <ThemedText type="defaultSemiBold">app</ThemedText>{" "}
+          </Text>{" "}
+          to get a fresh{" "}
+          <Text className="text-base leading-6 font-semibold">app</Text>{" "}
           directory. This will move the current{" "}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{" "}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
+          <Text className="text-base leading-6 font-semibold">app</Text> to{" "}
+          <Text className="text-base leading-6 font-semibold">app-example</Text>
+          .
+        </Text>
+      </View>
     </ParallaxScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: "absolute",
-  },
-});
