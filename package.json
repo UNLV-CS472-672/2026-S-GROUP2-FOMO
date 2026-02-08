@@ -20,13 +20,7 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck"
   },
-  "dependencies": {
-    "react": "19.2.3",
-    "react-dom": "19.2.3"
-  },
   "devDependencies": {
-    "@types/react": "19.2.3",
-    "@types/react-dom": "19.2.3",
     "prettier": "^3.7.4",
     "prettier-plugin-organize-imports": "^4.3.0",
     "prettier-plugin-packagejson": "^3.0.0",
