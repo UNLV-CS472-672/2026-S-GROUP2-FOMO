@@ -14,9 +14,9 @@ export function HelloWave() {
     rotation.value = withRepeat(
       withSequence(
         withTiming(25, { duration: 150 }),
-        withTiming(0, { duration: 150 }),
+        withTiming(0, { duration: 150 })
       ),
-      4,
+      4
     );
   }, [rotation]);
 

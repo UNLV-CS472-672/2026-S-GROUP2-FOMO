@@ -1,10 +1,9 @@
-import { Platform } from "react-native";
+import { Platform, Text, View } from "react-native";
 
 import { HelloWave } from "@/components/hello-wave";
-import ParallaxScrollView from "@/components/parallax-scroll-view";
-import { Link } from "@/components/link";
 import { Image } from "@/components/image";
-import { Text, View } from "react-native";
+import { Link } from "@/components/link";
+import ParallaxScrollView from "@/components/parallax-scroll-view";
 
 export default function HomeScreen() {
   return (

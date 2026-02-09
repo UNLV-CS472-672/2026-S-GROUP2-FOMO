@@ -1,11 +1,10 @@
-import { Platform } from "react-native";
+import { Platform, Text, View } from "react-native";
 
 import { ExternalLink } from "@/components/external-link";
+import { Image } from "@/components/image";
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { Collapsible } from "@/components/ui/collapsible";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Image } from "@/components/image";
-import { Text, View } from "react-native";
 
 export default function TabTwoScreen() {
   return (

@@ -1,5 +1,5 @@
 import type { PropsWithChildren, ReactElement } from "react";
-import { Platform } from "react-native";
+import { Platform, View } from "react-native";
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -8,7 +8,6 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { View } from "react-native";
 import { useCSSVariable } from "uniwind";
 
 const HEADER_HEIGHT = 250;
@@ -36,14 +35,14 @@ export default function ParallaxScrollView({
           translateY: interpolate(
             scrollOffset.value,
             [-HEADER_HEIGHT, 0, HEADER_HEIGHT],
-            [-HEADER_HEIGHT / 2, 0, HEADER_HEIGHT * 0.75],
+            [-HEADER_HEIGHT / 2, 0, HEADER_HEIGHT * 0.75]
           ),
         },
         {
           scale: interpolate(
             scrollOffset.value,
             [-HEADER_HEIGHT, 0, HEADER_HEIGHT],
-            [2, 1, 1],
+            [2, 1, 1]
           ),
         },
       ],

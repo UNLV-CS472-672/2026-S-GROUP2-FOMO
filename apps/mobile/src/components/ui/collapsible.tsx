@@ -9,7 +9,8 @@ export function Collapsible({
   title,
 }: PropsWithChildren & { title: string }) {
   const [isOpen, setIsOpen] = useState(false);
-  const iconColor = (useCSSVariable("--color-app-icon") as string | undefined) ?? "#687076";
+  const iconColor =
+    (useCSSVariable("--color-app-icon") as string | undefined) ?? "#687076";
 
   return (
     <View>
@@ -27,9 +28,7 @@ export function Collapsible({
           </Text>
         </View>
       </Pressable>
-      {isOpen && (
-        <View className="ml-6 mt-1.5">{children}</View>
-      )}
+      {isOpen && <View className="ml-6 mt-1.5">{children}</View>}
     </View>
   );
 }
