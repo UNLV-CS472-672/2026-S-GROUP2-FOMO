@@ -1,0 +1,24 @@
+@import "tailwindcss";
+@import "uniwind";
+
+@layer theme {
+  :root {
+    @variant light {
+      --color-app-text: #11181c;
+      --color-app-background: #ffffff;
+      --color-app-tint: #0a7ea4;
+      --color-app-icon: #687076;
+    }
+    @variant dark {
+      --color-app-text: #ecedee;
+      --color-app-background: #151718;
+      --color-app-tint: #ffffff;
+      --color-app-icon: #9ba1a6;
+    }
+  }
+}
+
+@theme {
+  /* Single font for React Native (no fallbacks) */
+  --font-rounded: ui-rounded;
+}

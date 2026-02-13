@@ -1,0 +1,29 @@
+{
+  "name": "@fomo/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "clean": "rm -rf .next",
+    "dev": "next dev",
+    "format": "prettier --write '**/*.{ts,tsx,js,jsx,json,md}' --ignore-path .gitignore",
+    "format:check": "prettier --check '**/*.{ts,tsx,js,jsx,json,md}' --ignore-path .gitignore",
+    "lint": "eslint",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "16.1.6",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

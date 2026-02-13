@@ -1,0 +1,28 @@
+{
+  "$schema": "https://v2-8-3.turborepo.dev/schema.json",
+  "globalDependencies": ["**/.env.*local"],
+  "tasks": {
+    "build": {
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "dependsOn": ["^build"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {},
+    "typecheck": {},
+    "format": {},
+    "format:check": {},
+    "clean": {
+      "cache": false
+    },
+    "codegen": {
+      "cache": false
+    },
+    "deploy": {
+      "cache": false
+    }
+  },
+  "ui": "tui"
+}
