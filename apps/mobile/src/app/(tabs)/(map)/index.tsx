@@ -13,6 +13,10 @@ export default function MapScreen() {
         Marker taps will open a nearby H3 feed for that location.
       </Text>
 
+      <Button className="mt-3" onPress={() => push("/feed/demo-cell")}>
+        <ButtonText>Open Nearby Feed Demo</ButtonText>
+      </Button>
+
       <Button
         variant="secondary"
         className="mt-2"

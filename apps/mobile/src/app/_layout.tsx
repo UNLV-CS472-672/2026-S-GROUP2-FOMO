@@ -27,6 +27,10 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="feed/[h3Id]"
+          options={{ presentation: "modal", title: "Feed" }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
