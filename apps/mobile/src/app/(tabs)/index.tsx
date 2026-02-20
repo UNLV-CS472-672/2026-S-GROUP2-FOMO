@@ -2,6 +2,8 @@ import { Platform, Text, View } from "react-native";
 
 import { HelloWave } from "@/components/hello-wave";
 import { Image } from "@/components/image";
+import type { Href } from "expo-router";
+
 import { Link } from "@/components/link";
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 
@@ -49,7 +51,7 @@ export default function HomeScreen() {
 
       {/* Step 2 */}
       <View className="mb-2 gap-2">
-        <Link href="/modal">
+        <Link href={"/modal" as Href}>
           <Link.Trigger>
             <Text className="text-[20px] font-bold text-app-text!">
               Step 2: Explore

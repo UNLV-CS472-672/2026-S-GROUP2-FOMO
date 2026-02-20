@@ -10,7 +10,7 @@ web-build/
 expo-env.d.ts
 
 # Uniwind
-uniwind-types.d.ts
+# uniwind-types.d.ts
 
 # Native
 .kotlin/
