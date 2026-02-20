@@ -35,5 +35,9 @@ jobs:
       - name: Format check
         run: pnpm format:check
 
+      - name: React Doctor
+        uses: millionco/react-doctor@0.0.1
+        continue-on-error: true
+
       - name: Build
         run: pnpm build
