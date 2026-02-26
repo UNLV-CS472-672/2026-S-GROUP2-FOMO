@@ -169,8 +169,8 @@ importers:
   packages/backend:
     dependencies:
       convex:
-        specifier: ^1.31.7
-        version: 1.31.7(react@19.2.3)
+        specifier: ^1.32.0
+        version: 1.32.0(react@19.2.3)
 
 packages:
   "@0no-co/graphql.web@1.2.0":
@@ -4010,10 +4010,10 @@ packages:
         integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==,
       }
 
-  convex@1.31.7:
+  convex@1.32.0:
     resolution:
       {
-        integrity: sha512-PtNMe1mAIOvA8Yz100QTOaIdgt2rIuWqencVXrb4McdhxBHZ8IJ1eXTnrgCC9HydyilGT1pOn+KNqT14mqn9fQ==,
+        integrity: sha512-5FlajdLpW75pdLS+/CgGH5H6yeRuA+ru50AKJEYbJpmyILUS+7fdTvsdTaQ7ZFXMv0gE8mX4S+S3AtJ94k0mfw==,
       }
     engines: { node: ">=18.0.0", npm: ">=7.0.0" }
     hasBin: true
@@ -8850,6 +8850,21 @@ packages:
       utf-8-validate:
         optional: true
 
+  ws@8.18.0:
+    resolution:
+      {
+        integrity: sha512-8VbfWfHLbbwu3+N6OKsOMpBdT4kXPDDB9cJk2bJ6mh9ucxdlnNvH1e+roYkKmN9Nxw2yjz7VzeO9oOz2zJ04Pw==,
+      }
+    engines: { node: ">=10.0.0" }
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: ">=5.0.2"
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   ws@8.19.0:
     resolution:
       {
@@ -11690,12 +11705,16 @@ snapshots:
 
   convert-source-map@2.0.0: {}
 
-  convex@1.31.7(react@19.2.3):
+  convex@1.32.0(react@19.2.3):
     dependencies:
       esbuild: 0.27.0
       prettier: 3.7.4
+      ws: 8.18.0
     optionalDependencies:
       react: 19.2.3
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   core-js-compat@3.48.0:
     dependencies:
@@ -14857,6 +14876,8 @@ snapshots:
       async-limiter: 1.0.1
 
   ws@7.5.10: {}
+
+  ws@8.18.0: {}
 
   ws@8.19.0: {}
 
