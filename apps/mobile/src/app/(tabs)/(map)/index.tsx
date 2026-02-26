@@ -1,7 +1,7 @@
-import { useRouter } from "expo-router";
-import { Text, View } from "react-native";
+import { useRouter } from 'expo-router';
+import { Text, View } from 'react-native';
 
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button, ButtonText } from '@/components/ui/button';
 
 export default function MapScreen() {
   const { push } = useRouter();
@@ -13,15 +13,11 @@ export default function MapScreen() {
         Marker taps will open a nearby H3 feed for that location.
       </Text>
 
-      <Button className="mt-3" onPress={() => push("/feed/demo-cell")}>
+      <Button className="mt-3" onPress={() => push('/feed/demo-cell')}>
         <ButtonText>Open Nearby Feed Demo</ButtonText>
       </Button>
 
-      <Button
-        variant="secondary"
-        className="mt-2"
-        onPress={() => push("/(tabs)/(map)/search")}
-      >
+      <Button variant="secondary" className="mt-2" onPress={() => push('/(tabs)/(map)/search')}>
         <ButtonText variant="secondary">Open Search</ButtonText>
       </Button>
     </View>
