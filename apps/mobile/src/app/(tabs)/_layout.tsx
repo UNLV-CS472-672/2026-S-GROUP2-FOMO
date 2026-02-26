@@ -1,39 +1,46 @@
-import { Tabs } from "expo-router";
-import React from "react";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import {
+  Icon,
+  Label,
+  NativeTabs,
+  VectorIcon,
+} from "expo-router/unstable-native-tabs";
 
-import { HapticTab } from "@/components/haptic-tab";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useCSSVariable } from "uniwind";
+export const unstable_settings = {
+  anchor: "map",
+};
 
 export default function TabLayout() {
-  const tintColor = useCSSVariable("--color-app-tint") as string | undefined;
-
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: tintColor,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}
+    <NativeTabs
+      disableTransparentOnScrollEdge
+      backgroundColor="#0a0a0a"
+      iconColor={{ default: "#888", selected: "#fff" }}
+      labelStyle={{ color: "#888", fontSize: 10 }}
+      blurEffect="systemChromeMaterialDark"
+      rippleColor="rgba(255,255,255,0.1)"
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: "Explore",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+      <NativeTabs.Trigger name="(map)">
+        <Label hidden />
+        <Icon
+          sf="map.fill"
+          androidSrc={<VectorIcon family={MaterialIcons} name="map" />}
+        />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="create">
+        <Label hidden />
+        <Icon
+          sf="plus.circle.fill"
+          androidSrc={<VectorIcon family={MaterialIcons} name="add-circle" />}
+        />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="profile">
+        <Label hidden />
+        <Icon
+          sf="person.fill"
+          androidSrc={<VectorIcon family={MaterialIcons} name="person" />}
+        />
+      </NativeTabs.Trigger>
+    </NativeTabs>
   );
 }
