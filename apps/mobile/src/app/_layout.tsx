@@ -1,23 +1,19 @@
-import "@/global.css";
+import '@/global.css';
 
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
-import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import 'react-native-reanimated';
 
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export const unstable_settings = {
-  anchor: "(tabs)",
+  anchor: '(tabs)',
 };
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const theme = colorScheme === "dark" ? DarkTheme : DefaultTheme;
+  const theme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
 
   return (
     <ThemeProvider value={theme}>
@@ -27,10 +23,7 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="feed/[h3Id]"
-          options={{ presentation: "modal", title: "Feed" }}
-        />
+        <Stack.Screen name="feed/[h3Id]" options={{ presentation: 'modal', title: 'Feed' }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
