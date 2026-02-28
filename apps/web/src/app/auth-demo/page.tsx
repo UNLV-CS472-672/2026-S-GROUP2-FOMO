@@ -1,7 +1,7 @@
 'use client';
 
-import { SignedIn, SignedOut, SignOutButton } from '@clerk/nextjs';
-import { useQuery } from 'convex/react';
+import { SignOutButton } from '@clerk/nextjs';
+import { Authenticated, Unauthenticated, useQuery } from 'convex/react';
 import { anyApi } from 'convex/server';
 import Link from 'next/link';
 
@@ -18,7 +18,7 @@ export default function AuthDemoPage() {
           Auth state example
         </h1>
 
-        <SignedIn>
+        <Authenticated>
           <div className="space-y-3 text-zinc-700 dark:text-zinc-300">
             <p>You are currently signed in.</p>
             {loading ? (
@@ -55,9 +55,9 @@ export default function AuthDemoPage() {
               Sign out
             </button>
           </SignOutButton>
-        </SignedIn>
+        </Authenticated>
 
-        <SignedOut>
+        <Unauthenticated>
           <div className="space-y-2 text-zinc-700 dark:text-zinc-300">
             <p>You are currently signed out.</p>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -82,7 +82,7 @@ export default function AuthDemoPage() {
               </Link>
             </div>
           </div>
-        </SignedOut>
+        </Unauthenticated>
       </div>
     </main>
   );
