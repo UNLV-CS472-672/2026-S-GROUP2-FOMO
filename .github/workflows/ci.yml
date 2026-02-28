@@ -40,4 +40,16 @@ jobs:
         continue-on-error: true
 
       - name: Build
-        run: pnpm build
+        run: |
+          # 1. Start Convex in the background (uses a local dev server)
+          pnpm convex dev --run &
+
+          # 2. Wait a few seconds for the local server to warm up
+          sleep 5
+
+          # 3. Build the app pointing to the local instance
+          pnpm build
+        env:
+          # This is the default port for local Convex
+          NEXT_PUBLIC_CONVEX_URL: http://127.0.0.1:3210
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
