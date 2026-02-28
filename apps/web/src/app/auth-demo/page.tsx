@@ -1,44 +1,16 @@
 "use client";
 
 import { SignedIn, SignedOut, SignOutButton } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
+import { anyApi } from "convex/server";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 export default function AuthDemoPage() {
-  const [backendUserId, setBackendUserId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const identity = useQuery(anyApi.auth.getIdentity, {});
+  console.log("identity", identity);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadUserFromBackend = async () => {
-      try {
-        const res = await fetch("/api/me");
-        if (!isMounted) return;
-
-        if (!res.ok) {
-          setBackendUserId(null);
-          return;
-        }
-
-        const data: { userId?: string | null } = await res.json();
-        setBackendUserId(data.userId ?? null);
-      } catch {
-        if (!isMounted) return;
-        setBackendUserId(null);
-      } finally {
-        if (!isMounted) return;
-        setLoading(false);
-      }
-    };
-
-    void loadUserFromBackend();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
+  const loading = identity === undefined || identity === null;
+  const username = identity?.nickname;
   return (
     <main className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
       <div className="flex flex-col items-start gap-4 rounded-xl bg-white p-8 shadow-sm dark:bg-zinc-950">
@@ -53,11 +25,11 @@ export default function AuthDemoPage() {
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 Loading user ID from backend…
               </p>
-            ) : backendUserId ? (
+            ) : username ? (
               <p className="text-sm">
                 Backend user ID is{" "}
                 <code className="rounded bg-zinc-100 px-1 py-0.5 text-xs dark:bg-zinc-800">
-                  {backendUserId}
+                  {username}
                 </code>
               </p>
             ) : (
