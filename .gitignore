@@ -39,3 +39,6 @@ apps/web/.env.local
 
 #user files
 .idea/
+
+#CICD local testing
+.secrets
