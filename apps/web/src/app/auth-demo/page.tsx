@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { SignedIn, SignedOut, SignOutButton } from "@clerk/nextjs";
-import { useQuery } from "convex/react";
-import { anyApi } from "convex/server";
-import Link from "next/link";
+import { SignedIn, SignedOut, SignOutButton } from '@clerk/nextjs';
+import { useQuery } from 'convex/react';
+import { anyApi } from 'convex/server';
+import Link from 'next/link';
 
 export default function AuthDemoPage() {
   const identity = useQuery(anyApi.auth.getIdentity, {});
-  console.log("identity", identity);
+  console.log('identity', identity);
 
   const loading = identity === undefined || identity === null;
   const username = identity?.nickname;
@@ -27,21 +27,19 @@ export default function AuthDemoPage() {
               </p>
             ) : username ? (
               <p className="text-sm">
-                Backend user ID is{" "}
+                Backend user ID is{' '}
                 <code className="rounded bg-zinc-100 px-1 py-0.5 text-xs dark:bg-zinc-800">
                   {username}
                 </code>
               </p>
             ) : (
-              <p className="text-sm text-red-500">
-                Could not load user ID from backend.
-              </p>
+              <p className="text-sm text-red-500">Could not load user ID from backend.</p>
             )}
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              This section is only visible inside the{" "}
+              This section is only visible inside the{' '}
               <code className="rounded bg-zinc-100 px-1 py-0.5 text-xs dark:bg-zinc-800">
-                {"<SignedIn>"}
-              </code>{" "}
+                {'<SignedIn>'}
+              </code>{' '}
               wrapper.
             </p>
             <Link
@@ -63,10 +61,10 @@ export default function AuthDemoPage() {
           <div className="space-y-2 text-zinc-700 dark:text-zinc-300">
             <p>You are currently signed out.</p>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              This section is only visible inside the{" "}
+              This section is only visible inside the{' '}
               <code className="rounded bg-zinc-100 px-1 py-0.5 text-xs dark:bg-zinc-800">
-                {"<SignedOut>"}
-              </code>{" "}
+                {'<SignedOut>'}
+              </code>{' '}
               wrapper.
             </p>
             <div className="flex gap-2">

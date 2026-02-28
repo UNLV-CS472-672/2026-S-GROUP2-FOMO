@@ -1,4 +1,4 @@
-import { query } from "./_generated/server";
+import { query } from './_generated/server';
 
 /**
  * Returns the current user's identity from the Convex JWT, or null if not signed in.

@@ -1,6 +1,6 @@
-"use client";
-import { Authenticated, Unauthenticated } from "convex/react";
-import Link from "next/link";
+'use client';
+import { Authenticated, Unauthenticated } from 'convex/react';
+import Link from 'next/link';
 
 export const AuthDisplay = () => (
   <>
@@ -25,8 +25,7 @@ export const AuthDisplay = () => (
     </Unauthenticated>
     <Authenticated>
       <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-        You&apos;re signed in. Head to the auth demo page to see your backend
-        user ID.
+        You&apos;re signed in. Head to the auth demo page to see your backend user ID.
       </p>
       <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
         <Link

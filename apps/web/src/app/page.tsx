@@ -1,4 +1,4 @@
-import { AuthDisplay } from "@/app/components/AuthDisplay";
+import { AuthDisplay } from '@/app/components/AuthDisplay';
 
 export default function Home() {
   return (
