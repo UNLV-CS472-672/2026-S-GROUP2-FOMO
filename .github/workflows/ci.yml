@@ -41,15 +41,12 @@ jobs:
 
       - name: Build
         run: |
-          # 1. Start Convex in the background (uses a local dev server)
-          pnpm convex dev --run &
+          # 1. Generate the typescript files Convex needs for the build
+          pnpm convex codegen
 
-          # 2. Wait a few seconds for the local server to warm up
-          sleep 5
-
-          # 3. Build the app pointing to the local instance
+          # 2. Run the actual build
           pnpm build
         env:
-          # This is the default port for local Convex
-          NEXT_PUBLIC_CONVEX_URL: ${{secrets.NEXT_PUBLIC_CONVEX_URL }}
+          # Use your Cloud URL from GitHub Secrets
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
