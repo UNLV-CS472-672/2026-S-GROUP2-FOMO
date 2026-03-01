@@ -4,12 +4,12 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "android": "expo start --android",
+    "android": "expo run:android",
     "clean": "rm -rf .expo ios android",
-    "dev": "expo start",
+    "dev": "expo start --dev-client",
     "format": "prettier --write '**/*.{ts,tsx,js,jsx,json,md}' --ignore-path .gitignore",
     "format:check": "prettier --check '**/*.{ts,tsx,js,jsx,json,md}' --ignore-path .gitignore",
-    "ios": "expo start --ios",
+    "ios": "expo run:ios",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "web": "expo start --web"
@@ -19,6 +19,7 @@
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
+    "@rnmapbox/maps": "^10.2.10",
     "clsx": "^2.1.1",
     "expo": "~54.0.33",
     "expo-constants": "~18.0.13",
