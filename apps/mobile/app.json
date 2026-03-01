@@ -12,6 +12,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.pillowscanhurt.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -39,11 +40,17 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "@rnmapbox/maps"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "98b25efe-5857-414b-a6ef-0dd323a155bc"
+      }
     }
   }
 }
