@@ -13,7 +13,7 @@ export default function MapScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={StyleSheet.absoluteFill}>
+    <View className="absolute inset-0">
       <MapboxGL.MapView
         style={StyleSheet.absoluteFill}
         styleURL={MapboxGL.StyleURL.Dark}
@@ -26,37 +26,14 @@ export default function MapScreen() {
       </MapboxGL.MapView>
 
       {/* Search bar overlay */}
-      <View style={[styles.searchBar, { top: insets.top + 12 }]}>
+      <View className="absolute left-4 right-4" style={{ top: insets.top + 12 }}>
         <Pressable
-          style={({ pressed }) => [styles.searchButton, pressed && styles.searchButtonPressed]}
+          className="rounded-xl border border-white/[0.12] bg-[rgba(18,18,18,0.92)] px-4 py-3 active:bg-[rgba(38,38,38,0.92)]"
           onPress={() => push('/(tabs)/(map)/search')}
         >
-          <Text style={styles.searchText}>Search places...</Text>
+          <Text className="text-[15px] text-white/40">Search places...</Text>
         </Pressable>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  searchBar: {
-    left: 16,
-    position: 'absolute',
-    right: 16,
-  },
-  searchButton: {
-    backgroundColor: 'rgba(18, 18, 18, 0.92)',
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  searchButtonPressed: {
-    backgroundColor: 'rgba(38, 38, 38, 0.92)',
-  },
-  searchText: {
-    color: 'rgba(255, 255, 255, 0.4)',
-    fontSize: 15,
-  },
-});
