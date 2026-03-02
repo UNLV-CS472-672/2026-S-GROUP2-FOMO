@@ -10,6 +10,14 @@
       "cache": false,
       "persistent": true
     },
+    "dev:ios": {
+      "cache": false,
+      "persistent": true
+    },
+    "dev:android": {
+      "cache": false,
+      "persistent": true
+    },
     "lint": {},
     "typecheck": {},
     "format": {},
