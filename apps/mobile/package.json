@@ -4,15 +4,16 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "android": "expo start --android",
     "clean": "rm -rf .expo ios android",
-    "dev": "expo start",
+    "dev": "expo start --dev-client",
+    "dev:android": "expo run:android",
+    "dev:ios": "expo run:ios",
     "format": "prettier --write '**/*.{ts,tsx,js,jsx,json,md}' --ignore-path .gitignore",
     "format:check": "prettier --check '**/*.{ts,tsx,js,jsx,json,md}' --ignore-path .gitignore",
-    "ios": "expo start --ios",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit",
-    "web": "expo start --web"
+    "prebuild": "expo prebuild",
+    "prebuild:clean": "expo prebuild --clean",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
