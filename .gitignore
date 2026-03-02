@@ -32,7 +32,7 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
-apps/web/.env.local
+.env
 
 # turbo
 .turbo
@@ -40,5 +40,5 @@ apps/web/.env.local
 #user files
 .idea/
 
-#CICD local testing
+#CICD testing
 .secrets
