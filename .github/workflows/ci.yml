@@ -20,8 +20,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "pnpm"
+          node-version: '20'
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -39,5 +39,10 @@ jobs:
         uses: millionco/react-doctor@0.0.1
         continue-on-error: true
 
+      # THIS ONLY BUILD THE WEB APP: NO GUARANTEES ABOUT THE MOBILE APP WORKING
       - name: Build
         run: pnpm build
+        env:
+          # Use your Cloud URL from GitHub Secrets
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
