@@ -1,4 +1,7 @@
-import type { UserIdentity } from 'convex/server';
+'use client';
+
+import { api } from '@fomo/backend/convex/_generated/api';
+import { useQuery } from 'convex/react';
 
 function formatName(name: string | null | undefined): string {
   return (name ?? 'there')
@@ -7,7 +10,8 @@ function formatName(name: string | null | undefined): string {
     .join(' ');
 }
 
-export function SignedInStatus({ identity }: { identity: UserIdentity | null | undefined }) {
+export function SignedInStatus() {
+  const identity = useQuery(api.auth.getIdentity);
   if (identity === undefined) {
     return (
       <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">Loading...</p>
