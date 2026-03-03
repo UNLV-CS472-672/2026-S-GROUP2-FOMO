@@ -6,118 +6,109 @@ from convex import ConvexClient
 from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
 
-load_dotenv()
-CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
-client = ConvexClient(CONVEX_CLOUD_URL)
-pd.set_option('display.max_rows', None)
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_colwidth', 20)
-pd.set_option('display.width', 1000)
 
 
+# Combines "users" and "events" into a single dataframe.
+def join_user_events() -> pd.DataFrame:
 
-def similarity_matrix_events() -> pd.DataFrame:
-
-    # Create projected dataframes for users, usersToEvents, and events.
-    users_data = client.query("helpers:list", {"table_name": "users"})
+    # Store "users", "userToEvents", and "events" into dataframes.
+    users_data = client.query("query:list", {"table_name": "users"})
     users_df = pd.json_normalize(users_data)
     users_df = users_df[["_id", "name"]]
 
-    usersToEvents_data = client.query("helpers:list", {"table_name": "usersToEvents"})
+    usersToEvents_data = client.query("query:list", {"table_name": "usersToEvents"})
     usersToEvents_df = pd.json_normalize(usersToEvents_data)
     usersToEvents_df = usersToEvents_df[["eventId", "userId"]]
 
-    events_data = client.query("helpers:list", {"table_name": "events"})
+    events_data = client.query("query:list", {"table_name": "events"})
     events_df = pd.json_normalize(events_data)
     events_df = events_df[["_id", "name"]]
 
-    # Join tables, final table only all user names and event names they've been to.
-    merged_df = usersToEvents_df.merge(users_df, left_on = "userId", right_on = "_id")[["name", "eventId"]]
-    merged_df = merged_df.merge(events_df, left_on = "eventId", right_on = "_id")[["name_x", "name_y"]]
+    # Join "user" and "events" table. 
+    merged_df = usersToEvents_df.merge(users_df, left_on = "userId", right_on = "_id")
+    merged_df = merged_df[["name", "eventId"]]
+    merged_df = merged_df.merge(events_df, left_on = "eventId", right_on = "_id")
     merged_df = merged_df.rename(columns={"name_x": "user", "name_y": "event"})
+    
+    return merged_df
+
+
+
+# Similarity matrix for each user based on attended events.
+def similarity_matrix_events() -> pd.DataFrame:
 
     # Convert into similarity matrix. (1 = Attended, 0 = Not Attended)
+    merged_df = join_user_events()
     return pd.crosstab(merged_df["user"], merged_df["event"])
 
 
 
-def similarity_matrix_event_tags() -> pd.DataFrame:
+# Similarity matrix for each user based on attended event tags.
+def similarity_matrix_eventTags() -> pd.DataFrame:
 
-    # Create projected dataframes for users, usersToEvents, events, eventTags, and tags.
-    users_json = client.query("helpers:list", {"table_name": "users"})
-    users_df = pd.json_normalize(users_json)
-    users_df = users_df[["_id", "name"]]
+    # Join "users" and "events" dataframes.
+    user_events_df = join_user_events()
 
-    usersToEvents_json = client.query("helpers:list", {"table_name": "usersToEvents"})
-    usersToEvents_df = pd.json_normalize(usersToEvents_json)
-    usersToEvents_df = usersToEvents_df[["eventId", "userId"]]
 
-    events_json = client.query("helpers:list", {"table_name": "events"})
-    events_df = pd.json_normalize(events_json)
-    events_df = events_df[["_id", "name"]]
-
-    eventTags_json = client.query("helpers:list", {"table_name": "eventTags"})
+    # Join "events" and "tags" dataframes.
+    eventTags_json = client.query("query:list", {"table_name": "eventTags"})
     eventTags_df = pd.json_normalize(eventTags_json)
     eventTags_df = eventTags_df[["eventId", "tagId"]]
 
-    tags_json = client.query("helpers:list", {"table_name": "tags"})
+    tags_json = client.query("query:list", {"table_name": "tags"})
     tags_df = pd.json_normalize(tags_json)
     tags_df = tags_df[["_id", "name"]]
 
+    event_tags_df = pd.merge(left = eventTags_df, right = tags_df, left_on = "tagId", right_on = "_id")
+    event_tags_df = event_tags_df[["eventId", "tagId", "name"]]
 
-    # Join tables, final table only all user names and event names they've been to.
-    merged_df = usersToEvents_df.merge(users_df, left_on = "userId", right_on = "_id")[["name", "eventId"]]
-    merged_df =  merged_df.merge(events_df, left_on = "eventId", right_on = "_id")
-    merged_df = merged_df.rename(columns={"name_x": "user", "name_y": "event"})
-    merged_df =  merged_df.merge(eventTags_df, left_on = "eventId", right_on = "eventId")[["user", "event", "tagId"]]
-    merged_df =  merged_df.merge(tags_df, left_on = "tagId", right_on = "_id")[["user", "name"]]
+
+    # Join newly made "user_events" and "event_tags" dataframes.
+    merged_df = pd.merge(left = user_events_df, right = event_tags_df, left_on = "eventId", right_on = "eventId")
+    merged_df = merged_df[["user", "name"]]
     merged_df = merged_df.rename(columns={"name": "tag"})
 
-
-    # Convert into similarity matrix.
-    # Rows = Users,  Columns = Tags,  Cell = # of times attended an event with tag.
+    # Convert into similarity matrix. (Rows = Users,  Columns = Tags,  Cell = # of times attended an event with tag).
     return pd.crosstab(merged_df["user"], merged_df["tag"])
 
 
-def similarity_matrix_post_tags() -> pd.DataFrame:
 
-    # Create projected dataframes for users, posts, postTags, and tags.
-    users_json = client.query("helpers:list", {"table_name": "users"})
+
+# Similarity matrix for each user based on all post tags.
+def similarity_matrix_postTags() -> pd.DataFrame:
+
+    # Join "users" and "posts" dataframes.
+    users_json = client.query("query:list", {"table_name": "users"})
     users_df = pd.json_normalize(users_json)
     users_df = users_df[["_id", "name"]]
-    print(users_df)
 
-    posts_json = client.query("helpers:list", {"table_name": "posts"})
+    posts_json = client.query("query:list", {"table_name": "posts"})
     posts_df = pd.json_normalize(posts_json)
     posts_df = posts_df[["_id", "authorId"]]
-    print(posts_df)
 
-    postTags_json = client.query("helpers:list", {"table_name": "postTags"})
+    users_posts_df = pd.merge(left = users_df, right = posts_df, left_on = "_id", right_on = "authorId")
+    users_posts_df = users_posts_df.rename(columns={"_id_y":"postId"})
+
+
+    # Join "postTags" and "tags" dataframes
+    postTags_json = client.query("query:list", {"table_name": "postTags"})
     postTags_df = pd.json_normalize(postTags_json)
     postTags_df = postTags_df[["postId", "tagId"]]
-    print(postTags_df)
 
-    tags_json = client.query("helpers:list", {"table_name": "tags"})
+    tags_json = client.query("query:list", {"table_name": "tags"})
     tags_df = pd.json_normalize(tags_json)
-    print(tags_df)
+    tags_df = tags_df[["_id", "name"]]
 
-    print()
-    print()
-    print()
+    post_tags_df = pd.merge(left = postTags_df, right = tags_df, left_on = "tagId", right_on = "_id")
+    post_tags_df = post_tags_df[["postId", "name"]]
 
 
-    merged_df = posts_df.merge(users_df, left_on = "authorId", right_on = "_id")[["_id_x", "name"]]
-    # print(merged_df)/
+    # Join newly-made "user_posts" and "post_tags" dataframe.
+    merged_df = pd.merge(left = users_posts_df, right = post_tags_df, left_on = "postId", right_on = "postId")
+    merged_df = merged_df[["name_x", "name_y"]]
+    merged_df = merged_df.rename(columns = {"name_x":"user_name", "name_y":"tag_name"})
 
-    merged_df = merged_df.merge(postTags_df, left_on = "_id_x", right_on = "postId")[["name", "tagId"]]
-    # print(merged_df)
-
-    merged_df = merged_df.merge(tags_df, left_on = "tagId", right_on = "_id")[["name_x", "name_y"]]
-    # print(merged_df)
-
-    print(pd.crosstab(merged_df["name_x"], merged_df["name_y"]))
-
-    return pd.crosstab(merged_df["name_x"], merged_df["name_y"])
+    return pd.crosstab(merged_df["user_name"], merged_df["tag_name"])
 
 
 
@@ -134,12 +125,12 @@ def most_similar_users(df: pd.DataFrame, target_user: str, user_return_amt: int)
                                           index   = df.index,
                                           columns = df.index )
         
-        # Sort top-simliar users and return new dataframe with such.
+        # Sort top 'user_return_amt' users and return new dataframe.
         similar_users = (
             user_similarity_df[target_user]
-            .drop(target_user)
-            .sort_values(ascending=False)
-            .head(user_return_amt))
+            .drop(target_user))
+            # .sort_values(ascending=False)
+            # .head(user_return_amt))
         similar_users = pd.DataFrame({"similarity_score": similar_users})
         return similar_users
     
@@ -151,28 +142,36 @@ def most_similar_users(df: pd.DataFrame, target_user: str, user_return_amt: int)
 def main():
 
     client.mutation("seed:seed")
-    user = "Reece"
+    user = "Manjot"
 
-    similarity_df = similarity_matrix_events()
-    users = most_similar_users(similarity_df, user, 5)
-    print(f"Attended Events for {user}:")
-    print(users)
+    sim_scores_events_df = similarity_matrix_events()
+    sim_scores_events_df = most_similar_users(sim_scores_events_df, user, 5)
+    print(f"\n\nAttended Events for {user}:")
+    print(sim_scores_events_df)
 
-    tag = similarity_matrix_event_tags()
-    tag = most_similar_users(tag, user, 5)
-    print(f"\nEvent Tags for {user}:")
-    print(tag)
+    sim_scores_event_tags_df = similarity_matrix_eventTags()
+    sim_scores_event_tags_df = most_similar_users(sim_scores_event_tags_df, user, 5)
+    print(f"\nRecs based on Event Tags for {user}:")
+    print(sim_scores_event_tags_df)
 
-    posts = similarity_matrix_post_tags()
-    posts = most_similar_users(posts, user, 3)
+    sim_scores_post_tags_df = similarity_matrix_postTags()
+    sim_scores_post_tags_df = most_similar_users(sim_scores_post_tags_df, user, 3)
     print(f"\nPost Tags for {user}:")
-    print(posts)
-
-
+    print(sim_scores_post_tags_df)
 
 
 
 
 if __name__ == "__main__":
+
+    load_dotenv()
+    CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
+    client = ConvexClient(CONVEX_CLOUD_URL)
+
+    pd.set_option('display.max_rows', None)
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.max_colwidth', 20)
+    pd.set_option('display.width', 1000)
+
     main()
 

@@ -8,13 +8,13 @@
  * @module
  */
 
-import type * as helpers from '../helpers.js';
+import type * as query from '../query.js';
 import type * as seed from '../seed.js';
 
 import type { ApiFromModules, FilterApi, FunctionReference } from 'convex/server';
 
 declare const fullApi: ApiFromModules<{
-  helpers: typeof helpers;
+  query: typeof query;
   seed: typeof seed;
 }>;
 
