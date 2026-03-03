@@ -44,6 +44,11 @@ jobs:
         run: pnpm dlx expo-doctor
         continue-on-error: true
 
+      # THIS ONLY BUILD THE WEB APP: NO GUARANTEES ABOUT THE MOBILE APP WORKING
       - name: Build
         run: pnpm build
         working-directory: apps/web
+        env:
+          # Use your Cloud URL from GitHub Secrets
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
