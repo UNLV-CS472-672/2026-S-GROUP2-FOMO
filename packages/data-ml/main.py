@@ -150,6 +150,7 @@ def most_similar_users(df: pd.DataFrame, target_user: str, user_return_amt: int)
 
 def main():
 
+    client.mutation("seed:seed")
     user = "Reece"
 
     similarity_df = similarity_matrix_events()
@@ -164,7 +165,7 @@ def main():
 
     posts = similarity_matrix_post_tags()
     posts = most_similar_users(posts, user, 3)
-    print(f"\Post Tags for {user}:")
+    print(f"\nPost Tags for {user}:")
     print(posts)
 
 
