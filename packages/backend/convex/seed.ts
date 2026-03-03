@@ -264,7 +264,66 @@ export const seed = mutation({
           'i just saw this dude walking across caesars palace? asked for a pic but he spit in my face and started flying way :(',
         authorId: u8,
       },
-      { title: 'FOMO Study Session', description: 'we are WINNING that competition', authorId: u9 },
+      {
+        title: 'FOMO Study Session',
+        description: 'we are WINNING that competition',
+        authorId: u9,
+      },
+      {
+        title: 'anyone going to LVL UP this year?',
+        description: 'first time going, dont know what to expect. do i need to cosplay??',
+        authorId: u5,
+      },
+      {
+        title: 'thrift valley haul just dropped',
+        description:
+          'grabbed a vintage carhartt and some cargos for $18 total. they are NOT out of stussy btw',
+        authorId: u2,
+      },
+      {
+        title: 'water lantern festival was so peaceful',
+        description:
+          'genuinely one of the most beautiful nights ive had in vegas. 10/10 would litter the pond again',
+        authorId: u4,
+      },
+      {
+        title: 'UNLV library or coffee shop for finals?',
+        description: 'im cooked either way but where do yall go to grind',
+        authorId: u9,
+      },
+      {
+        title: 'chinatown food crawl this saturday',
+        description: 'hitting 5 spots in one night. dm if you tryna pull up',
+        authorId: u3,
+      },
+      {
+        title: 'my first cosplay ever!!',
+        description:
+          'went as toji fushiguro and someone said i looked like a middle schooler in a costume... be kind',
+        authorId: u5,
+      },
+      {
+        title: 'baby keem setlist was CRAZY',
+        description: 'homicide, trademark da baby, family ties back to back?? i blacked out',
+        authorId: u8,
+      },
+      {
+        title: 'first friday art picks this month',
+        description:
+          'saw some insane murals near the container park. the arts scene in dtlv is really coming up',
+        authorId: u6,
+      },
+      {
+        title: 'need a study group for calc 2',
+        description:
+          'series and sequences got me in a chokehold. anyone down to meet up at pop cafe?',
+        authorId: u1,
+      },
+      {
+        title: 'psi rho rush week recap',
+        description: 'if you missed it you really missed it. brotherhood is unmatched fr',
+        authorId: u4,
+      },
     ];
     const postIds: any[] = [];
     for (const p of postSeeds) {
@@ -274,7 +333,8 @@ export const seed = mutation({
         .first();
       postIds.push(existing?._id ?? (await ctx.db.insert('posts', p)));
     }
-    const [p1, p2, p3, p4, p5, p6, p7, p8, p9] = postIds;
+    const [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19] =
+      postIds;
 
     //  Post Tags (Convex: postTags)
     const postTagPairs = [
@@ -299,6 +359,34 @@ export const seed = mutation({
       { postId: p9, tagId: tagIds['college'] },
       { postId: p9, tagId: tagIds['study'] },
       { postId: p9, tagId: tagIds['insightful'] },
+      { postId: p10, tagId: tagIds['convention'] },
+      { postId: p10, tagId: tagIds['anime'] },
+      { postId: p10, tagId: tagIds['games'] },
+      { postId: p11, tagId: tagIds['thrift'] },
+      { postId: p11, tagId: tagIds['clothes'] },
+      { postId: p11, tagId: tagIds['fits'] },
+      { postId: p12, tagId: tagIds['chill'] },
+      { postId: p12, tagId: tagIds['culture'] },
+      { postId: p13, tagId: tagIds['study'] },
+      { postId: p13, tagId: tagIds['college'] },
+      { postId: p14, tagId: tagIds['food'] },
+      { postId: p14, tagId: tagIds['chinatown'] },
+      { postId: p14, tagId: tagIds['culture'] },
+      { postId: p15, tagId: tagIds['anime'] },
+      { postId: p15, tagId: tagIds['comics'] },
+      { postId: p15, tagId: tagIds['wild'] },
+      { postId: p16, tagId: tagIds['concert'] },
+      { postId: p16, tagId: tagIds['rap'] },
+      { postId: p16, tagId: tagIds['music'] },
+      { postId: p17, tagId: tagIds['art'] },
+      { postId: p17, tagId: tagIds['music'] },
+      { postId: p17, tagId: tagIds['culture'] },
+      { postId: p18, tagId: tagIds['study'] },
+      { postId: p18, tagId: tagIds['college'] },
+      { postId: p18, tagId: tagIds['food'] },
+      { postId: p19, tagId: tagIds['party'] },
+      { postId: p19, tagId: tagIds['college'] },
+      { postId: p19, tagId: tagIds['insightful'] },
     ];
     for (const pair of postTagPairs) {
       const existing = await ctx.db
@@ -340,6 +428,44 @@ export const seed = mutation({
       { postId: p8, authorId: u3, text: 'GREAT WORK TEAM!!!' },
       { postId: p8, authorId: u7, text: 'same time next week?' },
       { postId: p8, authorId: u8, text: 'Are we meeting at Pop next meeting?' },
+      { postId: p10, authorId: u7, text: 'YES and you 100% should cosplay, its way more fun' },
+      {
+        postId: p10,
+        authorId: u6,
+        text: 'i went last year, bring cash for the vendor hall it gets crazy',
+      },
+      { postId: p10, authorId: u9, text: 'no pressure on cosplay but people go all out fr' },
+      { postId: p11, authorId: u1, text: 'WAIT they still have stussy?? im pulling up' },
+      { postId: p11, authorId: u4, text: 'carhartt for $18 is actually insane' },
+      { postId: p11, authorId: u7, text: 'bro the fits section of this app was made for you' },
+      { postId: p12, authorId: u3, text: 'literally cried it was so pretty' },
+      { postId: p12, authorId: u8, text: 'litter the pond again LMAOOO' },
+      { postId: p12, authorId: u5, text: 'i missed it and im so sad' },
+      {
+        postId: p13,
+        authorId: u2,
+        text: 'coffee shop for sure, library got too much eye contact energy',
+      },
+      { postId: p13, authorId: u6, text: 'pop cafe during off hours hits different for studying' },
+      { postId: p13, authorId: u3, text: 'neither, i study in my car' },
+      { postId: p14, authorId: u1, text: 'im in, what time' },
+      { postId: p14, authorId: u8, text: 'save me a spot at the hot pot place' },
+      { postId: p14, authorId: u5, text: 'chinatown crawl is a core unlv experience' },
+      { postId: p15, authorId: u7, text: 'nah you looked clean dont let them play you' },
+      { postId: p15, authorId: u9, text: 'toji is literally the coolest character what' },
+      { postId: p15, authorId: u2, text: 'post pics!!! we need to see' },
+      { postId: p16, authorId: u3, text: 'homicide live had me on another planet' },
+      { postId: p16, authorId: u2, text: 'family ties made the whole crowd go insane' },
+      { postId: p16, authorId: u9, text: 'i cant believe i missed this' },
+      { postId: p17, authorId: u4, text: 'the murals by the lot on 3rd are so underrated' },
+      { postId: p17, authorId: u1, text: 'DTLV has been going crazy lately' },
+      { postId: p17, authorId: u9, text: 'which artists did you see? looking for local recs' },
+      { postId: p18, authorId: u5, text: 'im down, i need help with sequences too' },
+      { postId: p18, authorId: u3, text: 'pop cafe is the move, see you there' },
+      { postId: p18, authorId: u7, text: 'calc 2 is genuinely evil i feel this' },
+      { postId: p19, authorId: u2, text: 'rush week was unreal, glad i joined' },
+      { postId: p19, authorId: u6, text: 'psi rho stays winning' },
+      { postId: p19, authorId: u3, text: 'brotherhood > everything' },
     ];
     for (const comment of comments) {
       const existing = await ctx.db

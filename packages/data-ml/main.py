@@ -107,13 +107,13 @@ def similarity_matrix_post_tags() -> pd.DataFrame:
 
 
     merged_df = posts_df.merge(users_df, left_on = "authorId", right_on = "_id")[["_id_x", "name"]]
-    print(merged_df)
+    # print(merged_df)/
 
     merged_df = merged_df.merge(postTags_df, left_on = "_id_x", right_on = "postId")[["name", "tagId"]]
-    print(merged_df)
+    # print(merged_df)
 
     merged_df = merged_df.merge(tags_df, left_on = "tagId", right_on = "_id")[["name_x", "name_y"]]
-    print(merged_df)
+    # print(merged_df)
 
     print(pd.crosstab(merged_df["name_x"], merged_df["name_y"]))
 
@@ -156,12 +156,12 @@ def main():
     similarity_df = similarity_matrix_events()
     users = most_similar_users(similarity_df, user, 5)
     print(f"Attended Events for {user}:")
-    # print(users)
+    print(users)
 
     tag = similarity_matrix_event_tags()
     tag = most_similar_users(tag, user, 5)
     print(f"\nEvent Tags for {user}:")
-    # print(tag)
+    print(tag)
 
     posts = similarity_matrix_post_tags()
     posts = most_similar_users(posts, user, 3)
