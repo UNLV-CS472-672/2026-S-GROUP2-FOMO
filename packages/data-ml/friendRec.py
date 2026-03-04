@@ -127,6 +127,9 @@ def similarity_score(df: pd.DataFrame, target_user: str) -> pd.DataFrame:
         similar_users = pd.DataFrame({"similarity_score": similar_users})
         return similar_users
     
+    except KeyError:
+        raise Exception(f"ERROR: '{target_user}' not found in DataFrame.")
+    
     except:
         raise Exception("ERROR: User similarity matrix could not be made.")
     
@@ -148,7 +151,7 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, user: str, rec_amt: int):
 
     # Technically doesn't break if rec_amt exceeds, but being extra safe.
     if rec_amt > len(sim_scores):
-        raise Exception("rec_amt is higher than rows in sim_scores.")
+        raise Exception(f"rec_amt ({rec_amt}) exceeds available users ({len(sim_scores)}).")
 
     # Sort top rec_amt recommended users, create list.
     top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False).head(rec_amt)
