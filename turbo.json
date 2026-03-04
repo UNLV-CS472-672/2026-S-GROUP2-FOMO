@@ -1,12 +1,21 @@
 {
   "$schema": "https://v2-8-3.turborepo.dev/schema.json",
   "globalDependencies": ["**/.env.*local"],
+  "globalEnv": ["ANDROID_HOME", "ANDROID_SDK_ROOT"],
   "tasks": {
     "build": {
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
       "dependsOn": ["^build"]
     },
     "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "dev:ios": {
+      "cache": false,
+      "persistent": true
+    },
+    "dev:android": {
       "cache": false,
       "persistent": true
     },
