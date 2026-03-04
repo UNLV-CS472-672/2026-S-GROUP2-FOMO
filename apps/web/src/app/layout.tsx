@@ -1,5 +1,5 @@
-import { ConvexClientProvider } from '@/app/ConvexClientProvider';
-import { NavBar } from '@/app/components/NavBar';
+import { ConvexClientProvider } from '@/app/convex-client-provider';
+import { Header } from '@/components/header';
 import { ClerkProvider } from '@clerk/nextjs';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
@@ -16,6 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  //TODO decide with team on uppercase letters or not
   title: 'FOMO',
   description: 'FOMO web app',
 };
@@ -28,9 +29,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ClerkProvider>
+        <ClerkProvider afterSignOutUrl={'/'}>
           <ConvexClientProvider>
-            <NavBar />
+            <Header />
             {children}
           </ConvexClientProvider>
         </ClerkProvider>

@@ -11,6 +11,7 @@ function formatName(name: string | null | undefined): string {
 }
 
 export function SignedInStatus() {
+  //TODO Eventually replace this with profile query when that is implemented
   const identity = useQuery(api.auth.getIdentity);
   if (identity === undefined) {
     return (

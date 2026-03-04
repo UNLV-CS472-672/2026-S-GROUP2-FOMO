@@ -1,6 +1,4 @@
-'use client';
-
-import { SignedInStatus } from '@/app/components/SignedInStatus';
+import { SignedInStatus } from '@/components/signed-in-status';
 
 export default function Home() {
   return (
