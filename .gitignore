@@ -36,3 +36,9 @@ yarn-error.log*
 
 # turbo
 .turbo
+
+#user files
+.idea/
+
+#CICD testing
+.secrets
