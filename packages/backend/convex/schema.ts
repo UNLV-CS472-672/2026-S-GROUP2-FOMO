@@ -67,4 +67,13 @@ export default defineSchema({
     .index('by_post', ['postId'])
     .index('by_tag', ['tagId'])
     .index('by_post_tag', ['postId', 'tagId']),
+
+  friendRecs: defineTable({
+    user: v.string(),
+    rec1: v.string(),
+    rec2: v.string(),
+    rec3: v.string(),
+    rec4: v.string(),
+    rec5: v.string(),
+  }).index('by_user', ['user']),
 });

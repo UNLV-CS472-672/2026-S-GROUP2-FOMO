@@ -1,12 +1,16 @@
-import requests
 import os
-import numpy as np
 import pandas as pd
 from convex import ConvexClient
 from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
 
 
+# Checks if a name can be found in the "users" datatable.
+def user_exists(name: str) -> bool:
+    users_data = client.query("query:list", {"table_name": "users"})
+    users_df = pd.json_normalize(users_data)
+    return name in users_df["name"].values
+    
 
 # Combines "users" and "events" into a single dataframe.
 def join_user_events() -> pd.DataFrame:
@@ -34,21 +38,20 @@ def join_user_events() -> pd.DataFrame:
 
 
 
-# Similarity matrix for each user based on attended events.
-def similarity_matrix_events() -> pd.DataFrame:
+# Raw data for all users and their attended events.
+def raw_matrix_events() -> pd.DataFrame:
 
-    # Convert into similarity matrix. (1 = Attended, 0 = Not Attended)
+    # For each cell, 1 = attended and 0 = not attended.
     merged_df = join_user_events()
     return pd.crosstab(merged_df["user"], merged_df["event"])
 
 
 
-# Similarity matrix for each user based on attended event tags.
-def similarity_matrix_eventTags() -> pd.DataFrame:
+# Raw data for all users and accumulated event tags.
+def raw_matrix_eventTags() -> pd.DataFrame:
 
     # Join "users" and "events" dataframes.
     user_events_df = join_user_events()
-
 
     # Join "events" and "tags" dataframes.
     eventTags_json = client.query("query:list", {"table_name": "eventTags"})
@@ -73,9 +76,8 @@ def similarity_matrix_eventTags() -> pd.DataFrame:
 
 
 
-
-# Similarity matrix for each user based on all post tags.
-def similarity_matrix_postTags() -> pd.DataFrame:
+# Rwa data for users and accumulated post tags.
+def raw_matrix_postTags() -> pd.DataFrame:
 
     # Join "users" and "posts" dataframes.
     users_json = client.query("query:list", {"table_name": "users"})
@@ -89,7 +91,6 @@ def similarity_matrix_postTags() -> pd.DataFrame:
     users_posts_df = pd.merge(left = users_df, right = posts_df, left_on = "_id", right_on = "authorId")
     users_posts_df = users_posts_df.rename(columns={"_id_y":"postId"})
 
-
     # Join "postTags" and "tags" dataframes
     postTags_json = client.query("query:list", {"table_name": "postTags"})
     postTags_df = pd.json_normalize(postTags_json)
@@ -102,35 +103,27 @@ def similarity_matrix_postTags() -> pd.DataFrame:
     post_tags_df = pd.merge(left = postTags_df, right = tags_df, left_on = "tagId", right_on = "_id")
     post_tags_df = post_tags_df[["postId", "name"]]
 
-
     # Join newly-made "user_posts" and "post_tags" dataframe.
     merged_df = pd.merge(left = users_posts_df, right = post_tags_df, left_on = "postId", right_on = "postId")
     merged_df = merged_df[["name_x", "name_y"]]
-    merged_df = merged_df.rename(columns = {"name_x":"user_name", "name_y":"tag_name"})
+    merged_df = merged_df.rename(columns = {"name_x":"user", "name_y":"tag_name"})
 
-    return pd.crosstab(merged_df["user_name"], merged_df["tag_name"])
-
-
+    return pd.crosstab(merged_df["user"], merged_df["tag_name"])
 
 
-def most_similar_users(df: pd.DataFrame, target_user: str, user_return_amt: int) -> list:
 
-    if user_return_amt > len(df):
-        raise Exception("ERROR: user_return_amt exceeds DataFrame size")
-    
+# Convert raw matrices into similarity matrices via cosine similarity.
+def similarity_score(df: pd.DataFrame, target_user: str) -> pd.DataFrame:
+
     try:
-        # Compute similarity matrix and transform into dataframe.
         user_similarity_np = cosine_similarity(df)
         user_similarity_df = pd.DataFrame(user_similarity_np,     
                                           index   = df.index,
                                           columns = df.index )
         
-        # Sort top 'user_return_amt' users and return new dataframe.
         similar_users = (
             user_similarity_df[target_user]
             .drop(target_user))
-            # .sort_values(ascending=False)
-            # .head(user_return_amt))
         similar_users = pd.DataFrame({"similarity_score": similar_users})
         return similar_users
     
@@ -139,26 +132,63 @@ def most_similar_users(df: pd.DataFrame, target_user: str, user_return_amt: int)
     
     
 
+# Factors in all three similarity matrices, weighted, for a final table.
+def sim_scores_weighted(events: pd.DataFrame, event_tags: pd.DataFrame, post_tags:pd.DataFrame) -> pd.DataFrame:
+
+    EVENTS_WEIGHT     =  0.80
+    EVENT_TAGS_WEIGHT =  0.15
+    POST_TAGS_WEIGHT  =  0.05
+
+    return events * EVENTS_WEIGHT + event_tags * EVENT_TAGS_WEIGHT + post_tags * POST_TAGS_WEIGHT
+    
+
+
+# Send recommended friends to Convex server.
+def upsert_friend_recs(sim_scores: pd.DataFrame, user: str, rec_amt: int):
+
+    # Technically doesn't break if rec_amt exceeds, but being extra safe.
+    if rec_amt > len(sim_scores):
+        raise Exception("rec_amt is higher than rows in sim_scores.")
+
+    # Sort top rec_amt recommended users, create list.
+    top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False).head(rec_amt)
+    top_sim_scores = top_sim_scores.index.tolist()
+
+    # Add row if user doesn't have any recommended friends, if they do, update names if values changed.
+    client.mutation("friendRecs:upsert", {"user": user, 
+                                          "rec1": top_sim_scores[0],
+                                          "rec2": top_sim_scores[1],
+                                          "rec3": top_sim_scores[2],
+                                          "rec4": top_sim_scores[3],
+                                          "rec5": top_sim_scores[4]
+                                          })  
+    return
+
+
+
 def main():
 
-    client.mutation("seed:seed")
-    user = "Manjot"
+    # client.mutation("seed:seed") 
+    USER     = "Manjot"
+    REC_AMT  = 5  # friendRec schema only currently supports 5. 
+    
+    if not user_exists(USER):
+        raise Exception(f"\"{USER}\" cannot be found in users.")
 
-    sim_scores_events_df = similarity_matrix_events()
-    sim_scores_events_df = most_similar_users(sim_scores_events_df, user, 5)
-    print(f"\n\nAttended Events for {user}:")
-    print(sim_scores_events_df)
+    raw_events_df          = raw_matrix_events()
+    simscores_events_df    = similarity_score(raw_events_df, USER)
+    # print(f"\nRecs based on Attended Events for {USER}: {simscores_events_df}")
 
-    sim_scores_event_tags_df = similarity_matrix_eventTags()
-    sim_scores_event_tags_df = most_similar_users(sim_scores_event_tags_df, user, 5)
-    print(f"\nRecs based on Event Tags for {user}:")
-    print(sim_scores_event_tags_df)
+    raw_eventTags_df       = raw_matrix_eventTags()
+    simscores_eventTags_df = similarity_score(raw_eventTags_df, USER)
+    # print(f"\nRecs based on Event Tags for {USER}: {simscores_eventTags_df}")
 
-    sim_scores_post_tags_df = similarity_matrix_postTags()
-    sim_scores_post_tags_df = most_similar_users(sim_scores_post_tags_df, user, 3)
-    print(f"\nPost Tags for {user}:")
-    print(sim_scores_post_tags_df)
+    raw_postTags_df        = raw_matrix_postTags()
+    simscores_postTags_df  = similarity_score(raw_postTags_df, USER)
+    # print(f"\nRecs based on Post Tags for {USER}: {simscores_postTags_df}")
 
+    simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
+    upsert_friend_recs(simscores_weighted, USER, REC_AMT)
 
 
 
