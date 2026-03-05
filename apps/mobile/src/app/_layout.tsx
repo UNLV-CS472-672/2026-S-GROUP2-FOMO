@@ -1,21 +1,59 @@
 import '@/global.css';
 
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import { useConvexAuth } from 'convex/react';
+import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-
+import { ActivityIndicator, View, useColorScheme } from 'react-native';
 import 'react-native-reanimated';
 
-// providers
 import ClerkProvider from '@/integrations/clerk/provider';
 import ConvexProvider from '@/integrations/convex/provider';
+import GuestProvider, { useGuest } from '@/integrations/session/provider';
 
-// hoooks
-import { useColorScheme } from '@/hooks/use-color-scheme';
+function RootNavigator() {
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { isGuestMode, isGuestLoading } = useGuest();
+  const segments = useSegments();
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+  const authState =
+    isLoading || isGuestLoading
+      ? 'loading'
+      : isAuthenticated
+        ? 'authenticated'
+        : isGuestMode
+          ? 'guest'
+          : 'unauthenticated';
+
+  if (authState === 'loading') {
+    return (
+      <View className="flex-1 items-center justify-center bg-app-background">
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (authState === 'authenticated' && segments[0] !== '(tabs)') {
+    return <Redirect href="/(tabs)/(map)" />;
+  }
+
+  if (authState === 'unauthenticated' && segments[0] !== '(auth)') {
+    return <Redirect href="/(auth)/welcome" />;
+  }
+
+  return (
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="feed/[h3Id]"
+          options={{ presentation: 'modal', headerShown: true, title: 'Feed' }}
+        />
+      </Stack>
+    </>
+  );
+}
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -25,15 +63,10 @@ export default function RootLayout() {
     <ThemeProvider value={theme}>
       <ClerkProvider>
         <ConvexProvider>
-          <Stack
-            screenOptions={{
-              contentStyle: { backgroundColor: theme.colors.background },
-            }}
-          >
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="feed/[h3Id]" options={{ presentation: 'modal', title: 'Feed' }} />
-          </Stack>
-          <StatusBar style="auto" />
+          <GuestProvider>
+            <RootNavigator />
+            <StatusBar style="auto" />
+          </GuestProvider>
         </ConvexProvider>
       </ClerkProvider>
     </ThemeProvider>
