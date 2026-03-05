@@ -1,12 +1,21 @@
 import { useAuth } from '@clerk/clerk-expo';
-import { ConvexQueryClient } from '@convex-dev/react-query';
+import { ConvexReactClient } from 'convex/react';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 
-const convexQueryClient = new ConvexQueryClient(process.env.EXPO_PUBLIC_CONVEX_URL);
+const convexUrl = process.env.EXPO_PUBLIC_CONVEX_URL;
+
+if (!convexUrl) {
+  throw new Error('Missing EXPO_PUBLIC_CONVEX_URL in your app env');
+}
+
+const convex = new ConvexReactClient(convexUrl);
 
 export default function AppConvexProvider({ children }: { children: React.ReactNode }) {
+  const auth = useAuth();
+  const getAuth = () => auth;
+
   return (
-    <ConvexProviderWithClerk client={convexQueryClient.convexClient} useAuth={useAuth}>
+    <ConvexProviderWithClerk client={convex} useAuth={getAuth}>
       {children}
     </ConvexProviderWithClerk>
   );
