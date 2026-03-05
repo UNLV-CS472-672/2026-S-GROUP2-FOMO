@@ -1,4 +1,4 @@
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useConvexAuth } from 'convex/react';
 import { useRouter } from 'expo-router';
 import { Text } from 'react-native';
@@ -12,11 +12,9 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { signOut, userId } = useAuth();
+  const { user } = useUser();
+  const username = user?.username ?? 'Guest';
   const { isGuestMode } = useGuest();
-
-  const handleLogout = async () => {
-    await signOut();
-  };
 
   return (
     <Screen className="items-center justify-center gap-3 p-6">
@@ -31,7 +29,8 @@ export default function ProfileScreen() {
           <Text className="text-center text-base leading-6 text-app-text">
             {`isAuthenticated: ${isAuthenticated}\n`}
             {`isLoading: ${isLoading}\n`}
-            {`userId: ${userId}`}
+            {`userId: ${userId}\n`}
+            {`username: ${username}`}
           </Text>
 
           <Button
@@ -50,7 +49,7 @@ export default function ProfileScreen() {
             <ButtonText variant="secondary">Settings</ButtonText>
           </Button>
 
-          <Button variant="secondary" className="mt-2" onPress={handleLogout}>
+          <Button variant="secondary" className="mt-2" onPress={() => signOut()}>
             <ButtonText variant="secondary">Log out</ButtonText>
           </Button>
         </>

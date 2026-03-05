@@ -1,186 +1,45 @@
-import { SocialButton } from '@/components/auth/social-button';
 import { Button, ButtonText } from '@/components/ui/button';
-import { isClerkAPIResponseError, useAuth, useSignIn, useSSO } from '@clerk/clerk-expo';
-import type { ClerkAPIError } from '@clerk/types';
+import { SocialButton } from '@/features/auth/components/social-button';
+import { useLogin } from '@/features/auth/hooks/use-login';
+import { useSso } from '@/features/auth/hooks/use-sso';
 import { Ionicons } from '@expo/vector-icons';
-import * as Linking from 'expo-linking';
 import { Link } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   Text,
   TextInput,
-  TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
 
-WebBrowser.maybeCompleteAuthSession();
-
-type SignInErrorsState = {
-  identifier?: string;
-  password?: string;
-  code?: string;
-  global?: string;
-};
-
 export default function LoginScreen() {
-  const { isSignedIn } = useAuth();
-  const { startSSOFlow } = useSSO();
-  const { isLoaded, signIn, setActive } = useSignIn();
-
-  const [loadingProvider, setLoadingProvider] = useState<'google' | null>(null);
-  const [authMethod, setAuthMethod] = useState<'password' | 'email_code'>('password');
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
-  const [code, setCode] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCodeSent, setIsCodeSent] = useState(false);
-  const [errors, setErrors] = useState<SignInErrorsState | null>(null);
+  const {
+    state,
+    shouldShowAuthLoader,
+    authLoadingMessage,
+    setAuthMethod,
+    setIdentifier,
+    setPassword,
+    setCode,
+    clearErrors,
+    handleSsoError,
+    onSignInPress,
+    onSendCodePress,
+    onVerifyCodePress,
+  } = useLogin();
+  const { loadingProvider, signInWith } = useSso({
+    clearErrors,
+    handleError: handleSsoError,
+    mode: 'signin',
+  });
 
   const passwordInputRef = useRef<TextInput | null>(null);
-
-  const handleClerkError = (err: unknown) => {
-    if (isClerkAPIResponseError(err)) {
-      const apiErrors = (err.errors || []) as ClerkAPIError[];
-      const nextErrors: SignInErrorsState = {};
-
-      apiErrors.forEach((error) => {
-        const meta = (error.meta || {}) as { paramName?: string };
-        const paramName = meta.paramName;
-        const message = error.longMessage || error.message;
-
-        if (paramName === 'identifier') {
-          nextErrors.identifier = message;
-        } else if (paramName === 'password') {
-          nextErrors.password = message;
-        } else if (paramName === 'code') {
-          nextErrors.code = message;
-        } else {
-          nextErrors.global = message;
-        }
-      });
-
-      setErrors(nextErrors);
-    } else {
-      setErrors({ global: 'Something went wrong. Please try again.' });
-    }
-  };
-
-  const signInWith = async (provider: 'google') => {
-    if (isSignedIn || loadingProvider) return;
-
-    setLoadingProvider(provider);
-    setErrors(null);
-
-    try {
-      const redirectUrl = Linking.createURL('/', { scheme: 'mobile' });
-
-      const { createdSessionId, setActive: ssoSetActive } = await startSSOFlow({
-        strategy: `oauth_${provider}`,
-        redirectUrl,
-      });
-
-      if (createdSessionId) {
-        await ssoSetActive?.({ session: createdSessionId });
-      }
-    } catch (err) {
-      handleClerkError(err);
-    } finally {
-      setLoadingProvider(null);
-    }
-  };
-
-  const onSignInPress = async () => {
-    if (authMethod !== 'password') return;
-
-    if (!isLoaded || isSignedIn) return;
-
-    setErrors(null);
-    setIsSubmitting(true);
-
-    try {
-      const result = await signIn.create({
-        identifier,
-        password,
-      });
-
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
-      }
-    } catch (err) {
-      handleClerkError(err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const onSendCodePress = async () => {
-    if (!isLoaded || isSignedIn || !identifier) return;
-
-    setErrors(null);
-    setIsSubmitting(true);
-
-    try {
-      await signIn.create({
-        identifier,
-      });
-
-      const emailFactor = signIn.supportedFirstFactors?.find(
-        (factor) => factor.strategy === 'email_code'
-      );
-
-      if (!emailFactor || !('emailAddressId' in emailFactor) || !emailFactor.emailAddressId) {
-        setErrors({
-          global: 'Email code sign-in is not available for this account.',
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      await signIn.prepareFirstFactor({
-        strategy: 'email_code',
-        emailAddressId: emailFactor.emailAddressId,
-      });
-
-      setIsCodeSent(true);
-    } catch (err) {
-      handleClerkError(err);
-      setIsCodeSent(false);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const onVerifyCodePress = async () => {
-    if (!isLoaded || isSignedIn || !code) return;
-
-    setErrors(null);
-    setIsSubmitting(true);
-
-    try {
-      const result = await signIn.attemptFirstFactor({
-        strategy: 'email_code',
-        code,
-      });
-
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
-      }
-    } catch (err) {
-      handleClerkError(err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const shouldShowAuthLoader = !isLoaded || isSignedIn;
-  const authLoadingMessage = isSignedIn ? 'Finishing sign in...' : 'Loading authentication...';
+  const [showPassword, setShowPassword] = useState(false);
 
   if (shouldShowAuthLoader) {
     return (
@@ -202,17 +61,17 @@ export default function LoginScreen() {
             Log in to <Text className="font-heading font-black text-4xl">fomo</Text>
           </Text>
 
-          {errors?.global && (
+          {state.errors?.global ? (
             <View className="mt-4 rounded-xl bg-red-50 px-4 py-3">
-              <Text className="text-sm font-medium text-red-800">{errors.global}</Text>
+              <Text className="text-sm font-medium text-red-800">{state.errors.global}</Text>
             </View>
-          )}
+          ) : null}
 
           <View className="mt-8">
             <SocialButton
               onPress={() => signInWith('google')}
               loading={loadingProvider === 'google'}
-              disabled={loadingProvider !== null || isSubmitting}
+              disabled={loadingProvider !== null || state.isSubmitting}
             />
           </View>
 
@@ -223,43 +82,34 @@ export default function LoginScreen() {
           </View>
 
           <View className="mb-4 flex-row rounded-full bg-app-icon/10 p-1">
-            <TouchableOpacity
+            <Pressable
               className={`flex-1 rounded-full py-2 ${
-                authMethod === 'password' ? 'bg-app-text' : ''
+                state.authMethod === 'password' ? 'bg-app-text' : ''
               }`}
-              onPress={() => {
-                setAuthMethod('password');
-                setErrors(null);
-                setCode('');
-                setIsCodeSent(false);
-              }}
+              onPress={() => setAuthMethod('password')}
             >
               <Text
                 className={`text-center text-sm font-semibold ${
-                  authMethod === 'password' ? 'text-app-background' : 'text-app-text'
+                  state.authMethod === 'password' ? 'text-app-background' : 'text-app-text'
                 }`}
               >
                 Password
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               className={`flex-1 rounded-full py-2 ${
-                authMethod === 'email_code' ? 'bg-app-text' : ''
+                state.authMethod === 'email_code' ? 'bg-app-text' : ''
               }`}
-              onPress={() => {
-                setAuthMethod('email_code');
-                setErrors(null);
-                setPassword('');
-              }}
+              onPress={() => setAuthMethod('email_code')}
             >
               <Text
                 className={`text-center text-sm font-semibold ${
-                  authMethod === 'email_code' ? 'text-app-background' : 'text-app-text'
+                  state.authMethod === 'email_code' ? 'text-app-background' : 'text-app-text'
                 }`}
               >
                 Email code
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <View>
@@ -267,37 +117,33 @@ export default function LoginScreen() {
             <View className="mt-2 rounded-xl border border-app-icon/30 bg-app-background px-4">
               <TextInput
                 autoCapitalize="none"
-                value={identifier}
+                value={state.identifier}
                 placeholder="you@example.com"
                 placeholderTextColor="#9CA3AF"
-                onChangeText={(text) => {
-                  setIdentifier(text);
-                  setErrors(null);
-                  setIsCodeSent(false);
-                }}
+                onChangeText={setIdentifier}
                 keyboardType="email-address"
                 className="py-3 text-base text-app-text"
                 returnKeyType="next"
                 onSubmitEditing={() => {
-                  if (authMethod === 'password') {
+                  if (state.authMethod === 'password') {
                     passwordInputRef.current?.focus();
                   }
                 }}
               />
             </View>
-            {errors?.identifier && (
-              <Text className="mt-1 text-xs text-red-600">{errors.identifier}</Text>
-            )}
+            {state.errors?.identifier ? (
+              <Text className="mt-1 text-xs text-red-600">{state.errors.identifier}</Text>
+            ) : null}
           </View>
 
-          {authMethod === 'password' ? (
+          {state.authMethod === 'password' ? (
             <>
               <View className="mt-4">
                 <Text className="text-sm font-semibold text-app-text">Password</Text>
                 <View className="mt-2 flex-row items-center rounded-xl border border-app-icon/30 bg-app-background px-4">
                   <TextInput
                     ref={passwordInputRef}
-                    value={password}
+                    value={state.password}
                     placeholder="Enter your password"
                     placeholderTextColor="#9CA3AF"
                     secureTextEntry={!showPassword}
@@ -306,18 +152,21 @@ export default function LoginScreen() {
                     returnKeyType="done"
                     onSubmitEditing={onSignInPress}
                   />
-                  <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)}>
+                  <Pressable onPress={() => setShowPassword((prev) => !prev)}>
                     <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#9CA3AF" />
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
-                {errors?.password && (
-                  <Text className="mt-1 text-xs text-red-600">{errors.password}</Text>
-                )}
+                {state.errors?.password ? (
+                  <Text className="mt-1 text-xs text-red-600">{state.errors.password}</Text>
+                ) : null}
               </View>
 
               <View className="mt-6">
-                <Button onPress={onSignInPress} disabled={!identifier || !password || isSubmitting}>
-                  <ButtonText>{isSubmitting ? 'Logging in...' : 'Log in'}</ButtonText>
+                <Button
+                  onPress={onSignInPress}
+                  disabled={!state.identifier.trim() || !state.password || state.isSubmitting}
+                >
+                  <ButtonText>{state.isSubmitting ? 'Logging in...' : 'Log in'}</ButtonText>
                 </Button>
               </View>
             </>
@@ -327,7 +176,7 @@ export default function LoginScreen() {
                 <Text className="text-sm font-semibold text-app-text">Verification code</Text>
                 <View className="mt-2 rounded-xl border border-app-icon/30 bg-app-background px-4">
                   <TextInput
-                    value={code}
+                    value={state.code}
                     placeholder="Enter the 6-digit code"
                     placeholderTextColor="#9CA3AF"
                     keyboardType="number-pad"
@@ -336,9 +185,12 @@ export default function LoginScreen() {
                     maxLength={6}
                     returnKeyType="done"
                     onSubmitEditing={onVerifyCodePress}
+                    editable={state.isCodeSent}
                   />
                 </View>
-                {errors?.code && <Text className="mt-1 text-xs text-red-600">{errors.code}</Text>}
+                {state.errors?.code ? (
+                  <Text className="mt-1 text-xs text-red-600">{state.errors.code}</Text>
+                ) : null}
               </View>
 
               <View className="mt-6 flex-row gap-3">
@@ -346,25 +198,27 @@ export default function LoginScreen() {
                   <Button
                     variant="secondary"
                     onPress={onSendCodePress}
-                    disabled={!identifier || isSubmitting || isCodeSent}
+                    disabled={!state.identifier.trim() || state.isSubmitting || state.isCodeSent}
                     className="inline-flex flex-row gap-2"
                   >
-                    {isSubmitting && (
+                    {state.isSubmitting ? (
                       <View className="mt-2 items-center">
                         <ActivityIndicator size={10} color="#4B5563" />
                       </View>
-                    )}
+                    ) : null}
                     <ButtonText variant="secondary">
-                      {isCodeSent ? 'Code sent' : 'Send code'}
+                      {state.isCodeSent ? 'Code sent' : 'Send code'}
                     </ButtonText>
                   </Button>
                 </View>
                 <View className="flex-1">
                   <Button
                     onPress={onVerifyCodePress}
-                    disabled={!code || !isCodeSent || isSubmitting}
+                    disabled={!state.code || !state.isCodeSent || state.isSubmitting}
                   >
-                    <ButtonText>{isSubmitting ? 'Verifying...' : 'Log in with code'}</ButtonText>
+                    <ButtonText>
+                      {state.isSubmitting ? 'Verifying...' : 'Log in with code'}
+                    </ButtonText>
                   </Button>
                 </View>
               </View>

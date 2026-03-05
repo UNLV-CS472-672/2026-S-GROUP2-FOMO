@@ -9,6 +9,7 @@ type SocialButtonProps = {
   mode?: 'signin' | 'signup';
 };
 
+// TODO: add more providers if needed
 export function SocialButton({ onPress, loading, disabled, mode = 'signin' }: SocialButtonProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';

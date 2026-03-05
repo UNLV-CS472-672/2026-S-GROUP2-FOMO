@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "fomo",
     "slug": "fomo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "fomo",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "platforms": ["ios", "android"],

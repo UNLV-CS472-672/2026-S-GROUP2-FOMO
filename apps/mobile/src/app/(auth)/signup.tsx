@@ -1,218 +1,52 @@
-import { SocialButton } from '@/components/auth/social-button';
 import { Button, ButtonText } from '@/components/ui/button';
-import { isClerkAPIResponseError, useAuth, useSignUp, useSSO } from '@clerk/clerk-expo';
-import type { ClerkAPIError } from '@clerk/types';
+import { SocialButton } from '@/features/auth/components/social-button';
+import { useSignup } from '@/features/auth/hooks/use-signup';
+import { useSso } from '@/features/auth/hooks/use-sso';
 import { Ionicons } from '@expo/vector-icons';
-import * as Linking from 'expo-linking';
 import { Link } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   Text,
   TextInput,
-  TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
 
-WebBrowser.maybeCompleteAuthSession();
-
-type SignUpErrorsState = {
-  username?: string;
-  email?: string;
-  password?: string;
-  code?: string;
-  global?: string;
-};
-
-const RESEND_COOLDOWN_SECONDS = 30;
-
 export default function Page() {
-  const { isSignedIn } = useAuth();
-  const { isLoaded, signUp, setActive } = useSignUp();
-  const { startSSOFlow } = useSSO();
-
-  const [username, setUsername] = useState('');
-  const [emailAddress, setEmailAddress] = useState('');
-  const [password, setPassword] = useState('');
-  const [pendingVerification, setPendingVerification] = useState(false);
-  const [code, setCode] = useState('');
-  const [errors, setErrors] = useState<SignUpErrorsState | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [isResending, setIsResending] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const [codeSentMessage, setCodeSentMessage] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [loadingGoogle, setLoadingGoogle] = useState(false);
+  const {
+    state,
+    shouldShowAuthLoader,
+    authLoadingMessage,
+    setUsername,
+    setEmailAddress,
+    setPassword,
+    setCode,
+    clearErrors,
+    handleSsoError,
+    onSignUpPress,
+    onVerifyPress,
+    onResendPress,
+  } = useSignup();
+  const {
+    loadingProvider,
+    signInWith,
+    pendingUsernameSetup,
+    isCompletingUsername,
+    completeSignUpWithUsername,
+  } = useSso({
+    clearErrors,
+    handleError: handleSsoError,
+    mode: 'signup',
+  });
 
   const emailInputRef = useRef<TextInput | null>(null);
   const passwordInputRef = useRef<TextInput | null>(null);
-  const resendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const handleClerkError = (err: unknown, context: 'signup' | 'verify' | 'resend') => {
-    if (isClerkAPIResponseError(err)) {
-      const apiErrors = (err.errors || []) as ClerkAPIError[];
-      const nextErrors: SignUpErrorsState = {};
-
-      apiErrors.forEach((error) => {
-        const meta = (error.meta || {}) as { paramName?: string };
-        const paramName = meta.paramName;
-        const message = error.longMessage || error.message;
-
-        if (paramName === 'username') {
-          nextErrors.username = message;
-        } else if (paramName === 'email_address') {
-          nextErrors.email = message;
-        } else if (paramName === 'password') {
-          nextErrors.password = message;
-        } else if (paramName === 'code') {
-          nextErrors.code = message;
-        } else if (context === 'verify' && !paramName) {
-          nextErrors.code = message || 'Verification failed. Please try again.';
-        } else {
-          nextErrors.global = message;
-        }
-      });
-
-      setErrors(nextErrors);
-    } else {
-      setErrors({
-        global: 'Something went wrong. Please try again.',
-      });
-    }
-  };
-
-  const startResendCooldown = () => {
-    setResendCooldown(RESEND_COOLDOWN_SECONDS);
-
-    if (resendIntervalRef.current) {
-      clearInterval(resendIntervalRef.current);
-    }
-
-    const intervalId = setInterval(() => {
-      setResendCooldown((prev) => {
-        if (prev <= 1) {
-          clearInterval(intervalId);
-          return 0;
-        }
-
-        return prev - 1;
-      });
-    }, 1000);
-
-    resendIntervalRef.current = intervalId;
-  };
-
-  useEffect(() => {
-    return () => {
-      if (resendIntervalRef.current) {
-        clearInterval(resendIntervalRef.current);
-      }
-    };
-  }, []);
-
-  const signUpWithGoogle = async () => {
-    if (isSignedIn || loadingGoogle) return;
-
-    setLoadingGoogle(true);
-    setErrors(null);
-
-    try {
-      const redirectUrl = Linking.createURL('/', { scheme: 'mobile' });
-
-      const { createdSessionId, setActive: ssoSetActive } = await startSSOFlow({
-        strategy: 'oauth_google',
-        redirectUrl,
-      });
-
-      if (createdSessionId) {
-        await ssoSetActive?.({ session: createdSessionId });
-      }
-    } catch (err) {
-      handleClerkError(err, 'signup');
-    } finally {
-      setLoadingGoogle(false);
-    }
-  };
-
-  const onSignUpPress = async () => {
-    if (!isLoaded) return;
-    if (isSignedIn) return;
-
-    setErrors(null);
-    setIsSubmitting(true);
-
-    try {
-      await signUp.create({
-        username,
-        emailAddress,
-        password,
-      });
-
-      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
-
-      setPendingVerification(true);
-      setCodeSentMessage('We sent a verification code to your email address.');
-      startResendCooldown();
-    } catch (err) {
-      handleClerkError(err, 'signup');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const onVerifyPress = async () => {
-    if (!isLoaded) return;
-    if (isSignedIn) return;
-
-    setErrors(null);
-    setIsVerifying(true);
-
-    try {
-      const signUpAttempt = await signUp.attemptEmailAddressVerification({
-        code,
-      });
-
-      if (signUpAttempt.status === 'complete') {
-        await setActive({
-          session: signUpAttempt.createdSessionId,
-        });
-      } else {
-        console.error(JSON.stringify(signUpAttempt, null, 2));
-      }
-    } catch (err) {
-      handleClerkError(err, 'verify');
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
-  const onResendPress = async () => {
-    if (!isLoaded) return;
-    if (isSignedIn) return;
-    if (resendCooldown > 0 || isResending) return;
-
-    setErrors(null);
-    setIsResending(true);
-
-    try {
-      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
-      setCodeSentMessage('Verification code resent.');
-      startResendCooldown();
-    } catch (err) {
-      handleClerkError(err, 'resend');
-    } finally {
-      setIsResending(false);
-    }
-  };
-
-  const shouldShowAuthLoader = !isLoaded || isSignedIn;
-  const authLoadingMessage = isSignedIn ? 'Finishing sign in...' : 'Loading authentication...';
+  const [showPassword, setShowPassword] = useState(false);
 
   if (shouldShowAuthLoader) {
     return (
@@ -230,29 +64,29 @@ export default function Page() {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View className="flex-1 justify-center px-8">
-          {pendingVerification ? (
+          {state.pendingVerification ? (
             <View className="w-full">
               <Text className="text-3xl font-bold text-app-text">Verify your email</Text>
 
               <Text className="mt-2 text-base text-app-icon">
-                We sent a verification code to {emailAddress || 'your email address'}.
+                We sent a verification code to {state.emailAddress || 'your email address'}.
               </Text>
 
-              {codeSentMessage && (
-                <Text className="mt-1 text-sm text-app-text">{codeSentMessage}</Text>
-              )}
+              {state.codeSentMessage ? (
+                <Text className="mt-1 text-sm text-app-text">{state.codeSentMessage}</Text>
+              ) : null}
 
-              {errors?.global && (
+              {state.errors?.global ? (
                 <View className="mt-4 rounded-xl bg-red-50 px-4 py-3">
-                  <Text className="text-sm font-medium text-red-800">{errors.global}</Text>
+                  <Text className="text-sm font-medium text-red-800">{state.errors.global}</Text>
                 </View>
-              )}
+              ) : null}
 
               <View className="mt-6">
                 <Text className="text-sm font-semibold text-app-text">Verification code</Text>
                 <View className="mt-2 rounded-xl border border-app-icon/30 bg-app-background px-4">
                   <TextInput
-                    value={code}
+                    value={state.code}
                     placeholder="Enter your verification code"
                     placeholderTextColor="#9CA3AF"
                     onChangeText={setCode}
@@ -263,31 +97,73 @@ export default function Page() {
                     onSubmitEditing={onVerifyPress}
                   />
                 </View>
-                {errors?.code && <Text className="mt-1 text-xs text-red-600">{errors.code}</Text>}
+                {state.errors?.code ? (
+                  <Text className="mt-1 text-xs text-red-600">{state.errors.code}</Text>
+                ) : null}
               </View>
 
               <View className="mt-4 flex-row items-center justify-between">
-                <TouchableOpacity
-                  onPress={onResendPress}
-                  disabled={resendCooldown > 0 || isResending}
-                >
+                <Pressable onPress={onResendPress} disabled={state.isResending}>
                   <Text
                     className={
-                      resendCooldown > 0 || isResending
+                      state.isResending
                         ? 'text-sm text-app-icon'
                         : 'text-sm font-semibold text-app-tint'
                     }
                   >
-                    {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
+                    {state.isResending ? 'Resending code...' : 'Resend code'}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
 
-                {isResending && <ActivityIndicator size="small" color="#4B5563" />}
+                {state.isResending ? <ActivityIndicator size="small" color="#4B5563" /> : null}
               </View>
 
               <View className="mt-6">
-                <Button onPress={onVerifyPress} disabled={!code || isVerifying}>
-                  <ButtonText>{isVerifying ? 'Verifying...' : 'Verify'}</ButtonText>
+                <Button onPress={onVerifyPress} disabled={!state.code || state.isVerifying}>
+                  <ButtonText>{state.isVerifying ? 'Verifying...' : 'Verify'}</ButtonText>
+                </Button>
+              </View>
+            </View>
+          ) : pendingUsernameSetup ? (
+            <View className="w-full">
+              <Text className="text-3xl font-bold text-app-text">Choose a username</Text>
+              <Text className="mt-2 text-base text-app-icon">
+                One last step before we finish creating your account.
+              </Text>
+
+              {state.errors?.global ? (
+                <View className="mt-4 rounded-xl bg-red-50 px-4 py-3">
+                  <Text className="text-sm font-medium text-red-800">{state.errors.global}</Text>
+                </View>
+              ) : null}
+
+              <View className="mt-8">
+                <Text className="text-sm font-semibold text-app-text">Username</Text>
+                <View className="mt-2 rounded-xl border border-app-icon/30 bg-app-background px-4">
+                  <TextInput
+                    autoCapitalize="none"
+                    value={state.username}
+                    placeholder="cooluser123"
+                    placeholderTextColor="#9CA3AF"
+                    onChangeText={setUsername}
+                    className="py-3 text-base text-app-text"
+                    returnKeyType="done"
+                    onSubmitEditing={() => completeSignUpWithUsername(state.username)}
+                  />
+                </View>
+                {state.errors?.username ? (
+                  <Text className="mt-1 text-xs text-red-600">{state.errors.username}</Text>
+                ) : null}
+              </View>
+
+              <View className="mt-6">
+                <Button
+                  onPress={() => completeSignUpWithUsername(state.username)}
+                  disabled={!state.username.trim() || isCompletingUsername}
+                >
+                  <ButtonText>
+                    {isCompletingUsername ? 'Finishing account setup...' : 'Continue'}
+                  </ButtonText>
                 </Button>
               </View>
             </View>
@@ -295,18 +171,18 @@ export default function Page() {
             <View className="w-full">
               <Text className="text-3xl font-bold text-app-text">Create your account</Text>
 
-              {errors?.global && (
+              {state.errors?.global ? (
                 <View className="mt-4 rounded-xl bg-red-50 px-4 py-3">
-                  <Text className="text-sm font-medium text-red-800">{errors.global}</Text>
+                  <Text className="text-sm font-medium text-red-800">{state.errors.global}</Text>
                 </View>
-              )}
+              ) : null}
 
               <View className="mt-8">
                 <SocialButton
                   mode="signup"
-                  onPress={signUpWithGoogle}
-                  loading={loadingGoogle}
-                  disabled={loadingGoogle || isSubmitting}
+                  onPress={() => signInWith('google')}
+                  loading={loadingProvider === 'google'}
+                  disabled={loadingProvider !== null || state.isSubmitting}
                 />
               </View>
 
@@ -321,7 +197,7 @@ export default function Page() {
                 <View className="mt-2 rounded-xl border border-app-icon/30 bg-app-background px-4">
                   <TextInput
                     autoCapitalize="none"
-                    value={username}
+                    value={state.username}
                     placeholder="cooluser123"
                     placeholderTextColor="#9CA3AF"
                     onChangeText={setUsername}
@@ -330,9 +206,9 @@ export default function Page() {
                     onSubmitEditing={() => emailInputRef.current?.focus()}
                   />
                 </View>
-                {errors?.username && (
-                  <Text className="mt-1 text-xs text-red-600">{errors.username}</Text>
-                )}
+                {state.errors?.username ? (
+                  <Text className="mt-1 text-xs text-red-600">{state.errors.username}</Text>
+                ) : null}
               </View>
 
               <View className="mt-4">
@@ -341,7 +217,7 @@ export default function Page() {
                   <TextInput
                     ref={emailInputRef}
                     autoCapitalize="none"
-                    value={emailAddress}
+                    value={state.emailAddress}
                     placeholder="you@example.com"
                     placeholderTextColor="#9CA3AF"
                     onChangeText={setEmailAddress}
@@ -351,7 +227,9 @@ export default function Page() {
                     onSubmitEditing={() => passwordInputRef.current?.focus()}
                   />
                 </View>
-                {errors?.email && <Text className="mt-1 text-xs text-red-600">{errors.email}</Text>}
+                {state.errors?.email ? (
+                  <Text className="mt-1 text-xs text-red-600">{state.errors.email}</Text>
+                ) : null}
               </View>
 
               <View className="mt-4">
@@ -359,7 +237,7 @@ export default function Page() {
                 <View className="mt-2 flex-row items-center rounded-xl border border-app-icon/30 bg-app-background px-4">
                   <TextInput
                     ref={passwordInputRef}
-                    value={password}
+                    value={state.password}
                     placeholder="Enter a password"
                     placeholderTextColor="#9CA3AF"
                     secureTextEntry={!showPassword}
@@ -368,29 +246,34 @@ export default function Page() {
                     returnKeyType="done"
                     onSubmitEditing={onSignUpPress}
                   />
-                  <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)}>
+                  <Pressable onPress={() => setShowPassword((prev) => !prev)}>
                     <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#9CA3AF" />
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
-                {errors?.password && (
-                  <Text className="mt-1 text-xs text-red-600">{errors.password}</Text>
-                )}
+                {state.errors?.password ? (
+                  <Text className="mt-1 text-xs text-red-600">{state.errors.password}</Text>
+                ) : null}
               </View>
 
               <View className="mt-6">
                 <Button
                   onPress={onSignUpPress}
-                  disabled={!username || !emailAddress || !password || isSubmitting}
+                  disabled={
+                    !state.username.trim() ||
+                    !state.emailAddress.trim() ||
+                    !state.password ||
+                    state.isSubmitting
+                  }
                 >
-                  <ButtonText>{isSubmitting ? 'Creating account...' : 'Continue'}</ButtonText>
+                  <ButtonText>{state.isSubmitting ? 'Creating account...' : 'Continue'}</ButtonText>
                 </Button>
               </View>
 
-              {isSubmitting && (
+              {state.isSubmitting ? (
                 <View className="mt-2 items-center">
                   <ActivityIndicator size="small" color="#4B5563" />
                 </View>
-              )}
+              ) : null}
 
               <View className="mt-8 flex-row justify-center">
                 <Text className="text-base text-app-text">Have an account? </Text>
