@@ -20,6 +20,8 @@
     "format": "turbo format && prettier --write '*.{cjs,json}' --ignore-unknown --no-error-on-unmatched-pattern",
     "format:check": "turbo format:check && prettier --check '*.{cjs,json}' --ignore-unknown --no-error-on-unmatched-pattern",
     "lint": "turbo lint",
+    "mobile:prebuild": "turbo run prebuild --filter=@fomo/mobile",
+    "mobile:prebuild:clean": "turbo run prebuild:clean --filter=@fomo/mobile",
     "prepare": "husky",
     "typecheck": "turbo typecheck"
   },
