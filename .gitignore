@@ -4,6 +4,7 @@
 node_modules
 .pnp
 .pnp.js
+.pnpm-store/
 
 # testing
 coverage
@@ -32,7 +33,14 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+apps/web/.env.local
 .env
 
 # turbo
 .turbo
+
+#user files
+.idea/
+
+#CICD testing
+.secrets
