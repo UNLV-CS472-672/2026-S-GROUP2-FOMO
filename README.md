@@ -53,7 +53,7 @@ This repo uses **t3-env** to validate env vars through the shared `@fomo/env` pa
 | `packages/backend/.env.example` | Backend – Convex auth (Clerk JWT)       |
 | `apps/mobile/.env.example`      | Mobile – Expo + Clerk + Convex + Mapbox |
 
-**Copy the relevant `.env.example` to `.env.local`** in each app directory (or use a root `.env.local`) and fill in values.
+**Copy the relevant `.env.example` to `.env.local`** in each app directory and fill in values.
 
 ### Variable reference
 
