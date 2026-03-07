@@ -1,6 +1,6 @@
 import { ScrollView, Text } from 'react-native';
 
-export default function FriendsScreen() {
+export default function FollowingScreen() {
   return (
     <ScrollView
       className="flex-1 bg-app-background"
