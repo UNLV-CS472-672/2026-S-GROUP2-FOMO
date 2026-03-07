@@ -1,14 +1,4 @@
-## PR Type
-
-<!-- Check all that apply. -->
-
-- [ ] Feature (new functionality)
-- [ ] Bug fix
-- [ ] Refactor (code change that neither fixes a bug nor adds a feature)
-- [ ] Documentation
-- [ ] Chore (dependencies, config, tooling, etc.)
-- [ ] Performance improvement
-- [ ] Style (formatting, whitespace, etc.)
+<!--Add necessary labels to the PR, this can describe the type of change, e.g. bug fix, feature, refactoring, etc. -->
 
 ## Summary
 
@@ -18,7 +8,7 @@
 
 <!-- Describe the problem or motivation. What gap does this address? Link to issues if applicable. -->
 
-## Description of changes
+## Changes
 
 <!-- List the main changes made. Use bullets for clarity. -->
 
@@ -26,7 +16,7 @@
 -
 -
 
-## UML Diagram
+## UML Diagram (optional)
 
 <!-- Add a UML diagram if applicable (e.g. Mermaid for architecture, flow, or structure). Delete this section if not needed. -->
 
@@ -34,7 +24,7 @@
 <!-- Add diagram here -->
 ```
 
-## How to test
+## Testing
 
 <!-- Step-by-step instructions for reviewers to verify the changes. -->
 
@@ -45,3 +35,7 @@
 ## Notes / Acknowledgments
 
 <!-- Optional: callouts, follow-ups, thanks, or other notes for reviewers. -->
+
+## References
+
+<!-- Optional: links to related issues, PRs, docs or other resources. -->
