@@ -31,6 +31,12 @@
     },
     "deploy": {
       "cache": false
+    },
+    "prebuild": {
+      "cache": false
+    },
+    "prebuild:clean": {
+      "cache": false
     }
   },
   "ui": "tui"
