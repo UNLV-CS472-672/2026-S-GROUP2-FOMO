@@ -5,18 +5,17 @@ A centralized hub for local events that would increase community engagement, att
 ## 📦 Repo Structure
 
 This monorepo contains:
-| Package | Description |
-| --------------- | ------------------------------------- |
-| `@fomo/backend` | Convex functions + DB schemas |
-| `@fomo/web` | Next.js web app |
-| `@fomo/mobile` | Expo mobile app |
-| `@fomo/env` | Typed environment config used by backend + web (+ mobile later) |
+
+| Package         | Description                                                     |
+| --------------- | --------------------------------------------------------------- |
+| `@fomo/backend` | Convex functions + DB schemas                                   |
+| `@fomo/web`     | Next.js web app                                                 |
+| `@fomo/mobile`  | Expo mobile app                                                 |
+| `@fomo/env`     | Typed environment config used by backend + web (+ mobile later) |
 
 ## ⚙️ Setup & Development
 
-<details>
-
-  <summary>View Instructions</summary>
+View Instructions
 
 ### Installation
 
@@ -46,16 +45,24 @@ pnpm dev:backend
 
 ## 🔐 Environment variables
 
-This repo uses **t3-env** to validate env vars through the shared `@fomo/env` package (`packages/env`):
+This repo uses **t3-env** to validate env vars through the shared `@fomo/env` package (`packages/env`). Example files:
 
-- **Backend env** – imported from `@fomo/env/backend` and used in Convex (for example in `auth.config.ts`):
-  - `NODE_ENV`: `"development" | "test" | "production"`
-  - `CLERK_JWT_ISSUER_DOMAIN`: Clerk JWT issuer domain, required.
-- **Web env** – imported from `@fomo/env/web` and used in the Next app (for example in the Convex client provider):
-  - `NODE_ENV`: `"development" | "test" | "production"`
-  - `NEXT_PUBLIC_CONVEX_URL`: URL for the Convex HTTP endpoint, required.
-- **Mobile env** – `@fomo/env/mobile` exists but currently has **no app-specific variables**; it’s ready for future `EXPO_PUBLIC_...` keys.
+| Location                        | Purpose                                   |
+| ------------------------------- | ----------------------------------------- |
+| `apps/web/.env.example`         | Web – Next.js + Clerk + Convex            |
+| `packages/backend/.env.example` | Backend – Convex auth (Clerk JWT)         |
+| `apps/mobile/.env.example`      | Mobile – ready for future `EXPO_PUBLIC_*` |
 
-Set these in your local `.env.local` / `.env` files or via deployment-specific env configuration (Convex dashboard, Vercel, EAS, etc.). If a required var is missing or invalid, the app will throw at startup instead of failing silently at runtime.
+**Copy the relevant `.env.example` to `.env.local`** in each app directory (or use a root `.env.local`) and fill in values.
 
-</details>
+### Variable reference
+
+| Variable                            | App     | Required | Description                                                                            |
+| ----------------------------------- | ------- | -------- | -------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_CONVEX_URL`            | Web     | Yes      | Convex HTTP endpoint (local: `http://127.0.0.1:3210`)                                  |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Web     | Yes      | Clerk publishable key (from [Clerk Dashboard](https://dashboard.clerk.com) → API Keys) |
+| `CLERK_SECRET_KEY`                  | Web     | Yes      | Clerk secret key (server-side)                                                         |
+| `CLERK_JWT_ISSUER_DOMAIN`           | Backend | Yes      | Clerk JWT issuer domain (e.g. `https://your-app.clerk.accounts.dev`)                   |
+| `EXPO_PUBLIC_*`                     | Mobile  | —        | Placeholder for future mobile env vars                                                 |
+
+If a required var is missing or invalid, the app will throw at startup instead of failing silently at runtime.
