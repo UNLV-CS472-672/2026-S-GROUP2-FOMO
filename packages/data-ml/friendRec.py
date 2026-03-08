@@ -180,15 +180,15 @@ def main():
 
     raw_events_df          = raw_matrix_events()
     simscores_events_df    = similarity_score(raw_events_df, USER)
-    # print(f"\nRecs based on Attended Events for {USER}: {simscores_events_df}")
+    print(f"\nRecs based on Attended Events for {USER}: {simscores_events_df}")
 
     raw_eventTags_df       = raw_matrix_eventTags()
     simscores_eventTags_df = similarity_score(raw_eventTags_df, USER)
-    # print(f"\nRecs based on Event Tags for {USER}: {simscores_eventTags_df}")
+    print(f"\nRecs based on Event Tags for {USER}: {simscores_eventTags_df}")
 
     raw_postTags_df        = raw_matrix_postTags()
     simscores_postTags_df  = similarity_score(raw_postTags_df, USER)
-    # print(f"\nRecs based on Post Tags for {USER}: {simscores_postTags_df}")
+    print(f"\nRecs based on Post Tags for {USER}: {simscores_postTags_df}")
 
     simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
     upsert_friend_recs(simscores_weighted, USER, REC_AMT)

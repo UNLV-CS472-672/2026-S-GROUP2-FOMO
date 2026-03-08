@@ -1,10 +1,9 @@
-import { v } from 'convex/values';
+import { v, Validator } from 'convex/values';
 import { query } from './_generated/server';
+import { TableNames } from "./_generated/dataModel";
 
 export const list = query({
-  args: v.object({
-    table_name: v.string(),
-  }),
+  args: {table_name: v.string() as Validator<TableNames>},
   handler: async (ctx, { table_name }) => {
     try {
       return await ctx.db.query(table_name).collect();
