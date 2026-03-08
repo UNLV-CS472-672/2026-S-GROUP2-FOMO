@@ -7,9 +7,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 # Checks if a name can be found in the "users" datatable.
 def user_exists(name: str) -> bool:
-    users_data = client.query("query:list", {"table_name": "users"})
-    users_df = pd.json_normalize(users_data)
-    return name in users_df["name"].values
+    return client.query("query:user", {"name": "seed|" + name.lower()}) is not None
     
 
 # Combines "users" and "events" into a single dataframe.
@@ -152,18 +150,20 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, user: str, rec_amt: int):
     # Technically doesn't break if rec_amt exceeds, but being extra safe.
     if rec_amt > len(sim_scores):
         raise Exception(f"rec_amt ({rec_amt}) exceeds available users ({len(sim_scores)}).")
+    
+    print(sim_scores)
+    
 
     # Sort top rec_amt recommended users, create list.
     top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False).head(rec_amt)
-    top_sim_scores = top_sim_scores.index.tolist()
+    top_sim_scores = [
+    {"userId": user, "score": float(score)}
+    for user, score in top_sim_scores["similarity_score"].items()
+]
 
     # Add row if user doesn't have any recommended friends, if they do, update names if values changed.
     client.mutation("friendRecs:upsert", {"user": user, 
-                                          "rec1": top_sim_scores[0],
-                                          "rec2": top_sim_scores[1],
-                                          "rec3": top_sim_scores[2],
-                                          "rec4": top_sim_scores[3],
-                                          "rec5": top_sim_scores[4]
+                                          "recs": top_sim_scores
                                           })  
     return
 

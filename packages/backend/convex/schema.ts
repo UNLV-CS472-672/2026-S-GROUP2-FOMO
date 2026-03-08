@@ -5,7 +5,9 @@ export default defineSchema({
   users: defineTable({
     name: v.string(),
     tokenIdentifier: v.string(), // For Clerk integration
-  }).index('by_token', ['tokenIdentifier']),
+  })
+   .index('by_token', ['tokenIdentifier'])
+   .index('by_user', ['name']),
 
   events: defineTable({
     name: v.string(),
@@ -70,10 +72,11 @@ export default defineSchema({
 
   friendRecs: defineTable({
     user: v.string(),
-    rec1: v.string(),
-    rec2: v.string(),
-    rec3: v.string(),
-    rec4: v.string(),
-    rec5: v.string(),
+    recs: v.array(
+      v.object({
+        userId: v.string(),
+        score: v.number(),
+      })
+    )
   }).index('by_user', ['user']),
 });

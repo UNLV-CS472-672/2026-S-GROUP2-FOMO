@@ -3,35 +3,27 @@ import { mutation } from './_generated/server';
 
 export const upsert = mutation({
   args: {
-    user: v.string(),
-    rec1: v.string(),
-    rec2: v.string(),
-    rec3: v.string(),
-    rec4: v.string(),
-    rec5: v.string(),
+    user: v.string(), // Change to ID
+    recs: v.array(
+      v.object({
+        userId: v.string(),
+        score: v.number(),
+      })
+    ),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
-      .query('friendRecs')
-      .filter((q) => q.eq(q.field('user'), args.user))
-      .first();
-
+      .query("friendRecs")
+      .withIndex("by_user", (q) => q.eq("user", args.user))
+      .unique();
     if (existing) {
       await ctx.db.patch(existing._id, {
-        rec1: args.rec1,
-        rec2: args.rec2,
-        rec3: args.rec3,
-        rec4: args.rec4,
-        rec5: args.rec5,
+        recs: args.recs,
       });
     } else {
       await ctx.db.insert('friendRecs', {
         user: args.user,
-        rec1: args.rec1,
-        rec2: args.rec2,
-        rec3: args.rec3,
-        rec4: args.rec4,
-        rec5: args.rec5,
+        recs: args.recs,
       });
     }
   },
