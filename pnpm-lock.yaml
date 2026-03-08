@@ -171,10 +171,6 @@ importers:
       convex:
         specifier: ^1.31.7
         version: 1.31.7(react@19.2.3)
-    devDependencies:
-      typescript:
-        specifier: ^5
-        version: 5.9.3
 
 packages:
   '@0no-co/graphql.web@1.2.0':
