@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as auth from "../auth.js";
 import type * as friendRecs from "../friendRecs.js";
 import type * as query from "../query.js";
 import type * as seed from "../seed.js";
@@ -19,6 +20,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  auth: typeof auth;
   friendRecs: typeof friendRecs;
   query: typeof query;
   seed: typeof seed;
