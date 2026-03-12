@@ -19,6 +19,6 @@
 }
 
 @theme {
-  /* Single font for React Native (no fallbacks) */
-  --font-rounded: ui-rounded;
+  /* Custom native fonts loaded via expo-font config plugin. */
+  --font-heading: "Cabinet Grotesk Variable";
 }

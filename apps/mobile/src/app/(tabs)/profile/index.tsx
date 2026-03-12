@@ -1,25 +1,59 @@
+import { useAuth, useUser } from '@clerk/clerk-expo';
+import { useConvexAuth } from 'convex/react';
 import { useRouter } from 'expo-router';
-import { Text, View } from 'react-native';
+import { Text } from 'react-native';
 
+import { GuestMode } from '@/components/profile/guest-mode';
 import { Button, ButtonText } from '@/components/ui/button';
+import { Screen } from '@/components/ui/screen';
+import { useGuest } from '@/integrations/session/provider';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { signOut, userId } = useAuth();
+  const { user } = useUser();
+  const username = user?.username ?? 'Guest';
+  const { isGuestMode } = useGuest();
 
   return (
-    <View className="flex-1 items-center justify-center gap-3 bg-app-background p-6">
+    <Screen className="items-center justify-center gap-3 p-6">
       <Text className="text-[30px] font-bold leading-8 text-app-text">Profile</Text>
-      <Text className="text-center text-base leading-6 text-app-text">
-        Account, preferences, and friends will live here.
-      </Text>
+      {isGuestMode ? (
+        <GuestMode />
+      ) : (
+        <>
+          <Text className="text-center text-base leading-6 text-app-text">
+            Account, preferences, and friends will live here.
+          </Text>
+          <Text className="text-center text-base leading-6 text-app-text">
+            {`isAuthenticated: ${isAuthenticated}\n`}
+            {`isLoading: ${isLoading}\n`}
+            {`userId: ${userId}\n`}
+            {`username: ${username}`}
+          </Text>
 
-      <Button variant="secondary" className="mt-2" onPress={() => router.push('/profile/friends')}>
-        <ButtonText variant="secondary">Friends</ButtonText>
-      </Button>
+          <Button
+            variant="secondary"
+            className="mt-2"
+            onPress={() => router.push('/profile/friends')}
+          >
+            <ButtonText variant="secondary">Friends</ButtonText>
+          </Button>
 
-      <Button variant="secondary" className="mt-2" onPress={() => router.push('/profile/settings')}>
-        <ButtonText variant="secondary">Settings</ButtonText>
-      </Button>
-    </View>
+          <Button
+            variant="secondary"
+            className="mt-2"
+            onPress={() => router.push('/profile/settings')}
+          >
+            <ButtonText variant="secondary">Settings</ButtonText>
+          </Button>
+
+          <Button variant="secondary" className="mt-2" onPress={() => signOut()}>
+            <ButtonText variant="secondary">Log out</ButtonText>
+          </Button>
+        </>
+      )}
+    </Screen>
   );
 }
