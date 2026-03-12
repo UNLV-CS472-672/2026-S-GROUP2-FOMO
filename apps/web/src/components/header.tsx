@@ -8,7 +8,7 @@ export function Header() {
     <header>
       <nav className="sticky top-0 z-50 flex h-14 w-full items-center justify-between border-b border-zinc-200 bg-white px-6 dark:border-zinc-800 dark:bg-zinc-950">
         <Link
-          href="/apps/web/public"
+          href="/"
           className="text-lg font-semibold tracking-tight text-black dark:text-zinc-50"
         >
           {/*TODO decide on uppercase lettering or not*/}
