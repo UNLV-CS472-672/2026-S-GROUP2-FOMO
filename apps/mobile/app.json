@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "fomo",
     "slug": "fomo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "fomo",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "platforms": ["ios", "android"],
@@ -39,6 +39,12 @@
         }
       ],
       [
+        "expo-font",
+        {
+          "fonts": ["./assets/fonts/CabinetGrotesk-Variable.ttf"]
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
@@ -49,7 +55,10 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "@rnmapbox/maps",
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
