@@ -1,26 +1,52 @@
+import { useUserLocation } from '@/features/map/hooks/use-user-location';
+import MapboxGL from '@rnmapbox/maps';
 import { useRouter } from 'expo-router';
-import { Text } from 'react-native';
+import { useRef } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, ButtonText } from '@/components/ui/button';
-import { Screen } from '@/components/ui/screen';
+MapboxGL.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
 
 export default function MapScreen() {
   const { push } = useRouter();
+  const insets = useSafeAreaInsets();
+  const cameraRef = useRef<MapboxGL.Camera>(null);
+  const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
 
   return (
-    <Screen className="items-center justify-center gap-3 p-6">
-      <Text className="text-[30px] font-bold leading-8 text-app-text">Map</Text>
-      <Text className="text-center text-base leading-6 text-app-text">
-        Marker taps will open a nearby H3 feed for that location.
-      </Text>
+    <View className="absolute inset-0">
+      <MapboxGL.MapView
+        style={StyleSheet.absoluteFill}
+        styleURL={MapboxGL.StyleURL.Dark}
+        logoEnabled={false}
+        attributionEnabled={false}
+        onPress={() => push('/feed/demo-cell')}
+      >
+        <MapboxGL.Camera
+          ref={cameraRef}
+          centerCoordinate={centerCoordinate}
+          zoomLevel={13}
+          animationMode={hasResolvedLocation ? 'flyTo' : 'none'}
+          animationDuration={1200}
+        />
+        {locationGranted && (
+          <MapboxGL.LocationPuck
+            puckBearing="heading"
+            puckBearingEnabled
+            pulsing={{ isEnabled: true, color: '#4A90D9', radius: 50 }}
+          />
+        )}
+      </MapboxGL.MapView>
 
-      <Button className="mt-3" onPress={() => push('/feed/demo-cell')}>
-        <ButtonText>Open Nearby Feed Demo</ButtonText>
-      </Button>
-
-      <Button variant="secondary" className="mt-2" onPress={() => push('/(tabs)/(map)/search')}>
-        <ButtonText variant="secondary">Open Search</ButtonText>
-      </Button>
-    </Screen>
+      {/* Search bar overlay */}
+      <View className="absolute left-4 right-4" style={{ top: insets.top + 12 }}>
+        <Pressable
+          className="rounded-xl border border-white/[0.12] bg-[rgba(18,18,18,0.92)] px-4 py-3 active:bg-[rgba(38,38,38,0.92)]"
+          onPress={() => push('/(tabs)/(map)/search')}
+        >
+          <Text className="text-[15px] text-white/40">Search places...</Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }
