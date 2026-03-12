@@ -4,13 +4,12 @@ export default function ProfileLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: false,
         headerBackButtonDisplayMode: 'minimal',
       }}
     >
-      <Stack.Screen name="index" />
-      <Stack.Screen name="friends" />
-      <Stack.Screen name="settings" />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="friends" options={{ title: 'Friends' }} />
+      <Stack.Screen name="settings" options={{ title: 'Settings' }} />
     </Stack>
   );
 }

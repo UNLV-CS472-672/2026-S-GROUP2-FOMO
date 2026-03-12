@@ -1,6 +1,14 @@
+import { useGuest } from '@/integrations/session/provider';
+import { Redirect } from 'expo-router';
 import { ScrollView, Text } from 'react-native';
 
 export default function CreatePostScreen() {
+  const { isGuestMode } = useGuest();
+
+  if (isGuestMode) {
+    return <Redirect href="/create" />;
+  }
+
   return (
     <ScrollView
       className="flex-1 bg-app-background"
