@@ -1,23 +1,19 @@
-import { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 import { Pressable, PressableProps, Text, TextProps } from 'react-native';
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 type ButtonProps = PressableProps & {
   variant?: ButtonVariant;
   size?: ButtonSize;
   className?: string;
-  children: ReactNode;
 };
 
 type ButtonTextProps = TextProps & {
   variant?: ButtonVariant;
   className?: string;
 };
-
-const joinClassNames = (...classNames: (string | false | null | undefined)[]) =>
-  classNames.filter(Boolean).join(' ');
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary: 'bg-app-tint',
@@ -34,7 +30,7 @@ const sizeClasses: Record<ButtonSize, string> = {
 const textVariantClasses: Record<ButtonVariant, string> = {
   primary: 'text-app-background',
   secondary: 'text-app-text',
-  ghost: 'text-app-tint',
+  ghost: 'text-app-text',
 };
 
 export function Button({
@@ -47,8 +43,8 @@ export function Button({
 }: ButtonProps) {
   return (
     <Pressable
-      className={joinClassNames(
-        'items-center justify-center',
+      className={cn(
+        'items-center justify-center rounded-3xl',
         variantClasses[variant],
         sizeClasses[size],
         disabled && 'opacity-50',
@@ -64,9 +60,6 @@ export function Button({
 
 export function ButtonText({ variant = 'primary', className, ...props }: ButtonTextProps) {
   return (
-    <Text
-      className={joinClassNames('font-semibold', textVariantClasses[variant], className)}
-      {...props}
-    />
+    <Text className={cn('font-semibold', textVariantClasses[variant], className)} {...props} />
   );
 }
