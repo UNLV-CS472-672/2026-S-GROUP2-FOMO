@@ -1,53 +1,65 @@
 import { useRouter } from 'expo-router';
 import { ScrollView, Text } from 'react-native';
 
+import { GuestMode } from '@/components/profile/guest-mode';
 import { Button, ButtonText } from '@/components/ui/button';
+import { Screen } from '@/components/ui/screen';
+import { useGuest } from '@/integrations/session/provider';
 
 export default function CreateScreen() {
   const { push } = useRouter();
+  const { isGuestMode } = useGuest();
 
   return (
-    <ScrollView
-      className="flex-1  gap-3 bg-app-background p-6"
-      contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{
-        flexGrow: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-        rowGap: 12,
-      }}
-    >
-      <Text className="text-[30px] font-bold leading-8 text-app-text">Create</Text>
-      <Text className="text-base leading-6 text-app-text">Choose what you want to publish.</Text>
-
-      <Button
-        variant="secondary"
-        size="lg"
-        className="items-start"
-        onPress={() => push('/create/event')}
+    <Screen>
+      <ScrollView
+        className="flex-1 gap-3"
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{
+          flexGrow: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
+          rowGap: 12,
+        }}
       >
-        <ButtonText variant="secondary" className="text-xl font-semibold text-app-text">
-          Create Event
-        </ButtonText>
-        <Text className="mt-1 text-base leading-6 text-app-text">
-          Host an event with location, time, and details.
-        </Text>
-      </Button>
+        <Text className="text-[30px] font-bold leading-8 text-app-text">Create</Text>
+        <Text className="text-base leading-6 text-app-text">Choose what you want to publish.</Text>
 
-      <Button
-        variant="secondary"
-        size="lg"
-        className="items-start"
-        onPress={() => push('/create/post')}
-      >
-        <ButtonText variant="secondary" className="text-xl font-semibold text-app-text">
-          Create Post
-        </ButtonText>
-        <Text className="mt-1 text-base leading-6 text-app-text">
-          Share an update, photo, or thought with the community.
-        </Text>
-      </Button>
-    </ScrollView>
+        {isGuestMode ? (
+          <GuestMode />
+        ) : (
+          <>
+            <Button
+              variant="secondary"
+              size="lg"
+              className="items-start text-xl font-semibold"
+              onPress={() => push('/create/event')}
+            >
+              <ButtonText variant="secondary" className="text-xl">
+                Create Event
+              </ButtonText>
+              <ButtonText className="mt-1 text-base leading-6 text-app-text">
+                Host an event with location, time, and details.
+              </ButtonText>
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="lg"
+              className="items-start text-xl font-semibold"
+              onPress={() => push('/create/post')}
+            >
+              <ButtonText variant="secondary" className="text-xl">
+                Create Post
+              </ButtonText>
+              <ButtonText className="mt-1 text-base leading-6 text-app-text">
+                Share an update, photo, or thought with the community.
+              </ButtonText>
+            </Button>
+          </>
+        )}
+      </ScrollView>
+    </Screen>
   );
 }
