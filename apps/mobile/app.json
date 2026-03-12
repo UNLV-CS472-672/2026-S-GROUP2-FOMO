@@ -13,7 +13,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.fomo.mobile",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "FOMO uses your location to show events near you on the map."
       }
     },
     "android": {
@@ -57,6 +58,12 @@
         }
       ],
       "@rnmapbox/maps",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "FOMO uses your location to show events near you on the map."
+        }
+      ],
       "expo-secure-store",
       "expo-web-browser"
     ],

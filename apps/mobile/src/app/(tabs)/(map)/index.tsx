@@ -1,16 +1,17 @@
+import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import MapboxGL from '@rnmapbox/maps';
 import { useRouter } from 'expo-router';
+import { useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 MapboxGL.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
 
-// Las Vegas Coords, will change soon to grab user location
-const defaultCoords: [number, number] = [-115.1398, 36.1699];
-
 export default function MapScreen() {
   const { push } = useRouter();
   const insets = useSafeAreaInsets();
+  const cameraRef = useRef<MapboxGL.Camera>(null);
+  const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
 
   return (
     <View className="absolute inset-0">
@@ -21,8 +22,20 @@ export default function MapScreen() {
         attributionEnabled={false}
         onPress={() => push('/feed/demo-cell')}
       >
-        <MapboxGL.Camera centerCoordinate={defaultCoords} zoomLevel={13} animationMode="none" />
-        <MapboxGL.UserLocation visible animated />
+        <MapboxGL.Camera
+          ref={cameraRef}
+          centerCoordinate={centerCoordinate}
+          zoomLevel={13}
+          animationMode={hasResolvedLocation ? 'flyTo' : 'none'}
+          animationDuration={1200}
+        />
+        {locationGranted && (
+          <MapboxGL.LocationPuck
+            puckBearing="heading"
+            puckBearingEnabled
+            pulsing={{ isEnabled: true, color: '#4A90D9', radius: 50 }}
+          />
+        )}
       </MapboxGL.MapView>
 
       {/* Search bar overlay */}
