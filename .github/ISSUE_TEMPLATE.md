@@ -1,9 +1,7 @@
 ---
 name: Feature / Task Request
 about: Propose a feature, improvement, or development task
-title: '[REQUEST] '
-labels: enhancement
-assignees: ''
+title: 'Your issue title'
 ---
 
 ## Summary

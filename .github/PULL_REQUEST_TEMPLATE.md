@@ -46,9 +46,13 @@ Step-by-step instructions for reviewers to verify the changes.
 2.
 3.
 
+## Screenshots / UI Changes (optional)
+
+If this PR affects the UI, add screenshots or recordings.
+
 ## Notes / Acknowledgments (optional)
 
-Optional: callouts, follow-ups, thanks, or other notes for reviewers.
+Callouts, follow-ups, thanks, or other notes for reviewers.
 
 ## References (optional)
 
