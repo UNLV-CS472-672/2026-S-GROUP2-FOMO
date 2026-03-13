@@ -1,46 +1,36 @@
-<!-- Add necessary labels to the PR, such as feature, bug, refactor, chore, docs, etc. -->
+---
+name: Feature / Task Request
+about: Propose a feature, improvement, or development task
+title: '[REQUEST] '
+labels: enhancement
+assignees: ''
+---
 
 ## Summary
 
-<!-- Briefly describe what this PR does in 1–3 sentences. -->
+Briefly describe the feature, improvement, or task in 1–3 sentences.
+
+## Problem / Motivation
+
+What problem does this solve?  
+Why is this change needed?
 
 ## Scope
 
-<!-- Describe what should be included in this PR. Use bullets if helpful. -->
-
--
--
--
+Describe what should be included in this work.
 
 ## Non-goals (optional)
 
-<!-- Clarify what this PR should not do, to help reviewers understand boundaries. -->
-
--
--
--
+Clarify what this issue is **not** trying to accomplish.
 
 ## Acceptance Criteria
 
-<!-- List the conditions that should be true for this PR to be considered complete. -->
+Conditions that must be true for this issue to be considered complete.
 
--
--
--
+## Implementation Notes (optional)
 
-## Notes
-
-<!--
-Add any implementation details, rollout considerations, follow-ups, tradeoffs,
-or anything else reviewers should know.
--->
+Add any implementation ideas, constraints, tradeoffs, or technical notes that may help.
 
 ## References (optional)
 
-<!--
-Link related issues, designs, docs, tickets, or other supporting material.
--->
-
--
--
--
+Link related issues, docs, designs, or discussions.

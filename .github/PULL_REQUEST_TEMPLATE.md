@@ -1,41 +1,39 @@
-<!--Add necessary labels to the PR, this can describe the type of change, e.g. bug fix, feature, refactoring, etc. -->
+<!--
+Before submitting this PR:
+- Add appropriate labels (feature, bug, refactor, chore, docs, etc.)
+- Link any related issues
+- Ensure tests/build pass
+-->
 
 ## Summary
 
-<!-- Brief overview of what this PR does (1-3 sentences). -->
+Brief overview of what this PR does (1–3 sentences).
+
+---
 
 ## Why is this change necessary?
 
-<!-- Describe the problem or motivation. What gap does this address? Link to issues if applicable. -->
+Describe the problem or motivation.
+
+Closes #
+
+(Example: `Closes #42`)
+
+---
 
 ## Changes
 
-<!-- List the main changes made. Use bullets for clarity. -->
+Main changes introduced in this PR:
 
--
--
--
+---
 
 ## UML Diagram (optional)
 
-<!-- Add a UML diagram if applicable (e.g. Mermaid for architecture, flow, or structure). Delete this section if not needed. -->
+Add a diagram if architecture, flow, or structure changed.
 
 ```mermaid
-<!-- Add diagram here -->
+%% Example:
+%% graph TD
+%% A[User Request] --> B[API Layer]
+%% B --> C[Database]
 ```
-
-## Testing
-
-<!-- Step-by-step instructions for reviewers to verify the changes. -->
-
-1.
-2.
-3.
-
-## Notes / Acknowledgments
-
-<!-- Optional: callouts, follow-ups, thanks, or other notes for reviewers. -->
-
-## References
-
-<!-- Optional: links to related issues, PRs, docs or other resources. -->
