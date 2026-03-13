@@ -11,7 +11,8 @@
     "dev:ios": "pnpm dev",
     "dev:mobile": "pnpm dev",
     "dev:web": "pnpm dev",
-    "logs": "convex logs"
+    "logs": "convex logs",
+    "typecheck": "tsc -p convex/tsconfig.json --noEmit"
   },
   "dependencies": {
     "@fomo/env": "workspace:*",
