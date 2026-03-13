@@ -37,3 +37,19 @@ Add a diagram if architecture, flow, or structure changed.
 %% A[User Request] --> B[API Layer]
 %% B --> C[Database]
 ```
+
+## Testing
+
+Step-by-step instructions for reviewers to verify the changes.
+
+1.
+2.
+3.
+
+## Notes / Acknowledgments (optional)
+
+Optional: callouts, follow-ups, thanks, or other notes for reviewers.
+
+## References (optional)
+
+Links to related issues, PRs, docs or other resources.
