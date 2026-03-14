@@ -1,6 +1,7 @@
 'use client';
 
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
+import { CalendarPlus, LogIn, Map, Settings, User, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -18,102 +19,10 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 
-function MapIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      className="h-4 w-4"
-    >
-      <path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20V6.5Z" />
-      <path d="M9 4v13.5" />
-      <path d="M15 6.5V20" />
-    </svg>
-  );
-}
-
-function CreateEventIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      className="h-4 w-4"
-    >
-      <rect x="4" y="5" width="16" height="15" rx="2.5" />
-      <path d="M8 3v4M16 3v4M4 10h16" />
-      <path d="M12 13v4M10 15h4" />
-    </svg>
-  );
-}
-
-function ProfileIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      className="h-4 w-4"
-    >
-      <circle cx="12" cy="8" r="3.25" />
-      <path d="M5 19a7 7 0 0 1 14 0" />
-    </svg>
-  );
-}
-
-function SettingsIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      className="h-4 w-4"
-    >
-      <path d="M10.2 3h3.6l.7 2.1a7.8 7.8 0 0 1 1.9.8L18.5 5l2.5 2.5-1 2.1c.3.6.6 1.3.8 1.9L23 12.2v3.6l-2.1.7a7.8 7.8 0 0 1-.8 1.9l1 2.1-2.5 2.5-2.1-1a7.8 7.8 0 0 1-1.9.8l-.7 2.1h-3.6l-.7-2.1a7.8 7.8 0 0 1-1.9-.8l-2.1 1L3 20.5l1-2.1a7.8 7.8 0 0 1-.8-1.9L1 15.8v-3.6l2.1-.7c.2-.7.5-1.3.8-1.9L3 7.5 5.5 5l2.1 1a7.8 7.8 0 0 1 1.9-.8L10.2 3Z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function SignInIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      className="h-4 w-4"
-    >
-      <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" />
-      <path d="M10 17l5-5-5-5" />
-      <path d="M15 12H4" />
-    </svg>
-  );
-}
-
-function SignUpIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      className="h-4 w-4"
-    >
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
 const navigationItems = [
-  { href: '/map', label: 'Map', icon: MapIcon },
-  { href: '/events/create', label: 'Create Event', icon: CreateEventIcon },
-  { href: '/settings', label: 'Settings', icon: SettingsIcon },
+  { href: '/map', label: 'Map', icon: Map },
+  { href: '/events/create', label: 'Create Event', icon: CalendarPlus },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ] as const;
 
 function isRouteActive(pathname: string, href: string) {
@@ -192,7 +101,7 @@ export function AppSidebar() {
                   aria-label="Sign In"
                   title={!open ? 'Sign In' : undefined}
                 >
-                  <SignInIcon />
+                  <LogIn className="h-4 w-4" />
                   {open ? <span>Sign In</span> : null}
                 </SidebarMenuButton>
               </SignInButton>
@@ -204,7 +113,7 @@ export function AppSidebar() {
                   aria-label="Create Account"
                   title={!open ? 'Create Account' : undefined}
                 >
-                  <SignUpIcon />
+                  <UserPlus className="h-4 w-4" />
                   {open ? <span>Create Account</span> : null}
                 </SidebarMenuButton>
               </SignUpButton>
@@ -238,7 +147,7 @@ export function AppSidebar() {
                     title={!open ? 'Profile' : undefined}
                     className={open ? 'min-w-0' : 'justify-center'}
                   >
-                    <ProfileIcon />
+                    <User className="h-4 w-4" />
                     {open ? <span>Profile</span> : null}
                   </Link>
                 </SidebarMenuButton>
