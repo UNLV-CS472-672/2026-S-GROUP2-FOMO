@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "fomo",
     "slug": "fomo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "fomo",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "platforms": ["ios", "android"],
@@ -13,7 +13,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.fomo.mobile",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "FOMO uses your location to show events near you on the map."
       }
     },
     "android": {
@@ -30,6 +31,21 @@
     "plugins": [
       "expo-router",
       [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraMavenRepos": ["https://api.mapbox.com/downloads/v2/releases/maven"],
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": ["./assets/fonts/CabinetGrotesk-Variable.ttf"]
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
@@ -40,7 +56,16 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "@rnmapbox/maps",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "FOMO uses your location to show events near you on the map."
+        }
+      ],
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
