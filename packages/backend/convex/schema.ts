@@ -6,8 +6,8 @@ export default defineSchema({
     name: v.string(),
     tokenIdentifier: v.string(), // For Clerk integration
   })
-   .index('by_token', ['tokenIdentifier'])
-   .index('by_user', ['name']),
+    .index('by_token', ['tokenIdentifier'])
+    .index('by_user', ['name']),
 
   events: defineTable({
     name: v.string(),
@@ -71,12 +71,20 @@ export default defineSchema({
     .index('by_post_tag', ['postId', 'tagId']),
 
   friendRecs: defineTable({
-    user: v.string(),
+    user: v.string(), // TODO: Change to userId
     recs: v.array(
       v.object({
-        userId: v.string(),
+        userId: v.string(), // TODO: Possilby change to v.id()
         score: v.number(),
       })
-    )
+    ),
   }).index('by_user', ['user']),
+
+  friends: defineTable({
+    userAId: v.id('users'),
+    userBId: v.id('users'),
+  })
+    .index('by_userAId', ['userAId'])
+    .index('by_userBId', ['userBId'])
+    .index('by_userA_userB', ['userAId', 'userBId']),
 });

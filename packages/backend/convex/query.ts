@@ -1,7 +1,8 @@
 import { v, Validator } from 'convex/values';
+import { TableNames } from './_generated/dataModel';
 import { query } from './_generated/server';
-import { TableNames } from "./_generated/dataModel";
 
+// Queries and returns the entire "table_name" table.
 export const list = query({
   args: { table_name: v.string() as Validator<TableNames> },
   handler: async (ctx, { table_name }) => {
@@ -14,12 +15,24 @@ export const list = query({
   },
 });
 
+// Checks if a user exists in "users" via tokenIdentifier.
 export const user = query({
   args: { name: v.string() },
   handler: async (ctx, { name }) => {
     return await ctx.db
-      .query("users")
-      .withIndex("by_token", (q) => q.eq("tokenIdentifier", name))
+      .query('users')
+      .withIndex('by_token', (q) => q.eq('tokenIdentifier', name))
       .first();
   },
 });
+
+// Checks if a user exists in "friends" via userId.
+// export const friend = query({
+//   args: { name: v.string() },
+//   handler: async (ctx, { name }) => {
+//     return await ctx.db
+//       .query("friends")
+//       .withIndex("by_token", (q) => q.eq("tokenIdentifier", name))
+//       .first();
+//   },
+// });

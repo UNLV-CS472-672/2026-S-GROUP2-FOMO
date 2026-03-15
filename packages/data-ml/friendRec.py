@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
 
 
+# TODO: Change to user_exists_in, add parameter for specific table.
 # Checks if a name can be found in the "users" datatable.
 def user_exists(name: str) -> bool:
     return client.query("query:user", {"name": "seed|" + name.lower()}) is not None
@@ -152,27 +153,24 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, user: str, rec_amt: int):
     if rec_amt > len(sim_scores):
         raise Exception(f"rec_amt ({rec_amt}) exceeds available users ({len(sim_scores)}).")
     
-    print(sim_scores)
-    
-
-    # Sort top rec_amt recommended users, create list.
-    top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False).head(rec_amt)
+    # TODO: Filter based on if user exists in 'friends' table.
+    # Sort recommended users by highest similarity, create list.
+    top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False).head()
     top_sim_scores = [
-    {"userId": user, "score": float(score)}
-    for user, score in top_sim_scores["similarity_score"].items()
-]
+        {"userId": user, "score": float(score)}
+        for user, score in top_sim_scores["similarity_score"].items()
+    ]
 
     # Add row if user doesn't have any recommended friends, if they do, update names if values changed.
     client.mutation("friendRecs:upsert", {"user": user, 
                                           "recs": top_sim_scores
                                           })  
-    return
 
 
 
 def main():
 
-    # client.mutation("seed:seed") 
+    client.mutation("seed:seed") 
     USER     = "Manjot"
     REC_AMT  = 5  # friendRec schema only currently supports 5. 
     
