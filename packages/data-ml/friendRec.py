@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+
 from convex import ConvexClient
 from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
