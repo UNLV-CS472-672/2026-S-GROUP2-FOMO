@@ -1,4 +1,3 @@
-import { Header } from '@/components/header';
 import { ConvexClientProvider } from '@/providers/convex-client-provider';
 import { ClerkProvider } from '@clerk/nextjs';
 import type { Metadata } from 'next';
@@ -30,10 +29,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ClerkProvider afterSignOutUrl={'/'}>
-          <ConvexClientProvider>
-            <Header />
-            {children}
-          </ConvexClientProvider>
+          <ConvexClientProvider>{children}</ConvexClientProvider>
         </ClerkProvider>
       </body>
     </html>
