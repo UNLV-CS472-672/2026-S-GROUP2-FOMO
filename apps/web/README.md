@@ -1,43 +1,98 @@
 # @fomo/web
 
-<details>
-<summary>Reference - Next.js Template</summary>
+Frontend web client for the **FOMO** project.\
+Built with **Next.js**, **Clerk**, and **Convex**.
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+---
 
-## Getting Started
+# Local Setup
 
-First, run the development server:
+Follow these steps to run the web client locally.
+
+---
+
+## 1. Install dependencies
+
+From the repository root:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 2. Log into Convex
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npx convex login
+```
 
-## Learn More
+Open the link in your browser and sign in to your Convex account.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 3. Configure `/apps/web` environment variables
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Create a `.env.local` file inside `/apps/web`.
 
-## Deploy on Vercel
+Use `.env.example` as a reference.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Example:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```env
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+NEXT_PUBLIC_CONVEX_URL=http://127.0.0.1:3210
 
-</details>
+CLERK_SECRET_KEY=sk_test_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+---
+
+## 4. Configure backend environment variables
+
+Create a `.env.local` file inside:
+
+`/packages/backend`
+
+Example:
+
+```env
+CONVEX_DEPLOYMENT=anonymous:anonymous-fomo
+CONVEX_URL=http://127.0.0.1:3210/
+CONVEX_SITE_URL=http://127.0.0.1:3211/
+```
+
+These URLs should match the ones used in your web environment.
+
+---
+
+## 5. Start the web app
+
+From the repo root:
+
+```bash
+pnpm dev:web
+```
+
+When prompted in the backend task, create a new Convex project.
+
+---
+
+## 6. Configure Clerk JWT issuer
+
+Add the following environment variable in your Convex environment:
+
+```env
+CLERK_JWT_ISSUER_DOMAIN=<your convex site url>
+```
+
+Use the same value as `CONVEX_SITE_URL`.
+
+---
+
+# Tech Stack
+
+- Next.js
+- Convex
+- Clerk Authentication
+- pnpm workspaces
