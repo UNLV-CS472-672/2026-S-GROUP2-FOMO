@@ -1,0 +1,54 @@
+name: Chore
+description: Track maintenance, tooling, configuration, or housekeeping work
+title: '[Chore]: '
+labels:
+  - chore
+assignees: []
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Briefly describe the maintenance task.
+      placeholder: Describe the task clearly and concisely.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: Reason
+      description: Why does this task need to be done?
+      placeholder: Explain the purpose or motivation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Describe what is included in this chore.
+      placeholder: List the expected maintenance work.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Conditions that must be true for this issue to be complete.
+      placeholder: |
+        - [ ] Dependencies/config/tooling updated
+        - [ ] Changes verified
+        - [ ] Documentation updated if needed
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional Notes
+      description: Add any relevant technical notes, links, or constraints.
+      placeholder: Optional
+    validations:
+      required: false
