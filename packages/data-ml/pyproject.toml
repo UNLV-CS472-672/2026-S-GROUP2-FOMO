@@ -13,3 +13,31 @@ dependencies = [
     "scikit-learn>=1.8.0",
     "mypy>=1.19.1",
 ]
+
+[tool.mypy]
+python_version = "3.14"
+pretty = true
+show_error_codes = true
+show_column_numbers = true
+warn_unused_configs = true
+warn_redundant_casts = false
+warn_unused_ignores = false
+warn_return_any = false
+no_implicit_optional = false
+check_untyped_defs = false
+disallow_incomplete_defs = false
+ignore_missing_imports = true
+follow_imports = "skip"
+allow_redefinition = true
+exclude = [
+    "^\\.venv/",
+]
+
+[[tool.mypy.overrides]]
+module = [
+    "numpy.*",
+    "pandas.*",
+    "sklearn.*",
+    "convex.*",
+]
+ignore_missing_imports = true
