@@ -4,6 +4,9 @@ from convex import ConvexClient
 from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
 
+load_dotenv()
+CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
+client = ConvexClient(CONVEX_CLOUD_URL)
 
 # Checks if a name can be found in the "users" datatable.
 def user_exists(name: str) -> bool:
@@ -196,10 +199,6 @@ def main():
 
 
 if __name__ == "__main__":
-
-    load_dotenv()
-    CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
-    client = ConvexClient(CONVEX_CLOUD_URL)
 
     pd.set_option('display.max_rows', None)
     pd.set_option('display.max_columns', None)
