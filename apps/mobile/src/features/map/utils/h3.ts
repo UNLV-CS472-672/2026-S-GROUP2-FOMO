@@ -5,8 +5,10 @@
 const _savedTextDecoder = (global as any).TextDecoder;
 (global as any).TextDecoder = undefined;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { latLngToCell } = require('h3-js') as typeof import('h3-js');
+const { latLngToCell, cellToBoundary } = require('h3-js') as typeof import('h3-js');
 (global as any).TextDecoder = _savedTextDecoder;
+
+import type { FeatureCollection, Polygon } from 'geojson';
 
 // Hexagon resolution size, best utilized for city sizing
 export const H3_RESOLUTION = 9;
@@ -19,4 +21,25 @@ export const H3_RESOLUTION = 9;
  */
 export function coordsToH3Cell(longitude: number, latitude: number): string {
   return latLngToCell(latitude, longitude, H3_RESOLUTION);
+}
+
+// Convert array of h3Index and count from events to a GeoJSON, allows for transfer to Mapbox
+export function activityToGeoJSON(
+  cells: { h3Index: string; count: number }[]
+): FeatureCollection<Polygon, { h3Index: string; count: number }> {
+  return {
+    type: 'FeatureCollection',
+    features: cells.map(({ h3Index, count }) => {
+      // Switches pair to MapBox requirement
+      const boundary = cellToBoundary(h3Index).map(([lat, lng]) => [lng, lat] as [number, number]);
+      return {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[...boundary, boundary[0]]],
+        },
+        properties: { h3Index, count },
+      };
+    }),
+  };
 }
