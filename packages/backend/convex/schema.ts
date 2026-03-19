@@ -7,7 +7,7 @@ export default defineSchema({
     tokenIdentifier: v.string(), // For Clerk integration
   })
     .index('by_token', ['tokenIdentifier'])
-    .index('by_user', ['name']),
+    .index('by_name', ['name']),
 
   events: defineTable({
     name: v.string(),
