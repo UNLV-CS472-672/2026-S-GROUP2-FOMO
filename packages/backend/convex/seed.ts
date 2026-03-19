@@ -68,49 +68,71 @@ export const seed = mutation({
 
     //  Events (Convex: events)
     const eventSeeds = [
-      { name: 'Coffee + Homework', organization: 'Pop Cafe', description: 'Chill study session.' },
+      {
+        name: 'Coffee + Homework',
+        organization: 'Pop Cafe',
+        description: 'Chill study session.',
+        latitude: 36.1273,
+        longitude: -115.193,
+      },
       {
         name: 'ASAP Rocky Concert',
         organization: 'ASAP Rocky',
         description: 'Dont be dumb, pull up.',
+        latitude: 36.1047,
+        longitude: -115.1686,
       },
       {
-        name: 'psi rho house party',
+        name: 'Psi Rho house party',
         organization: 'UNLV - Alpha Psi Rho',
         description: 'no hazing, just good vibes. $10 entry for dudes.',
+        latitude: 36.1079,
+        longitude: -115.1427,
       },
       {
         name: 'Las Vegas - First Friday',
         organization: 'Downtown Las Vegas',
         description:
           'Free-admission monthly event featuring live music, art exhibits, food trucks, and vendors.',
+        latitude: 36.1596,
+        longitude: -115.1524,
       },
       {
         name: 'St. Jimmy Panel & Conference',
         organization: 'st. jimmy',
         description:
           'okay jeez, i been going thru a rough patch. going left, right thru the catacombs.',
+        latitude: 36.1051,
+        longitude: -115.1443,
       },
       {
         name: 'LVL UP EXPO 2026',
         organization: 'LVL UP LLC',
         description:
           'LVL UP EXPO is a three-day immersive gaming and pop culture convention in Las Vegas celebrating fans through esports tournaments, cosplay, art, and entertainment.',
+        latitude: 36.1287,
+        longitude: -115.1515,
       },
       {
         name: 'Baby Keem Concert',
         organization: 'The Cosmopolitan',
         description: 'half past twelve i was all alone.',
+        latitude: 36.1099,
+        longitude: -115.1754,
       },
       {
         name: 'Water Lantern Festival',
         organization: 'SWCTA Key Club',
         description: 'Join us at Sunset Park to litter the pond.',
+        latitude: 36.0381,
+        longitude: -115.247,
       },
       {
-        name: 'thriftvalley pop up shop',
+        name: 'Thrift Valley pop up shop',
         organization: 'Thrift Valley',
         description: 'we outta stussy dont even ask',
+        latitude: 36.1591,
+        longitude: -115.1527,
       },
     ];
     const eventIds: any[] = [];

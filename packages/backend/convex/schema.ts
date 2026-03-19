@@ -6,8 +6,8 @@ export default defineSchema({
     name: v.string(),
     tokenIdentifier: v.string(), // For Clerk integration
   })
-   .index('by_token', ['tokenIdentifier'])
-   .index('by_user', ['name']),
+    .index('by_token', ['tokenIdentifier'])
+    .index('by_user', ['name']),
 
   events: defineTable({
     name: v.string(),
@@ -15,6 +15,8 @@ export default defineSchema({
     description: v.string(),
     startDate: v.number(), // ms since epoch
     endDate: v.number(), // ms since epoch
+    latitude: v.number(),
+    longitude: v.number(),
   })
     .index('by_startDate', ['startDate'])
     .index('by_endDate', ['endDate'])
@@ -77,6 +79,6 @@ export default defineSchema({
         userId: v.string(),
         score: v.number(),
       })
-    )
+    ),
   }).index('by_user', ['user']),
 });
