@@ -8,6 +8,7 @@ load_dotenv()
 CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
 client = ConvexClient(CONVEX_CLOUD_URL)
 
+
 # Checks if a name can be found in the "users" datatable.
 def user_exists(name: str) -> bool:
     return client.query("query:user", {"name": "seed|" + name.lower()}) is not None
@@ -131,8 +132,6 @@ def similarity_score(df: pd.DataFrame, target_user: str) -> pd.DataFrame:
     except KeyError:
         raise Exception(f"ERROR: '{target_user}' not found in DataFrame.")
     
-    except:
-        raise Exception("ERROR: User similarity matrix could not be made.")
     
     
 
@@ -199,11 +198,9 @@ def main():
 
 
 if __name__ == "__main__":
-
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.max_colwidth', 20)
-    pd.set_option('display.width', 1000)
-
+    # pd.set_option('display.max_rows', None)
+    # pd.set_option('display.max_columns', None)
+    # pd.set_option('display.max_colwidth', 20)
+    # pd.set_option('display.width', 1000)
     main()
 
