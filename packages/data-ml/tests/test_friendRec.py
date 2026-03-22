@@ -8,7 +8,6 @@ from unittest.mock import patch, MagicMock
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from friendRec import user_exists
 
-
 from friendRec import (
     user_exists,
     join_user_events,
@@ -20,12 +19,14 @@ from friendRec import (
     upsert_friend_recs,
 )
 
+# ------------------------------
+#  FAKE MOCK DATA
+# ------------------------------
 @pytest.fixture(autouse=True)
 def mock_client():
     with patch("friendRec.client") as mock:
         yield mock
-
-
+        
 @pytest.fixture
 def sample_users():
     return [
@@ -34,7 +35,6 @@ def sample_users():
         {"_id": "u3", "name": "seed|charlie"},
     ]
 
-
 @pytest.fixture
 def sample_events():
     return [
@@ -42,7 +42,6 @@ def sample_events():
         {"_id": "e2", "name": "Concert"},
         {"_id": "e3", "name": "GameNight"},
     ]
-
 
 @pytest.fixture
 def sample_users_to_events():
@@ -53,7 +52,6 @@ def sample_users_to_events():
         {"userId": "u3", "eventId": "e3"},
     ]
 
-
 @pytest.fixture
 def sample_tags():
     return [
@@ -61,14 +59,12 @@ def sample_tags():
         {"_id": "t2", "name": "music"},
     ]
 
-
 @pytest.fixture
 def sample_event_tags():
     return [
         {"eventId": "e1", "tagId": "t1"},
         {"eventId": "e2", "tagId": "t2"},
     ]
-
 
 @pytest.fixture
 def sample_posts():
@@ -85,7 +81,6 @@ def sample_post_tags():
         {"postId": "p2", "tagId": "t2"},
     ]
 
-
 @pytest.fixture
 def sample_similarity_df():
     data = {
@@ -95,6 +90,11 @@ def sample_similarity_df():
     }
     return pd.DataFrame(data, index=["seed|alice", "seed|bob", "seed|charlie"])
 
+
+
+# ------------------------------
+#  user_exists()
+# ------------------------------
 
 # Should return true, since this fake data DOES exist in "users"
 def test_user_exists_returns_true(mock_client):
@@ -109,3 +109,35 @@ def test_user_exists_returns_false(mock_client):
     result = user_exists("gorilla_sushi")
     assert result is False
     mock_client.query.assert_called_once_with("query:user", {"name": "seed|gorilla_sushi"})
+    
+    
+    
+# ------------------------------
+#  user_exists()
+# ------------------------------
+
+# Ensure that the return value is a pandas df.
+def test_join_user_events_returns_dataframe(mock_client, sample_users, sample_events, sample_users_to_events):
+    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
+    result = join_user_events()
+    assert isinstance(result, pd.DataFrame)
+
+# According to fake data, ensure column names are correct.
+def test_join_user_events_has_correct_columns(mock_client, sample_users, sample_events, sample_users_to_events):
+    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
+    result = join_user_events()
+    assert "user" in result.columns
+    assert "event" in result.columns
+
+# According to fake data, ensure # of rows are correct.
+def test_join_user_events_correct_row_count(mock_client, sample_users, sample_events, sample_users_to_events):
+    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
+    result = join_user_events()
+    assert len(result) == len(sample_users_to_events)
+
+# According to fake data, ensure data entries are valid.
+def test_join_user_events_correct_values(mock_client, sample_users, sample_events, sample_users_to_events):
+    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
+    result = join_user_events()
+    assert "seed|alice" in result["user"].values
+    assert "Hackathon" in result["event"].values
