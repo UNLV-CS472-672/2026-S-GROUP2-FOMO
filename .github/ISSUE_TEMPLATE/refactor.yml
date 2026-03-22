@@ -1,0 +1,64 @@
+name: Refactor
+description: Propose internal code improvements without changing behavior
+title: '[Refactor]: '
+labels:
+  - refactor
+assignees: []
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Briefly describe what should be refactored.
+      placeholder: Describe the part of the codebase that needs improvement.
+    validations:
+      required: true
+
+  - type: textarea
+    id: current_problem
+    attributes:
+      label: Current Problem
+      description: What is wrong with the current implementation?
+      placeholder: Explain maintainability, readability, duplication, or design
+        issues.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_change
+    attributes:
+      label: Proposed Change
+      description: Describe the refactor you want to make.
+      placeholder: Explain the structural or internal improvements.
+    validations:
+      required: true
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of Scope
+      description: Clarify what should not change as part of this refactor.
+      placeholder: No behavior changes, no UI redesign, etc.
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Conditions that must be true for this issue to be complete.
+      placeholder: |
+        - [ ] Code is cleaner and easier to maintain
+        - [ ] No user-facing behavior changes
+        - [ ] Tests still pass
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional Notes
+      description: Add constraints, risks, or implementation details.
+      placeholder: Optional
+    validations:
+      required: false
