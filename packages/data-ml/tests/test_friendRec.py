@@ -89,7 +89,7 @@ def sample_similarity_df():
         "Concert":   [1, 0, 0],
         "GameNight": [0, 0, 1],
     }
-    return pd.DataFrame(data, index=["seed|alice", "seed|bob", "seed|charlie"])
+    return pd.DataFrame(data, index=["seed|alice", "seed|bob", "seed|reece"])
 
 
 
@@ -190,20 +190,26 @@ def test_raw_matrix_events_events_are_columns(mock_client, sample_users, sample_
 # ------------------------------
 
 # Ensure that the return value is a pandas df.
-def test_raw_matrix_event_tags_returns_dataframe(mock_client, sample_users, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
+def test_raw_matrix_eventTags_returns_dataframe(mock_client, sample_users, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
     mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events, sample_eventTags, sample_tags]
     result = raw_matrix_eventTags()
     assert isinstance(result, pd.DataFrame)
+    
+# Ensure that every cell in df is a number (dtype).
+def test_raw_matrix_eventTags_values_are_numbers(mock_client, sample_users, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
+    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events, sample_eventTags, sample_tags]
+    result = raw_matrix_eventTags()
+    assert all(np.issubdtype(dtype, np.number) for dtype in result.dtypes)
 
 # Ensure that the crosstab row index are users.
-def test_raw_matrix_event_tags_rows_are_user(mock_client, sample_users, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
+def test_raw_matrix_eventTags_rows_are_user(mock_client, sample_users, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
     mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events, sample_eventTags, sample_tags]
     result = raw_matrix_eventTags()
     assert "seed|alice"  in result.index
     assert "seed|bob"    in result.index
 
 # Ensure that the crosstab col index are tags.
-def test_raw_matrix_event_tags_columns_are_tags(mock_client, sample_users, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
+def test_raw_matrix_eventTags_columns_are_tags(mock_client, sample_users, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
     mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events, sample_eventTags, sample_tags]
     result = raw_matrix_eventTags()
     assert "tech"  in result.columns 
@@ -216,23 +222,61 @@ def test_raw_matrix_event_tags_columns_are_tags(mock_client, sample_users, sampl
 # ------------------------------
 
 # Ensure that the return value is a pandas df.
-def test_raw_matrix_post_tags_returns_dataframe(mock_client, sample_users, sample_posts, sample_postTags, sample_tags):
+def test_raw_matrix_postTags_returns_dataframe(mock_client, sample_users, sample_posts, sample_postTags, sample_tags):
     mock_client.query.side_effect = [sample_users, sample_posts, sample_postTags, sample_tags]
     result = raw_matrix_postTags()
     assert isinstance(result, pd.DataFrame)
     
 # Ensure that the crosstab row index are users.
-def test_raw_matrix_post_tags_rows_are_users(mock_client, sample_users, sample_posts, sample_postTags, sample_tags):
+def test_raw_matrix_postTags_rows_are_users(mock_client, sample_users, sample_posts, sample_postTags, sample_tags):
     mock_client.query.side_effect = [sample_users, sample_posts, sample_postTags, sample_tags]
     result = raw_matrix_postTags()
     assert "seed|alice"  in result.index
-    assert "seed|bob"  in result.index
+    assert "seed|bob"    in result.index
 
 # Ensure that the crosstab col index are tags.
-def test_raw_matrix_post_tags_columns_are_tags(mock_client, sample_users, sample_posts, sample_postTags, sample_tags):
+def test_raw_matrix_postTags_columns_are_tags(mock_client, sample_users, sample_posts, sample_postTags, sample_tags):
     mock_client.query.side_effect = [sample_users, sample_posts, sample_postTags, sample_tags]
     result = raw_matrix_postTags()
     assert "tech"  in result.columns 
     assert "music" in result.columns
 
 
+
+
+# ------------------------------
+#  similarity_score()
+# ------------------------------
+
+# Ensure that the return value is a pandas df.
+def test_similarity_score_returns_dataframe(sample_similarity_df):
+    result = similarity_score(sample_similarity_df, "seed|alice")
+    assert isinstance(result, pd.DataFrame)
+            
+# Ensure that the df row index are users.
+def test_similarity_scores_values_rows_are_users(sample_similarity_df):
+    result = similarity_score(sample_similarity_df, "seed|alice")
+    assert "seed|bob"   in result.index
+    assert "seed|reece" in result.index
+    
+# Ensure that df should be one column, similarity_score (shape = [?, 1]). 
+def test_similarity_scores_values_col_is_similarity_score(sample_similarity_df):
+    result = similarity_score(sample_similarity_df, "seed|alice")
+    assert result.shape[1] == 1
+    assert result.columns[0] == "similarity_score"
+
+# Users not found should return a KeyError.
+def test_similarity_score_handles_keyerror(sample_similarity_df):
+    with pytest.raises(KeyError):
+        similarity_score(sample_similarity_df, "seed|gorilla-sushi")
+        
+# df should not contain the user inputted.
+def test_similarity_score_excludes_self(sample_similarity_df):
+    result = similarity_score(sample_similarity_df, "seed|alice")
+    assert "seed|alice" not in result.index
+    
+    
+    
+# ------------------------------
+#  simscores_weighted()
+# ------------------------------

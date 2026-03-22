@@ -122,15 +122,16 @@ def similarity_score(df: pd.DataFrame, target_user: str) -> pd.DataFrame:
         user_similarity_df = pd.DataFrame(user_similarity_np,     
                                           index   = df.index,
                                           columns = df.index )
-        
+        # Extract column for target_user only.
         similar_users = (
             user_similarity_df[target_user]
             .drop(target_user))
         similar_users = pd.DataFrame({"similarity_score": similar_users})
+        print(similar_users.shape)
         return similar_users
     
     except KeyError:
-        raise Exception(f"ERROR: '{target_user}' not found in DataFrame.")
+        raise KeyError(f"ERROR: '{target_user}' not found in DataFrame.")
     
     
     
@@ -161,7 +162,7 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, user: str, rec_amt: int):
     top_sim_scores = [
     {"userId": user, "score": float(score)}
     for user, score in top_sim_scores["similarity_score"].items()
-]
+    ]
 
     # Add row if user doesn't have any recommended friends, if they do, update names if values changed.
     client.mutation("friendRecs:upsert", {"user": user, 
