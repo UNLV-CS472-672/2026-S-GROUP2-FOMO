@@ -39,5 +39,7 @@ module = [
     "pandas.*",
     "sklearn.*",
     "convex.*",
+    "pytest.*",
+    "torch.*",
 ]
 ignore_missing_imports = true
