@@ -62,7 +62,7 @@ def sample_tags():
     ]
 
 @pytest.fixture
-def sample_event_tags():
+def sample_eventTags():
     return [
         {"eventId": "e1", "tagId": "t1"},
         {"eventId": "e2", "tagId": "t2"},
@@ -76,7 +76,7 @@ def sample_posts():
     ]
 
 @pytest.fixture
-def sample_post_tags():
+def sample_postTags():
     return [
         {"postId": "p1", "tagId": "t1"},
         {"postId": "p2", "tagId": "t2"},
@@ -118,7 +118,7 @@ def test_user_exists_returns_false(mock_client):
     
     
 # ------------------------------
-#  user_exists()
+#  join_user_events()
 # ------------------------------
 
 # Ensure that the return value is a pandas df.
@@ -182,3 +182,57 @@ def test_raw_matrix_events_events_are_columns(mock_client, sample_users, sample_
     mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
     result = raw_matrix_events()
     assert "Hackathon" in result.columns
+    
+
+    
+# ------------------------------
+#  raw_matrix_eventTags()
+# ------------------------------
+
+# Ensure that the return value is a pandas df.
+def test_raw_matrix_event_tags_returns_dataframe(mock_client, sample_users, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
+    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events, sample_eventTags, sample_tags]
+    result = raw_matrix_eventTags()
+    assert isinstance(result, pd.DataFrame)
+
+# Ensure that the crosstab row index are users.
+def test_raw_matrix_event_tags_rows_are_user(mock_client, sample_users, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
+    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events, sample_eventTags, sample_tags]
+    result = raw_matrix_eventTags()
+    assert "seed|alice"  in result.index
+    assert "seed|bob"    in result.index
+
+# Ensure that the crosstab col index are tags.
+def test_raw_matrix_event_tags_columns_are_tags(mock_client, sample_users, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
+    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events, sample_eventTags, sample_tags]
+    result = raw_matrix_eventTags()
+    assert "tech"  in result.columns 
+    assert "music" in result.columns
+    
+    
+
+# ------------------------------
+#  raw_matrix_postTags()
+# ------------------------------
+
+# Ensure that the return value is a pandas df.
+def test_raw_matrix_post_tags_returns_dataframe(mock_client, sample_users, sample_posts, sample_postTags, sample_tags):
+    mock_client.query.side_effect = [sample_users, sample_posts, sample_postTags, sample_tags]
+    result = raw_matrix_postTags()
+    assert isinstance(result, pd.DataFrame)
+    
+# Ensure that the crosstab row index are users.
+def test_raw_matrix_post_tags_columns_are_tags(mock_client, sample_users, sample_posts, sample_postTags, sample_tags):
+    mock_client.query.side_effect = [sample_users, sample_posts, sample_postTags, sample_tags]
+    result = raw_matrix_postTags()
+    assert "seed|alice"  in result.index
+    assert "seed|bob"  in result.index
+
+# Ensure that the crosstab col index are tags.
+def test_raw_matrix_post_tags_columns_are_tags(mock_client, sample_users, sample_posts, sample_postTags, sample_tags):
+    mock_client.query.side_effect = [sample_users, sample_posts, sample_postTags, sample_tags]
+    result = raw_matrix_postTags()
+    assert "tech"  in result.columns 
+    assert "music" in result.columns
+
+
