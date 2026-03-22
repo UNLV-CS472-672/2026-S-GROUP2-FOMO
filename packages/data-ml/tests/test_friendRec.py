@@ -222,7 +222,7 @@ def test_raw_matrix_post_tags_returns_dataframe(mock_client, sample_users, sampl
     assert isinstance(result, pd.DataFrame)
     
 # Ensure that the crosstab row index are users.
-def test_raw_matrix_post_tags_columns_are_tags(mock_client, sample_users, sample_posts, sample_postTags, sample_tags):
+def test_raw_matrix_post_tags_rows_are_users(mock_client, sample_users, sample_posts, sample_postTags, sample_tags):
     mock_client.query.side_effect = [sample_users, sample_posts, sample_postTags, sample_tags]
     result = raw_matrix_postTags()
     assert "seed|alice"  in result.index
