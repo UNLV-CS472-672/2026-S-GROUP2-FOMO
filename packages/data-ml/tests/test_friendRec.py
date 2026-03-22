@@ -19,6 +19,8 @@ from friendRec import (
     upsert_friend_recs,
 )
 
+
+
 # ------------------------------
 #  FAKE MOCK DATA
 # ------------------------------
@@ -32,7 +34,7 @@ def sample_users():
     return [
         {"_id": "u1", "name": "seed|alice"},
         {"_id": "u2", "name": "seed|bob"},
-        {"_id": "u3", "name": "seed|charlie"},
+        {"_id": "u3", "name": "seed|reece"},
     ]
 
 @pytest.fixture
@@ -73,7 +75,6 @@ def sample_posts():
         {"_id": "p2", "authorId": "u2"},
     ]
 
-
 @pytest.fixture
 def sample_post_tags():
     return [
@@ -89,6 +90,8 @@ def sample_similarity_df():
         "GameNight": [0, 0, 1],
     }
     return pd.DataFrame(data, index=["seed|alice", "seed|bob", "seed|charlie"])
+
+
 
 
 
@@ -109,6 +112,8 @@ def test_user_exists_returns_false(mock_client):
     result = user_exists("gorilla_sushi")
     assert result is False
     mock_client.query.assert_called_once_with("query:user", {"name": "seed|gorilla_sushi"})
+    
+    
     
     
     
@@ -140,4 +145,40 @@ def test_join_user_events_correct_values(mock_client, sample_users, sample_event
     mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
     result = join_user_events()
     assert "seed|alice" in result["user"].values
+    assert "seed|bob" in result["user"].values
+    assert "seed|reece" in result["user"].values
     assert "Hackathon" in result["event"].values
+    assert "Concert" in result["event"].values
+    assert "GameNight" in result["event"].values
+    
+    
+    
+    
+    
+# ------------------------------
+#  raw_matrix_events()
+# ------------------------------
+
+# Ensure that the return value is a pandas df.
+def test_raw_matrix_events_returns_dataframe(mock_client, sample_users, sample_events, sample_users_to_events):
+    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
+    result = raw_matrix_events()
+    assert isinstance(result, pd.DataFrame)
+
+# Ensure that every cell in df is a number (dtype).
+def test_raw_matrix_events_values_are_numbers(mock_client, sample_users, sample_events, sample_users_to_events):
+    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
+    result = raw_matrix_events()
+    assert all(np.issubdtype(dtype, np.number) for dtype in result.dtypes)
+
+# Ensure that the crosstab row index are users.
+def test_raw_matrix_events_users_are_rows(mock_client, sample_users, sample_events, sample_users_to_events):
+    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
+    result = raw_matrix_events()
+    assert "seed|alice" in result.index
+    
+# Ensure that the crosstab col index are events.
+def test_raw_matrix_events_events_are_columns(mock_client, sample_users, sample_events, sample_users_to_events):
+    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
+    result = raw_matrix_events()
+    assert "Hackathon" in result.columns
