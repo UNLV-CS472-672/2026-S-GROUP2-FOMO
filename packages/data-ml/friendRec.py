@@ -194,9 +194,9 @@ def main(user: str, rec_amt: int, seed: bool):
 
 
 
-USER     = "Manjot"
-REC_AMT  = 5  # friendRec schema only currently supports 5. 
-SEED     = False
+USER     = "Manjot"  # Currently by userName, should be by userId soon.
+REC_AMT  = 5         # friendRec schema only currently supports 5. 
+SEED     = False     # Dictates if fake data needs to be populated into Convex.
 
 if __name__ == "__main__":
     main(USER, REC_AMT, False)

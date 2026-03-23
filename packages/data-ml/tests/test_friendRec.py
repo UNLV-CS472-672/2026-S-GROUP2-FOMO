@@ -317,14 +317,29 @@ def test_sim_scores_weighted_correct_calculation(sample_score_df):
 #  upsert_friend_recs()
 # ------------------------------
 
+# Since we currently only allow a maximum of 5 users, don't allow >5.
+def test_upsert_friend_recs_exceed_recamt(mock_client, sample_score_df):
+    with pytest.raises(Exception):
+        upsert_friend_recs(sample_score_df, "alice", 6)
+
+# Ensure that the final row amt is same as input rec_amt.
+def test_upsert_friend_recs_correct_rec_count(mock_client, sample_score_df):
+    upsert_friend_recs(sample_score_df, "alice", 2)
+    call_kwargs = mock_client.mutation.call_args[0][1]
+    assert len(call_kwargs["recs"]) == 2
+
+# Ensure that the final df is sorted by top-first.
+def test_upsert_friend_recs_top_scores_selected(mock_client, sample_score_df):
+    upsert_friend_recs(sample_score_df, "alice", 2)
+    call_kwargs = mock_client.mutation.call_args[0][1]
+    scores = [r["score"] for r in call_kwargs["recs"]]
+    assert scores == sorted(scores, reverse=True)
+
+# Ensures that the ConvexClient mutation is actually being invoked.
 def test_upsert_friend_recs_calls_mutation(mock_client, sample_score_df):
     upsert_friend_recs(sample_score_df, "alice", 2)
     mock_client.mutation.assert_called_once()
 
-def test_upsert_friends_recs_exceed_recamt(mock_client, sample_score_df):
-    mock_client.query.side_effect = [sample_score_df]
-    with pytest.raises(Exception):
-        upsert_friend_recs(sample_score_df, "alice", 6)
     
 
 # ------------------------------
@@ -334,3 +349,5 @@ def test_upsert_friends_recs_exceed_recamt(mock_client, sample_score_df):
 def test_main_user_not_exist():
     with pytest.raises(Exception):
         main("gorilla-sushi", 5, False)
+        
+def test
