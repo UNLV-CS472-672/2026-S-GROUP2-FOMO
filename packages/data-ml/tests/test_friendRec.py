@@ -236,6 +236,12 @@ def test_raw_matrix_postTags_returns_dataframe(mock_client, sample_users, sample
     result = raw_matrix_postTags()
     assert isinstance(result, pd.DataFrame)
     
+# Ensure that every cell in df is a number (dtype).
+def test_raw_matrix_postTags_values_are_numbers(mock_client, sample_users, sample_posts, sample_postTags, sample_tags):
+    mock_client.query.side_effect = [sample_users, sample_posts, sample_postTags, sample_tags]
+    result = raw_matrix_postTags()
+    assert all(np.issubdtype(dtype, np.number) for dtype in result.dtypes)
+    
 # Ensure that the crosstab row index are users.
 def test_raw_matrix_postTags_rows_are_users(mock_client, sample_users, sample_posts, sample_postTags, sample_tags):
     mock_client.query.side_effect = [sample_users, sample_posts, sample_postTags, sample_tags]
