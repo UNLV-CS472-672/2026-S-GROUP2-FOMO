@@ -189,6 +189,8 @@ def test_raw_matrix_events_events_are_columns(mock_client, sample_users, sample_
     assert "Hackathon" in result.columns
     
 
+
+
     
 # ------------------------------
 #  raw_matrix_eventTags()
@@ -221,6 +223,8 @@ def test_raw_matrix_eventTags_columns_are_tags(mock_client, sample_users, sample
     assert "music" in result.columns
     
     
+    
+    
 
 # ------------------------------
 #  raw_matrix_postTags()
@@ -245,6 +249,7 @@ def test_raw_matrix_postTags_columns_are_tags(mock_client, sample_users, sample_
     result = raw_matrix_postTags()
     assert "tech"  in result.columns 
     assert "music" in result.columns
+
 
 
 
@@ -279,6 +284,8 @@ def test_similarity_score_handles_keyerror(sample_similarity_df):
 def test_similarity_score_excludes_self(sample_similarity_df):
     result = similarity_score(sample_similarity_df, "seed|alice")
     assert "seed|alice" not in result.index
+    
+    
     
     
     
@@ -346,8 +353,66 @@ def test_upsert_friend_recs_calls_mutation(mock_client, sample_score_df):
 #  main()
 # ------------------------------
 
-def test_main_user_not_exist():
+# Simulate every function call within main.
+@pytest.fixture 
+def mock_main_dependencies(mock_client):
+    
+    with patch("friendRec.user_exists")          as mock_user_exists, \
+         patch("friendRec.raw_matrix_events")    as mock_raw_events, \
+         patch("friendRec.raw_matrix_eventTags") as mock_raw_event_tags, \
+         patch("friendRec.raw_matrix_postTags")  as mock_raw_post_tags, \
+         patch("friendRec.similarity_score")     as mock_sim_score, \
+         patch("friendRec.sim_scores_weighted")  as mock_weighted, \
+         patch("friendRec.upsert_friend_recs")   as mock_upsert:
+
+        mock_user_exists.return_value    = True
+        mock_raw_events.return_value     = MagicMock()
+        mock_raw_event_tags.return_value = MagicMock()
+        mock_raw_post_tags.return_value  = MagicMock()
+        mock_sim_score.return_value      = MagicMock()
+        mock_weighted.return_value       = MagicMock()
+
+        yield {
+            "user_exists":          mock_user_exists,
+            "raw_matrix_events":    mock_raw_events,
+            "raw_matrix_eventTags": mock_raw_event_tags,
+            "raw_matrix_postTags":  mock_raw_post_tags,
+            "similarity_score":     mock_sim_score,
+            "sim_scores_weighted":  mock_weighted,
+            "upsert_friend_recs":   mock_upsert,
+            "client":               mock_client,
+        }
+
+# Ensure exception invoked when input "user" can't be found in Convex.
+def test_main_raises_if_user_not_found(mock_main_dependencies):
+    mock_main_dependencies["user_exists"].return_value = False
     with pytest.raises(Exception):
         main("gorilla-sushi", 5, False)
-        
-def test
+
+# Ensure seed function is not called when seed is false.
+def test_main_does_not_seed_when_false(mock_main_dependencies):
+    main("alice", 5, False)
+    mock_main_dependencies["client"].mutation.assert_not_called()
+
+# Ensure seed function is not called when seed is true.
+def test_main_seeds_when_true(mock_main_dependencies):
+    main("alice", 5, True)
+    mock_main_dependencies["client"].mutation.assert_called_once_with("seed:seed")
+
+# Ensure all raw_matrix functions are invoked once.
+def test_main_calls_all_raw_matrix_functions(mock_main_dependencies):
+    main("alice", 5, False)
+    mock_main_dependencies["raw_matrix_events"].assert_called_once()
+    mock_main_dependencies["raw_matrix_eventTags"].assert_called_once()
+    mock_main_dependencies["raw_matrix_postTags"].assert_called_once()
+
+# Ensure sim_scores_weighted() is invoked once.
+def test_main_calls_sim_scores_weighted(mock_main_dependencies):
+    main("alice", 5, False)
+    mock_main_dependencies["sim_scores_weighted"].assert_called_once()
+
+# Ensure upsert_friend_recs() is invoked once.
+def test_main_calls_upsert_friend_recs(mock_main_dependencies):
+    main("alice", 5, False)
+    mock_main_dependencies["upsert_friend_recs"].assert_called_once()
+    
