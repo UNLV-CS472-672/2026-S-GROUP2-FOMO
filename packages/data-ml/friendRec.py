@@ -158,8 +158,8 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, user: str, rec_amt: int):
     # Sort top rec_amt recommended users, create list.
     top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False).head(rec_amt)
     top_sim_scores = [
-    {"userId": user, "score": float(score)}
-    for user, score in top_sim_scores["similarity_score"].items()
+        {"userId": user, "score": float(score)}
+        for user, score in top_sim_scores["similarity_score"].items()
     ]
 
     # Add row if user doesn't have any recommended friends, if they do, update names if values changed.
@@ -169,36 +169,35 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, user: str, rec_amt: int):
 
 
 
-def main():
-
-    # client.mutation("seed:seed") 
-    USER     = "Manjot"
-    REC_AMT  = 5  # friendRec schema only currently supports 5. 
+def main(user: str, rec_amt: int, seed: bool):
     
-    if not user_exists(USER):
-        raise Exception(f"\"{USER}\" cannot be found in users.")
+    if seed:
+        client.mutation("seed:seed")    
+        
+    if not user_exists(user):
+        raise Exception(f"\"{user}\" cannot be found in users.")
 
     raw_events_df          = raw_matrix_events()
-    simscores_events_df    = similarity_score(raw_events_df, USER)
-    print(f"\nRecs based on Attended Events for {USER}: {simscores_events_df}")
+    simscores_events_df    = similarity_score(raw_events_df, user)
+    # print(f"\nRecs based on Attended Events for {user}: {simscores_events_df}")
 
     raw_eventTags_df       = raw_matrix_eventTags()
-    simscores_eventTags_df = similarity_score(raw_eventTags_df, USER)
-    print(f"\nRecs based on Event Tags for {USER}: {simscores_eventTags_df}")
+    simscores_eventTags_df = similarity_score(raw_eventTags_df, user)
+    # print(f"\nRecs based on Event Tags for {user}: {simscores_eventTags_df}")
 
     raw_postTags_df        = raw_matrix_postTags()
-    simscores_postTags_df  = similarity_score(raw_postTags_df, USER)
-    print(f"\nRecs based on Post Tags for {USER}: {simscores_postTags_df}")
+    simscores_postTags_df  = similarity_score(raw_postTags_df, user)
+    # print(f"\nRecs based on Post Tags for {user}: {simscores_postTags_df}")
 
     simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
-    upsert_friend_recs(simscores_weighted, USER, REC_AMT)
+    upsert_friend_recs(simscores_weighted, user, rec_amt)
 
 
+
+USER     = "Manjot"
+REC_AMT  = 5  # friendRec schema only currently supports 5. 
+SEED     = False
 
 if __name__ == "__main__":
-    # pd.set_option('display.max_rows', None)
-    # pd.set_option('display.max_columns', None)
-    # pd.set_option('display.max_colwidth', 20)
-    # pd.set_option('display.width', 1000)
-    main()
+    main(USER, REC_AMT, False)
 

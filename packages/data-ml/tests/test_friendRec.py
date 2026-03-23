@@ -17,6 +17,7 @@ from friendRec import (
     similarity_score,
     sim_scores_weighted,
     upsert_friend_recs,
+    main
 )
 
 
@@ -307,3 +308,29 @@ def test_sim_scores_weighted_correct_calculation(sample_score_df):
     result = sim_scores_weighted(sample_score_df, sample_score_df, sample_score_df)
     expected = sample_score_df * 0.80 + sample_score_df * 0.15 + sample_score_df * 0.05
     pd.testing.assert_frame_equal(result, expected)
+    
+    
+    
+
+
+# ------------------------------
+#  upsert_friend_recs()
+# ------------------------------
+
+def test_upsert_friend_recs_calls_mutation(mock_client, sample_score_df):
+    upsert_friend_recs(sample_score_df, "alice", 2)
+    mock_client.mutation.assert_called_once()
+
+def test_upsert_friends_recs_exceed_recamt(mock_client, sample_score_df):
+    mock_client.query.side_effect = [sample_score_df]
+    with pytest.raises(Exception):
+        upsert_friend_recs(sample_score_df, "alice", 6)
+    
+
+# ------------------------------
+#  main()
+# ------------------------------
+
+def test_main_user_not_exist():
+    with pytest.raises(Exception):
+        main("gorilla-sushi", 5, False)
