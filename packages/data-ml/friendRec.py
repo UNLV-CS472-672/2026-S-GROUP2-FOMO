@@ -154,8 +154,6 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, user: str, rec_amt: int):
     if rec_amt > len(sim_scores):
         raise Exception(f"rec_amt ({rec_amt}) exceeds available users ({len(sim_scores)}).")
     
-    print(sim_scores)
-    
 
     # Sort top rec_amt recommended users, create list.
     top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False).head(rec_amt)
@@ -168,7 +166,6 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, user: str, rec_amt: int):
     client.mutation("friendRecs:upsert", {"user": user, 
                                           "recs": top_sim_scores
                                           })  
-    return
 
 
 

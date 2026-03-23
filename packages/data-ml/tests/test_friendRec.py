@@ -91,6 +91,10 @@ def sample_similarity_df():
     }
     return pd.DataFrame(data, index=["seed|alice", "seed|bob", "seed|reece"])
 
+@pytest.fixture
+def sample_score_df():
+    return pd.DataFrame({"similarity_score": [0.4, 0.6]}, index=["alice", "bob"])
+
 
 
 
@@ -278,5 +282,28 @@ def test_similarity_score_excludes_self(sample_similarity_df):
     
     
 # ------------------------------
-#  simscores_weighted()
+#  sim_scores_weighted()
 # ------------------------------
+
+# Ensure that the return value is a pandas df.
+def test_sim_scores_weighted_returns_dataframe(sample_score_df):
+    result = sim_scores_weighted(sample_score_df, sample_score_df, sample_score_df)
+    assert isinstance(result, pd.DataFrame)
+
+# Ensure that the df row index are users.
+def test_sim_scores_weighted_values_rows_are_users(sample_score_df):
+    result = sim_scores_weighted(sample_score_df, sample_score_df, sample_score_df)
+    assert "alice" in result.index
+    assert "bob"   in result.index
+    
+# Ensure that df should be one column, similarity_score (shape = [?, 1]). 
+def test_simscores_weighted_values_col_is_similarity_score(sample_score_df):
+    result = sim_scores_weighted(sample_score_df, sample_score_df, sample_score_df)
+    assert result.shape[1] == 1
+    assert result.columns[0] == "similarity_score"
+
+# Ensure that multiplicands and summations are applied correctly.
+def test_sim_scores_weighted_correct_calculation(sample_score_df):
+    result = sim_scores_weighted(sample_score_df, sample_score_df, sample_score_df)
+    expected = sample_score_df * 0.80 + sample_score_df * 0.15 + sample_score_df * 0.05
+    pd.testing.assert_frame_equal(result, expected)
