@@ -6,8 +6,6 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from friendRec import user_exists
-
 from friendRec import (
     user_exists,
     join_user_events,

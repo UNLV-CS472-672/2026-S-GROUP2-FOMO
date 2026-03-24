@@ -127,7 +127,6 @@ def similarity_score(df: pd.DataFrame, target_user: str) -> pd.DataFrame:
             user_similarity_df[target_user]
             .drop(target_user))
         similar_users = pd.DataFrame({"similarity_score": similar_users})
-        print(similar_users.shape)
         return similar_users
     
     except KeyError:
