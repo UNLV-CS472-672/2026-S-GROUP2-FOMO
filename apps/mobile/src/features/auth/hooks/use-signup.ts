@@ -1,5 +1,6 @@
 import { buildClerkErrorState, clearAuthErrors, SignUpErrors } from '@/features/auth/utils/errors';
-import { useAuth, useSignUp } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/expo';
+import { useSignUp } from '@clerk/expo/legacy';
 import { useState } from 'react';
 
 type SignUpStatus = 'idle' | 'submitting' | 'verifying' | 'resending';

@@ -1,5 +1,6 @@
 import { buildClerkErrorState, clearAuthErrors, LoginErrors } from '@/features/auth/utils/errors';
-import { useAuth, useSignIn } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/expo';
+import { useSignIn } from '@clerk/expo/legacy';
 import { useState } from 'react';
 
 type AuthMethod = 'password' | 'email_code';

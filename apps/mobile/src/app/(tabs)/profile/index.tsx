@@ -1,4 +1,4 @@
-import { useAuth, useUser } from '@clerk/clerk-expo';
+import { useAuth, useUser } from '@clerk/expo';
 import { useConvexAuth } from 'convex/react';
 import { useRouter } from 'expo-router';
 import { Text } from 'react-native';

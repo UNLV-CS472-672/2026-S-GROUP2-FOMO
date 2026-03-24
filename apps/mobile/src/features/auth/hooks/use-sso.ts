@@ -1,5 +1,5 @@
-import { useAuth, useSSO } from '@clerk/clerk-expo';
-import type { SignUpResource } from '@clerk/types';
+import { useAuth, useSSO } from '@clerk/expo';
+import type { SignUpResource } from '@clerk/shared/types';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
@@ -28,7 +28,7 @@ export function useSso({ clearErrors, handleError, mode = 'signup' }: UseSsoArgs
   const [isCompletingUsername, setIsCompletingUsername] = useState(false);
   const allowSignUp = mode === 'signup';
 
-  const isUsernameMissing = (signUp: SignUpResource | null | undefined): signUp is SignUpResource =>
+  const isUsernameMissing = (signUp: SignUpResource | undefined): signUp is SignUpResource =>
     !!signUp &&
     signUp.status === 'missing_requirements' &&
     Array.isArray(signUp.missingFields) &&
