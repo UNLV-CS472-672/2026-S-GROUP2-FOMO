@@ -189,7 +189,7 @@ def main(user: str, rec_amt: int, seed: bool):
 
 
 
-USER     = "Manjot"  # Currently by userName, should be by userId soon.
+USER     = "n177gtr19ny9x8btdvgpjj3wps823zsg"  # Currently by userName, should be by userId soon.
 REC_AMT  = 5         # friendRec schema only currently supports 5. 
 SEED     = False     # Dictates if fake data needs to be populated into Convex.
 
