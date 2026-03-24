@@ -126,7 +126,7 @@ def similarity_score(df: pd.DataFrame, target_user_id: str) -> pd.DataFrame:
         return similar_users
     
     except KeyError:
-        raise KeyError(f"ERROR: '{target_user}' not found in DataFrame.")
+        raise KeyError(f"ERROR: '{target_user_id}' not found in DataFrame.")
     
     
     
