@@ -17,6 +17,12 @@ importers:
       '@commitlint/config-conventional':
         specifier: ^19.6.0
         version: 19.8.1
+      '@t3-oss/env-core':
+        specifier: ^0.13.10
+        version: 0.13.11(typescript@5.9.3)(zod@3.25.76)
+      '@t3-oss/env-nextjs':
+        specifier: ^0.13.10
+        version: 0.13.11(typescript@5.9.3)(zod@3.25.76)
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -44,6 +50,9 @@ importers:
       typescript:
         specifier: ^5
         version: 5.9.3
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
 
   apps/mobile:
     dependencies:
@@ -168,6 +177,9 @@ importers:
       '@fomo/backend':
         specifier: workspace:*
         version: link:../../packages/backend
+      '@fomo/env':
+        specifier: workspace:*
+        version: link:../../packages/env
       lucide-react:
         specifier: ^0.577.0
         version: 0.577.0(react@19.1.0)
@@ -205,9 +217,14 @@ importers:
 
   packages/backend:
     dependencies:
+      '@fomo/env':
+        specifier: workspace:*
+        version: link:../env
       convex:
         specifier: ^1.31.7
         version: 1.31.7(@clerk/clerk-react@5.61.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
+
+  packages/env: {}
 
 packages:
   '@0no-co/graphql.web@1.2.0':
@@ -3150,6 +3167,46 @@ packages:
       {
         integrity: sha512-QamiFeIK3txNjgUTNppE6MiG3p7TdninpZu0E0PbqVh1a9FNLT2FRhisaa4NcaX52XVhA5l7Pk58Ft7Sqi/2sA==,
       }
+
+  '@t3-oss/env-core@0.13.11':
+    resolution:
+      {
+        integrity: sha512-sM7GYY+KL7H/Hl0BE0inWfk3nRHZOLhmVn7sHGxaZt9FAR6KqREXAE+6TqKfiavfXmpRxO/OZ2QgKRd+oiBYRQ==,
+      }
+    peerDependencies:
+      arktype: ^2.1.0
+      typescript: '>=5.0.0'
+      valibot: ^1.0.0-beta.7 || ^1.0.0
+      zod: ^3.24.0 || ^4.0.0
+    peerDependenciesMeta:
+      arktype:
+        optional: true
+      typescript:
+        optional: true
+      valibot:
+        optional: true
+      zod:
+        optional: true
+
+  '@t3-oss/env-nextjs@0.13.11':
+    resolution:
+      {
+        integrity: sha512-NC+3j7YWgpzdFu1t5y/8wqibTK0lm5RS4bjXA1n8uwik3wIR4iZM4Fa+U2BaMa5k3Qk8RZiYhoAIX0WogmGkzg==,
+      }
+    peerDependencies:
+      arktype: ^2.1.0
+      typescript: '>=5.0.0'
+      valibot: ^1.0.0-beta.7 || ^1.0.0
+      zod: ^3.24.0 || ^4.0.0
+    peerDependenciesMeta:
+      arktype:
+        optional: true
+      typescript:
+        optional: true
+      valibot:
+        optional: true
+      zod:
+        optional: true
 
   '@tailwindcss/node@4.1.17':
     resolution:
@@ -6338,7 +6395,6 @@ packages:
         integrity: sha512-ICsMM1Wk8xSGMowkOmPrzo2Fgmfo4bMHLNX6ytHjajRJUqvHOw/TFapQ+QG75c3X/tTDDhOSRPGC52dDbNM8FQ==,
       }
     engines: { node: '>=16' }
-    deprecated: This package is no longer maintained. For the JavaScript API, please use @conventional-changelog/git-client instead.
     hasBin: true
 
   glob-parent@5.1.2:
@@ -10371,6 +10427,12 @@ packages:
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
 
+  zod@3.25.76:
+    resolution:
+      {
+        integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==,
+      }
+
   zod@4.3.6:
     resolution:
       {
@@ -12508,7 +12570,7 @@ snapshots:
 
   '@scure/bip32@1.7.0':
     dependencies:
-      '@noble/curves': 1.9.1
+      '@noble/curves': 1.9.7
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
 
@@ -12756,6 +12818,18 @@ snapshots:
   '@swc/helpers@0.5.19':
     dependencies:
       tslib: 2.8.1
+
+  '@t3-oss/env-core@0.13.11(typescript@5.9.3)(zod@3.25.76)':
+    optionalDependencies:
+      typescript: 5.9.3
+      zod: 3.25.76
+
+  '@t3-oss/env-nextjs@0.13.11(typescript@5.9.3)(zod@3.25.76)':
+    dependencies:
+      '@t3-oss/env-core': 0.13.11(typescript@5.9.3)(zod@3.25.76)
+    optionalDependencies:
+      typescript: 5.9.3
+      zod: 3.25.76
 
   '@tailwindcss/node@4.1.17':
     dependencies:
@@ -14281,7 +14355,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.54.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1)):
+  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.54.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1)):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
@@ -14312,7 +14386,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.39.2(jiti@2.6.1)
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.54.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1))
+      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.54.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1))
       hasown: 2.0.2
       is-core-module: 2.16.1
       is-glob: 4.0.3
@@ -14359,8 +14433,8 @@ snapshots:
       '@babel/parser': 7.29.0
       eslint: 9.39.2(jiti@2.6.1)
       hermes-parser: 0.25.1
-      zod: 4.3.6
-      zod-validation-error: 4.0.2(zod@4.3.6)
+      zod: 3.25.76
+      zod-validation-error: 4.0.2(zod@3.25.76)
     transitivePeerDependencies:
       - supports-color
 
@@ -17422,11 +17496,14 @@ snapshots:
 
   yocto-queue@1.2.2: {}
 
-  zod-validation-error@4.0.2(zod@4.3.6):
+  zod-validation-error@4.0.2(zod@3.25.76):
     dependencies:
-      zod: 4.3.6
+      zod: 3.25.76
 
-  zod@4.3.6: {}
+  zod@3.25.76: {}
+
+  zod@4.3.6:
+    optional: true
 
   zustand@5.0.3(@types/react@19.2.3)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0)):
     optionalDependencies:
