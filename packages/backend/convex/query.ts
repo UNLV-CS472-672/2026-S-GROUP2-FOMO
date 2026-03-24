@@ -1,6 +1,6 @@
 import { v, Validator } from 'convex/values';
+import { TableNames } from './_generated/dataModel';
 import { query } from './_generated/server';
-import { TableNames } from "./_generated/dataModel";
 
 export const list = query({
   args: { table_name: v.string() as Validator<TableNames> },
@@ -18,8 +18,15 @@ export const user = query({
   args: { name: v.string() },
   handler: async (ctx, { name }) => {
     return await ctx.db
-      .query("users")
-      .withIndex("by_token", (q) => q.eq("tokenIdentifier", name))
+      .query('users')
+      .withIndex('by_token', (q) => q.eq('tokenIdentifier', name))
       .first();
+  },
+});
+
+export const userId = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    return await ctx.db.get(userId);
   },
 });
