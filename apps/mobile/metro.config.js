@@ -5,6 +5,8 @@ const { withUniwindConfig } = require('uniwind/metro');
 const config = getDefaultConfig(__dirname);
 // Disable web platform resolution
 config.resolver.platforms = ['ios', 'android'];
+// Required for h3-js v4 (uses package.json "exports" field)
+config.resolver.unstable_enablePackageExports = true;
 
 module.exports = withUniwindConfig(config, {
   cssEntryFile: './src/global.css',

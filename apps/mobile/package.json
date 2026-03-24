@@ -18,7 +18,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@clerk/clerk-expo": "^2.19.27",
+    "@clerk/clerk-expo": "^2.19.30",
     "@convex-dev/react-query": "^0.1.0",
     "@expo/vector-icons": "^15.0.3",
     "@react-navigation/bottom-tabs": "^7.4.0",
@@ -43,6 +43,7 @@
     "expo-symbols": "~1.0.8",
     "expo-system-ui": "~6.0.9",
     "expo-web-browser": "~15.0.10",
+    "h3-js": "^4.4.0",
     "react": "19.1.0",
     "react-native": "0.81.5",
     "react-native-gesture-handler": "~2.28.0",
