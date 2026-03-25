@@ -3,18 +3,18 @@ import { mutation } from './_generated/server';
 
 export const upsert = mutation({
   args: {
-    user: v.string(), // Change to ID
+    userId: v.id('users'),
     recs: v.array(
       v.object({
-        userId: v.string(),
+        userId: v.id('users'),
         score: v.number(),
       })
     ),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
-      .query("friendRecs")
-      .withIndex("by_user", (q) => q.eq("user", args.user))
+      .query('friendRecs')
+      .withIndex('by_userId', (q) => q.eq('userId', args.userId))
       .unique();
     if (existing) {
       await ctx.db.patch(existing._id, {
@@ -22,7 +22,7 @@ export const upsert = mutation({
       });
     } else {
       await ctx.db.insert('friendRecs', {
-        user: args.user,
+        userId: args.userId,
         recs: args.recs,
       });
     }

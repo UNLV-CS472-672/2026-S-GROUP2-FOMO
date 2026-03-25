@@ -1,58 +1,131 @@
+//imports for navigation and UI components
+import ProfilePicture from '@/components/profile/profile-picture';
+import { Button, ButtonText } from '@/components/ui/button';
+import PostGrid from '@/components/ui/post-grid';
+import { Screen } from '@/components/ui/screen';
+import StatLabel from '@/components/ui/stat-label';
+import { useRouter } from 'expo-router';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+
+// imports for authentication and guest mode
+import { GuestMode } from '@/components/profile/guest-mode';
+import { allPosts, recentPosts, taggedPosts } from '@/features/posts/post-data';
+import { useGuest } from '@/integrations/session/provider';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useConvexAuth } from 'convex/react';
-import { useRouter } from 'expo-router';
-import { Text } from 'react-native';
+import { useState } from 'react';
 
-import { GuestMode } from '@/components/profile/guest-mode';
-import { Button, ButtonText } from '@/components/ui/button';
-import { Screen } from '@/components/ui/screen';
-import { useGuest } from '@/integrations/session/provider';
+//import for icons
+import { MaterialIcons } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
   const router = useRouter();
+
+  // Authentication state from both Clerk and Convex
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { signOut, userId } = useAuth();
   const { user } = useUser();
   const username = user?.username ?? 'Guest';
   const { isGuestMode } = useGuest();
 
+  //In app profile information/states
+  const [activeTab, setActiveTab] = useState<'all' | 'recent' | 'tagged'>('all');
+  const description =
+    'This is a placeholder bio. In a real app, this would be editable by the user and stored in the backend.';
+
   return (
-    <Screen className="items-center justify-center gap-3 p-6">
-      <Text className="text-[30px] font-bold leading-8 text-app-text">Profile</Text>
+    <Screen className="flex-1">
       {isGuestMode ? (
         <GuestMode />
       ) : (
-        <>
-          <Text className="text-center text-base leading-6 text-app-text">
-            Account, preferences, and friends will live here.
-          </Text>
-          <Text className="text-center text-base leading-6 text-app-text">
-            {`isAuthenticated: ${isAuthenticated}\n`}
-            {`isLoading: ${isLoading}\n`}
-            {`userId: ${userId}\n`}
-            {`username: ${username}`}
-          </Text>
+        <ScrollView className="flex-1 bg-background pt-20">
+          <View className="flex-row items-start p-4">
+            <ProfilePicture imageSource={require('@/assets/images/icon.png')} />
 
-          <Button
-            variant="secondary"
-            className="mt-2"
-            onPress={() => router.push('/profile/friends')}
-          >
-            <ButtonText variant="secondary">Friends</ButtonText>
-          </Button>
+            <View className="ml-3 flex-1 pr-0">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-lg font-bold text-app-text">{username}</Text>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onPress={() => router.push('/profile/settings')}
+                  className="-mr-3 rounded-full"
+                  accessibilityLabel="Open settings"
+                >
+                  <MaterialIcons name="settings" size={22} color="#687076" />
+                </Button>
+              </View>
+              <Text className="text-sm leading-5 text-app-text">{description}</Text>{' '}
+              {/* Placeholder bio text */}
+            </View>
+          </View>
 
-          <Button
-            variant="secondary"
-            className="mt-2"
-            onPress={() => router.push('/profile/settings')}
-          >
-            <ButtonText variant="secondary">Settings</ButtonText>
-          </Button>
+          <View className="px-4 pb-4">
+            <View className="flex-row w-full">
+              <View className="flex-1 items-center">
+                <StatLabel value={42} label="Posts" onPress={() => {}} />
+              </View>
+              <View className="flex-1 items-center">
+                <StatLabel
+                  value={24}
+                  label="Followers"
+                  onPress={() => router.push('/profile/friends')}
+                />
+              </View>
+            </View>
+          </View>
 
-          <Button variant="secondary" className="mt-2" onPress={() => signOut()}>
-            <ButtonText variant="secondary">Log out</ButtonText>
-          </Button>
-        </>
+          <View className="mb-4 flex-row px-4">
+            <Button
+              variant="tertiary"
+              className="h-[82px] flex-1 rounded-none border border-app-border"
+            >
+              <ButtonText className="text-black">Recent Activity</ButtonText>
+            </Button>
+          </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="mb-4"
+            contentContainerClassName="px-4"
+          />
+
+          <View className="flex-row border-y border-neutral-300">
+            <TouchableOpacity
+              className={`flex-1 items-center py-3 ${activeTab === 'all' ? 'border-b-[5px] border-b-app-border' : ''}`}
+              onPress={() => setActiveTab('all')}
+            >
+              <Text className={activeTab === 'all' ? 'text-app-border' : 'text-muted-foreground'}>
+                All
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className={`flex-1 items-center py-3 ${activeTab === 'recent' ? 'border-b-[5px] border-b-app-border' : ''}`}
+              onPress={() => setActiveTab('recent')}
+            >
+              <Text
+                className={activeTab === 'recent' ? 'text-app-border' : 'text-muted-foreground'}
+              >
+                Recent
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className={`flex-1 items-center py-3 ${activeTab === 'tagged' ? 'border-b-[5px] border-b-app-border' : ''}`}
+              onPress={() => setActiveTab('tagged')}
+            >
+              <Text
+                className={activeTab === 'tagged' ? 'text-app-border' : 'text-muted-foreground'}
+              >
+                Tagged
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {activeTab === 'all' && <PostGrid posts={allPosts} />}
+          {activeTab === 'recent' && <PostGrid posts={recentPosts} />}
+          {activeTab === 'tagged' && <PostGrid posts={taggedPosts} />}
+        </ScrollView>
       )}
     </Screen>
   );

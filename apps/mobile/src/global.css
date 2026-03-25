@@ -8,12 +8,14 @@
       --color-app-background: #ffffff;
       --color-app-tint: #0a7ea4;
       --color-app-icon: #687076;
+      --color-app-border: #f59e0b;
     }
     @variant dark {
       --color-app-text: #ecedee;
       --color-app-background: #151718;
       --color-app-tint: #ffffff;
       --color-app-icon: #9ba1a6;
+      --color-app-border: #f59e0b;
     }
   }
 }
