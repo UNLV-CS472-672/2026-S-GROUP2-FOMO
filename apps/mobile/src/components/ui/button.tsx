@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 import { Pressable, PressableProps, Text, TextProps } from 'react-native';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'ghost' | 'icon';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 type ButtonProps = PressableProps & {
@@ -18,7 +18,9 @@ type ButtonTextProps = TextProps & {
 const variantClasses: Record<ButtonVariant, string> = {
   primary: 'bg-app-tint',
   secondary: 'border border-app-icon/30 bg-app-background',
+  tertiary: 'bg-app-background',
   ghost: 'bg-transparent',
+  icon: 'bg-transparent',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -27,10 +29,18 @@ const sizeClasses: Record<ButtonSize, string> = {
   lg: 'rounded-xl px-4 py-4',
 };
 
+const iconSizeClasses: Record<ButtonSize, string> = {
+  sm: 'h-9 w-9 rounded-lg',
+  md: 'h-10 w-10 rounded-xl',
+  lg: 'h-12 w-12 rounded-xl',
+};
+
 const textVariantClasses: Record<ButtonVariant, string> = {
   primary: 'text-app-background',
   secondary: 'text-app-text',
+  tertiary: 'text-app-text',
   ghost: 'text-app-text',
+  icon: '',
 };
 
 export function Button({
@@ -39,6 +49,8 @@ export function Button({
   className,
   disabled,
   children,
+  accessibilityRole = 'button',
+  hitSlop,
   ...props
 }: ButtonProps) {
   return (
@@ -47,10 +59,13 @@ export function Button({
         'items-center justify-center rounded-3xl',
         variantClasses[variant],
         sizeClasses[size],
+        variant === 'icon' ? iconSizeClasses[size] : sizeClasses[size],
         disabled && 'opacity-50',
         className
       )}
       disabled={disabled}
+      accessibilityRole={accessibilityRole}
+      hitSlop={hitSlop ?? (variant === 'icon' ? 8 : undefined)}
       {...props}
     >
       {children}
@@ -59,6 +74,7 @@ export function Button({
 }
 
 export function ButtonText({ variant = 'primary', className, ...props }: ButtonTextProps) {
+  if (variant === 'icon') return null;
   return (
     <Text className={cn('font-semibold', textVariantClasses[variant], className)} {...props} />
   );
