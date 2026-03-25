@@ -8,7 +8,7 @@ const _savedTextDecoder = (global as any).TextDecoder;
 const { latLngToCell, cellToBoundary } = require('h3-js') as typeof import('h3-js');
 (global as any).TextDecoder = _savedTextDecoder;
 
-import type { FeatureCollection, Polygon } from 'geojson';
+import type { FeatureCollection, Point, Polygon } from 'geojson';
 
 // Hexagon resolution size, best utilized for city sizing
 export const H3_RESOLUTION = 9;
@@ -21,6 +21,20 @@ export const H3_RESOLUTION = 9;
  */
 export function coordsToH3Cell(longitude: number, latitude: number): string {
   return latLngToCell(latitude, longitude, H3_RESOLUTION);
+}
+
+// Convert array of longitude, latitude, weight points to a GeoJSON FeatureCollection for heatmap
+export function pointsToGeoJSON(
+  points: { longitude: number; latitude: number; weight: number }[]
+): FeatureCollection<Point, { weight: number }> {
+  return {
+    type: 'FeatureCollection',
+    features: points.map(({ longitude, latitude, weight }) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [longitude, latitude] },
+      properties: { weight },
+    })),
+  };
 }
 
 // Convert array of h3Index and count from events to a GeoJSON, allows for transfer to Mapbox
