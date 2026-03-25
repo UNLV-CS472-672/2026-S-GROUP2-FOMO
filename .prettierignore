@@ -1,1 +1,9 @@
 packages/backend/convex/_generated
+apps/mobile/src/uniwind-types.d.ts
+apps/mobile/expo-env.d.ts
+apps/mobile/.expo
+apps/mobile/android
+apps/mobile/ios
+**/*.tsbuildinfo
+**/dist
+**/.turbo
