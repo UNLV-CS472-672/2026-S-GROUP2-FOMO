@@ -15,6 +15,8 @@ export default defineSchema({
     description: v.string(),
     startDate: v.number(), // ms since epoch
     endDate: v.number(), // ms since epoch
+    latitude: v.number(),
+    longitude: v.number(),
   })
     .index('by_startDate', ['startDate'])
     .index('by_endDate', ['endDate'])
