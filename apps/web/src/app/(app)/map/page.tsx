@@ -36,12 +36,14 @@ const FALLBACK_COORDS: Coordinates = [-115.1398, 36.1699];
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
 
 function useUserLocation() {
-  const [userCoords, setUserCoords] = useState<Coordinates | null>(null);
+  const geolocationAvailable =
+    typeof navigator !== 'undefined' && typeof navigator.geolocation !== 'undefined';
+  const [userCoords, setUserCoords] = useState<Coordinates>(FALLBACK_COORDS);
+  const [hasResolvedLocation, setHasResolvedLocation] = useState(!geolocationAvailable);
   const [locationGranted, setLocationGranted] = useState(false);
 
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setUserCoords(FALLBACK_COORDS);
+    if (!geolocationAvailable) {
       return;
     }
 
@@ -49,17 +51,18 @@ function useUserLocation() {
       ({ coords }) => {
         setLocationGranted(true);
         setUserCoords([coords.longitude, coords.latitude]);
+        setHasResolvedLocation(true);
       },
       () => {
-        setUserCoords(FALLBACK_COORDS);
+        setHasResolvedLocation(true);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
     );
-  }, []);
+  }, [geolocationAvailable]);
 
   return {
-    centerCoordinate: userCoords ?? FALLBACK_COORDS,
-    hasResolvedLocation: userCoords !== null,
+    centerCoordinate: userCoords,
+    hasResolvedLocation,
     locationGranted,
   };
 }
@@ -158,7 +161,7 @@ export default function MapPage() {
         mapRef.current = new mapboxgl.Map({
           container: mapContainerRef.current,
           style: 'mapbox://styles/mapbox/dark-v11',
-          center: centerCoordinate,
+          center: FALLBACK_COORDS,
           zoom: 13,
           attributionControl: false,
         });
@@ -277,6 +280,7 @@ export default function MapPage() {
   return (
     <section className="relative h-[calc(100vh-7rem)] min-h-[32rem] overflow-hidden rounded-[2rem] border border-white/[0.12] bg-[#05070b]">
       {staticMapSrc ? (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={staticMapSrc}
           alt="Map"
