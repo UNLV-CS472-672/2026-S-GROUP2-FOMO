@@ -4,6 +4,8 @@ apps/mobile/expo-env.d.ts
 apps/mobile/.expo
 apps/mobile/android
 apps/mobile/ios
+apps/web/next-env.d.ts
+apps/web/.next
 **/*.tsbuildinfo
 **/dist
 **/.turbo
