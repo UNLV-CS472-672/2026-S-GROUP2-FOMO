@@ -1,57 +1,358 @@
+'use client';
+
+import { useSidebar } from '@/components/ui/sidebar';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+type Coordinates = [number, number];
+
+type MapboxMap = {
+  on: (event: string, handler: () => void) => void;
+  flyTo: (options: Record<string, unknown>) => void;
+  jumpTo: (options: Record<string, unknown>) => void;
+  resize: () => void;
+  remove: () => void;
+};
+
+type MapboxMarker = {
+  setLngLat: (coords: Coordinates) => MapboxMarker;
+  addTo: (map: MapboxMap) => MapboxMarker;
+  remove: () => void;
+};
+
+type MapboxGlobal = {
+  Map: new (options: Record<string, unknown>) => MapboxMap;
+  Marker: new (options: Record<string, unknown>) => MapboxMarker;
+  accessToken: string;
+};
+
+declare global {
+  interface Window {
+    mapboxgl?: MapboxGlobal;
+  }
+}
+
+// Las Vegas Coords
+const FALLBACK_COORDS: Coordinates = [-115.1398, 36.1699];
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
+
+function useUserLocation() {
+  const [userCoords, setUserCoords] = useState<Coordinates | null>(null);
+  const [locationGranted, setLocationGranted] = useState(false);
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setUserCoords(FALLBACK_COORDS);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setLocationGranted(true);
+        setUserCoords([coords.longitude, coords.latitude]);
+      },
+      () => {
+        setUserCoords(FALLBACK_COORDS);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+    );
+  }, []);
+
+  return {
+    centerCoordinate: userCoords ?? FALLBACK_COORDS,
+    hasResolvedLocation: userCoords !== null,
+    locationGranted,
+  };
+}
+
+function loadMapboxAssets() {
+  const existingScript = document.querySelector<HTMLScriptElement>('script[data-mapbox-gl]');
+  const existingStylesheet = document.querySelector<HTMLLinkElement>('link[data-mapbox-gl]');
+
+  if (!existingStylesheet) {
+    const stylesheet = document.createElement('link');
+    stylesheet.rel = 'stylesheet';
+    stylesheet.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
+    stylesheet.dataset.mapboxGl = 'true';
+    document.head.appendChild(stylesheet);
+  }
+
+  if (window.mapboxgl) {
+    return Promise.resolve(window.mapboxgl);
+  }
+
+  if (existingScript) {
+    return new Promise<MapboxGlobal>((resolve, reject) => {
+      existingScript.addEventListener('load', () => {
+        if (window.mapboxgl) {
+          resolve(window.mapboxgl);
+          return;
+        }
+
+        reject(new Error('Mapbox GL did not initialize.'));
+      });
+      existingScript.addEventListener('error', () => {
+        reject(new Error('Mapbox GL script failed to load.'));
+      });
+    });
+  }
+
+  return new Promise<MapboxGlobal>((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
+    script.async = true;
+    script.dataset.mapboxGl = 'true';
+    script.onload = () => {
+      if (window.mapboxgl) {
+        resolve(window.mapboxgl);
+        return;
+      }
+
+      reject(new Error('Mapbox GL did not initialize.'));
+    };
+    script.onerror = () => {
+      reject(new Error('Mapbox GL script failed to load.'));
+    };
+    document.body.appendChild(script);
+  });
+}
+
 export default function MapPage() {
+  const { open, isMobile } = useSidebar();
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<MapboxMap | null>(null);
+  const markerRef = useRef<MapboxMarker | null>(null);
+  const mapboxRef = useRef<MapboxGlobal | null>(null);
+  const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
+
+  const staticMapSrc = useMemo(() => {
+    if (!MAPBOX_TOKEN) {
+      return '';
+    }
+
+    const [lng, lat] = centerCoordinate;
+    return `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
+  }, [centerCoordinate]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let loadTimeout: ReturnType<typeof setTimeout> | null = null;
+    let didLoad = false;
+
+    async function initMap() {
+      if (!MAPBOX_TOKEN || !mapContainerRef.current || mapRef.current) {
+        return;
+      }
+
+      try {
+        const mapboxgl = await loadMapboxAssets();
+        if (cancelled || !mapContainerRef.current) {
+          return;
+        }
+
+        mapboxgl.accessToken = MAPBOX_TOKEN;
+        mapboxRef.current = mapboxgl;
+
+        mapRef.current = new mapboxgl.Map({
+          container: mapContainerRef.current,
+          style: 'mapbox://styles/mapbox/dark-v11',
+          center: centerCoordinate,
+          zoom: 13,
+          attributionControl: false,
+        });
+
+        mapRef.current.on('load', () => {
+          if (!cancelled) {
+            didLoad = true;
+            setMapReady(true);
+            setLoadError(null);
+            if (loadTimeout) {
+              clearTimeout(loadTimeout);
+            }
+          }
+        });
+
+        requestAnimationFrame(() => {
+          mapRef.current?.resize();
+        });
+
+        loadTimeout = setTimeout(() => {
+          if (!cancelled && !didLoad) {
+            setLoadError('Mapbox GL timed out. Showing static map fallback.');
+          }
+        }, 5000);
+      } catch (error) {
+        if (!cancelled) {
+          setLoadError(error instanceof Error ? error.message : 'Map failed to load.');
+        }
+      }
+    }
+
+    void initMap();
+
+    return () => {
+      cancelled = true;
+      if (loadTimeout) {
+        clearTimeout(loadTimeout);
+      }
+      markerRef.current?.remove();
+      markerRef.current = null;
+      mapRef.current?.remove();
+      mapRef.current = null;
+      mapboxRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mapRef.current) {
+      return;
+    }
+
+    if (hasResolvedLocation) {
+      mapRef.current.flyTo({
+        center: centerCoordinate,
+        zoom: 13,
+        duration: 1200,
+      });
+    } else {
+      mapRef.current.jumpTo({
+        center: centerCoordinate,
+        zoom: 13,
+      });
+    }
+
+    mapRef.current.resize();
+
+    if (!locationGranted || !mapboxRef.current) {
+      markerRef.current?.remove();
+      markerRef.current = null;
+      return;
+    }
+
+    const markerElement = document.createElement('div');
+    markerElement.className = 'mapbox-location-puck';
+
+    markerRef.current?.remove();
+    markerRef.current = new mapboxRef.current.Marker({ element: markerElement }).setLngLat(
+      centerCoordinate
+    );
+    markerRef.current.addTo(mapRef.current);
+  }, [centerCoordinate, hasResolvedLocation, locationGranted]);
+
+  useEffect(() => {
+    const container = mapContainerRef.current;
+    if (!container || !mapRef.current || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      mapRef.current?.resize();
+    });
+
+    observer.observe(container);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mapRef.current || isMobile) {
+      return;
+    }
+
+    const resizeFrames = [0, 120, 240];
+    const timers = resizeFrames.map((delay) =>
+      window.setTimeout(() => {
+        mapRef.current?.resize();
+      }, delay)
+    );
+
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [open, isMobile]);
+
   return (
-    <section className="space-y-6">
-      <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">
-          Map
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-          Event map UI shell
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          This page is ready for the backend team to drop in the actual map component. The
-          surrounding controls, filtering area, and detail panel can all live here.
-        </p>
+    <section className="relative h-[calc(100vh-7rem)] min-h-[32rem] overflow-hidden rounded-[2rem] border border-white/[0.12] bg-[#05070b]">
+      {staticMapSrc ? (
+        <img
+          src={staticMapSrc}
+          alt="Map"
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${mapReady ? 'opacity-0' : 'opacity-100'}`}
+        />
+      ) : null}
+
+      <div
+        ref={mapContainerRef}
+        className={`absolute inset-0 transition-opacity duration-300 ${mapReady ? 'opacity-100' : 'opacity-0'}`}
+      />
+
+      {/* Search bar overlay */}
+      <div className="absolute left-4 right-4 top-3 z-10">
+        <button
+          type="button"
+          className="w-full rounded-xl border border-white/[0.12] bg-[rgba(18,18,18,0.92)] px-4 py-3 text-left active:bg-[rgba(38,38,38,0.92)]"
+          onClick={() => setIsSearchOpen((open) => !open)}
+        >
+          <span className="text-[15px] text-white/40">Search places...</span>
+        </button>
+
+        {isSearchOpen ? (
+          <div className="mt-3 rounded-2xl border border-white/[0.12] bg-[rgba(18,18,18,0.96)] p-6 shadow-2xl backdrop-blur">
+            <h2 className="text-[30px] font-bold leading-8 text-white">Search</h2>
+            <p className="mt-2 text-base leading-6 text-white/70">
+              Search by event title, tag, or place name.
+            </p>
+          </div>
+        ) : null}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)]">
-        <div className="min-h-[28rem] rounded-[2rem] border border-dashed border-zinc-300 bg-[linear-gradient(180deg,#fafafa_0%,#f4f4f5_100%)] p-6 dark:border-zinc-700 dark:bg-[linear-gradient(180deg,#171717_0%,#09090b_100%)]">
-          <div className="flex h-full flex-col items-center justify-center rounded-[1.5rem] border border-zinc-200/80 bg-white/70 text-center dark:border-zinc-800 dark:bg-zinc-950/60">
-            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-              Map component placeholder
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-              Backend-owned integration point
-            </h2>
-            <p className="mt-3 max-w-md text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-              Replace this panel with the real map once the API shape and pins are ready.
-            </p>
-          </div>
+      {!MAPBOX_TOKEN ? (
+        <div className="absolute inset-x-4 bottom-4 z-10 rounded-xl border border-amber-400/30 bg-black/70 px-4 py-3 text-sm text-amber-100 backdrop-blur">
+          Set `NEXT_PUBLIC_MAPBOX_TOKEN` in `apps/web/.env.local` and restart the Next dev server.
         </div>
+      ) : null}
 
-        <div className="space-y-6">
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-            <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">Filters</h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              {['Tonight', 'Free', '18+', 'Live music'].map((filter) => (
-                <div
-                  key={filter}
-                  className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
-                >
-                  {filter}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-            <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">Event preview</h2>
-            <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-              Use this area for a selected pin summary, quick RSVP actions, or a slide-over trigger.
-            </p>
-          </div>
+      {loadError ? (
+        <div className="absolute inset-x-4 bottom-4 z-10 rounded-xl border border-red-400/30 bg-black/70 px-4 py-3 text-sm text-red-100 backdrop-blur">
+          {loadError}
         </div>
-      </div>
+      ) : null}
+
+      <style jsx>{`
+        .mapbox-location-puck {
+          position: relative;
+          width: 18px;
+          height: 18px;
+          border-radius: 9999px;
+          border: 2px solid rgba(255, 255, 255, 0.95);
+          background: #4a90d9;
+          box-shadow: 0 0 0 10px rgba(74, 144, 217, 0.18);
+        }
+
+        .mapbox-location-puck::after {
+          content: '';
+          position: absolute;
+          inset: -16px;
+          border-radius: 9999px;
+          background: rgba(74, 144, 217, 0.16);
+          animation: mapbox-pulse 1.8s ease-out infinite;
+        }
+
+        @keyframes mapbox-pulse {
+          0% {
+            transform: scale(0.5);
+            opacity: 0.85;
+          }
+
+          100% {
+            transform: scale(1.4);
+            opacity: 0;
+          }
+        }
+      `}</style>
     </section>
   );
 }
