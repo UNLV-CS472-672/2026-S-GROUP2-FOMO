@@ -4,6 +4,10 @@ from convex import ConvexClient
 from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
 
+load_dotenv()
+CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
+client = ConvexClient(CONVEX_CLOUD_URL)
+
 
 # Checks if a userid exists in the "users" table.
 def user_exists(user_id: str) -> bool:
@@ -114,7 +118,7 @@ def similarity_score(df: pd.DataFrame, target_user_id: str) -> pd.DataFrame:
         user_similarity_df = pd.DataFrame(user_similarity_np,     
                                           index   = df.index,
                                           columns = df.index )
-        
+        # Extract column for target_user only.
         similar_users = (
             user_similarity_df[target_user_id]
             .drop(target_user_id))
@@ -122,10 +126,8 @@ def similarity_score(df: pd.DataFrame, target_user_id: str) -> pd.DataFrame:
         return similar_users
     
     except KeyError:
-        raise Exception(f"ERROR: '{target_user_id}' not found in DataFrame.")
+        raise KeyError(f"ERROR: '{target_user_id}' not found in DataFrame.")
     
-    except:
-        raise Exception("ERROR: User similarity matrix could not be made.")
     
     
 
@@ -147,60 +149,50 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, target_user_id: str, rec_amt: i
     if rec_amt > len(sim_scores):
         raise Exception(f"rec_amt ({rec_amt}) exceeds available users ({len(sim_scores)}).")
     
-    print(sim_scores)
-    
 
     # Sort top rec_amt recommended users, create list.
     top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False).head(rec_amt)
     top_sim_scores = [
-    {"userId": recommended_user_id, "score": float(score)}
-    for recommended_user_id, score in top_sim_scores["similarity_score"].items()
-]
+        {"userId": user, "score": float(score)}
+        for user, score in top_sim_scores["similarity_score"].items()
+    ]
 
     # Add row if user doesn't have any recommended friends, if they do, update names if values changed.
     client.mutation("friendRecs:upsert", {"userId": target_user_id,
                                           "recs": top_sim_scores
                                           })  
-    return
 
 
 
-def main():
-
-    # client.mutation("seed:seed") 
-    USER_ID  = "n177gtr19ny9x8btdvgpjj3wps823zsg"   # Manjot userId
-    REC_AMT  = 5  # friendRec schema only currently supports 5. 
-
-    if not user_exists(USER_ID):
-        raise Exception(f"\"{USER_ID}\" cannot be found in users.")
+def main(user: str, rec_amt: int, seed: bool):
+    
+    if seed:
+        client.mutation("seed:seed")    
+        
+    if not user_exists(user):
+        raise Exception(f"\"{user}\" cannot be found in users.")
 
     raw_events_df          = raw_matrix_events()
-    simscores_events_df    = similarity_score(raw_events_df, USER_ID)
-    print(f"\nRecs based on Attended Events for {USER_ID}: {simscores_events_df}")
+    simscores_events_df    = similarity_score(raw_events_df, user)
+    # print(f"\nRecs based on Attended Events for {user}: {simscores_events_df}")
 
     raw_eventTags_df       = raw_matrix_eventTags()
-    simscores_eventTags_df = similarity_score(raw_eventTags_df, USER_ID)
-    print(f"\nRecs based on Event Tags for {USER_ID}: {simscores_eventTags_df}")
+    simscores_eventTags_df = similarity_score(raw_eventTags_df, user)
+    # print(f"\nRecs based on Event Tags for {user}: {simscores_eventTags_df}")
 
     raw_postTags_df        = raw_matrix_postTags()
-    simscores_postTags_df  = similarity_score(raw_postTags_df, USER_ID)
-    print(f"\nRecs based on Post Tags for {USER_ID}: {simscores_postTags_df}")
+    simscores_postTags_df  = similarity_score(raw_postTags_df, user)
+    # print(f"\nRecs based on Post Tags for {user}: {simscores_postTags_df}")
 
     simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
-    upsert_friend_recs(simscores_weighted, USER_ID, REC_AMT)
+    upsert_friend_recs(simscores_weighted, user, rec_amt)
 
 
+
+USER     = "n177gtr19ny9x8btdvgpjj3wps823zsg"  # Currently by userName, should be by userId soon.
+REC_AMT  = 5         # friendRec schema only currently supports 5. 
+SEED     = False     # Dictates if fake data needs to be populated into Convex.
 
 if __name__ == "__main__":
-
-    load_dotenv()
-    CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
-    client = ConvexClient(CONVEX_CLOUD_URL)
-
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.max_colwidth', 20)
-    pd.set_option('display.width', 1000)
-
-    main()
+    main(USER, REC_AMT, False)
 
