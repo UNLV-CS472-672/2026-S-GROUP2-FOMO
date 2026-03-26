@@ -88,11 +88,11 @@ def sample_similarity_df():
         "Concert":   [1, 0, 0],
         "GameNight": [0, 0, 1],
     }
-    return pd.DataFrame(data, index=["seed|alice", "seed|bob", "seed|reece"])
+    return pd.DataFrame(data, index=["u1", "u2", "u3"])
 
 @pytest.fixture
 def sample_score_df():
-    return pd.DataFrame({"similarity_score": [0.4, 0.6]}, index=["alice", "bob"])
+    return pd.DataFrame({"similarity_score": [0.4, 0.6]}, index=["u1", "u2"])
 
 
 
@@ -265,18 +265,18 @@ def test_raw_matrix_postTags_columns_are_tags(mock_client, sample_users, sample_
 
 # Ensure that the return value is a pandas df.
 def test_similarity_score_returns_dataframe(sample_similarity_df):
-    result = similarity_score(sample_similarity_df, "seed|alice")
+    result = similarity_score(sample_similarity_df, "u1")
     assert isinstance(result, pd.DataFrame)
             
 # Ensure that the df row index are users.
 def test_similarity_scores_values_rows_are_users(sample_similarity_df):
-    result = similarity_score(sample_similarity_df, "seed|alice")
-    assert "seed|bob"   in result.index
-    assert "seed|reece" in result.index
+    result = similarity_score(sample_similarity_df, "u1")
+    assert "u2" in result.index
+    assert "u3" in result.index
     
 # Ensure that df should be one column, similarity_score (shape = [?, 1]). 
 def test_similarity_scores_values_col_is_similarity_score(sample_similarity_df):
-    result = similarity_score(sample_similarity_df, "seed|alice")
+    result = similarity_score(sample_similarity_df, "u1")
     assert result.shape[1] == 1
     assert result.columns[0] == "similarity_score"
 
@@ -287,8 +287,8 @@ def test_similarity_score_handles_keyerror(sample_similarity_df):
         
 # df should not contain the user inputted.
 def test_similarity_score_excludes_self(sample_similarity_df):
-    result = similarity_score(sample_similarity_df, "seed|alice")
-    assert "seed|alice" not in result.index
+    result = similarity_score(sample_similarity_df, "u1")
+    assert "u1" not in result.index
     
     
     
@@ -306,8 +306,8 @@ def test_sim_scores_weighted_returns_dataframe(sample_score_df):
 # Ensure that the df row index are users.
 def test_sim_scores_weighted_values_rows_are_users(sample_score_df):
     result = sim_scores_weighted(sample_score_df, sample_score_df, sample_score_df)
-    assert "alice" in result.index
-    assert "bob"   in result.index
+    assert "u1" in result.index
+    assert "u2" in result.index
     
 # Ensure that df should be one column, similarity_score (shape = [?, 1]). 
 def test_simscores_weighted_values_col_is_similarity_score(sample_score_df):
@@ -336,11 +336,19 @@ def test_upsert_friend_recs_exceed_recamt(mock_client, sample_score_df):
 
 # Ensure that the final row amt is same as input rec_amt.
 def test_upsert_friend_recs_correct_rec_count(mock_client, sample_score_df):
-    mock_client.query.return_value = None  # Assume no friends filtered.
+    mock_client.query.return_value = None  
     upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
     assert len(call_kwargs["recs"]) == 2
-
+    
+# Ensure that if friends exists, they are correctly filtered out.
+def test_upsert_friend_recs_friend_filtering(mock_client, sample_score_df):
+    mock_client.query.side_effect = [{"_id": "u2"}, None]
+    upsert_friend_recs(sample_score_df, "u1", 2)
+    call_kwargs = mock_client.mutation.call_args[0][1]
+    recs = call_kwargs["recs"]
+    assert recs[0]["userId"] == "u1"
+    
 # Ensure that the final df is sorted by top-first.
 def test_upsert_friend_recs_top_scores_selected(mock_client, sample_score_df):
     upsert_friend_recs(sample_score_df, "u1", 2)
