@@ -52,7 +52,7 @@ export default defineSchema({
     userId: v.id('users'),
     eventId: v.id('events'),
   })
-    .index('by_user', ['userId'])
+    .index('by_userId', ['userId'])
     .index('by_event', ['eventId'])
     .index('by_user_event', ['userId', 'eventId']),
 
@@ -80,7 +80,7 @@ export default defineSchema({
         score: v.number(),
       })
     ),
-  }).index('by_user', ['userId']),
+  }).index('by_userId', ['userId']),
 
   friends: defineTable({
     userAId: v.id('users'),

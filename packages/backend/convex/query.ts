@@ -16,7 +16,7 @@ export const list = query({
 });
 
 // Checks if a user exists in "users" via tokenIdentifier.
-export const user = query({
+export const userToken = query({
   args: { name: v.string() },
   handler: async (ctx, { name }) => {
     return await ctx.db
@@ -26,9 +26,30 @@ export const user = query({
   },
 });
 
+// Checks if a user exists in "users" via id.
 export const userId = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
     return await ctx.db.get(userId);
+  },
+});
+
+// Checks if a user exists in "friends" via userId.
+// Given input "userA", checks and returns "userB" if exists, null otherwise.
+export const friend_exists = query({
+  args: {
+    userAId: v.id('users'),
+    userBId: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    const friendship = await ctx.db
+      .query('friends')
+      .withIndex('by_userA_userB', (q) => q.eq('userAId', args.userAId).eq('userBId', args.userBId))
+      .unique();
+
+    if (friendship) {
+      return friendship.userBId;
+    }
+    return null;
   },
 });
