@@ -38,6 +38,7 @@ export function useSignup() {
   const [errors, setErrors] = useState<SignUpErrors | null>(null);
   const [pendingVerification, setPendingVerification] = useState(false);
   const [codeSentMessage, setCodeSentMessage] = useState<string | null>(null);
+  const [resendAvailableAt, setResendAvailableAt] = useState<number | null>(null);
   const [pendingUsernameSetup, setPendingUsernameSetup] = useState<PendingUsernameSetup | null>(
     null
   );
@@ -141,6 +142,7 @@ export function useSignup() {
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setPendingVerification(true);
       setCodeSentMessage('We sent a verification code to your email address.');
+      setResendAvailableAt(Date.now() + 60_000);
     } catch (err) {
       handleClerkError(err);
     } finally {
@@ -187,6 +189,7 @@ export function useSignup() {
 
   const onResendPress = async () => {
     if (!isLoaded || isSignedIn || status !== 'idle') return;
+    if (resendAvailableAt && resendAvailableAt > Date.now()) return;
 
     setErrors(null);
     setStatus('resending');
@@ -194,6 +197,7 @@ export function useSignup() {
     try {
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setCodeSentMessage('Verification code resent.');
+      setResendAvailableAt(Date.now() + 60_000);
     } catch (err) {
       handleClerkError(err);
     } finally {
@@ -210,6 +214,7 @@ export function useSignup() {
       pendingVerification,
       pendingUsernameSetup,
       codeSentMessage,
+      resendAvailableAt,
       errors,
       isSubmitting: status === 'submitting',
       isVerifying: status === 'verifying',

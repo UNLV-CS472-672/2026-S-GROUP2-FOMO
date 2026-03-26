@@ -1,11 +1,12 @@
 import { Button, ButtonText } from '@/components/ui/button';
 import { GoogleButton } from '@/features/auth/components/google-button';
 import { UsernameSetupCard } from '@/features/auth/components/username-setup-card';
+import { VerificationCodeInput } from '@/features/auth/components/verification-code-input';
 import { useGoogleSignIn } from '@/features/auth/hooks/use-google-sign-in';
 import { useSignup } from '@/features/auth/hooks/use-signup';
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
@@ -50,6 +51,23 @@ export default function Page() {
   const emailInputRef = useRef<TextInput | null>(null);
   const passwordInputRef = useRef<TextInput | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  const resendCountdown = state.resendAvailableAt
+    ? Math.max(0, Math.ceil((state.resendAvailableAt - now) / 1000))
+    : 0;
+  const canResendCode = resendCountdown === 0 && !state.isResending;
+
+  useEffect(() => {
+    if (!state.pendingVerification || !state.resendAvailableAt || resendCountdown === 0) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [resendCountdown, state.pendingVerification, state.resendAvailableAt]);
 
   if (shouldShowAuthLoader) {
     return (
@@ -87,34 +105,30 @@ export default function Page() {
 
               <View className="mt-6">
                 <Text className="text-sm font-semibold text-app-text">Verification code</Text>
-                <View className="mt-2 rounded-xl border border-app-icon/30 bg-app-background px-4">
-                  <TextInput
-                    value={state.code}
-                    placeholder="Enter your verification code"
-                    placeholderTextColor="#9CA3AF"
-                    onChangeText={setCode}
-                    keyboardType="numeric"
-                    className="py-3 text-base text-app-text"
-                    autoCapitalize="none"
-                    returnKeyType="done"
-                    onSubmitEditing={onVerifyPress}
-                  />
-                </View>
+                <VerificationCodeInput
+                  value={state.code}
+                  onChangeText={setCode}
+                  onSubmitEditing={onVerifyPress}
+                />
                 {state.errors?.code ? (
                   <Text className="mt-1 text-xs text-red-600">{state.errors.code}</Text>
                 ) : null}
               </View>
 
               <View className="mt-4 flex-row items-center justify-between">
-                <Pressable onPress={onResendPress} disabled={state.isResending}>
+                <Pressable onPress={onResendPress} disabled={!canResendCode}>
                   <Text
                     className={
-                      state.isResending
+                      !canResendCode
                         ? 'text-sm text-app-icon'
                         : 'text-sm font-semibold text-app-tint'
                     }
                   >
-                    {state.isResending ? 'Resending code...' : 'Resend code'}
+                    {state.isResending
+                      ? 'Resending code...'
+                      : canResendCode
+                        ? 'Resend code'
+                        : `Resend code (${resendCountdown}s)`}
                   </Text>
                 </Pressable>
 

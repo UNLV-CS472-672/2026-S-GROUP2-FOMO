@@ -1,5 +1,6 @@
 import { Button, ButtonText } from '@/components/ui/button';
 import { GoogleButton } from '@/features/auth/components/google-button';
+import { VerificationCodeInput } from '@/features/auth/components/verification-code-input';
 import { useGoogleSignIn } from '@/features/auth/hooks/use-google-sign-in';
 import { useLogin } from '@/features/auth/hooks/use-login';
 import { Ionicons } from '@expo/vector-icons';
@@ -172,26 +173,19 @@ export default function LoginScreen() {
             </>
           ) : (
             <>
-              <View className="mt-4">
-                <Text className="text-sm font-semibold text-app-text">Verification code</Text>
-                <View className="mt-2 rounded-xl border border-app-icon/30 bg-app-background px-4">
-                  <TextInput
+              {state.isCodeSent ? (
+                <View className="mt-4">
+                  <Text className="text-sm font-semibold text-app-text">Verification code</Text>
+                  <VerificationCodeInput
                     value={state.code}
-                    placeholder="Enter the 6-digit code"
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="number-pad"
                     onChangeText={setCode}
-                    className="py-3 text-base text-app-text"
-                    maxLength={6}
-                    returnKeyType="done"
                     onSubmitEditing={onVerifyCodePress}
-                    editable={state.isCodeSent}
                   />
+                  {state.errors?.code ? (
+                    <Text className="mt-1 text-xs text-red-600">{state.errors.code}</Text>
+                  ) : null}
                 </View>
-                {state.errors?.code ? (
-                  <Text className="mt-1 text-xs text-red-600">{state.errors.code}</Text>
-                ) : null}
-              </View>
+              ) : null}
 
               <View className="mt-6 flex-row gap-3">
                 <View className="flex-1">
@@ -211,16 +205,18 @@ export default function LoginScreen() {
                     </ButtonText>
                   </Button>
                 </View>
-                <View className="flex-1">
-                  <Button
-                    onPress={onVerifyCodePress}
-                    disabled={!state.code || !state.isCodeSent || state.isSubmitting}
-                  >
-                    <ButtonText>
-                      {state.isSubmitting ? 'Verifying...' : 'Log in with code'}
-                    </ButtonText>
-                  </Button>
-                </View>
+                {state.isCodeSent ? (
+                  <View className="flex-1">
+                    <Button
+                      onPress={onVerifyCodePress}
+                      disabled={!state.code || state.isSubmitting}
+                    >
+                      <ButtonText>
+                        {state.isSubmitting ? 'Verifying...' : 'Log in with code'}
+                      </ButtonText>
+                    </Button>
+                  </View>
+                ) : null}
               </View>
             </>
           )}
