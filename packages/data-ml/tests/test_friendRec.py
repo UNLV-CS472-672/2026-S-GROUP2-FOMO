@@ -104,17 +104,18 @@ def sample_score_df():
 
 # Should return true, since this fake data DOES exist in "users"
 def test_user_exists_returns_true(mock_client):
-    mock_client.query.return_value = {"_id": "randomId", "name": "seed|manjot"}
-    result = user_exists("Manjot")
+    mock_client.query.return_value = {"_id": "u1", "name": "seed|alice"}
+    result = user_exists("u1")
     assert result is True
-    mock_client.query.assert_called_once_with("query:user", {"name": "seed|manjot"})
+    mock_client.query.assert_called_once_with("query:userId", {"userId": "u1"})
 
 # Should return false, since this fake data DOES NOT exist in "users"
 def test_user_exists_returns_false(mock_client):
     mock_client.query.return_value = None
-    result = user_exists("gorilla_sushi")
+    result = user_exists("u1")
     assert result is False
-    mock_client.query.assert_called_once_with("query:user", {"name": "seed|gorilla_sushi"})
+    mock_client.query.assert_called_once_with("query:userId", {"userId": "u1"})
+
     
     
     
@@ -125,31 +126,31 @@ def test_user_exists_returns_false(mock_client):
 # ------------------------------
 
 # Ensure that the return value is a pandas df.
-def test_join_user_events_returns_dataframe(mock_client, sample_users, sample_events, sample_users_to_events):
-    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
+def test_join_user_events_returns_dataframe(mock_client, sample_events, sample_users_to_events):
+    mock_client.query.side_effect = [sample_users_to_events, sample_events]
     result = join_user_events()
     assert isinstance(result, pd.DataFrame)
 
 # According to fake data, ensure column names are correct.
-def test_join_user_events_has_correct_columns(mock_client, sample_users, sample_events, sample_users_to_events):
-    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
+def test_join_user_events_has_correct_columns(mock_client, sample_events, sample_users_to_events):
+    mock_client.query.side_effect = [sample_users_to_events, sample_events]
     result = join_user_events()
-    assert "user" in result.columns
-    assert "event" in result.columns
+    assert "user_id" in result.columns
+    assert "eventId" in result.columns
 
 # According to fake data, ensure # of rows are correct.
-def test_join_user_events_correct_row_count(mock_client, sample_users, sample_events, sample_users_to_events):
-    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
+def test_join_user_events_correct_row_count(mock_client, sample_events, sample_users_to_events):
+    mock_client.query.side_effect = [sample_users_to_events, sample_events]
     result = join_user_events()
     assert len(result) == len(sample_users_to_events)
 
 # According to fake data, ensure data entries are valid.
-def test_join_user_events_correct_values(mock_client, sample_users, sample_events, sample_users_to_events):
-    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
+def test_join_user_events_correct_values(mock_client, sample_events, sample_users_to_events):
+    mock_client.query.side_effect = [sample_users_to_events, sample_events]
     result = join_user_events()
-    assert "seed|alice" in result["user"].values
-    assert "seed|bob" in result["user"].values
-    assert "seed|reece" in result["user"].values
+    assert "u1" in result["user_id"].values
+    assert "u2" in result["user_id"].values
+    assert "u3" in result["user_id"].values
     assert "Hackathon" in result["event"].values
     assert "Concert" in result["event"].values
     assert "GameNight" in result["event"].values
@@ -163,26 +164,26 @@ def test_join_user_events_correct_values(mock_client, sample_users, sample_event
 # ------------------------------
 
 # Ensure that the return value is a pandas df.
-def test_raw_matrix_events_returns_dataframe(mock_client, sample_users, sample_events, sample_users_to_events):
-    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
+def test_raw_matrix_events_returns_dataframe(mock_client, sample_events, sample_users_to_events):
+    mock_client.query.side_effect = [sample_users_to_events, sample_events]
     result = raw_matrix_events()
     assert isinstance(result, pd.DataFrame)
 
 # Ensure that every cell in df is a number (dtype).
-def test_raw_matrix_events_values_are_numbers(mock_client, sample_users, sample_events, sample_users_to_events):
-    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
+def test_raw_matrix_events_values_are_numbers(mock_client, sample_events, sample_users_to_events):
+    mock_client.query.side_effect = [sample_users_to_events, sample_events]
     result = raw_matrix_events()
     assert all(np.issubdtype(dtype, np.number) for dtype in result.dtypes)
 
 # Ensure that the crosstab row index are users.
-def test_raw_matrix_events_users_are_rows(mock_client, sample_users, sample_events, sample_users_to_events):
-    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
+def test_raw_matrix_events_users_are_rows(mock_client, sample_events, sample_users_to_events):
+    mock_client.query.side_effect = [sample_users_to_events, sample_events]
     result = raw_matrix_events()
-    assert "seed|alice" in result.index
+    assert "u1" in result.index
     
 # Ensure that the crosstab col index are events.
-def test_raw_matrix_events_events_are_columns(mock_client, sample_users, sample_events, sample_users_to_events):
-    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events]
+def test_raw_matrix_events_events_are_columns(mock_client, sample_events, sample_users_to_events):
+    mock_client.query.side_effect = [sample_users_to_events, sample_events]
     result = raw_matrix_events()
     assert "Hackathon" in result.columns
     
@@ -195,27 +196,27 @@ def test_raw_matrix_events_events_are_columns(mock_client, sample_users, sample_
 # ------------------------------
 
 # Ensure that the return value is a pandas df.
-def test_raw_matrix_eventTags_returns_dataframe(mock_client, sample_users, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
-    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events, sample_eventTags, sample_tags]
+def test_raw_matrix_eventTags_returns_dataframe(mock_client, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
+    mock_client.query.side_effect = [sample_users_to_events, sample_events, sample_eventTags, sample_tags]
     result = raw_matrix_eventTags()
     assert isinstance(result, pd.DataFrame)
     
 # Ensure that every cell in df is a number (dtype).
-def test_raw_matrix_eventTags_values_are_numbers(mock_client, sample_users, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
-    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events, sample_eventTags, sample_tags]
+def test_raw_matrix_eventTags_values_are_numbers(mock_client, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
+    mock_client.query.side_effect = [sample_users_to_events, sample_events, sample_eventTags, sample_tags]
     result = raw_matrix_eventTags()
     assert all(np.issubdtype(dtype, np.number) for dtype in result.dtypes)
 
 # Ensure that the crosstab row index are users.
-def test_raw_matrix_eventTags_rows_are_user(mock_client, sample_users, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
-    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events, sample_eventTags, sample_tags]
+def test_raw_matrix_eventTags_rows_are_user(mock_client, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
+    mock_client.query.side_effect = [sample_users_to_events, sample_events, sample_eventTags, sample_tags]
     result = raw_matrix_eventTags()
-    assert "seed|alice"  in result.index
-    assert "seed|bob"    in result.index
+    assert "u1"  in result.index
+    assert "u2"    in result.index
 
 # Ensure that the crosstab col index are tags.
-def test_raw_matrix_eventTags_columns_are_tags(mock_client, sample_users, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
-    mock_client.query.side_effect = [sample_users, sample_users_to_events, sample_events, sample_eventTags, sample_tags]
+def test_raw_matrix_eventTags_columns_are_tags(mock_client, sample_events, sample_users_to_events, sample_tags, sample_eventTags):
+    mock_client.query.side_effect = [sample_users_to_events, sample_events, sample_eventTags, sample_tags]
     result = raw_matrix_eventTags()
     assert "tech"  in result.columns 
     assert "music" in result.columns
@@ -244,8 +245,8 @@ def test_raw_matrix_postTags_values_are_numbers(mock_client, sample_users, sampl
 def test_raw_matrix_postTags_rows_are_users(mock_client, sample_users, sample_posts, sample_postTags, sample_tags):
     mock_client.query.side_effect = [sample_users, sample_posts, sample_postTags, sample_tags]
     result = raw_matrix_postTags()
-    assert "seed|alice"  in result.index
-    assert "seed|bob"    in result.index
+    assert "u1"  in result.index
+    assert "u2"    in result.index
 
 # Ensure that the crosstab col index are tags.
 def test_raw_matrix_postTags_columns_are_tags(mock_client, sample_users, sample_posts, sample_postTags, sample_tags):
@@ -331,24 +332,25 @@ def test_sim_scores_weighted_correct_calculation(sample_score_df):
 # Since we currently only allow a maximum of 5 users, don't allow >5.
 def test_upsert_friend_recs_exceed_recamt(mock_client, sample_score_df):
     with pytest.raises(Exception):
-        upsert_friend_recs(sample_score_df, "alice", 6)
+        upsert_friend_recs(sample_score_df, "u1", 6)
 
 # Ensure that the final row amt is same as input rec_amt.
 def test_upsert_friend_recs_correct_rec_count(mock_client, sample_score_df):
-    upsert_friend_recs(sample_score_df, "alice", 2)
+    mock_client.query.return_value = None  # Assume no friends filtered.
+    upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
     assert len(call_kwargs["recs"]) == 2
 
 # Ensure that the final df is sorted by top-first.
 def test_upsert_friend_recs_top_scores_selected(mock_client, sample_score_df):
-    upsert_friend_recs(sample_score_df, "alice", 2)
+    upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
     scores = [r["score"] for r in call_kwargs["recs"]]
     assert scores == sorted(scores, reverse=True)
 
 # Ensures that the ConvexClient mutation is actually being invoked.
 def test_upsert_friend_recs_calls_mutation(mock_client, sample_score_df):
-    upsert_friend_recs(sample_score_df, "alice", 2)
+    upsert_friend_recs(sample_score_df, "u1", 2)
     mock_client.mutation.assert_called_once()
 
     
