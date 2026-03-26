@@ -80,7 +80,7 @@ export default defineSchema({
         score: v.number(),
       })
     ),
-  }).index('by_user', ['user']),
+  }).index('by_user', ['userId']),
 
   friends: defineTable({
     userAId: v.id('users'),

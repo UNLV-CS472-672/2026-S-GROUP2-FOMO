@@ -14,7 +14,7 @@ export const upsert = mutation({
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query('friendRecs')
-      .withIndex('by_userId', (q) => q.eq('userId', args.userId))
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
       .unique();
     if (existing) {
       await ctx.db.patch(existing._id, {
