@@ -9,10 +9,6 @@ load_dotenv()
 CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
 client = ConvexClient(CONVEX_CLOUD_URL)
 
-load_dotenv()
-CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
-client = ConvexClient(CONVEX_CLOUD_URL)
-
 
 # Checks if a userid exists in the "users" table.
 def user_exists(user_id: str) -> bool:
@@ -143,7 +139,9 @@ def sim_scores_weighted(events: pd.DataFrame, event_tags: pd.DataFrame, post_tag
     EVENT_TAGS_WEIGHT =  0.15
     POST_TAGS_WEIGHT  =  0.05
 
-    return events * EVENTS_WEIGHT + event_tags * EVENT_TAGS_WEIGHT + post_tags * POST_TAGS_WEIGHT
+    return events.mul(EVENTS_WEIGHT) \
+           .add(event_tags.mul(EVENT_TAGS_WEIGHT), fill_value = 0) \
+           .add(post_tags.mul(POST_TAGS_WEIGHT), fill_value = 0) # Drops NaN values
     
 
 
@@ -155,6 +153,7 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int):
         raise Exception(f"rec_amt ({rec_amt}) exceeds available users ({len(sim_scores)}).")
     
     # For user, sort similarity scores by highest.
+    sim_scores = sim_scores.dropna(subset = ["similarity_score"])
     top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False)  
 
     # Parse out any userIds that are already friends.
