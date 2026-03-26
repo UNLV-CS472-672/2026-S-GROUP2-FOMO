@@ -26,13 +26,9 @@ export const user = query({
   },
 });
 
-// Checks if a user exists in "friends" via userId.
-// export const friend = query({
-//   args: { name: v.string() },
-//   handler: async (ctx, { name }) => {
-//     return await ctx.db
-//       .query("friends")
-//       .withIndex("by_token", (q) => q.eq("tokenIdentifier", name))
-//       .first();
-//   },
-// });
+export const userId = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    return await ctx.db.get(userId);
+  },
+});

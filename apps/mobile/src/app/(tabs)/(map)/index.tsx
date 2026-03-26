@@ -1,6 +1,8 @@
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
+import { coordsToH3Cell } from '@/features/map/utils/h3';
 import MapboxGL from '@rnmapbox/maps';
 import { useRouter } from 'expo-router';
+import type { Point } from 'geojson';
 import { useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,7 +22,11 @@ export default function MapScreen() {
         styleURL={MapboxGL.StyleURL.Dark}
         logoEnabled={false}
         attributionEnabled={false}
-        onPress={() => push('/feed/demo-cell')}
+        scaleBarPosition={{ top: insets.top, left: 8 }}
+        onPress={(feature) => {
+          const [lng, lat] = (feature.geometry as Point).coordinates;
+          push(`/feed/${coordsToH3Cell(lng, lat)}`);
+        }}
       >
         <MapboxGL.Camera
           ref={cameraRef}

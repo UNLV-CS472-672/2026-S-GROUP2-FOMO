@@ -1,0 +1,74 @@
+name: Feature Request
+description: Propose a feature, improvement, or development task
+title: 'Feature: '
+labels:
+  - feature
+assignees: []
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Briefly describe the feature, improvement, or task in 1–3
+        sentences.
+      placeholder: Describe the request clearly and concisely.
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem_motivation
+    attributes:
+      label: Problem / Motivation
+      description: What problem does this solve? Why is this change needed?
+      placeholder: Explain the motivation behind this request.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Describe what should be included in this work.
+      placeholder: List the expected work and boundaries.
+    validations:
+      required: true
+
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals
+      description: Clarify what this issue is not trying to accomplish.
+      placeholder: Optional
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Conditions that must be true for this issue to be considered
+        complete.
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation_notes
+    attributes:
+      label: Implementation Notes
+      description: Add any implementation ideas, constraints, tradeoffs, or
+        technical notes that may help.
+      placeholder: Optional
+    validations:
+      required: false
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Link related issues, docs, designs, or discussions.
+      placeholder: Optional
+    validations:
+      required: false

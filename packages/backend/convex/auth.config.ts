@@ -1,9 +1,10 @@
+import { env } from '@fomo/env/backend';
 import type { AuthConfig } from 'convex/server';
 
 export default {
   providers: [
     {
-      domain: process.env.CLERK_JWT_ISSUER_DOMAIN!,
+      domain: env.CLERK_JWT_ISSUER_DOMAIN,
       applicationID: 'convex',
     },
   ],
