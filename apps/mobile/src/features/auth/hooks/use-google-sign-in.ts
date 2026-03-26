@@ -116,13 +116,18 @@ export function useGoogleSignIn({
 }: UseGoogleSignInArgs) {
   const { isSignedIn } = useAuth({ treatPendingAsSignedOut: false });
   const { startGoogleAuthenticationFlow } = useSignInWithGoogle();
+
+  // state
   const [loadingProvider, setLoadingProvider] = useState<SocialProvider | null>(null);
   const [pendingUsernameSetup, setPendingUsernameSetup] = useState<PendingUsernameSetup | null>(
     null
   );
   const [isCompletingUsername, setIsCompletingUsername] = useState(false);
+
+  // derived state
   const isSignupIntent = intent === 'signup';
 
+  // ------- actions -------
   const signInWith = async (provider: SocialProvider) => {
     if (provider !== 'google' || isSignedIn || loadingProvider) return;
 

@@ -1,25 +1,17 @@
-import { Button, ButtonText } from '@/components/ui/button';
-import { GoogleButton } from '@/features/auth/components/google-button';
-import { UsernameSetupCard } from '@/features/auth/components/username-setup-card';
-import { VerificationCodeInput } from '@/features/auth/components/verification-code-input';
+import { AuthErrorBanner } from '@/features/auth/components/error';
+import { AuthHeaderBackButton } from '@/features/auth/components/header-back-button';
+import { IdentifierStep } from '@/features/auth/components/steps/identifier';
+import { PasswordStep } from '@/features/auth/components/steps/password';
+import { UsernameStep } from '@/features/auth/components/steps/username';
+import { VerificationStep } from '@/features/auth/components/steps/verification';
+import { AuthWrapper } from '@/features/auth/components/wrapper';
 import { useGoogleSignIn } from '@/features/auth/hooks/use-google-sign-in';
 import { useSignup } from '@/features/auth/hooks/use-signup';
-import { Ionicons } from '@expo/vector-icons';
-import { Link } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  TouchableWithoutFeedback,
-  View,
-} from 'react-native';
+import { useNavigation } from 'expo-router';
+import { useLayoutEffect } from 'react';
+import { ActivityIndicator, Text, View } from 'react-native';
 
-export default function Page() {
+export default function SignUpScreen() {
   const {
     state,
     shouldShowAuthLoader,
@@ -31,9 +23,11 @@ export default function Page() {
     clearErrors,
     handleSsoError,
     completeSignUpWithUsername: completeEmailSignUpWithUsername,
-    onSignUpPress,
+    onStartEmailSignUp,
     onVerifyPress,
     onResendPress,
+    onPasswordPress,
+    goBack,
   } = useSignup();
   const {
     loadingProvider,
@@ -47,27 +41,20 @@ export default function Page() {
     intent: 'signup',
     setEmailAddress,
   });
+  const navigation = useNavigation();
+  const isGoogleUsernameStep = Boolean(pendingUsernameSetup);
+  const screenStep = isGoogleUsernameStep ? 'username' : state.step;
 
-  const emailInputRef = useRef<TextInput | null>(null);
-  const passwordInputRef = useRef<TextInput | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [now, setNow] = useState(Date.now());
-  const resendCountdown = state.resendAvailableAt
-    ? Math.max(0, Math.ceil((state.resendAvailableAt - now) / 1000))
-    : 0;
-  const canResendCode = resendCountdown === 0 && !state.isResending;
-
-  useEffect(() => {
-    if (!state.pendingVerification || !state.resendAvailableAt || resendCountdown === 0) {
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setNow(Date.now());
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [resendCountdown, state.pendingVerification, state.resendAvailableAt]);
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () =>
+        screenStep !== 'identifier' && !pendingUsernameSetup ? (
+          <AuthHeaderBackButton onPress={goBack} />
+        ) : (
+          <AuthHeaderBackButton />
+        ),
+    });
+  }, [goBack, navigation, pendingUsernameSetup, screenStep]);
 
   if (shouldShowAuthLoader) {
     return (
@@ -79,180 +66,91 @@ export default function Page() {
   }
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-app-background"
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <AuthWrapper
+      eyebrow="Join fomo"
+      title={
+        screenStep === 'identifier'
+          ? 'Create your account'
+          : screenStep === 'verify'
+            ? 'Verify your email'
+            : screenStep === 'password'
+              ? 'Create your password'
+              : 'Create your username'
+      }
+      subtitle={
+        screenStep === 'identifier'
+          ? 'Start with Google or email, then we will guide you through the rest.'
+          : screenStep === 'verify'
+            ? 'We already sent your code, so you can finish verifying this email now.'
+            : screenStep === 'password'
+              ? 'Your email is verified. Next, set the password for this account.'
+              : 'Pick the name people will use to find you on fomo.'
+      }
+      footer={{
+        prompt: 'Already have an account?',
+        link: {
+          label: 'Log in',
+          href: '/(auth)/login',
+        },
+      }}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <View className="flex-1 justify-center px-8">
-          {state.pendingVerification ? (
-            <View className="w-full">
-              <Text className="text-3xl font-bold text-app-text">Verify your email</Text>
-
-              <Text className="mt-2 text-base text-app-icon">
-                We sent a verification code to {state.emailAddress || 'your email address'}.
-              </Text>
-
-              {state.codeSentMessage ? (
-                <Text className="mt-1 text-sm text-app-text">{state.codeSentMessage}</Text>
-              ) : null}
-
-              {state.errors?.global ? (
-                <View className="mt-4 rounded-xl bg-red-50 px-4 py-3">
-                  <Text className="text-sm font-medium text-red-800">{state.errors.global}</Text>
-                </View>
-              ) : null}
-
-              <View className="mt-6">
-                <Text className="text-sm font-semibold text-app-text">Verification code</Text>
-                <VerificationCodeInput
-                  value={state.code}
-                  onChangeText={setCode}
-                  onSubmitEditing={onVerifyPress}
-                />
-                {state.errors?.code ? (
-                  <Text className="mt-1 text-xs text-red-600">{state.errors.code}</Text>
-                ) : null}
-              </View>
-
-              <View className="mt-4 flex-row items-center justify-between">
-                <Pressable onPress={onResendPress} disabled={!canResendCode}>
-                  <Text
-                    className={
-                      !canResendCode
-                        ? 'text-sm text-app-icon'
-                        : 'text-sm font-semibold text-app-tint'
-                    }
-                  >
-                    {state.isResending
-                      ? 'Resending code...'
-                      : canResendCode
-                        ? 'Resend code'
-                        : `Resend code (${resendCountdown}s)`}
-                  </Text>
-                </Pressable>
-
-                {state.isResending ? <ActivityIndicator size="small" color="#4B5563" /> : null}
-              </View>
-
-              <View className="mt-6">
-                <Button onPress={onVerifyPress} disabled={!state.code || state.isVerifying}>
-                  <ButtonText>{state.isVerifying ? 'Verifying...' : 'Verify'}</ButtonText>
-                </Button>
-              </View>
-            </View>
-          ) : state.pendingUsernameSetup || pendingUsernameSetup ? (
-            <UsernameSetupCard
-              emailAddress={
-                state.pendingUsernameSetup?.emailAddress ??
-                pendingUsernameSetup?.emailAddress ??
-                state.emailAddress
-              }
-              username={state.username}
-              globalError={state.errors?.global}
-              usernameError={state.errors?.username}
-              isSubmitting={state.isSubmitting || isCompletingUsername}
-              onChangeUsername={setUsername}
-              onSubmit={() =>
-                state.pendingUsernameSetup
-                  ? completeEmailSignUpWithUsername(state.username)
-                  : completeSignUpWithUsername(state.username)
-              }
-            />
-          ) : (
-            <View className="w-full">
-              <Text className="text-3xl font-bold text-app-text">Create your account</Text>
-
-              {state.errors?.global ? (
-                <View className="mt-4 rounded-xl bg-red-50 px-4 py-3">
-                  <Text className="text-sm font-medium text-red-800">{state.errors.global}</Text>
-                </View>
-              ) : null}
-
-              <View className="mt-8">
-                <GoogleButton
-                  mode="signup"
-                  onPress={() => signInWith('google')}
-                  loading={loadingProvider === 'google'}
-                  disabled={loadingProvider !== null || state.isSubmitting}
-                />
-              </View>
-
-              <View className="my-6 flex-row items-center gap-4">
-                <View className="flex-1 border-b border-app-icon/20" />
-                <Text className="text-sm text-app-icon">or</Text>
-                <View className="flex-1 border-b border-app-icon/20" />
-              </View>
-
-              <View className="mt-4">
-                <Text className="text-sm font-semibold text-app-text">Email address</Text>
-                <View className="mt-2 rounded-xl border border-app-icon/30 bg-app-background px-4">
-                  <TextInput
-                    ref={emailInputRef}
-                    autoCapitalize="none"
-                    value={state.emailAddress}
-                    placeholder="you@example.com"
-                    placeholderTextColor="#9CA3AF"
-                    onChangeText={setEmailAddress}
-                    keyboardType="email-address"
-                    className="py-3 text-base text-app-text"
-                    returnKeyType="next"
-                    onSubmitEditing={() => passwordInputRef.current?.focus()}
-                  />
-                </View>
-                {state.errors?.email ? (
-                  <Text className="mt-1 text-xs text-red-600">{state.errors.email}</Text>
-                ) : null}
-              </View>
-
-              <View className="mt-4">
-                <Text className="text-sm font-semibold text-app-text">Password</Text>
-                <View className="mt-2 flex-row items-center rounded-xl border border-app-icon/30 bg-app-background px-4">
-                  <TextInput
-                    ref={passwordInputRef}
-                    value={state.password}
-                    placeholder="Enter a password"
-                    placeholderTextColor="#9CA3AF"
-                    secureTextEntry={!showPassword}
-                    onChangeText={setPassword}
-                    className="flex-1 py-3 text-base text-app-text"
-                    returnKeyType="done"
-                    onSubmitEditing={onSignUpPress}
-                  />
-                  <Pressable onPress={() => setShowPassword((prev) => !prev)}>
-                    <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#9CA3AF" />
-                  </Pressable>
-                </View>
-                {state.errors?.password ? (
-                  <Text className="mt-1 text-xs text-red-600">{state.errors.password}</Text>
-                ) : null}
-              </View>
-
-              <View className="mt-6">
-                <Button
-                  onPress={onSignUpPress}
-                  disabled={!state.emailAddress.trim() || !state.password || state.isSubmitting}
-                >
-                  <ButtonText>{state.isSubmitting ? 'Creating account...' : 'Continue'}</ButtonText>
-                </Button>
-              </View>
-
-              {state.isSubmitting ? (
-                <View className="mt-2 items-center">
-                  <ActivityIndicator size="small" color="#4B5563" />
-                </View>
-              ) : null}
-
-              <View className="mt-8 flex-row justify-center">
-                <Text className="text-base text-app-text">Have an account? </Text>
-                <Link href="/(auth)/login">
-                  <Text className="text-base font-semibold text-app-tint">Log in</Text>
-                </Link>
-              </View>
-            </View>
-          )}
-        </View>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+      <AuthErrorBanner message={state.errors?.global} />
+      {screenStep === 'identifier' ? (
+        <IdentifierStep
+          mode="signup"
+          value={state.emailAddress}
+          placeholder="you@example.com"
+          buttonLabel="Continue with email"
+          dividerLabel="or sign up with email"
+          isBusy={state.isBusy}
+          isGoogleLoading={loadingProvider === 'google'}
+          isGoogleDisabled={loadingProvider !== null}
+          isPrimaryLoading={state.isSendingCode}
+          error={state.errors?.email}
+          onChangeText={setEmailAddress}
+          onPrimaryPress={onStartEmailSignUp}
+          onGooglePress={() => signInWith('google')}
+        />
+      ) : screenStep === 'verify' ? (
+        <VerificationStep
+          value={state.code}
+          onChangeText={setCode}
+          onSubmit={onVerifyPress}
+          onResend={onResendPress}
+          resendAvailableAt={state.resendAvailableAt}
+          isResending={state.isResending}
+          isSubmitting={state.isVerifying}
+          submitLabel="Verify email"
+          submitLoadingLabel="Verifying..."
+          error={state.errors?.code}
+        />
+      ) : screenStep === 'password' ? (
+        <PasswordStep
+          label="Create password"
+          value={state.password}
+          placeholder="Choose a secure password"
+          submitLabel="Continue"
+          submitLoadingLabel="Saving password..."
+          error={state.errors?.password}
+          isSubmitting={state.isSubmittingPassword}
+          isDisabled={state.isBusy}
+          onChangeText={setPassword}
+          onSubmit={onPasswordPress}
+        />
+      ) : (
+        <UsernameStep
+          emailAddress={pendingUsernameSetup?.emailAddress ?? state.emailAddress}
+          username={state.username}
+          usernameError={state.errors?.username}
+          isSubmitting={state.isSubmittingUsername || isCompletingUsername}
+          onChangeUsername={setUsername}
+          onSubmit={() =>
+            pendingUsernameSetup
+              ? completeSignUpWithUsername(state.username)
+              : completeEmailSignUpWithUsername(state.username)
+          }
+        />
+      )}
+    </AuthWrapper>
   );
 }

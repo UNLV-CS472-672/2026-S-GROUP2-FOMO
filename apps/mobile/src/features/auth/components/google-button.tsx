@@ -6,10 +6,10 @@ type GoogleButtonProps = {
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  mode?: 'signin' | 'signup';
+  mode?: 'login' | 'signup';
 };
 
-export function GoogleButton({ onPress, loading, disabled, mode = 'signin' }: GoogleButtonProps) {
+export function GoogleButton({ onPress, loading, disabled, mode = 'login' }: GoogleButtonProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const label = mode === 'signup' ? 'Sign up with Google' : 'Log in with Google';

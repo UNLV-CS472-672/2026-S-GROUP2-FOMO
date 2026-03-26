@@ -1,22 +1,40 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
 type VerificationCodeInputProps = {
   value: string;
   onChangeText: (value: string) => void;
   onSubmitEditing?: () => void;
+  isSubmitting?: boolean;
 };
 
 export function VerificationCodeInput({
   value,
   onChangeText,
   onSubmitEditing,
+  isSubmitting = false,
 }: VerificationCodeInputProps) {
   const inputRef = useRef<TextInput | null>(null);
+  const lastSubmittedValueRef = useRef<string | null>(null);
   const digits = useMemo(
     () => Array.from({ length: 6 }, (_, index) => value[index] ?? ''),
     [value]
   );
+
+  useEffect(() => {
+    if (value.length !== 6) {
+      lastSubmittedValueRef.current = null;
+      return;
+    }
+
+    if (isSubmitting || !onSubmitEditing || lastSubmittedValueRef.current === value) {
+      return;
+    }
+
+    lastSubmittedValueRef.current = value;
+    inputRef.current?.blur();
+    onSubmitEditing();
+  }, [isSubmitting, onSubmitEditing, value]);
 
   return (
     <Pressable className="mt-2" onPress={() => inputRef.current?.focus()}>
@@ -51,7 +69,6 @@ export function VerificationCodeInput({
         className="absolute h-0 w-0 opacity-0"
         maxLength={6}
         returnKeyType="done"
-        onSubmitEditing={onSubmitEditing}
         caretHidden
       />
     </Pressable>
