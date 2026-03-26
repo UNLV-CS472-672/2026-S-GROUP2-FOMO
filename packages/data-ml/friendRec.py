@@ -154,13 +154,19 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, target_user_id: str, rec_amt: i
     if rec_amt > len(sim_scores):
         raise Exception(f"rec_amt ({rec_amt}) exceeds available users ({len(sim_scores)}).")
     
-
+    # TODO: Parse out any names that appear in "friends"
     # Sort top rec_amt recommended users, create list.
-    top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False).head(rec_amt)
+    
+    # top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False).head(rec_amt)
+    top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False)  
+    print(f"top_sim_scores before: {top_sim_scores}")
+    
     top_sim_scores = [
         {"userId": user, "score": float(score)}
-        for user, score in top_sim_scores["similarity_score"].items()
+        for user, score in top_sim_scores["similarity_score"].items() and if user
     ]
+    print(f"top_sim_scores after: {top_sim_scores}")
+    
 
     # Add row if user doesn't have any recommended friends, if they do, update names if values changed.
     client.mutation("friendRecs:upsert", {"userId": target_user_id,
@@ -194,7 +200,7 @@ def main(user: str, rec_amt: int, seed: bool):
 
 
 
-USER     = "n177gtr19ny9x8btdvgpjj3wps823zsg"  # Currently by userName, should be by userId soon.
+USER     = "n177gtr19ny9x8btdvgpjj3wps823zsg"  # By user_id.
 REC_AMT  = 5         # friendRec schema only currently supports 5. 
 SEED     = False     # Dictates if fake data needs to be populated into Convex.
 
