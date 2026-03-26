@@ -1,9 +1,29 @@
 import { buildClerkErrorState, clearAuthErrors, SignUpErrors } from '@/features/auth/utils/errors';
+import {
+  buildIncompleteSignUpMessage,
+  buildMissingRequirementsMessage,
+  getClerkStatus,
+  isMissingRequirements,
+  isUsernameMissing,
+} from '@/features/auth/utils/username-requirements';
 import { useAuth } from '@clerk/expo';
 import { useSignUp } from '@clerk/expo/legacy';
+import type { SignUpResource } from '@clerk/shared/types';
 import { useState } from 'react';
 
 type SignUpStatus = 'idle' | 'submitting' | 'verifying' | 'resending';
+
+type PendingUsernameSetup = {
+  signUp: SignUpResource;
+  emailAddress: string;
+};
+
+type SignUpMeta = {
+  status?: string | null;
+  _status?: string | null;
+  createdSessionId?: string | null;
+  missingFields?: readonly string[] | null;
+};
 
 export function useSignup() {
   const { isSignedIn } = useAuth();
@@ -18,6 +38,9 @@ export function useSignup() {
   const [errors, setErrors] = useState<SignUpErrors | null>(null);
   const [pendingVerification, setPendingVerification] = useState(false);
   const [codeSentMessage, setCodeSentMessage] = useState<string | null>(null);
+  const [pendingUsernameSetup, setPendingUsernameSetup] = useState<PendingUsernameSetup | null>(
+    null
+  );
 
   // derived
   const shouldShowAuthLoader = !isLoaded || Boolean(isSignedIn);
@@ -61,19 +84,60 @@ export function useSignup() {
   const clearErrors = () => setErrors(null);
   const handleSsoError = (error: unknown) => handleClerkError(error);
 
-  // -------  actions -------
-  const onSignUpPress = async () => {
-    if (!isLoaded || isSignedIn || status !== 'idle') return;
+  const completeSignUpWithUsername = async (value: string) => {
+    if (!isLoaded || isSignedIn || status !== 'idle' || !pendingUsernameSetup) return;
 
-    const trimmedUsername = username.trim();
-    const trimmedEmail = emailAddress.trim();
-    if (!trimmedUsername || !trimmedEmail || !password) return;
+    const trimmedUsername = value.trim();
+    if (!trimmedUsername) return;
 
     setErrors(null);
     setStatus('submitting');
 
     try {
-      await signUp.create({ username: trimmedUsername, emailAddress: trimmedEmail, password });
+      const signUpAttempt = await pendingUsernameSetup.signUp.update({ username: trimmedUsername });
+      const signUpAttemptMeta = signUpAttempt as SignUpMeta;
+
+      if (getClerkStatus(signUpAttemptMeta) === 'complete' && signUpAttemptMeta.createdSessionId) {
+        await setActive({ session: signUpAttemptMeta.createdSessionId });
+        setPendingUsernameSetup(null);
+        return;
+      }
+
+      if (isUsernameMissing(signUpAttempt, signUpAttemptMeta)) {
+        setPendingUsernameSetup((current) =>
+          current ? { ...current, signUp: signUpAttempt } : current
+        );
+        return;
+      }
+
+      if (isMissingRequirements(signUpAttemptMeta)) {
+        handleClerkError(
+          new Error(buildMissingRequirementsMessage(signUpAttemptMeta.missingFields))
+        );
+        return;
+      }
+
+      handleClerkError(new Error(buildIncompleteSignUpMessage(getClerkStatus(signUpAttemptMeta))));
+    } catch (err) {
+      handleClerkError(err);
+    } finally {
+      setStatus('idle');
+    }
+  };
+
+  // -------  actions -------
+  const onSignUpPress = async () => {
+    if (!isLoaded || isSignedIn || status !== 'idle') return;
+
+    const trimmedEmail = emailAddress.trim();
+    if (!trimmedEmail || !password) return;
+
+    setErrors(null);
+    setStatus('submitting');
+    setPendingUsernameSetup(null);
+
+    try {
+      await signUp.create({ emailAddress: trimmedEmail, password });
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setPendingVerification(true);
       setCodeSentMessage('We sent a verification code to your email address.');
@@ -95,8 +159,24 @@ export function useSignup() {
 
     try {
       const attempt = await signUp.attemptEmailAddressVerification({ code: trimmedCode });
+      const attemptMeta = attempt as SignUpMeta;
+
       if (attempt.status === 'complete') {
         await setActive({ session: attempt.createdSessionId });
+        return;
+      }
+
+      if (isUsernameMissing(attempt, attemptMeta)) {
+        setPendingVerification(false);
+        setPendingUsernameSetup({
+          signUp: attempt,
+          emailAddress: emailAddress.trim(),
+        });
+        return;
+      }
+
+      if (isMissingRequirements(attemptMeta)) {
+        handleClerkError(new Error(buildMissingRequirementsMessage(attemptMeta.missingFields)));
       }
     } catch (err) {
       handleClerkError(err, 'code');
@@ -128,6 +208,7 @@ export function useSignup() {
       password,
       code,
       pendingVerification,
+      pendingUsernameSetup,
       codeSentMessage,
       errors,
       isSubmitting: status === 'submitting',
@@ -142,6 +223,7 @@ export function useSignup() {
     setCode,
     clearErrors,
     handleSsoError,
+    completeSignUpWithUsername,
     onSignUpPress,
     onVerifyPress,
     onResendPress,

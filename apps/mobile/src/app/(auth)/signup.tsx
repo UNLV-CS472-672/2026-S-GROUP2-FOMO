@@ -1,7 +1,8 @@
 import { Button, ButtonText } from '@/components/ui/button';
-import { SocialButton } from '@/features/auth/components/social-button';
+import { GoogleButton } from '@/features/auth/components/google-button';
+import { UsernameSetupCard } from '@/features/auth/components/username-setup-card';
+import { useGoogleSignIn } from '@/features/auth/hooks/use-google-sign-in';
 import { useSignup } from '@/features/auth/hooks/use-signup';
-import { useSso } from '@/features/auth/hooks/use-sso';
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import React, { useRef, useState } from 'react';
@@ -28,6 +29,7 @@ export default function Page() {
     setCode,
     clearErrors,
     handleSsoError,
+    completeSignUpWithUsername: completeEmailSignUpWithUsername,
     onSignUpPress,
     onVerifyPress,
     onResendPress,
@@ -38,10 +40,11 @@ export default function Page() {
     pendingUsernameSetup,
     isCompletingUsername,
     completeSignUpWithUsername,
-  } = useSso({
+  } = useGoogleSignIn({
     clearErrors,
     handleError: handleSsoError,
-    mode: 'signup',
+    intent: 'signup',
+    setEmailAddress,
   });
 
   const emailInputRef = useRef<TextInput | null>(null);
@@ -124,49 +127,24 @@ export default function Page() {
                 </Button>
               </View>
             </View>
-          ) : pendingUsernameSetup ? (
-            <View className="w-full">
-              <Text className="text-3xl font-bold text-app-text">Choose a username</Text>
-              <Text className="mt-2 text-base text-app-icon">
-                One last step before we finish creating your account.
-              </Text>
-
-              {state.errors?.global ? (
-                <View className="mt-4 rounded-xl bg-red-50 px-4 py-3">
-                  <Text className="text-sm font-medium text-red-800">{state.errors.global}</Text>
-                </View>
-              ) : null}
-
-              <View className="mt-8">
-                <Text className="text-sm font-semibold text-app-text">Username</Text>
-                <View className="mt-2 rounded-xl border border-app-icon/30 bg-app-background px-4">
-                  <TextInput
-                    autoCapitalize="none"
-                    value={state.username}
-                    placeholder="cooluser123"
-                    placeholderTextColor="#9CA3AF"
-                    onChangeText={setUsername}
-                    className="py-3 text-base text-app-text"
-                    returnKeyType="done"
-                    onSubmitEditing={() => completeSignUpWithUsername(state.username)}
-                  />
-                </View>
-                {state.errors?.username ? (
-                  <Text className="mt-1 text-xs text-red-600">{state.errors.username}</Text>
-                ) : null}
-              </View>
-
-              <View className="mt-6">
-                <Button
-                  onPress={() => completeSignUpWithUsername(state.username)}
-                  disabled={!state.username.trim() || isCompletingUsername}
-                >
-                  <ButtonText>
-                    {isCompletingUsername ? 'Finishing account setup...' : 'Continue'}
-                  </ButtonText>
-                </Button>
-              </View>
-            </View>
+          ) : state.pendingUsernameSetup || pendingUsernameSetup ? (
+            <UsernameSetupCard
+              emailAddress={
+                state.pendingUsernameSetup?.emailAddress ??
+                pendingUsernameSetup?.emailAddress ??
+                state.emailAddress
+              }
+              username={state.username}
+              globalError={state.errors?.global}
+              usernameError={state.errors?.username}
+              isSubmitting={state.isSubmitting || isCompletingUsername}
+              onChangeUsername={setUsername}
+              onSubmit={() =>
+                state.pendingUsernameSetup
+                  ? completeEmailSignUpWithUsername(state.username)
+                  : completeSignUpWithUsername(state.username)
+              }
+            />
           ) : (
             <View className="w-full">
               <Text className="text-3xl font-bold text-app-text">Create your account</Text>
@@ -178,7 +156,7 @@ export default function Page() {
               ) : null}
 
               <View className="mt-8">
-                <SocialButton
+                <GoogleButton
                   mode="signup"
                   onPress={() => signInWith('google')}
                   loading={loadingProvider === 'google'}
@@ -190,25 +168,6 @@ export default function Page() {
                 <View className="flex-1 border-b border-app-icon/20" />
                 <Text className="text-sm text-app-icon">or</Text>
                 <View className="flex-1 border-b border-app-icon/20" />
-              </View>
-
-              <View>
-                <Text className="text-sm font-semibold text-app-text">Username</Text>
-                <View className="mt-2 rounded-xl border border-app-icon/30 bg-app-background px-4">
-                  <TextInput
-                    autoCapitalize="none"
-                    value={state.username}
-                    placeholder="cooluser123"
-                    placeholderTextColor="#9CA3AF"
-                    onChangeText={setUsername}
-                    className="py-3 text-base text-app-text"
-                    returnKeyType="next"
-                    onSubmitEditing={() => emailInputRef.current?.focus()}
-                  />
-                </View>
-                {state.errors?.username ? (
-                  <Text className="mt-1 text-xs text-red-600">{state.errors.username}</Text>
-                ) : null}
               </View>
 
               <View className="mt-4">
@@ -258,12 +217,7 @@ export default function Page() {
               <View className="mt-6">
                 <Button
                   onPress={onSignUpPress}
-                  disabled={
-                    !state.username.trim() ||
-                    !state.emailAddress.trim() ||
-                    !state.password ||
-                    state.isSubmitting
-                  }
+                  disabled={!state.emailAddress.trim() || !state.password || state.isSubmitting}
                 >
                   <ButtonText>{state.isSubmitting ? 'Creating account...' : 'Continue'}</ButtonText>
                 </Button>

@@ -1,7 +1,7 @@
 import { Button, ButtonText } from '@/components/ui/button';
-import { SocialButton } from '@/features/auth/components/social-button';
+import { GoogleButton } from '@/features/auth/components/google-button';
+import { useGoogleSignIn } from '@/features/auth/hooks/use-google-sign-in';
 import { useLogin } from '@/features/auth/hooks/use-login';
-import { useSso } from '@/features/auth/hooks/use-sso';
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -32,10 +32,10 @@ export default function LoginScreen() {
     onSendCodePress,
     onVerifyCodePress,
   } = useLogin();
-  const { loadingProvider, signInWith } = useSso({
+  const { loadingProvider, signInWith } = useGoogleSignIn({
     clearErrors,
     handleError: handleSsoError,
-    mode: 'signin',
+    intent: 'signin',
   });
 
   const passwordInputRef = useRef<TextInput | null>(null);
@@ -68,7 +68,7 @@ export default function LoginScreen() {
           ) : null}
 
           <View className="mt-8">
-            <SocialButton
+            <GoogleButton
               onPress={() => signInWith('google')}
               loading={loadingProvider === 'google'}
               disabled={loadingProvider !== null || state.isSubmitting}
