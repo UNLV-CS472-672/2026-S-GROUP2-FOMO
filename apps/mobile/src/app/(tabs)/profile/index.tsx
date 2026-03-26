@@ -55,7 +55,7 @@ export default function ProfileScreen() {
                   <MaterialIcons name="settings" size={22} color="#687076" />
                 </Button>
               </View>
-              <Text className="text-sm leading-5 text-app-text">{description}</Text>{' '}
+              <Text className="text-sm leading-5 text-app-text">{description}</Text>
               {/* Placeholder bio text */}
             </View>
           </View>
