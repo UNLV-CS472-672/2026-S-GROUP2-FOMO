@@ -43,3 +43,8 @@ module = [
     "torch.*",
 ]
 ignore_missing_imports = true
+
+[dependency-groups]
+dev = [
+    "pytest-cov>=7.1.0",
+]

@@ -44,3 +44,7 @@ apps/web/.env.local
 
 #CICD testing
 .secrets
+
+# python
+.pytest_cache/
+__pycache__/
