@@ -9,8 +9,8 @@
  */
 
 import type * as auth from "../auth.js";
-import type * as friendRecs from "../friendRecs.js";
-import type * as query from "../query.js";
+import type * as data_ml_friendRecs from "../data_ml/friendRecs.js";
+import type * as data_ml_query from "../data_ml/query.js";
 import type * as seed from "../seed.js";
 
 import type {
@@ -21,8 +21,8 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
-  friendRecs: typeof friendRecs;
-  query: typeof query;
+  "data_ml/friendRecs": typeof data_ml_friendRecs;
+  "data_ml/query": typeof data_ml_query;
   seed: typeof seed;
 }>;
 

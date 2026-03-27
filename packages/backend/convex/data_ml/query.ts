@@ -1,6 +1,6 @@
 import { v, Validator } from 'convex/values';
-import { TableNames } from './_generated/dataModel';
-import { query } from './_generated/server';
+import { TableNames } from '../_generated/dataModel';
+import { query } from '../_generated/server';
 
 // Queries and returns the entire "table_name" table.
 export const list = query({
