@@ -507,6 +507,53 @@ export const seed = mutation({
       if (!existing) await ctx.db.insert('comments', comment);
     }
 
+    const friendPairs = [
+      { userAId: u1, userBId: u2 },
+      { userAId: u1, userBId: u4 },
+      { userAId: u1, userBId: u5 },
+      { userAId: u1, userBId: u7 },
+      { userAId: u1, userBId: u8 },
+
+      { userAId: u2, userBId: u1 },
+      { userAId: u2, userBId: u3 },
+
+      { userAId: u3, userBId: u2 },
+      { userAId: u3, userBId: u4 },
+      { userAId: u3, userBId: u5 },
+      { userAId: u3, userBId: u6 },
+      { userAId: u3, userBId: u7 },
+
+      { userAId: u4, userBId: u1 },
+      { userAId: u4, userBId: u3 },
+      { userAId: u4, userBId: u5 },
+      { userAId: u4, userBId: u8 },
+
+      { userAId: u5, userBId: u1 },
+      { userAId: u5, userBId: u3 },
+      { userAId: u5, userBId: u4 },
+      { userAId: u5, userBId: u6 },
+
+      { userAId: u6, userBId: u3 },
+      { userAId: u6, userBId: u5 },
+      { userAId: u6, userBId: u8 },
+
+      { userAId: u7, userBId: u1 },
+      { userAId: u7, userBId: u3 },
+
+      { userAId: u8, userBId: u1 },
+      { userAId: u8, userBId: u4 },
+      { userAId: u8, userBId: u6 },
+    ];
+    for (const pair of friendPairs) {
+      const existing = await ctx.db
+        .query('friends')
+        .withIndex('by_userA_userB', (q) =>
+          q.eq('userAId', pair.userAId).eq('userBId', pair.userBId)
+        )
+        .first();
+      if (!existing) await ctx.db.insert('friends', pair);
+    }
+
     return {
       users: userIds,
       event: eventIds,
