@@ -1,5 +1,5 @@
-import { isClerkAPIResponseError } from '@clerk/clerk-expo';
-import type { ClerkAPIError } from '@clerk/types';
+import { isClerkAPIResponseError } from '@clerk/expo';
+import type { ClerkAPIError } from '@clerk/shared/types';
 
 export type LoginErrors = {
   identifier?: string;

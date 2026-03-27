@@ -18,7 +18,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@clerk/clerk-expo": "^2.19.30",
+    "@clerk/expo": "^3.1.4",
     "@convex-dev/react-query": "^0.1.0",
     "@expo/vector-icons": "^15.0.3",
     "@fomo/backend": "workspace:*",

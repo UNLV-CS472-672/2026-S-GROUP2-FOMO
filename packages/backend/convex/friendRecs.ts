@@ -19,11 +19,13 @@ export const upsert = mutation({
     if (existing) {
       await ctx.db.patch(existing._id, {
         recs: args.recs,
+        updatedAt: Date.now(),
       });
     } else {
       await ctx.db.insert('friendRecs', {
         userId: args.userId,
         recs: args.recs,
+        updatedAt: Date.now(),
       });
     }
   },
