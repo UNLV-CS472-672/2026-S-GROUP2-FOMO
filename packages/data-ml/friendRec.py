@@ -6,7 +6,12 @@ from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
 
 load_dotenv()
+
 CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
+
+if CONVEX_CLOUD_URL is None:
+    raise EnvironmentError("Required environment variable CONVEX_CLOUD_URL is not set")
+
 client = ConvexClient(CONVEX_CLOUD_URL)
 
 
@@ -146,7 +151,7 @@ def sim_scores_weighted(events: pd.DataFrame, event_tags: pd.DataFrame, post_tag
 
 
 # Send recommended friends to Convex server.
-def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int):
+def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> None:
 
     # Technically doesn't break if rec_amt exceeds, but being extra safe.
     if rec_amt > len(sim_scores):
@@ -174,7 +179,7 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int):
 
 
 
-def main(user: str, rec_amt: int, seed: bool):
+def main(user: str, rec_amt: int, seed: bool) -> None:
     
     if seed:
         client.mutation("seed:seed")    
