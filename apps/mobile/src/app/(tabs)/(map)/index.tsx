@@ -4,7 +4,7 @@ import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
 import MapboxGL from '@rnmapbox/maps';
 import { useRouter } from 'expo-router';
 import type { Point } from 'geojson';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,6 +21,17 @@ export default function MapScreen() {
     []
   );
 
+  useEffect(() => {
+    if (!hasResolvedLocation) return;
+
+    cameraRef.current?.setCamera({
+      centerCoordinate,
+      zoomLevel: 13,
+      animationMode: 'flyTo',
+      animationDuration: 1200,
+    });
+  }, [centerCoordinate, hasResolvedLocation]);
+
   return (
     <View className="absolute inset-0">
       <MapboxGL.MapView
@@ -36,10 +47,10 @@ export default function MapScreen() {
       >
         <MapboxGL.Camera
           ref={cameraRef}
-          centerCoordinate={centerCoordinate}
-          zoomLevel={13}
-          animationMode={hasResolvedLocation ? 'flyTo' : 'none'}
-          animationDuration={1200}
+          defaultSettings={{
+            centerCoordinate,
+            zoomLevel: 13,
+          }}
         />
         {locationGranted && (
           <MapboxGL.LocationPuck
