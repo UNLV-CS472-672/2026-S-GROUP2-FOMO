@@ -10,7 +10,9 @@
 
 import type * as auth from "../auth.js";
 import type * as data_ml_friendRecs from "../data_ml/friendRecs.js";
-import type * as data_ml_query from "../data_ml/query.js";
+import type * as data_ml_friends from "../data_ml/friends.js";
+import type * as data_ml_universal from "../data_ml/universal.js";
+import type * as data_ml_users from "../data_ml/users.js";
 import type * as seed from "../seed.js";
 
 import type {
@@ -22,7 +24,9 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   "data_ml/friendRecs": typeof data_ml_friendRecs;
-  "data_ml/query": typeof data_ml_query;
+  "data_ml/friends": typeof data_ml_friends;
+  "data_ml/universal": typeof data_ml_universal;
+  "data_ml/users": typeof data_ml_users;
   seed: typeof seed;
 }>;
 
