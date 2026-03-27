@@ -11,7 +11,7 @@ import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { GuestMode } from '@/components/profile/guest-mode';
 import { allPosts, recentPosts, taggedPosts } from '@/features/posts/post-data';
 import { useGuest } from '@/integrations/session/provider';
-import { useAuth, useUser } from '@clerk/clerk-expo';
+import { useAuth, useUser } from '@clerk/expo';
 import { useConvexAuth } from 'convex/react';
 import { useState } from 'react';
 
@@ -55,7 +55,7 @@ export default function ProfileScreen() {
                   <MaterialIcons name="settings" size={22} color="#687076" />
                 </Button>
               </View>
-              <Text className="text-sm leading-5 text-app-text">{description}</Text>{' '}
+              <Text className="text-sm leading-5 text-app-text">{description}</Text>
               {/* Placeholder bio text */}
             </View>
           </View>

@@ -1,45 +1,50 @@
-import { Button, ButtonText } from '@/components/ui/button';
-import { SocialButton } from '@/features/auth/components/social-button';
+import { AuthErrorBanner } from '@/features/auth/components/error';
+import { AuthHeaderBackButton } from '@/features/auth/components/header-back-button';
+import { IdentifierStep } from '@/features/auth/components/steps/identifier';
+import { PasswordStep } from '@/features/auth/components/steps/password';
+import { VerificationStep } from '@/features/auth/components/steps/verification';
+import { AuthWrapper } from '@/features/auth/components/wrapper';
+import { useGoogleSignIn } from '@/features/auth/hooks/use-google-sign-in';
 import { useLogin } from '@/features/auth/hooks/use-login';
-import { useSso } from '@/features/auth/hooks/use-sso';
-import { Ionicons } from '@expo/vector-icons';
-import { Link } from 'expo-router';
-import { useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  TouchableWithoutFeedback,
-  View,
-} from 'react-native';
+import { useNavigation } from 'expo-router';
+import { useLayoutEffect } from 'react';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 export default function LoginScreen() {
   const {
     state,
     shouldShowAuthLoader,
     authLoadingMessage,
-    setAuthMethod,
     setIdentifier,
     setPassword,
     setCode,
     clearErrors,
     handleSsoError,
-    onSignInPress,
-    onSendCodePress,
+    continueWithIdentifier,
+    switchChallengeMethod,
+    goBack,
+    onResendCodePress,
     onVerifyCodePress,
+    onPasswordSignInPress,
   } = useLogin();
-  const { loadingProvider, signInWith } = useSso({
+  const { loadingProvider, signInWith } = useGoogleSignIn({
     clearErrors,
     handleError: handleSsoError,
-    mode: 'signin',
+    intent: 'signin',
   });
+  const navigation = useNavigation();
+  const usingPassword = state.challengeMethod === 'password';
 
-  const passwordInputRef = useRef<TextInput | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () =>
+        state.step === 'challenge' ? (
+          <AuthHeaderBackButton onPress={goBack} />
+        ) : (
+          <AuthHeaderBackButton />
+        ),
+    });
+  }, [goBack, navigation, state.step]);
 
   if (shouldShowAuthLoader) {
     return (
@@ -51,189 +56,98 @@ export default function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-app-background"
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <AuthWrapper
+      eyebrow="Welcome back"
+      title={state.step === 'identifier' ? 'Log in to fomo' : 'Finish signing in'}
+      footer={{
+        prompt: "Don't have an account?",
+        link: {
+          label: 'Sign up',
+          href: '/(auth)/signup',
+        },
+      }}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <View className="flex-1 justify-center px-8">
-          <Text className="text-3xl font-bold text-app-text">
-            Log in to <Text className="font-heading font-black text-4xl">fomo</Text>
-          </Text>
-
-          {state.errors?.global ? (
-            <View className="mt-4 rounded-xl bg-red-50 px-4 py-3">
-              <Text className="text-sm font-medium text-red-800">{state.errors.global}</Text>
-            </View>
-          ) : null}
-
-          <View className="mt-8">
-            <SocialButton
-              onPress={() => signInWith('google')}
-              loading={loadingProvider === 'google'}
-              disabled={loadingProvider !== null || state.isSubmitting}
-            />
-          </View>
-
-          <View className="my-6 flex-row items-center gap-4">
-            <View className="flex-1 border-b border-app-icon/20" />
-            <Text className="text-sm text-app-icon">or</Text>
-            <View className="flex-1 border-b border-app-icon/20" />
-          </View>
-
-          <View className="mb-4 flex-row rounded-full bg-app-icon/10 p-1">
-            <Pressable
-              className={`flex-1 rounded-full py-2 ${
-                state.authMethod === 'password' ? 'bg-app-text' : ''
-              }`}
-              onPress={() => setAuthMethod('password')}
-            >
-              <Text
-                className={`text-center text-sm font-semibold ${
-                  state.authMethod === 'password' ? 'text-app-background' : 'text-app-text'
+      <AuthErrorBanner message={state.errors?.global} />
+      {state.step === 'identifier' ? (
+        <IdentifierStep
+          mode="login"
+          value={state.identifier}
+          placeholder="you@example.com or cooluser123"
+          buttonLabel="Continue"
+          dividerLabel="or continue with"
+          isBusy={state.isBusy}
+          isGoogleLoading={loadingProvider === 'google'}
+          isGoogleDisabled={loadingProvider !== null}
+          isPrimaryLoading={state.isSendingCode}
+          error={state.errors?.identifier}
+          onChangeText={setIdentifier}
+          onPrimaryPress={continueWithIdentifier}
+          onGooglePress={() => signInWith('google')}
+        />
+      ) : (
+        <>
+          <View className="rounded-2xl bg-app-icon/8 p-1.5">
+            <View className="flex-row gap-2">
+              <Pressable
+                className={`flex-1 rounded-2xl px-4 py-3 ${
+                  !usingPassword ? 'bg-app-background' : 'bg-transparent'
                 }`}
+                onPress={() => void switchChallengeMethod('email_code')}
               >
-                Password
-              </Text>
-            </Pressable>
-            <Pressable
-              className={`flex-1 rounded-full py-2 ${
-                state.authMethod === 'email_code' ? 'bg-app-text' : ''
-              }`}
-              onPress={() => setAuthMethod('email_code')}
-            >
-              <Text
-                className={`text-center text-sm font-semibold ${
-                  state.authMethod === 'email_code' ? 'text-app-background' : 'text-app-text'
-                }`}
-              >
-                Email code
-              </Text>
-            </Pressable>
-          </View>
-
-          <View>
-            <Text className="text-sm font-semibold text-app-text">Email or username</Text>
-            <View className="mt-2 rounded-xl border border-app-icon/30 bg-app-background px-4">
-              <TextInput
-                autoCapitalize="none"
-                value={state.identifier}
-                placeholder="you@example.com"
-                placeholderTextColor="#9CA3AF"
-                onChangeText={setIdentifier}
-                keyboardType="email-address"
-                className="py-3 text-base text-app-text"
-                returnKeyType="next"
-                onSubmitEditing={() => {
-                  if (state.authMethod === 'password') {
-                    passwordInputRef.current?.focus();
-                  }
-                }}
-              />
-            </View>
-            {state.errors?.identifier ? (
-              <Text className="mt-1 text-xs text-red-600">{state.errors.identifier}</Text>
-            ) : null}
-          </View>
-
-          {state.authMethod === 'password' ? (
-            <>
-              <View className="mt-4">
-                <Text className="text-sm font-semibold text-app-text">Password</Text>
-                <View className="mt-2 flex-row items-center rounded-xl border border-app-icon/30 bg-app-background px-4">
-                  <TextInput
-                    ref={passwordInputRef}
-                    value={state.password}
-                    placeholder="Enter your password"
-                    placeholderTextColor="#9CA3AF"
-                    secureTextEntry={!showPassword}
-                    onChangeText={setPassword}
-                    className="flex-1 py-3 text-base text-app-text"
-                    returnKeyType="done"
-                    onSubmitEditing={onSignInPress}
-                  />
-                  <Pressable onPress={() => setShowPassword((prev) => !prev)}>
-                    <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#9CA3AF" />
-                  </Pressable>
-                </View>
-                {state.errors?.password ? (
-                  <Text className="mt-1 text-xs text-red-600">{state.errors.password}</Text>
-                ) : null}
-              </View>
-
-              <View className="mt-6">
-                <Button
-                  onPress={onSignInPress}
-                  disabled={!state.identifier.trim() || !state.password || state.isSubmitting}
+                <Text
+                  className={`text-center text-sm font-semibold ${
+                    !usingPassword ? 'text-app-text' : 'text-app-icon'
+                  }`}
                 >
-                  <ButtonText>{state.isSubmitting ? 'Logging in...' : 'Log in'}</ButtonText>
-                </Button>
-              </View>
-            </>
-          ) : (
-            <>
-              <View className="mt-4">
-                <Text className="text-sm font-semibold text-app-text">Verification code</Text>
-                <View className="mt-2 rounded-xl border border-app-icon/30 bg-app-background px-4">
-                  <TextInput
-                    value={state.code}
-                    placeholder="Enter the 6-digit code"
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="number-pad"
-                    onChangeText={setCode}
-                    className="py-3 text-base text-app-text"
-                    maxLength={6}
-                    returnKeyType="done"
-                    onSubmitEditing={onVerifyCodePress}
-                    editable={state.isCodeSent}
-                  />
-                </View>
-                {state.errors?.code ? (
-                  <Text className="mt-1 text-xs text-red-600">{state.errors.code}</Text>
-                ) : null}
-              </View>
-
-              <View className="mt-6 flex-row gap-3">
-                <View className="flex-1">
-                  <Button
-                    variant="secondary"
-                    onPress={onSendCodePress}
-                    disabled={!state.identifier.trim() || state.isSubmitting || state.isCodeSent}
-                    className="inline-flex flex-row gap-2"
-                  >
-                    {state.isSubmitting ? (
-                      <View className="mt-2 items-center">
-                        <ActivityIndicator size={10} color="#4B5563" />
-                      </View>
-                    ) : null}
-                    <ButtonText variant="secondary">
-                      {state.isCodeSent ? 'Code sent' : 'Send code'}
-                    </ButtonText>
-                  </Button>
-                </View>
-                <View className="flex-1">
-                  <Button
-                    onPress={onVerifyCodePress}
-                    disabled={!state.code || !state.isCodeSent || state.isSubmitting}
-                  >
-                    <ButtonText>
-                      {state.isSubmitting ? 'Verifying...' : 'Log in with code'}
-                    </ButtonText>
-                  </Button>
-                </View>
-              </View>
-            </>
-          )}
-
-          <View className="mt-8 flex-row justify-center">
-            <Text className="text-base text-app-text">{`Don't have an account? `}</Text>
-
-            <Link href="/(auth)/signup">
-              <Text className="text-base font-semibold text-app-tint">Sign up</Text>
-            </Link>
+                  Email code
+                </Text>
+              </Pressable>
+              <Pressable
+                className={`flex-1 rounded-2xl px-4 py-3 ${
+                  usingPassword ? 'bg-app-background' : 'bg-transparent'
+                }`}
+                onPress={() => void switchChallengeMethod('password')}
+              >
+                <Text
+                  className={`text-center text-sm font-semibold ${
+                    usingPassword ? 'text-app-text' : 'text-app-icon'
+                  }`}
+                >
+                  Password
+                </Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+
+          {usingPassword ? (
+            <PasswordStep
+              label="Password"
+              value={state.password}
+              placeholder="Enter your password"
+              submitLabel="Log in with password"
+              submitLoadingLabel="Logging in..."
+              error={state.errors?.password}
+              isSubmitting={state.isSigningInWithPassword}
+              isDisabled={state.isBusy || loadingProvider !== null}
+              onChangeText={setPassword}
+              onSubmit={onPasswordSignInPress}
+            />
+          ) : (
+            <VerificationStep
+              value={state.code}
+              onChangeText={setCode}
+              onSubmit={onVerifyCodePress}
+              onResend={onResendCodePress}
+              resendAvailableAt={state.resendAvailableAt}
+              isResending={state.isResendingCode}
+              isSubmitting={state.isVerifyingCode}
+              submitLabel="Log in"
+              submitLoadingLabel="Verifying..."
+              error={state.errors?.code}
+            />
+          )}
+        </>
+      )}
+    </AuthWrapper>
   );
 }
