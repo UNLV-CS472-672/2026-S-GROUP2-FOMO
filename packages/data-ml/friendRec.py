@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+
 from convex import ConvexClient
 from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
@@ -138,27 +139,36 @@ def sim_scores_weighted(events: pd.DataFrame, event_tags: pd.DataFrame, post_tag
     EVENT_TAGS_WEIGHT =  0.15
     POST_TAGS_WEIGHT  =  0.05
 
-    return events * EVENTS_WEIGHT + event_tags * EVENT_TAGS_WEIGHT + post_tags * POST_TAGS_WEIGHT
+    return events.mul(EVENTS_WEIGHT) \
+           .add(event_tags.mul(EVENT_TAGS_WEIGHT), fill_value = 0) \
+           .add(post_tags.mul(POST_TAGS_WEIGHT), fill_value = 0) # Drops NaN values
     
 
 
 # Send recommended friends to Convex server.
-def upsert_friend_recs(sim_scores: pd.DataFrame, target_user_id: str, rec_amt: int):
+def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int):
 
     # Technically doesn't break if rec_amt exceeds, but being extra safe.
     if rec_amt > len(sim_scores):
         raise Exception(f"rec_amt ({rec_amt}) exceeds available users ({len(sim_scores)}).")
     
+    # For user, sort similarity scores by highest.
+    sim_scores = sim_scores.dropna(subset = ["similarity_score"])
+    top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False)  
 
-    # Sort top rec_amt recommended users, create list.
-    top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False).head(rec_amt)
+    # Parse out any userIds that are already friends.
     top_sim_scores = [
-        {"userId": user, "score": float(score)}
-        for user, score in top_sim_scores["similarity_score"].items()
+        {"userId": friendId, "score": float(score)}
+        for friendId, score in top_sim_scores["similarity_score"].items() 
+        if client.query("query:friend_exists", {"userAId": userId, "userBId": friendId}) is None
     ]
 
+    # If list is larger than rec_amt, truncate.
+    # Total friend recs may be less than rec_amt, this is fine.
+    top_sim_scores = top_sim_scores[:rec_amt]
+    
     # Add row if user doesn't have any recommended friends, if they do, update names if values changed.
-    client.mutation("friendRecs:upsert", {"userId": target_user_id,
+    client.mutation("friendRecs:upsert", {"userId": userId,
                                           "recs": top_sim_scores
                                           })  
 
@@ -189,10 +199,10 @@ def main(user: str, rec_amt: int, seed: bool):
 
 
 
-USER     = "n177gtr19ny9x8btdvgpjj3wps823zsg"  # Currently by userName, should be by userId soon.
+USER     = "n177gtr19ny9x8btdvgpjj3wps823zsg"  # By user_id.
 REC_AMT  = 5         # friendRec schema only currently supports 5. 
 SEED     = False     # Dictates if fake data needs to be populated into Convex.
 
 if __name__ == "__main__":
-    main(USER, REC_AMT, False)
+    main(USER, REC_AMT, SEED)
 
