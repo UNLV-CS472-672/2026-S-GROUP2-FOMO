@@ -4,8 +4,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@/assets/*": ["assets/*"],
-      "@fomo/backend/*": ["../../packages/backend/*"]
+      "@/assets/*": ["assets/*"]
     }
   },
   "extends": "expo/tsconfig.base",

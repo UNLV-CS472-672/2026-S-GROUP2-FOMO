@@ -6,9 +6,6 @@ const { withUniwindConfig } = require('uniwind/metro');
 const config = getDefaultConfig(__dirname);
 const monorepoRoot = path.resolve(__dirname, '../..');
 config.watchFolders = [monorepoRoot];
-config.resolver.extraNodeModules = {
-  '@fomo/backend': path.resolve(monorepoRoot, 'packages/backend'),
-};
 // Disable web platform resolution
 config.resolver.platforms = ['ios', 'android'];
 // Required for h3-js v4 (uses package.json "exports" field)
