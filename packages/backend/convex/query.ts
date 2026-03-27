@@ -53,3 +53,29 @@ export const friend_exists = query({
     return null;
   },
 });
+
+// Retrieves friend recommendations for a user.
+// Also determines whether the recommendations are "fresh"
+// based on a 24-hour time window.
+export const getFriendRecs = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    const rec = await ctx.db
+      .query('friendRecs')
+      .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .unique();
+
+    if (!rec) return null;
+
+    const now = Date.now();
+    const INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
+
+    const isFresh = rec.updatedAt ? now - rec.updatedAt < INTERVAL : false;
+
+    return {
+      recs: rec.recs,
+      isFresh,
+      updatedAt: rec.updatedAt,
+    };
+  },
+});
