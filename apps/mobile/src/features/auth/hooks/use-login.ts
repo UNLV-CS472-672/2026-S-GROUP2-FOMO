@@ -1,42 +1,52 @@
 import { buildClerkErrorState, clearAuthErrors, LoginErrors } from '@/features/auth/utils/errors';
-import { useAuth, useSignIn } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/expo';
+import { useSignIn } from '@clerk/expo/legacy';
 import { useState } from 'react';
 
-type AuthMethod = 'password' | 'email_code';
-type LoginStatus = 'idle' | 'submitting' | 'sending_code' | 'code_sent' | 'verifying_code';
+type LoginStep = 'identifier' | 'challenge';
+type ChallengeMethod = 'email_code' | 'password';
+type LoginStatus =
+  | 'idle'
+  | 'sending_code'
+  | 'resending_code'
+  | 'verifying_code'
+  | 'submitting_password';
 
 export function useLogin() {
   const { isSignedIn } = useAuth();
   const { isLoaded, signIn, setActive } = useSignIn();
 
   // state
-  const [authMethod, setAuthMethodValue] = useState<AuthMethod>('password');
+  const [step, setStep] = useState<LoginStep>('identifier');
+  const [challengeMethod, setChallengeMethod] = useState<ChallengeMethod>('email_code');
   const [identifier, setIdentifierValue] = useState('');
   const [password, setPasswordValue] = useState('');
   const [code, setCodeValue] = useState('');
   const [status, setStatus] = useState<LoginStatus>('idle');
   const [errors, setErrors] = useState<LoginErrors | null>(null);
+  const [resendAvailableAt, setResendAvailableAt] = useState<number | null>(null);
+  const [hasPreparedEmailCodeChallenge, setHasPreparedEmailCodeChallenge] = useState(false);
 
   // derived state
-  const isSubmitting =
-    status === 'submitting' || status === 'sending_code' || status === 'verifying_code';
-  const isCodeSent = status === 'code_sent' || status === 'verifying_code';
+  const isBusy = status !== 'idle';
   const shouldShowAuthLoader = !isLoaded || Boolean(isSignedIn);
   const authLoadingMessage = isSignedIn ? 'Finishing sign in...' : 'Loading authentication...';
 
   // ------- state setters -------
-  const setAuthMethod = (value: AuthMethod) => {
-    setAuthMethodValue(value);
-    setErrors(null);
-    setStatus('idle');
-    if (value === 'password') setCodeValue('');
-    else setPasswordValue('');
+  const clearErrors = () => setErrors(null);
+
+  const handleClerkError = (error: unknown) => {
+    setErrors(
+      buildClerkErrorState({
+        error,
+        paramMap: { identifier: 'identifier', password: 'password', code: 'code' },
+      })
+    );
   };
 
   const setIdentifier = (value: string) => {
     setIdentifierValue(value);
     setErrors((current) => clearAuthErrors(current, ['identifier', 'global']));
-    if (authMethod === 'email_code') setStatus('idle');
   };
 
   const setPassword = (value: string) => {
@@ -49,50 +59,18 @@ export function useLogin() {
     setErrors((current) => clearAuthErrors(current, ['code', 'global']));
   };
 
-  const handleClerkError = (error: unknown) => {
-    setErrors(
-      buildClerkErrorState({
-        error,
-        paramMap: { identifier: 'identifier', password: 'password', code: 'code' },
-      })
-    );
-  };
-  const clearErrors = () => setErrors(null);
+  // ------- actions -------
+  const sendCode = async (nextStatus: 'sending_code' | 'resending_code') => {
+    if (!isLoaded || isSignedIn || status !== 'idle') return false;
 
-  // -------  actions -------
-  const onSignInPress = async () => {
-    if (authMethod !== 'password') return;
-    if (!isLoaded || isSignedIn || status !== 'idle') return;
-
-    const trimmedId = identifier.trim();
-    if (!trimmedId || !password) return;
+    const trimmedIdentifier = identifier.trim();
+    if (!trimmedIdentifier) return false;
 
     setErrors(null);
-    setStatus('submitting');
+    setStatus(nextStatus);
 
     try {
-      const result = await signIn.create({ identifier: trimmedId, password });
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
-      }
-    } catch (err) {
-      handleClerkError(err);
-    } finally {
-      setStatus('idle');
-    }
-  };
-
-  const onSendCodePress = async () => {
-    if (!isLoaded || isSignedIn || status !== 'idle') return;
-
-    const trimmedId = identifier.trim();
-    if (!trimmedId) return;
-
-    setErrors(null);
-    setStatus('sending_code');
-
-    try {
-      await signIn.create({ identifier: trimmedId });
+      await signIn.create({ identifier: trimmedIdentifier });
 
       const emailFactor = signIn.supportedFirstFactors?.find(
         (factor) => factor.strategy === 'email_code'
@@ -100,8 +78,7 @@ export function useLogin() {
 
       if (!emailFactor || !('emailAddressId' in emailFactor) || !emailFactor.emailAddressId) {
         setErrors({ global: 'Email code sign-in is not available for this account.' });
-        setStatus('idle');
-        return;
+        return false;
       }
 
       await signIn.prepareFirstFactor({
@@ -109,22 +86,86 @@ export function useLogin() {
         emailAddressId: emailFactor.emailAddressId,
       });
 
-      setStatus('code_sent');
-    } catch (err) {
-      handleClerkError(err);
+      setHasPreparedEmailCodeChallenge(true);
+      setResendAvailableAt(Date.now() + 60_000);
+      return true;
+    } catch (error) {
+      handleClerkError(error);
+      return false;
+    } finally {
       setStatus('idle');
     }
   };
 
+  const continueWithIdentifier = async () => {
+    if (!isLoaded || isSignedIn || status !== 'idle') return;
+    if (!identifier.trim()) return;
+
+    setErrors(null);
+    setChallengeMethod('email_code');
+    setCodeValue('');
+    setPasswordValue('');
+    setResendAvailableAt(null);
+    setHasPreparedEmailCodeChallenge(false);
+
+    const didSendCode = await sendCode('sending_code');
+    if (didSendCode) {
+      setStep('challenge');
+    }
+  };
+
+  const switchChallengeMethod = async (value: ChallengeMethod) => {
+    if (challengeMethod === value) return;
+
+    setChallengeMethod(value);
+    setErrors((current) => clearAuthErrors(current, ['code', 'password', 'global']));
+
+    if (value === 'password') {
+      setCodeValue('');
+      return;
+    }
+
+    setPasswordValue('');
+
+    const canSendCode = !resendAvailableAt || resendAvailableAt <= Date.now();
+    if (step === 'challenge' && canSendCode) {
+      await sendCode('sending_code');
+    }
+  };
+
+  const goBack = () => {
+    if (isBusy) return;
+
+    setStep('identifier');
+    setChallengeMethod('email_code');
+    setCodeValue('');
+    setPasswordValue('');
+    setResendAvailableAt(null);
+    setHasPreparedEmailCodeChallenge(false);
+    setErrors(null);
+  };
+
+  const onResendCodePress = async () => {
+    if (challengeMethod !== 'email_code') return;
+    if (resendAvailableAt && resendAvailableAt > Date.now()) return;
+    await sendCode('resending_code');
+  };
+
   const onVerifyCodePress = async () => {
-    if (!isLoaded || isSignedIn || status !== 'code_sent') return;
+    if (!isLoaded || isSignedIn || status !== 'idle') return;
+    if (
+      step !== 'challenge' ||
+      challengeMethod !== 'email_code' ||
+      !hasPreparedEmailCodeChallenge
+    ) {
+      return;
+    }
 
     const trimmedCode = code.trim();
     if (!trimmedCode) return;
 
     setErrors(null);
     setStatus('verifying_code');
-    let didComplete = false;
 
     try {
       const result = await signIn.attemptFirstFactor({
@@ -133,36 +174,63 @@ export function useLogin() {
       });
 
       if (result.status === 'complete') {
-        didComplete = true;
         await setActive({ session: result.createdSessionId });
       }
-    } catch (err) {
-      handleClerkError(err);
+    } catch (error) {
+      handleClerkError(error);
     } finally {
-      setStatus(didComplete ? 'idle' : 'code_sent');
+      setStatus('idle');
+    }
+  };
+
+  const onPasswordSignInPress = async () => {
+    if (!isLoaded || isSignedIn || status !== 'idle') return;
+
+    const trimmedIdentifier = identifier.trim();
+    if (!trimmedIdentifier || !password) return;
+
+    setErrors(null);
+    setStatus('submitting_password');
+
+    try {
+      const result = await signIn.create({ identifier: trimmedIdentifier, password });
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId });
+      }
+    } catch (error) {
+      handleClerkError(error);
+    } finally {
+      setStatus('idle');
     }
   };
 
   return {
     state: {
-      authMethod,
+      step,
+      challengeMethod,
       identifier,
       password,
       code,
-      isSubmitting,
-      isCodeSent,
+      resendAvailableAt,
       errors,
+      isBusy,
+      isSendingCode: status === 'sending_code',
+      isResendingCode: status === 'resending_code',
+      isVerifyingCode: status === 'verifying_code',
+      isSigningInWithPassword: status === 'submitting_password',
     },
     shouldShowAuthLoader,
     authLoadingMessage,
-    setAuthMethod,
     setIdentifier,
     setPassword,
     setCode,
     clearErrors,
     handleSsoError: handleClerkError,
-    onSignInPress,
-    onSendCodePress,
+    continueWithIdentifier,
+    switchChallengeMethod,
+    goBack,
+    onResendCodePress,
     onVerifyCodePress,
+    onPasswordSignInPress,
   };
 }
