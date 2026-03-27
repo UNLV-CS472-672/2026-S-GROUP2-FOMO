@@ -2,18 +2,17 @@ import { Button, ButtonText } from '@/components/ui/button';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
 
-type SocialButtonProps = {
+type GoogleButtonProps = {
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  mode?: 'signin' | 'signup';
+  mode?: 'login' | 'signup';
 };
 
-// TODO: add more providers if needed
-export function SocialButton({ onPress, loading, disabled, mode = 'signin' }: SocialButtonProps) {
+export function GoogleButton({ onPress, loading, disabled, mode = 'login' }: GoogleButtonProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const label = mode === 'signup' ? `Sign up with Google` : `Log in with Google`;
+  const label = mode === 'signup' ? 'Sign up with Google' : 'Log in with Google';
 
   return (
     <Button

@@ -1,6 +1,6 @@
 'use client';
 
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
+import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
 import { CalendarPlus, LogIn, Map, Settings, User, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -57,7 +57,6 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-
       <SidebarContent>
         <SidebarGroup>
           {open ? <SidebarGroupLabel>Navigation</SidebarGroupLabel> : null}
@@ -90,10 +89,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
       <SidebarFooter>
         <SidebarMenu>
-          <SignedOut>
+          <Show when="signed-out">
             <SidebarMenuItem>
               <SignInButton mode="modal">
                 <SidebarMenuButton
@@ -118,9 +116,9 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SignUpButton>
             </SidebarMenuItem>
-          </SignedOut>
+          </Show>
 
-          <SignedIn>
+          <Show when="signed-in">
             <SidebarMenuItem>
               <div
                 className={[
@@ -161,7 +159,7 @@ export function AppSidebar() {
                 </div>
               </div>
             </SidebarMenuItem>
-          </SignedIn>
+          </Show>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
