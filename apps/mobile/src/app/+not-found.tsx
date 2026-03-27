@@ -16,7 +16,7 @@ export default function NotFoundScreen() {
     >
       <Text className="text-[28px] font-bold leading-8 text-app-text">Page not found</Text>
       <Link href="/" className="rounded-xl bg-app-tint px-4 py-2">
-        <Text className="font-semibold text-white">Go home</Text>
+        <Text className="font-semibold text-app-tint-foreground">Go home</Text>
       </Link>
     </ScrollView>
   );

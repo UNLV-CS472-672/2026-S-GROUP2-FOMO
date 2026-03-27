@@ -48,7 +48,7 @@ export function VerificationCodeInput({
               key={index}
               className={`h-14 flex-1 items-center justify-center rounded-xl border ${
                 isActive
-                  ? 'border-app-tint bg-app-tint/5'
+                  ? 'border-app-tint bg-app-primary-soft'
                   : isFilled
                     ? 'border-app-text/40 bg-app-background'
                     : 'border-app-icon/30 bg-app-background'

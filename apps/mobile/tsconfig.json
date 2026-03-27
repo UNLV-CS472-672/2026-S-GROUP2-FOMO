@@ -4,7 +4,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@/assets/*": ["assets/*"]
+      "@/assets/*": ["assets/*"],
+      "@fomo/theme": ["../../packages/theme/src/index.ts"],
+      "@fomo/theme/*": ["../../packages/theme/src/*"]
     }
   },
   "extends": "expo/tsconfig.base",

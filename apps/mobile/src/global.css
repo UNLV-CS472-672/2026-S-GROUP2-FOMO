@@ -1,26 +1,39 @@
 @import 'tailwindcss';
 @import 'uniwind';
+@import '../../../packages/theme/src/theme.css';
 
 @layer theme {
   :root {
     @variant light {
-      --color-app-text: #11181c;
-      --color-app-background: #ffffff;
-      --color-app-tint: #0a7ea4;
-      --color-app-icon: #687076;
-      --color-app-border: #f59e0b;
+      --color-app-text: #201713;
+      --color-app-background: #fffaf6;
+      --color-app-surface: #fffdfb;
+      --color-app-tint: var(--brand-primary);
+      --color-app-tint-foreground: var(--brand-primary-foreground);
+      --color-app-tint-hover: var(--brand-primary-hover);
+      --color-app-primary-soft: var(--brand-primary-soft);
+      --color-app-primary-soft-border: var(--brand-primary-soft-border);
+      --color-app-primary-text: var(--brand-primary-text);
+      --color-app-icon: #786860;
+      --color-app-border: var(--brand-primary-soft-border);
     }
     @variant dark {
-      --color-app-text: #ecedee;
-      --color-app-background: #151718;
-      --color-app-tint: #ffffff;
-      --color-app-icon: #9ba1a6;
-      --color-app-border: #f59e0b;
+      --color-app-text: #f7eee8;
+      --color-app-background: #181311;
+      --color-app-surface: #211916;
+      --color-app-tint: var(--brand-primary);
+      --color-app-tint-foreground: var(--brand-primary-foreground);
+      --color-app-tint-hover: var(--brand-primary-hover);
+      --color-app-primary-soft: #2d1712;
+      --color-app-primary-soft-border: #6a3428;
+      --color-app-primary-text: #ffa071;
+      --color-app-icon: #baa99f;
+      --color-app-border: #6a3428;
     }
   }
 }
 
 @theme {
   /* Custom native fonts loaded via expo-font config plugin. */
-  --font-heading: "Cabinet Grotesk Variable";
+  --font-heading: 'Cabinet Grotesk Variable';
 }

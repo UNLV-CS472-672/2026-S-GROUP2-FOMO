@@ -153,8 +153,8 @@ export function Sidebar({
     collapsible === 'icon' && !open ? 'var(--sidebar-width-icon)' : 'var(--sidebar-width)';
   const shellClasses =
     variant === 'floating'
-      ? 'm-3 rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950'
-      : 'border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950';
+      ? 'm-3 rounded-3xl border border-border bg-surface shadow-[0_24px_64px_rgba(45,23,18,0.08)]'
+      : 'border-border bg-surface';
 
   const content = (
     <aside
@@ -181,8 +181,8 @@ export function Sidebar({
     return (
       <Dialog.Root open={openMobile} onOpenChange={setOpenMobile}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
-          <Dialog.Content className="fixed inset-y-0 left-0 z-50 w-[var(--sidebar-width-mobile)] border-r border-zinc-200 bg-white p-0 shadow-xl outline-none dark:border-zinc-800 dark:bg-zinc-950">
+          <Dialog.Overlay className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm" />
+          <Dialog.Content className="fixed inset-y-0 left-0 z-50 w-[var(--sidebar-width-mobile)] border-r border-border bg-surface p-0 shadow-xl outline-none">
             <Dialog.Title className="sr-only">Sidebar</Dialog.Title>
             <div className="flex h-full flex-col">{children}</div>
           </Dialog.Content>
@@ -210,7 +210,7 @@ export function SidebarTrigger({ className, ...props }: React.ComponentProps<'bu
       data-slot="sidebar-trigger"
       onClick={toggleSidebar}
       className={cn(
-        'inline-flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900',
+        'inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-surface text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
         className
       )}
       {...props}
@@ -222,6 +222,7 @@ export function SidebarTrigger({ className, ...props }: React.ComponentProps<'bu
         stroke="currentColor"
         strokeWidth="1.8"
         className="h-4 w-4"
+        aria-hidden="true"
       >
         <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
         <path d="M9 4.5v15" />
@@ -234,7 +235,7 @@ export function SidebarInset({ className, ...props }: React.ComponentProps<'div'
   return (
     <div
       data-slot="sidebar-inset"
-      className={cn('min-w-0 flex-1 self-stretch bg-zinc-100 dark:bg-black', className)}
+      className={cn('min-w-0 flex-1 self-stretch bg-background', className)}
       {...props}
     />
   );
@@ -244,7 +245,7 @@ export function SidebarHeader({ className, ...props }: React.ComponentProps<'div
   return (
     <div
       data-slot="sidebar-header"
-      className={cn('border-b border-zinc-200 p-3 dark:border-zinc-800', className)}
+      className={cn('border-b border-border p-3', className)}
       {...props}
     />
   );
@@ -254,7 +255,7 @@ export function SidebarFooter({ className, ...props }: React.ComponentProps<'div
   return (
     <div
       data-slot="sidebar-footer"
-      className={cn('mt-auto border-t border-zinc-200 p-3 dark:border-zinc-800', className)}
+      className={cn('mt-auto border-t border-border p-3', className)}
       {...props}
     />
   );
@@ -279,7 +280,7 @@ export function SidebarGroupLabel({ className, ...props }: React.ComponentProps<
     <div
       data-slot="sidebar-group-label"
       className={cn(
-        'mb-2 px-2 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400',
+        'mb-2 px-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground',
         className
       )}
       {...props}
@@ -318,10 +319,10 @@ export function SidebarMenuButton({
       data-slot="sidebar-menu-button"
       data-active={isActive ? 'true' : 'false'}
       className={cn(
-        'flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors',
+        'flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
         isActive
-          ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950'
-          : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900',
+          ? 'bg-primary text-primary-foreground shadow-[0_16px_30px_rgba(198,29,8,0.16)]'
+          : 'text-foreground hover:bg-primary-soft hover:text-primary-text',
         className
       )}
       {...props}

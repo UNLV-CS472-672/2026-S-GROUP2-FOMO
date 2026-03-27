@@ -4,8 +4,9 @@ import { Button, ButtonText } from '@/components/ui/button';
 import PostGrid from '@/components/ui/post-grid';
 import { Screen } from '@/components/ui/screen';
 import StatLabel from '@/components/ui/stat-label';
+import { nativeTheme } from '@fomo/theme/native';
 import { useRouter } from 'expo-router';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
 
 // imports for authentication and guest mode
 import { GuestMode } from '@/components/profile/guest-mode';
@@ -20,6 +21,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const colorScheme = useColorScheme();
+  const theme = colorScheme === 'dark' ? nativeTheme.dark : nativeTheme.light;
 
   // Authentication state from both Clerk and Convex
   const { isAuthenticated, isLoading } = useConvexAuth();
@@ -38,7 +41,7 @@ export default function ProfileScreen() {
       {isGuestMode ? (
         <GuestMode />
       ) : (
-        <ScrollView className="flex-1 bg-background pt-20">
+        <ScrollView className="flex-1 bg-app-background pt-20">
           <View className="flex-row items-start p-4">
             <ProfilePicture imageSource={require('@/assets/images/icon.png')} />
 
@@ -52,7 +55,7 @@ export default function ProfileScreen() {
                   className="-mr-3 rounded-full"
                   accessibilityLabel="Open settings"
                 >
-                  <MaterialIcons name="settings" size={22} color="#687076" />
+                  <MaterialIcons name="settings" size={22} color={theme.mutedText} />
                 </Button>
               </View>
               <Text className="text-sm leading-5 text-app-text">{description}</Text>
@@ -78,9 +81,9 @@ export default function ProfileScreen() {
           <View className="mb-4 flex-row px-4">
             <Button
               variant="tertiary"
-              className="h-[82px] flex-1 rounded-none border border-app-border"
+              className="h-[82px] flex-1 rounded-none border border-app-primary-soft-border bg-app-primary-soft"
             >
-              <ButtonText className="text-black">Recent Activity</ButtonText>
+              <ButtonText className="text-app-primary-text">Recent Activity</ButtonText>
             </Button>
           </View>
 
@@ -91,32 +94,26 @@ export default function ProfileScreen() {
             contentContainerClassName="px-4"
           />
 
-          <View className="flex-row border-y border-neutral-300">
+          <View className="flex-row border-y border-app-primary-soft-border">
             <TouchableOpacity
-              className={`flex-1 items-center py-3 ${activeTab === 'all' ? 'border-b-[5px] border-b-app-border' : ''}`}
+              className={`flex-1 items-center py-3 ${activeTab === 'all' ? 'border-b-[5px] border-b-app-tint' : ''}`}
               onPress={() => setActiveTab('all')}
             >
-              <Text className={activeTab === 'all' ? 'text-app-border' : 'text-muted-foreground'}>
-                All
-              </Text>
+              <Text className={activeTab === 'all' ? 'text-app-tint' : 'text-app-icon'}>All</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className={`flex-1 items-center py-3 ${activeTab === 'recent' ? 'border-b-[5px] border-b-app-border' : ''}`}
+              className={`flex-1 items-center py-3 ${activeTab === 'recent' ? 'border-b-[5px] border-b-app-tint' : ''}`}
               onPress={() => setActiveTab('recent')}
             >
-              <Text
-                className={activeTab === 'recent' ? 'text-app-border' : 'text-muted-foreground'}
-              >
+              <Text className={activeTab === 'recent' ? 'text-app-tint' : 'text-app-icon'}>
                 Recent
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className={`flex-1 items-center py-3 ${activeTab === 'tagged' ? 'border-b-[5px] border-b-app-border' : ''}`}
+              className={`flex-1 items-center py-3 ${activeTab === 'tagged' ? 'border-b-[5px] border-b-app-tint' : ''}`}
               onPress={() => setActiveTab('tagged')}
             >
-              <Text
-                className={activeTab === 'tagged' ? 'text-app-border' : 'text-muted-foreground'}
-              >
+              <Text className={activeTab === 'tagged' ? 'text-app-tint' : 'text-app-icon'}>
                 Tagged
               </Text>
             </TouchableOpacity>
