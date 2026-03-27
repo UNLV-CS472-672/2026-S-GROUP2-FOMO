@@ -1,6 +1,6 @@
 name: Feature Request
 description: Propose a feature, improvement, or development task
-title: 'Feature: '
+title: ''
 labels:
   - feature
 assignees: []
