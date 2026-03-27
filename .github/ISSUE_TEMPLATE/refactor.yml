@@ -1,6 +1,6 @@
 name: Refactor
 description: Propose internal code improvements without changing behavior
-title: ''
+title: 'Short Title'
 labels:
   - refactor
 assignees: []
