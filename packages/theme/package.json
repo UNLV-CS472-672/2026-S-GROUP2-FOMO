@@ -1,0 +1,12 @@
+{
+  "name": "@fomo/theme",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./native": "./src/native.ts",
+    "./web.css": "./src/theme.css"
+  },
+  "main": "./src/index.ts"
+}
