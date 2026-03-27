@@ -31,6 +31,12 @@
     "plugins": [
       "expo-router",
       [
+        "@clerk/expo",
+        {
+          "appleSignIn": false
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "android": {
