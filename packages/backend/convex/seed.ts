@@ -1,5 +1,77 @@
 import { mutation } from './_generated/server';
 
+export const eventSeeds = [
+  {
+    name: 'Coffee + Homework',
+    organization: 'Pop Cafe',
+    description: 'Chill study session.',
+    latitude: 36.12730186736902,
+    longitude: -115.19299595922035,
+  },
+  {
+    name: 'ASAP Rocky Concert',
+    organization: 'ASAP Rocky',
+    description: 'Dont be dumb, pull up.',
+    latitude: 36.10470771447518,
+    longitude: -115.16859227452814,
+  },
+  {
+    name: 'Psi Rho house party',
+    organization: 'UNLV - Alpha Psi Rho',
+    description: 'no hazing, just good vibes. $10 entry for dudes.',
+    latitude: 36.10790291877858,
+    longitude: -115.14269190902489,
+  },
+  {
+    name: 'Las Vegas - First Friday',
+    organization: 'Downtown Las Vegas',
+    description:
+      'Free-admission monthly event featuring live music, art exhibits, food trucks, and vendors.',
+    latitude: 36.15958759998514,
+    longitude: -115.15239854806732,
+  },
+  {
+    name: 'St. Jimmy Panel & Conference',
+    organization: 'st. jimmy',
+    description:
+      'okay jeez, i been going thru a rough patch. going left, right thru the catacombs.',
+    latitude: 36.09086216508982,
+    longitude: -115.18328464909499,
+  },
+  {
+    name: 'LVL UP EXPO 2026',
+    organization: 'LVL UP LLC',
+    description:
+      'LVL UP EXPO is a three-day immersive gaming and pop culture convention in Las Vegas celebrating fans through esports tournaments, cosplay, art, and entertainment.',
+    latitude: 36.12871445143533,
+    longitude: -115.15149229313623,
+  },
+  {
+    name: 'Baby Keem Concert',
+    organization: 'The Cosmopolitan',
+    description: 'half past twelve i was all alone.',
+    latitude: 36.10987909759377,
+    longitude: -115.17538973403965,
+  },
+  {
+    name: 'Water Lantern Festival',
+    organization: 'SWCTA Key Club',
+    description: 'Join us at Sunset Park to litter the pond.',
+    latitude: 36.03809903957797,
+    longitude: -115.24699453074136,
+  },
+  {
+    name: 'Thrift Valley pop up shop',
+    organization: 'Thrift Valley',
+    description: 'we outta stussy dont even ask',
+    latitude: 36.15909747099756,
+    longitude: -115.15269829421878,
+  },
+];
+
+// Attendee counts per event, parallel to eventSeeds — derived from userEventPairs in seed handler
+export const eventSeedAttendees = [3, 5, 4, 4, 3, 5, 2, 4, 6];
+
 export const seed = mutation({
   args: {},
   handler: async (ctx) => {
@@ -67,74 +139,6 @@ export const seed = mutation({
     }
 
     //  Events (Convex: events)
-    const eventSeeds = [
-      {
-        name: 'Coffee + Homework',
-        organization: 'Pop Cafe',
-        description: 'Chill study session.',
-        latitude: 36.12730186736902,
-        longitude: -115.19299595922035,
-      },
-      {
-        name: 'ASAP Rocky Concert',
-        organization: 'ASAP Rocky',
-        description: 'Dont be dumb, pull up.',
-        latitude: 36.10470771447518,
-        longitude: -115.16859227452814,
-      },
-      {
-        name: 'Psi Rho house party',
-        organization: 'UNLV - Alpha Psi Rho',
-        description: 'no hazing, just good vibes. $10 entry for dudes.',
-        latitude: 36.10790291877858,
-        longitude: -115.14269190902489,
-      },
-      {
-        name: 'Las Vegas - First Friday',
-        organization: 'Downtown Las Vegas',
-        description:
-          'Free-admission monthly event featuring live music, art exhibits, food trucks, and vendors.',
-        latitude: 36.15958759998514,
-        longitude: -115.15239854806732,
-      },
-      {
-        name: 'St. Jimmy Panel & Conference',
-        organization: 'st. jimmy',
-        description:
-          'okay jeez, i been going thru a rough patch. going left, right thru the catacombs.',
-        latitude: 36.09086216508982,
-        longitude: -115.18328464909499,
-      },
-      {
-        name: 'LVL UP EXPO 2026',
-        organization: 'LVL UP LLC',
-        description:
-          'LVL UP EXPO is a three-day immersive gaming and pop culture convention in Las Vegas celebrating fans through esports tournaments, cosplay, art, and entertainment.',
-        latitude: 36.12871445143533,
-        longitude: -115.15149229313623,
-      },
-      {
-        name: 'Baby Keem Concert',
-        organization: 'The Cosmopolitan',
-        description: 'half past twelve i was all alone.',
-        latitude: 36.10987909759377,
-        longitude: -115.17538973403965,
-      },
-      {
-        name: 'Water Lantern Festival',
-        organization: 'SWCTA Key Club',
-        description: 'Join us at Sunset Park to litter the pond.',
-        latitude: 36.03809903957797,
-        longitude: -115.24699453074136,
-      },
-      {
-        name: 'Thrift Valley pop up shop',
-        organization: 'Thrift Valley',
-        description: 'we outta stussy dont even ask',
-        latitude: 36.15909747099756,
-        longitude: -115.15269829421878,
-      },
-    ];
     const eventIds: any[] = [];
     for (const e of eventSeeds) {
       const existing = await ctx.db
@@ -501,6 +505,53 @@ export const seed = mutation({
         )
         .first();
       if (!existing) await ctx.db.insert('comments', comment);
+    }
+
+    const friendPairs = [
+      { userAId: u1, userBId: u2 },
+      { userAId: u1, userBId: u4 },
+      { userAId: u1, userBId: u5 },
+      { userAId: u1, userBId: u7 },
+      { userAId: u1, userBId: u8 },
+
+      { userAId: u2, userBId: u1 },
+      { userAId: u2, userBId: u3 },
+
+      { userAId: u3, userBId: u2 },
+      { userAId: u3, userBId: u4 },
+      { userAId: u3, userBId: u5 },
+      { userAId: u3, userBId: u6 },
+      { userAId: u3, userBId: u7 },
+
+      { userAId: u4, userBId: u1 },
+      { userAId: u4, userBId: u3 },
+      { userAId: u4, userBId: u5 },
+      { userAId: u4, userBId: u8 },
+
+      { userAId: u5, userBId: u1 },
+      { userAId: u5, userBId: u3 },
+      { userAId: u5, userBId: u4 },
+      { userAId: u5, userBId: u6 },
+
+      { userAId: u6, userBId: u3 },
+      { userAId: u6, userBId: u5 },
+      { userAId: u6, userBId: u8 },
+
+      { userAId: u7, userBId: u1 },
+      { userAId: u7, userBId: u3 },
+
+      { userAId: u8, userBId: u1 },
+      { userAId: u8, userBId: u4 },
+      { userAId: u8, userBId: u6 },
+    ];
+    for (const pair of friendPairs) {
+      const existing = await ctx.db
+        .query('friends')
+        .withIndex('by_userA_userB', (q) =>
+          q.eq('userAId', pair.userAId).eq('userBId', pair.userBId)
+        )
+        .first();
+      if (!existing) await ctx.db.insert('friends', pair);
     }
 
     return {
