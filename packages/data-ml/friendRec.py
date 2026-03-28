@@ -7,7 +7,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 load_dotenv()
 CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
-client = ConvexClient(CONVEX_CLOUD_URL)
+client = ConvexClient(CONVEX_CLOUD_URL) if CONVEX_CLOUD_URL else None
 
 
 # Checks if a userid exists in the "users" table.

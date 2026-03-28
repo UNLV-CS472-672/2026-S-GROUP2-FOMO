@@ -73,6 +73,11 @@ jobs:
         working-directory: packages/data-ml
         run: uv sync --frozen
 
+      - name: Run pytest
+        run: |
+          cd packages/data-ml
+          python -m pytest
+
       - name: Run mypy (data-ml)
         working-directory: packages/data-ml
         run: uv run mypy .
