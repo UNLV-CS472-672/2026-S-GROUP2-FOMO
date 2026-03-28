@@ -1,5 +1,6 @@
 import '@/global.css';
 
+import { useAuth } from '@clerk/expo';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useConvexAuth } from 'convex/react';
 import { Redirect, Stack, useSegments } from 'expo-router';
@@ -12,12 +13,15 @@ import ConvexProvider from '@/integrations/convex/provider';
 import GuestProvider, { useGuest } from '@/integrations/session/provider';
 
 function RootNavigator() {
+  const { isLoaded: isClerkLoaded, isSignedIn } = useAuth({
+    treatPendingAsSignedOut: false,
+  });
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { isGuestMode, isGuestLoading } = useGuest();
   const segments = useSegments();
 
   const authState =
-    isLoading || isGuestLoading
+    !isClerkLoaded || isGuestLoading || isLoading || (isSignedIn && !isAuthenticated)
       ? 'loading'
       : isAuthenticated
         ? 'authenticated'
@@ -33,7 +37,9 @@ function RootNavigator() {
     );
   }
 
-  if (authState === 'authenticated' && segments[0] !== '(tabs)') {
+  const isAuthenticatedRouteAllowed = segments[0] === '(tabs)' || segments[0] === 'feed';
+
+  if (authState === 'authenticated' && !isAuthenticatedRouteAllowed) {
     return <Redirect href="/(tabs)/(map)" />;
   }
 
