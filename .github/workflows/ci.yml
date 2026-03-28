@@ -74,9 +74,8 @@ jobs:
         run: uv sync --frozen
 
       - name: Run pytest
-        run: |
-          cd packages/data-ml
-          uv run pytest
+        working directory: packages/data-ml
+        run: uv run pytest
 
       - name: Run mypy (data-ml)
         working-directory: packages/data-ml
