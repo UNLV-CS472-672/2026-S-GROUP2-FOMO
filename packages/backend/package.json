@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@fomo/env": "workspace:*",
-    "convex": "^1.31.7"
+    "convex": "^1.31.7",
+    "h3-js": "^4.4.0"
   }
 }
