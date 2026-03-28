@@ -12,6 +12,7 @@ import type * as auth from "../auth.js";
 import type * as friendRecs from "../friendRecs.js";
 import type * as query from "../query.js";
 import type * as seed from "../seed.js";
+import type * as updateUserPreferences from "../updateUserPreferences.js";
 
 import type {
   ApiFromModules,
@@ -24,6 +25,7 @@ declare const fullApi: ApiFromModules<{
   friendRecs: typeof friendRecs;
   query: typeof query;
   seed: typeof seed;
+  updateUserPreferences: typeof updateUserPreferences;
 }>;
 
 /**
