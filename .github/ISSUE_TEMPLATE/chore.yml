@@ -1,6 +1,6 @@
 name: Chore
 description: Track maintenance, tooling, configuration, or housekeeping work
-title: '[Chore]: '
+title: 'Short Title'
 labels:
   - chore
 assignees: []
