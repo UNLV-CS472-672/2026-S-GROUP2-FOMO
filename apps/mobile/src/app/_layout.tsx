@@ -38,7 +38,9 @@ function RootNavigator() {
     );
   }
 
-  if (authState === 'authenticated' && segments[0] !== '(tabs)') {
+  const isAuthenticatedRouteAllowed = segments[0] === '(tabs)' || segments[0] === 'feed';
+
+  if (authState === 'authenticated' && !isAuthenticatedRouteAllowed) {
     return <Redirect href="/(tabs)/(map)" />;
   }
 
