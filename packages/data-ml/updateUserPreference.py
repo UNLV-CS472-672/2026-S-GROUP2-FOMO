@@ -36,7 +36,7 @@ def get_user_event_multihot(user_ids: list[str]) -> dict[str, np.ndarray]:
         user_events = client.query("updateUserPreferences:getByUserId", {"userId": user_id})
         event_ids = [row["eventId"] for row in user_events]
 
-        mat = np.zeros((len(event_ids), num_tags), dtype=np.float32)
+        mat : np.ndarray = np.zeros((len(event_ids), num_tags), dtype=np.float32)
 
         # Get tags associated with the events and create a onehot of the tags for the event
         for i, event_id in enumerate(event_ids):
