@@ -1,123 +1,18 @@
 'use client';
 
 import { useSidebar } from '@/components/ui/sidebar';
+import { useUserLocation } from '@/features/map/hooks/use-user-location';
+import {
+  FALLBACK_COORDS,
+  loadMapboxAssets,
+  type MapboxGlobal,
+  type MapboxMap,
+  type MapboxMarker,
+} from '@/features/map/utils/load-mapbox-assets';
+import { env } from '@fomo/env/web';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-type Coordinates = [number, number];
-
-type MapboxMap = {
-  on: (event: string, handler: () => void) => void;
-  flyTo: (options: Record<string, unknown>) => void;
-  jumpTo: (options: Record<string, unknown>) => void;
-  resize: () => void;
-  remove: () => void;
-};
-
-type MapboxMarker = {
-  setLngLat: (coords: Coordinates) => MapboxMarker;
-  addTo: (map: MapboxMap) => MapboxMarker;
-  remove: () => void;
-};
-
-type MapboxGlobal = {
-  Map: new (options: Record<string, unknown>) => MapboxMap;
-  Marker: new (options: Record<string, unknown>) => MapboxMarker;
-  accessToken: string;
-};
-
-declare global {
-  interface Window {
-    mapboxgl?: MapboxGlobal;
-  }
-}
-
-// Las Vegas Coords
-const FALLBACK_COORDS: Coordinates = [-115.1398, 36.1699];
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
-
-function useUserLocation() {
-  const geolocationAvailable =
-    typeof navigator !== 'undefined' && typeof navigator.geolocation !== 'undefined';
-  const [userCoords, setUserCoords] = useState<Coordinates>(FALLBACK_COORDS);
-  const [hasResolvedLocation, setHasResolvedLocation] = useState(!geolocationAvailable);
-  const [locationGranted, setLocationGranted] = useState(false);
-
-  useEffect(() => {
-    if (!geolocationAvailable) {
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setLocationGranted(true);
-        setUserCoords([coords.longitude, coords.latitude]);
-        setHasResolvedLocation(true);
-      },
-      () => {
-        setHasResolvedLocation(true);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
-    );
-  }, [geolocationAvailable]);
-
-  return {
-    centerCoordinate: userCoords,
-    hasResolvedLocation,
-    locationGranted,
-  };
-}
-
-function loadMapboxAssets() {
-  const existingScript = document.querySelector<HTMLScriptElement>('script[data-mapbox-gl]');
-  const existingStylesheet = document.querySelector<HTMLLinkElement>('link[data-mapbox-gl]');
-
-  if (!existingStylesheet) {
-    const stylesheet = document.createElement('link');
-    stylesheet.rel = 'stylesheet';
-    stylesheet.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
-    stylesheet.dataset.mapboxGl = 'true';
-    document.head.appendChild(stylesheet);
-  }
-
-  if (window.mapboxgl) {
-    return Promise.resolve(window.mapboxgl);
-  }
-
-  if (existingScript) {
-    return new Promise<MapboxGlobal>((resolve, reject) => {
-      existingScript.addEventListener('load', () => {
-        if (window.mapboxgl) {
-          resolve(window.mapboxgl);
-          return;
-        }
-
-        reject(new Error('Mapbox GL did not initialize.'));
-      });
-      existingScript.addEventListener('error', () => {
-        reject(new Error('Mapbox GL script failed to load.'));
-      });
-    });
-  }
-
-  return new Promise<MapboxGlobal>((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
-    script.async = true;
-    script.dataset.mapboxGl = 'true';
-    script.onload = () => {
-      if (window.mapboxgl) {
-        resolve(window.mapboxgl);
-        return;
-      }
-
-      reject(new Error('Mapbox GL did not initialize.'));
-    };
-    script.onerror = () => {
-      reject(new Error('Mapbox GL script failed to load.'));
-    };
-    document.body.appendChild(script);
-  });
-}
+const MAPBOX_TOKEN = env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
 export default function MapPage() {
   const { open, isMobile } = useSidebar();
@@ -131,10 +26,6 @@ export default function MapPage() {
   const [mapReady, setMapReady] = useState(false);
 
   const staticMapSrc = useMemo(() => {
-    if (!MAPBOX_TOKEN) {
-      return '';
-    }
-
     const [lng, lat] = centerCoordinate;
     return `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
   }, [centerCoordinate]);
@@ -145,7 +36,7 @@ export default function MapPage() {
     let didLoad = false;
 
     async function initMap() {
-      if (!MAPBOX_TOKEN || !mapContainerRef.current || mapRef.current) {
+      if (!mapContainerRef.current || mapRef.current) {
         return;
       }
 
@@ -279,14 +170,12 @@ export default function MapPage() {
 
   return (
     <section className="relative h-[calc(100vh-7rem)] min-h-[32rem] overflow-hidden rounded-[2rem] border border-white/[0.12] bg-[#05070b]">
-      {staticMapSrc ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={staticMapSrc}
-          alt="Map"
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${mapReady ? 'opacity-0' : 'opacity-100'}`}
-        />
-      ) : null}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={staticMapSrc}
+        alt="Map"
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${mapReady ? 'opacity-0' : 'opacity-100'}`}
+      />
 
       <div
         ref={mapContainerRef}
@@ -312,12 +201,6 @@ export default function MapPage() {
           </div>
         ) : null}
       </div>
-
-      {!MAPBOX_TOKEN ? (
-        <div className="absolute inset-x-4 bottom-4 z-10 rounded-xl border border-amber-400/30 bg-black/70 px-4 py-3 text-sm text-amber-100 backdrop-blur">
-          Set `NEXT_PUBLIC_MAPBOX_TOKEN` in `apps/web/.env.local` and restart the Next dev server.
-        </div>
-      ) : null}
 
       {loadError ? (
         <div className="absolute inset-x-4 bottom-4 z-10 rounded-xl border border-red-400/30 bg-black/70 px-4 py-3 text-sm text-red-100 backdrop-blur">
