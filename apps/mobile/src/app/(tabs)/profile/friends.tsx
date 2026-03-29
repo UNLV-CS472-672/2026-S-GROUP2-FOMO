@@ -1,16 +1,165 @@
-import { ScrollView, Text } from 'react-native';
+import FriendCell from '@/components/profile/friend-cell';
+import { Screen } from '@/components/ui/screen';
+import { useMemo, useState } from 'react';
+import type { ImageSourcePropType } from 'react-native';
+import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function FriendsScreen() {
+  const [searchText, setSearchText] = useState('');
+  const [isRecommendedCollapsed, setIsRecommendedCollapsed] = useState(false);
+
+  type Friend = { username: string; realName?: string; imageSource: ImageSourcePropType };
+
+  const recommendedFriends = useMemo<Friend[]>(
+    () => [
+      {
+        username: 'barfspoon',
+        realName: 'Broxtin',
+        imageSource: require('@/assets/images/icon.png'),
+      },
+      {
+        username: 'spongoi endless suffering',
+        imageSource: require('@/assets/images/react-logo.png'),
+      },
+      {
+        username: 'spongoi man failure',
+        realName: 'Koiyne',
+        imageSource: require('@/assets/images/react-logo.png'),
+      },
+      {
+        username: 'spongoi baby drives many cars',
+        realName: 'Ryuji Gouda',
+        imageSource: require('@/assets/images/react-logo.png'),
+      },
+    ],
+    []
+  );
+
+  const friends = useMemo<Friend[]>(
+    () => [
+      {
+        username: 'PMA',
+        realName: 'Nathan K',
+        imageSource: require('@/assets/images/icon.png'),
+      },
+      {
+        username: 'heptahedron',
+        imageSource: require('@/assets/images/android-icon-foreground.png'),
+      },
+      {
+        username: 'NDP',
+        realName: 'Nathan D P',
+        imageSource: require('@/assets/images/android-icon-monochrome.png'),
+      },
+      {
+        username: 'Akeegaii',
+        realName: 'Reecius',
+        imageSource: require('@/assets/images/splash-icon.png'),
+      },
+      {
+        username: 'StJimmy',
+        realName: 'Jimmy D',
+        imageSource: require('@/assets/images/favicon.png'),
+      },
+      {
+        username: 'MaymuzuD',
+        realName: 'Danyella M',
+        imageSource: require('@/assets/images/partial-react-logo.png'),
+      },
+    ],
+    []
+  );
+
+  const filteredRecommended = useMemo(() => {
+    const q = searchText.trim().toLowerCase();
+    return recommendedFriends.filter(
+      (f) => f.username.toLowerCase().includes(q) || f.realName?.toLowerCase().includes(q)
+    );
+  }, [recommendedFriends, searchText]);
+
+  const filteredFriends = useMemo(() => {
+    const q = searchText.trim().toLowerCase();
+    return friends.filter(
+      (f) => f.username.toLowerCase().includes(q) || f.realName?.toLowerCase().includes(q)
+    );
+  }, [friends, searchText]);
+
+  const handleFriendPress = (username: string) => {
+    Alert.alert('Friend selected', username);
+  };
+
   return (
-    <ScrollView
-      className="flex-1 bg-app-background"
-      contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ flexGrow: 1, padding: 24, rowGap: 8 }}
-    >
-      <Text className="text-[30px] font-bold leading-8 text-app-text">Friends</Text>
-      <Text className="text-base leading-6 text-app-text">
-        Friends list, requests, and suggestions will appear here.
-      </Text>
-    </ScrollView>
+    <Screen className="flex-1">
+      <ScrollView className="flex-1 bg-background pt-20" contentContainerClassName="pb-6">
+        {/* Search */}
+        <View className="px-4 pb-4">
+          <TextInput
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder="Search friends"
+            placeholderTextColor="#687076"
+            className="rounded-lg border border-app-border bg-app-background px-4 py-2 text-base text-app-text"
+            accessibilityLabel="Search friends"
+          />
+        </View>
+
+        {/* Recommended Friends */}
+        <View className="mb-4 border-y border-neutral-300">
+          <TouchableOpacity
+            onPress={() => setIsRecommendedCollapsed((current) => !current)}
+            className="flex-row items-center justify-between px-4 py-3"
+            accessibilityRole="button"
+            accessibilityLabel="Toggle recommended friends"
+          >
+            <Text className="text-lg font-bold text-app-text">Recommended Friends</Text>
+            <Text className="text-sm text-muted-foreground">
+              {isRecommendedCollapsed ? 'Show' : 'Hide'}
+            </Text>
+          </TouchableOpacity>
+
+          {!isRecommendedCollapsed && (
+            <View className="px-4 pb-1">
+              {filteredRecommended.length > 0 ? (
+                filteredRecommended.map((f) => (
+                  <FriendCell
+                    key={f.username}
+                    username={f.username}
+                    realName={f.realName}
+                    imageSource={f.imageSource}
+                    onPress={() => handleFriendPress(f.username)}
+                  />
+                ))
+              ) : (
+                <Text className="py-2 text-sm text-muted-foreground">
+                  No recommendations found.
+                </Text>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Friends List */}
+        <View className="border-y border-neutral-300">
+          <View className="px-4 py-3">
+            <Text className="text-lg font-bold text-app-text">Friends</Text>
+          </View>
+          <View className="px-4 pb-1">
+            {filteredFriends.length > 0 ? (
+              filteredFriends.map((f) => (
+                <FriendCell
+                  key={f.username}
+                  username={f.username}
+                  realName={f.realName}
+                  imageSource={f.imageSource}
+                  onPress={() => handleFriendPress(f.username)}
+                />
+              ))
+            ) : (
+              <Text className="py-2 text-sm text-muted-foreground">No friends found.</Text>
+            )}
+          </View>
+        </View>
+      </ScrollView>
+    </Screen>
   );
 }
