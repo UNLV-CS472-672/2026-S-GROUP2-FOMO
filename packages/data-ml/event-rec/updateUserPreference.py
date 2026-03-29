@@ -6,6 +6,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
+
+if CONVEX_CLOUD_URL is None:
+    raise EnvironmentError("Required environment variable CONVEX_CLOUD_URL is not set")
+
 client = ConvexClient(CONVEX_CLOUD_URL)
 
 # Controls how quickly scores saturate toward 1
@@ -88,7 +92,7 @@ def build_user_tag_weights(user_tag_counts: dict[str, np.ndarray], alpha: float 
     return user_preference_weights
 
 
-def main(users: list[str]):
+def main(users: list[str]) -> None:
     user_event_multihot = get_user_event_multihot(USERS)
 
     user_preference_weights = build_user_tag_weights(user_event_multihot)
