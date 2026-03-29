@@ -1,10 +1,11 @@
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
-import { coordsToH3Cell } from '@/features/map/utils/h3';
+import { coordsToH3Cell, pointsToGeoJSON } from '@/features/map/utils/h3';
+import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
 import MapboxGL from '@rnmapbox/maps';
 import { useRouter } from 'expo-router';
 import type { Point } from 'geojson';
-import { useRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef } from 'react';
+import { Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 MapboxGL.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
@@ -14,15 +15,33 @@ export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
+  const heatmapGeoJSON = useMemo(
+    () => pointsToGeoJSON(eventSeeds.map((e, i) => ({ ...e, weight: eventSeedAttendees[i] ?? 1 }))),
+    []
+  );
+
+  useEffect(() => {
+    if (!hasResolvedLocation) return;
+
+    cameraRef.current?.setCamera({
+      centerCoordinate,
+      zoomLevel: 13,
+      animationMode: 'flyTo',
+      animationDuration: 1200,
+    });
+  }, [centerCoordinate, hasResolvedLocation]);
 
   return (
     <View className="absolute inset-0">
       <MapboxGL.MapView
         style={StyleSheet.absoluteFill}
-        styleURL={MapboxGL.StyleURL.Dark}
+        styleURL={isDark ? MapboxGL.StyleURL.Dark : MapboxGL.StyleURL.Street}
         logoEnabled={false}
         attributionEnabled={false}
-        scaleBarPosition={{ top: insets.top, left: 8 }}
+        scaleBarEnabled={false}
         onPress={(feature) => {
           const [lng, lat] = (feature.geometry as Point).coordinates;
           push(`/feed/${coordsToH3Cell(lng, lat)}`);
@@ -30,27 +49,63 @@ export default function MapScreen() {
       >
         <MapboxGL.Camera
           ref={cameraRef}
-          centerCoordinate={centerCoordinate}
-          zoomLevel={13}
-          animationMode={hasResolvedLocation ? 'flyTo' : 'none'}
-          animationDuration={1200}
+          defaultSettings={{
+            centerCoordinate,
+            zoomLevel: 13,
+          }}
         />
         {locationGranted && (
           <MapboxGL.LocationPuck
             puckBearing="heading"
             puckBearingEnabled
-            pulsing={{ isEnabled: true, color: '#4A90D9', radius: 50 }}
+            pulsing={{ isEnabled: true, color: '#f59e0b', radius: 50 }}
           />
         )}
+
+        <MapboxGL.ShapeSource id="activity" shape={heatmapGeoJSON}>
+          <MapboxGL.HeatmapLayer
+            id="activity-heat"
+            style={{
+              heatmapWeight: ['interpolate', ['linear'], ['get', 'weight'], 0, 0, 6, 1],
+              heatmapIntensity: ['interpolate', ['linear'], ['zoom'], 10, 1, 15, 3],
+              heatmapColor: [
+                'interpolate',
+                ['linear'],
+                ['heatmap-density'],
+                0,
+                'rgba(0,0,0,0)',
+                0.2,
+                'rgba(245,158,11,0.3)',
+                0.5,
+                'rgba(245,158,11,0.6)',
+                0.8,
+                'rgba(245,158,11,0.85)',
+                1,
+                'rgba(255,255,255,0.95)',
+              ],
+              heatmapRadius: ['interpolate', ['linear'], ['zoom'], 10, 30, 15, 60],
+              heatmapOpacity: ['interpolate', ['linear'], ['zoom'], 10, 1, 16, 0.6],
+            }}
+          />
+        </MapboxGL.ShapeSource>
       </MapboxGL.MapView>
 
       {/* Search bar overlay */}
       <View className="absolute left-4 right-4" style={{ top: insets.top + 12 }}>
         <Pressable
-          className="rounded-xl border border-white/[0.12] bg-[rgba(18,18,18,0.92)] px-4 py-3 active:bg-[rgba(38,38,38,0.92)]"
+          style={{
+            backgroundColor: isDark ? 'rgba(18,18,18,0.92)' : 'rgba(255,255,255,0.92)',
+            borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
+          }}
+          className="rounded-xl border px-4 py-3"
           onPress={() => push('/(tabs)/(map)/search')}
         >
-          <Text className="text-[15px] text-white/40">Search places...</Text>
+          <Text
+            style={{ color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)' }}
+            className="text-[15px]"
+          >
+            Search places...
+          </Text>
         </Pressable>
       </View>
     </View>
