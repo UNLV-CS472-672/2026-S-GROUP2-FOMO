@@ -12,7 +12,7 @@ import {
 import { env } from '@fomo/env/web';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-const MAPBOX_TOKEN = env.NEXT_PUBLIC_MAPBOX_TOKEN;
+const MAPBOX_TOKEN = env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
 
 export default function MapPage() {
   const { open, isMobile } = useSidebar();
@@ -26,6 +26,10 @@ export default function MapPage() {
   const [mapReady, setMapReady] = useState(false);
 
   const staticMapSrc = useMemo(() => {
+    if (!MAPBOX_TOKEN) {
+      return '';
+    }
+
     const [lng, lat] = centerCoordinate;
     return `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
   }, [centerCoordinate]);
@@ -36,7 +40,7 @@ export default function MapPage() {
     let didLoad = false;
 
     async function initMap() {
-      if (!mapContainerRef.current || mapRef.current) {
+      if (!MAPBOX_TOKEN || !mapContainerRef.current || mapRef.current) {
         return;
       }
 
@@ -170,12 +174,14 @@ export default function MapPage() {
 
   return (
     <section className="relative h-[calc(100vh-7rem)] min-h-[32rem] overflow-hidden rounded-[2rem] border border-white/[0.12] bg-[#05070b]">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={staticMapSrc}
-        alt="Map"
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${mapReady ? 'opacity-0' : 'opacity-100'}`}
-      />
+      {staticMapSrc ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={staticMapSrc}
+          alt="Map"
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${mapReady ? 'opacity-0' : 'opacity-100'}`}
+        />
+      ) : null}
 
       <div
         ref={mapContainerRef}
