@@ -9,8 +9,8 @@
     "dev": "expo start --dev-client",
     "dev:android": "expo run:android",
     "dev:ios": "expo run:ios",
-    "format": "prettier --write '**/*.{ts,tsx,js,jsx,json,md}' --ignore-path .gitignore",
-    "format:check": "prettier --check '**/*.{ts,tsx,js,jsx,json,md}' --ignore-path .gitignore",
+    "format": "prettier --write '**/*.{ts,tsx,js,jsx,json,md}' --ignore-path .gitignore --ignore-path ../../.prettierignore",
+    "format:check": "prettier --check '**/*.{ts,tsx,js,jsx,json,md}' --ignore-path .gitignore --ignore-path ../../.prettierignore",
     "ios": "expo run:ios",
     "lint": "expo lint",
     "prebuild": "expo prebuild",
@@ -18,9 +18,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@clerk/clerk-expo": "^2.19.30",
+    "@clerk/expo": "^3.1.4",
     "@convex-dev/react-query": "^0.1.0",
     "@expo/vector-icons": "^15.0.3",
+    "@fomo/backend": "workspace:*",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
