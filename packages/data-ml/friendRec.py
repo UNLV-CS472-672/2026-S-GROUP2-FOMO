@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
 
 load_dotenv()
+
 CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
 
 client: Optional[ConvexClient] = (
@@ -155,7 +156,7 @@ def sim_scores_weighted(events: pd.DataFrame, event_tags: pd.DataFrame, post_tag
 
 
 # Send recommended friends to Convex server.
-def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int):
+def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> None:
 
     # Technically doesn't break if rec_amt exceeds, but being extra safe.
     if rec_amt > len(sim_scores):
@@ -183,7 +184,7 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int):
 
 
 
-def main(user: str, rec_amt: int, seed: bool):
+def main(user: str, rec_amt: int, seed: bool) -> None:
     
     if seed:
         get_client().mutation("seed:seed")    
@@ -207,8 +208,7 @@ def main(user: str, rec_amt: int, seed: bool):
     upsert_friend_recs(simscores_weighted, user, rec_amt)
 
 
-
-USER     = "n177gtr19ny9x8btdvgpjj3wps823zsg"  # By user_id.
+USER     = "n170a6cc33hgr22xbxsmnh1txd82713v"  # By user_id.
 REC_AMT  = 5         # friendRec schema only currently supports 5. 
 SEED     = False     # Dictates if fake data needs to be populated into Convex.
 
