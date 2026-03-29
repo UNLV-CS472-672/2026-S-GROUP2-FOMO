@@ -108,14 +108,14 @@ def test_user_exists_returns_true(mock_client: MagicMock) -> None:
     mock_client.query.return_value = {"_id": "u1", "name": "seed|alice"}
     result = user_exists("u1")
     assert result is True
-    mock_client.query.assert_called_once_with("data_ml/users:userExists", {"userId": "u1"})
+    mock_client.query.assert_called_once_with("query:userId", {"userId": "u1"})
 
 # Should return false, since this fake data DOES NOT exist in "users"
 def test_user_exists_returns_false(mock_client: MagicMock) -> None:
     mock_client.query.return_value = None
     result = user_exists("u1")
     assert result is False
-    mock_client.query.assert_called_once_with("data_ml/users:userExists", {"userId": "u1"})
+    mock_client.query.assert_called_once_with("query:userId", {"userId": "u1"})
 
     
     

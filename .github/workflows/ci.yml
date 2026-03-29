@@ -73,6 +73,10 @@ jobs:
         working-directory: packages/data-ml
         run: uv sync --frozen
 
+      - name: Run pytest
+        working-directory: packages/data-ml
+        run: uv run pytest --cov=. --cov-report=term-missing --cov-fail-under=80
+
       - name: Run mypy (data-ml)
         working-directory: packages/data-ml
         run: uv run mypy .
