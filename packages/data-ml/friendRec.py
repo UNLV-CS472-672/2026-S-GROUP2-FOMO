@@ -12,18 +12,18 @@ client = ConvexClient(CONVEX_CLOUD_URL)
 
 # Checks if a userid exists in the "users" table.
 def user_exists(user_id: str) -> bool:
-    return client.query("query:userId", {"userId": user_id}) is not None
+    return client.query("data_ml/users:userExists", {"userId": user_id}) is not None
     
 
 # Combines "usersToEvents" and "events" into a single dataframe.
 def join_user_events() -> pd.DataFrame:
 
     # Store "usersToEvents" and "events" into dataframes.
-    usersToEvents_data = client.query("query:list", {"table_name": "usersToEvents"})
+    usersToEvents_data = client.query("data_ml/universal:queryAll", {"table_name": "usersToEvents"})
     usersToEvents_df = pd.json_normalize(usersToEvents_data)
     usersToEvents_df = usersToEvents_df[["eventId", "userId"]]
 
-    events_data = client.query("query:list", {"table_name": "events"})
+    events_data = client.query("data_ml/universal:queryAll", {"table_name": "events"})
     events_df = pd.json_normalize(events_data)
     events_df = events_df[["_id", "name"]]
 
@@ -52,11 +52,11 @@ def raw_matrix_eventTags() -> pd.DataFrame:
     user_events_df = join_user_events()
 
     # Join "events" and "tags" dataframes.
-    eventTags_json = client.query("query:list", {"table_name": "eventTags"})
+    eventTags_json = client.query("data_ml/universal:queryAll", {"table_name": "eventTags"})
     eventTags_df = pd.json_normalize(eventTags_json)
     eventTags_df = eventTags_df[["eventId", "tagId"]]
 
-    tags_json = client.query("query:list", {"table_name": "tags"})
+    tags_json = client.query("data_ml/universal:queryAll", {"table_name": "tags"})
     tags_df = pd.json_normalize(tags_json)
     tags_df = tags_df[["_id", "name"]]
 
@@ -78,11 +78,11 @@ def raw_matrix_eventTags() -> pd.DataFrame:
 def raw_matrix_postTags() -> pd.DataFrame:
 
     # Join "users" and "posts" dataframes.
-    users_json = client.query("query:list", {"table_name": "users"})
+    users_json = client.query("data_ml/universal:queryAll", {"table_name": "users"})
     users_df = pd.json_normalize(users_json)
     users_df = users_df[["_id"]]
 
-    posts_json = client.query("query:list", {"table_name": "posts"})
+    posts_json = client.query("data_ml/universal:queryAll", {"table_name": "posts"})
     posts_df = pd.json_normalize(posts_json)
     posts_df = posts_df[["_id", "authorId"]]
 
@@ -91,11 +91,11 @@ def raw_matrix_postTags() -> pd.DataFrame:
     users_posts_df = users_posts_df.rename(columns={"_id_x": "user_id"})
 
     # Join "postTags" and "tags" dataframes
-    postTags_json = client.query("query:list", {"table_name": "postTags"})
+    postTags_json = client.query("data_ml/universal:queryAll", {"table_name": "postTags"})
     postTags_df = pd.json_normalize(postTags_json)
     postTags_df = postTags_df[["postId", "tagId"]]
 
-    tags_json = client.query("query:list", {"table_name": "tags"})
+    tags_json = client.query("data_ml/universal:queryAll", {"table_name": "tags"})
     tags_df = pd.json_normalize(tags_json)
     tags_df = tags_df[["_id", "name"]]
 
@@ -160,7 +160,7 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int):
     top_sim_scores = [
         {"userId": friendId, "score": float(score)}
         for friendId, score in top_sim_scores["similarity_score"].items() 
-        if client.query("query:friend_exists", {"userAId": userId, "userBId": friendId}) is None
+        if client.query("data_ml/friends:friendExists", {"userAId": userId, "userBId": friendId}) is None
     ]
 
     # If list is larger than rec_amt, truncate.
@@ -168,7 +168,7 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int):
     top_sim_scores = top_sim_scores[:rec_amt]
     
     # Add row if user doesn't have any recommended friends, if they do, update names if values changed.
-    client.mutation("friendRecs:upsert", {"userId": userId,
+    client.mutation("data_ml/friendRecs:upsert", {"userId": userId,
                                           "recs": top_sim_scores
                                           })  
 
@@ -198,8 +198,7 @@ def main(user: str, rec_amt: int, seed: bool):
     upsert_friend_recs(simscores_weighted, user, rec_amt)
 
 
-
-USER     = "n177gtr19ny9x8btdvgpjj3wps823zsg"  # By user_id.
+USER     = "n170a6cc33hgr22xbxsmnh1txd82713v"  # By user_id.
 REC_AMT  = 5         # friendRec schema only currently supports 5. 
 SEED     = False     # Dictates if fake data needs to be populated into Convex.
 
