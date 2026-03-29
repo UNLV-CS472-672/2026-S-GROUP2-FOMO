@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock
 from typing import Generator
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from friendRec import (
+from friendRecs import (
     user_exists,
     join_user_events,
     raw_matrix_events,
@@ -26,7 +26,7 @@ from friendRec import (
 # ------------------------------
 @pytest.fixture(autouse=True)
 def mock_client() -> Generator[MagicMock, None, None]:
-    with patch("friendRec.client") as mock:
+    with patch("friendRecs.client") as mock:
         yield mock
         
 @pytest.fixture
@@ -372,13 +372,13 @@ def test_upsert_friend_recs_calls_mutation(mock_client: MagicMock, sample_score_
 @pytest.fixture 
 def mock_main_dependencies(mock_client: MagicMock) -> Generator[dict[str, MagicMock], None, None]:
     
-    with patch("friendRec.user_exists")          as mock_user_exists, \
-         patch("friendRec.raw_matrix_events")    as mock_raw_events, \
-         patch("friendRec.raw_matrix_eventTags") as mock_raw_event_tags, \
-         patch("friendRec.raw_matrix_postTags")  as mock_raw_post_tags, \
-         patch("friendRec.similarity_score")     as mock_sim_score, \
-         patch("friendRec.sim_scores_weighted")  as mock_weighted, \
-         patch("friendRec.upsert_friend_recs")   as mock_upsert:
+    with patch("friendRecs.user_exists")          as mock_user_exists, \
+         patch("friendRecs.raw_matrix_events")    as mock_raw_events, \
+         patch("friendRecs.raw_matrix_eventTags") as mock_raw_event_tags, \
+         patch("friendRecs.raw_matrix_postTags")  as mock_raw_post_tags, \
+         patch("friendRecs.similarity_score")     as mock_sim_score, \
+         patch("friendRecs.sim_scores_weighted")  as mock_weighted, \
+         patch("friendRecs.upsert_friend_recs")   as mock_upsert:
 
         mock_user_exists.return_value    = True
         mock_raw_events.return_value     = MagicMock()
