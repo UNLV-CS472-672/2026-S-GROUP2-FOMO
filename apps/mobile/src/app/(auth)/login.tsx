@@ -1,5 +1,5 @@
+import { AppHeaderBackButton } from '@/components/navigation/header-back-button';
 import { AuthErrorBanner } from '@/features/auth/components/error';
-import { AuthHeaderBackButton } from '@/features/auth/components/header-back-button';
 import { IdentifierStep } from '@/features/auth/components/steps/identifier';
 import { PasswordStep } from '@/features/auth/components/steps/password';
 import { VerificationStep } from '@/features/auth/components/steps/verification';
@@ -41,9 +41,9 @@ export default function LoginScreen() {
     navigation.setOptions({
       headerLeft: () =>
         state.step === 'challenge' ? (
-          <AuthHeaderBackButton onPress={goBack} />
+          <AppHeaderBackButton onPress={goBack} />
         ) : (
-          <AuthHeaderBackButton />
+          <AppHeaderBackButton />
         ),
     });
   }, [goBack, navigation, state.step]);

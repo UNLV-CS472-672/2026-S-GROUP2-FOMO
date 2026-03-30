@@ -1,16 +1,15 @@
-import { nativeTheme } from '@fomo/theme/native';
 import { HeaderBackButton } from '@react-navigation/elements';
 import { useRouter } from 'expo-router';
-import { useUniwind } from 'uniwind';
 
-type AuthHeaderBackButtonProps = {
+import { useAppTheme } from '@/lib/use-app-theme';
+
+type AppHeaderBackButtonProps = {
   onPress?: () => void;
 };
 
-export function AuthHeaderBackButton({ onPress }: AuthHeaderBackButtonProps) {
+export function AppHeaderBackButton({ onPress }: AppHeaderBackButtonProps) {
   const router = useRouter();
-  const { theme: activeTheme } = useUniwind();
-  const theme = activeTheme === 'dark' ? nativeTheme.dark : nativeTheme.light;
+  const theme = useAppTheme();
 
   return (
     <HeaderBackButton

@@ -1,5 +1,5 @@
+import { AppHeaderBackButton } from '@/components/navigation/header-back-button';
 import { AuthErrorBanner } from '@/features/auth/components/error';
-import { AuthHeaderBackButton } from '@/features/auth/components/header-back-button';
 import { IdentifierStep } from '@/features/auth/components/steps/identifier';
 import { PasswordStep } from '@/features/auth/components/steps/password';
 import { UsernameStep } from '@/features/auth/components/steps/username';
@@ -51,9 +51,9 @@ export default function SignUpScreen() {
     navigation.setOptions({
       headerLeft: () =>
         screenStep !== 'identifier' && !pendingUsernameSetup ? (
-          <AuthHeaderBackButton onPress={goBack} />
+          <AppHeaderBackButton onPress={goBack} />
         ) : (
-          <AuthHeaderBackButton />
+          <AppHeaderBackButton />
         ),
     });
   }, [goBack, navigation, pendingUsernameSetup, screenStep]);

@@ -11,6 +11,7 @@ import { ActivityIndicator, View } from 'react-native';
 import 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
 
+import { AppHeaderBackButton } from '@/components/navigation/header-back-button';
 import ClerkProvider from '@/integrations/clerk/provider';
 import ConvexProvider from '@/integrations/convex/provider';
 import GuestProvider, { useGuest } from '@/integrations/session/provider';
@@ -57,7 +58,12 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="feed/[h3Id]"
-          options={{ presentation: 'modal', headerShown: true, title: 'Feed' }}
+          options={{
+            presentation: 'modal',
+            headerShown: true,
+            title: 'Feed',
+            headerLeft: () => <AppHeaderBackButton />,
+          }}
         />
       </Stack>
     </>
