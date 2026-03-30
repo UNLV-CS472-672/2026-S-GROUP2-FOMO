@@ -3,14 +3,20 @@ import numpy as np
 
 from convex import ConvexClient
 from dotenv import load_dotenv
+from typing import Optional
 
 load_dotenv()
+
 CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
 
-if CONVEX_CLOUD_URL is None:
-    raise EnvironmentError("Required environment variable CONVEX_CLOUD_URL is not set")
+client: Optional[ConvexClient] = (
+    ConvexClient(CONVEX_CLOUD_URL) if CONVEX_CLOUD_URL else None
+)
 
-client = ConvexClient(CONVEX_CLOUD_URL)
+def get_client() -> ConvexClient:
+    if client is None:
+        raise RuntimeError("ConvexClient not initialized")
+    return client
 
 # Controls how quickly scores saturate toward 1
 ALPHA = 1.0
@@ -29,13 +35,13 @@ def get_user_event_multihot(user_ids: list[str]) -> dict[str, np.ndarray]:
     Value = 1 if event has that tag, else 0
     """
 
-    tags = client.query("data_ml/universal:queryAll", {"table_name": "tags"})
+    tags = get_client().query("data_ml/universal:queryAll", {"table_name": "tags"})
     tag_id_to_idx = {tag["_id"]: i for i, tag in enumerate(tags)}
     num_tags = len(tag_id_to_idx)
 
     # Checks if we want all users or if users are already passed in
     if len(user_ids) == 1 and user_ids[0] == "ALL":
-        all_users = client.query("data_ml/universal:queryAll", {"table_name": "users"})
+        all_users = get_client().query("data_ml/universal:queryAll", {"table_name": "users"})
         resolved_user_ids = [row["_id"] for row in all_users]
     else:
         resolved_user_ids = user_ids
@@ -44,14 +50,14 @@ def get_user_event_multihot(user_ids: list[str]) -> dict[str, np.ndarray]:
 
     for user_id in resolved_user_ids:
         # Get the events this user has attended
-        user_events = client.query("data_ml/updateUserPreferences:getByUserId", {"userId": user_id})
+        user_events = get_client().query("data_ml/updateUserPreferences:getByUserId", {"userId": user_id})
         event_ids = [row["eventId"] for row in user_events]
 
         mat : np.ndarray = np.zeros((len(event_ids), num_tags), dtype=np.float32)
 
         # Get tags associated with the events and create a onehot of the tags for the event
         for i, event_id in enumerate(event_ids):
-            event_tags = client.query("data_ml/updateUserPreferences:getByEventId", {"eventId": event_id})
+            event_tags = get_client().query("data_ml/updateUserPreferences:getByEventId", {"eventId": event_id})
             for row in event_tags:
                 tag_id = row["tagId"]
                 if tag_id in tag_id_to_idx:
@@ -106,7 +112,7 @@ def main(users: list[str], update_db: bool) -> None:
 
     if update_db:
         for user_id, weights in user_preference_weights.items():
-            client.mutation(
+            get_client().mutation(
                 "data_ml/updateUserPreferences:upsertUserTagWeights",
                 {
                     "userId": user_id,
