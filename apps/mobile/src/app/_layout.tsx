@@ -6,6 +6,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useConvexAuth } from 'convex/react';
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
@@ -65,30 +66,25 @@ function RootNavigator() {
 
 export default function RootLayout() {
   const { theme: activeTheme } = useUniwind();
-  const theme =
-    activeTheme === 'dark'
-      ? {
-          ...DarkTheme,
-          colors: {
-            ...DarkTheme.colors,
-            ...navigationThemeColors.dark,
-          },
-        }
-      : {
-          ...DefaultTheme,
-          colors: {
-            ...DefaultTheme.colors,
-            ...navigationThemeColors.light,
-          },
-        };
+  const isDark = activeTheme === 'dark';
+  const navigationTheme = useMemo(
+    () => ({
+      ...(isDark ? DarkTheme : DefaultTheme),
+      colors: {
+        ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
+        ...(isDark ? navigationThemeColors.dark : navigationThemeColors.light),
+      },
+    }),
+    [isDark]
+  );
 
   return (
-    <ThemeProvider value={theme}>
+    <ThemeProvider value={navigationTheme}>
       <ClerkProvider>
         <ConvexProvider>
           <GuestProvider>
             <RootNavigator />
-            <StatusBar style={activeTheme === 'dark' ? 'light' : 'dark'} />
+            <StatusBar style={isDark ? 'light' : 'dark'} />
           </GuestProvider>
         </ConvexProvider>
       </ClerkProvider>
