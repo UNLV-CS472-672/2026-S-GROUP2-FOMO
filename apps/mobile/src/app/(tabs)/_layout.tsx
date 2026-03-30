@@ -1,15 +1,15 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { nativeTheme } from '@fomo/theme/native';
 import { Icon, Label, NativeTabs, VectorIcon } from 'expo-router/unstable-native-tabs';
-import { useColorScheme } from 'react-native';
+import { useUniwind } from 'uniwind';
 
 export const unstable_settings = {
   anchor: 'map',
 };
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { theme: activeTheme } = useUniwind();
+  const isDark = activeTheme === 'dark';
   const theme = isDark ? nativeTheme.dark : nativeTheme.light;
 
   return (

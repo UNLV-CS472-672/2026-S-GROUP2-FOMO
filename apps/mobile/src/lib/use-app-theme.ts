@@ -1,8 +1,8 @@
 import { nativeTheme } from '@fomo/theme/native';
-import { useColorScheme } from 'react-native';
+import { useUniwind } from 'uniwind';
 
 export function useAppTheme() {
-  const colorScheme = useColorScheme();
+  const { theme } = useUniwind();
 
-  return colorScheme === 'dark' ? nativeTheme.dark : nativeTheme.light;
+  return theme === 'dark' ? nativeTheme.dark : nativeTheme.light;
 }
