@@ -52,6 +52,7 @@ In Convex dashboard, go to `Data` and inspect `events`.
 
 ## Arguments
 
+- `category` is an optional argument to filter events by category (for example `sports`, `concerts`, `music`, `arts`, `film`, `miscellaneous`).
 - `dryRun` if true, allows you to see ingested events in JSON format and does not write to the Convex DB.
 - `eventCount` specifies the number of unique events to be ingested (deduped by attraction + venue).
 - `sort` is an optional argument with format `<date | relevance>,<asc | desc>`, it currently defaults to `relevance,desc`.
