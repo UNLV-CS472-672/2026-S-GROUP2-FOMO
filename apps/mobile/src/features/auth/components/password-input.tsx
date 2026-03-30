@@ -27,7 +27,7 @@ export function AuthPasswordInput({ label, error, className, ...props }: AuthPas
           <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={theme.mutedText} />
         </Pressable>
       </View>
-      {error ? <Text className="mt-1 text-xs text-red-600">{error}</Text> : null}
+      {error ? <Text className="mt-1 text-xs text-destructive">{error}</Text> : null}
     </View>
   );
 }

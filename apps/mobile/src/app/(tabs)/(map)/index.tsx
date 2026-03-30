@@ -94,19 +94,10 @@ export default function MapScreen() {
       {/* Search bar overlay */}
       <View className="absolute left-4 right-4" style={{ top: insets.top + 12 }}>
         <Pressable
-          style={{
-            backgroundColor: isDark ? 'rgba(18,18,18,0.92)' : 'rgba(255,255,255,0.92)',
-            borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
-          }}
-          className="rounded-xl border px-4 py-3"
+          className="rounded-xl border border-border/80 bg-card/95 px-4 py-3"
           onPress={() => push('/(tabs)/(map)/search')}
         >
-          <Text
-            style={{ color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)' }}
-            className="text-[15px]"
-          >
-            Search places...
-          </Text>
+          <Text className="text-[15px] text-muted-foreground">Search places...</Text>
         </Pressable>
       </View>
     </View>

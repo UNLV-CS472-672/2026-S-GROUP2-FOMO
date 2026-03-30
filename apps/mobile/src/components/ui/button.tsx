@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 import { Pressable, PressableProps, Text, TextProps } from 'react-native';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'ghost' | 'icon';
+export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'destructive' | 'ghost' | 'icon';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 type ButtonProps = PressableProps & {
@@ -21,6 +21,7 @@ const variantClasses: Record<ButtonVariant, string> = {
     'border border-primary-soft-border bg-primary-soft dark:border-border-strong dark:bg-secondary',
   tertiary:
     'border border-primary-soft-border bg-primary-soft dark:border-border-strong dark:bg-foreground',
+  destructive: 'border border-destructive/20 bg-destructive/10',
   ghost: 'bg-transparent',
   icon: 'bg-transparent',
 };
@@ -41,6 +42,7 @@ const textVariantClasses: Record<ButtonVariant, string> = {
   primary: 'text-primary-foreground',
   secondary: 'text-primary-text',
   tertiary: 'text-primary-text dark:text-background',
+  destructive: 'text-destructive',
   ghost: 'text-primary-text',
   icon: '',
 };

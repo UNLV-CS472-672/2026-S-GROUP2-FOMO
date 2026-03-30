@@ -1,5 +1,4 @@
 import { Button, ButtonText } from '@/components/ui/button';
-import { useAppTheme } from '@/lib/use-app-theme';
 import { useAuth } from '@clerk/expo';
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
@@ -7,8 +6,6 @@ import { ScrollView, Text, View } from 'react-native';
 export default function SettingsScreen() {
   const { signOut } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const theme = useAppTheme();
-
   async function handleLogout() {
     if (isSigningOut) return;
 
@@ -33,13 +30,12 @@ export default function SettingsScreen() {
       </Text>
       <View className="mt-6">
         <Button
-          variant="secondary"
+          variant="destructive"
           onPress={() => void handleLogout()}
           disabled={isSigningOut}
           accessibilityLabel="Log out"
-          className="border-red-200 bg-red-50"
         >
-          <ButtonText variant="secondary" className="text-red-600">
+          <ButtonText variant="destructive">
             {isSigningOut ? 'Logging out...' : 'Log out'}
           </ButtonText>
         </Button>

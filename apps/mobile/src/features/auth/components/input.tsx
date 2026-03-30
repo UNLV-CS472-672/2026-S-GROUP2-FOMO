@@ -20,7 +20,7 @@ export function AuthInput({ label, error, className, ...props }: AuthInputProps)
           {...props}
         />
       </View>
-      {error ? <Text className="mt-1 text-xs text-red-600">{error}</Text> : null}
+      {error ? <Text className="mt-1 text-xs text-destructive">{error}</Text> : null}
     </View>
   );
 }
