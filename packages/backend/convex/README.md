@@ -1,88 +1,58 @@
-# Welcome to your Convex functions directory!
+# @fomo/backend
 
-Write your Convex functions here.
-See https://docs.convex.dev/functions for more.
+This package contains Convex functions and backend logic.
 
-A query function that takes two arguments looks like:
+## Convex commands
 
-```ts
-// convex/myFunctions.ts
-import { query } from './_generated/server';
-import { v } from 'convex/values';
+- `pnpm convex:dev` - run local Convex dev server
+- `pnpm convex:codegen` - generate Convex types
+- `pnpm convex:deploy` - deploy backend to Convex
 
-export const myQueryFunction = query({
-  // Validators for arguments.
-  args: {
-    first: v.number(),
-    second: v.string(),
-  },
+## Ticketmaster ingestion
 
-  // Function implementation.
-  handler: async (ctx, args) => {
-    // Read the database as many times as you need here.
-    // See https://docs.convex.dev/database/reading-data.
-    const documents = await ctx.db.query('tablename').collect();
+The Ticketmaster ingestion action is:
 
-    // Arguments passed from the client are properties of the args object.
-    console.log(args.first, args.second);
+- `eventsIngest:syncTicketmasterLasVegas`
 
-    // Write arbitrary JavaScript here: filter, aggregate, build derived data,
-    // remove non-public properties, or create new objects.
-    return documents;
-  },
-});
+### 1. Set required Convex env vars
+
+From `packages/backend`, set the Ticketmaster API key in Convex deployment env vars:
+
+```bash
+pnpm exec convex env set TICKETMASTER_API_KEY <your_ticketmaster_api_key>
 ```
 
-Using this query function in a React component looks like:
+### 2. Start Convex dev
 
-```ts
-const data = useQuery(api.myFunctions.myQueryFunction, {
-  first: 10,
-  second: 'hello',
-});
+```bash
+pnpm dev
 ```
 
-A mutation function looks like:
+Keep this running in one terminal.
 
-```ts
-// convex/myFunctions.ts
-import { mutation } from './_generated/server';
-import { v } from 'convex/values';
+### 3. Dry run ingestion (no DB writes)
 
-export const myMutationFunction = mutation({
-  // Validators for arguments.
-  args: {
-    first: v.string(),
-    second: v.string(),
-  },
-
-  // Function implementation.
-  handler: async (ctx, args) => {
-    // Insert or modify documents in the database here.
-    // Mutations can also read from the database like queries.
-    // See https://docs.convex.dev/database/writing-data.
-    const message = { body: args.first, author: args.second };
-    const id = await ctx.db.insert('messages', message);
-
-    // Optionally, return a value from your mutation.
-    return await ctx.db.get('messages', id);
-  },
-});
+```bash
+pnpm exec convex run eventsIngest:syncTicketmasterLasVegas '{"dryRun":true,"eventCount":15}'
 ```
 
-Using this mutation function in a React component looks like:
+### 4. Run ingestion (writes to `events`)
 
-```ts
-const mutation = useMutation(api.myFunctions.myMutationFunction);
-function handleButtonPress() {
-  // fire and forget, the most common way to use mutations
-  mutation({ first: 'Hello!', second: 'me' });
-  // OR
-  // use the result once the mutation has completed
-  mutation({ first: 'Hello!', second: 'me' }).then((result) => console.log(result));
-}
+```bash
+pnpm exec convex run eventsIngest:syncTicketmasterLasVegas '{"dryRun":false,"eventCount":15}'
 ```
 
-Use the Convex CLI to push your functions to a deployment. See everything
-the Convex CLI can do by running `npx convex -h` in your project root
-directory. To learn more, launch the docs with `npx convex docs`.
+### 5. Verify in dashboard
+
+```bash
+pnpm dashboard
+```
+
+In Convex dashboard, go to `Data` and inspect `events`.
+
+## Arguments
+
+- `category` is an optional argument to filter events by category (for example `sports`, `concerts`, `music`, `arts`, `film`, `miscellaneous`).
+- `dryRun` if true, allows you to see ingested events in JSON format and does not write to the Convex DB.
+- `eventCount` specifies the number of unique events to be ingested (deduped by attraction + venue).
+- `sort` is an optional argument with format `<date | relevance>,<asc | desc>`, it currently defaults to `relevance,desc`.
