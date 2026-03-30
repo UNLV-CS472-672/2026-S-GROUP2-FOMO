@@ -16,7 +16,7 @@ client = ConvexClient(CONVEX_CLOUD_URL)
 ALPHA = 1.0
 
 # Baseline count for every tag
-BETA = 0.5
+BETA = 0.75
 
 
 def get_user_event_multihot(user_ids: list[str]) -> dict[str, np.ndarray]:
@@ -33,9 +33,16 @@ def get_user_event_multihot(user_ids: list[str]) -> dict[str, np.ndarray]:
     tag_id_to_idx = {tag["_id"]: i for i, tag in enumerate(tags)}
     num_tags = len(tag_id_to_idx)
 
+    # Checks if we want all users or if users are already passed in
+    if len(user_ids) == 1 and user_ids[0] == "ALL":
+        all_users = client.query("data_ml/universal:queryAll", {"table_name": "users"})
+        resolved_user_ids = [row["_id"] for row in all_users]
+    else:
+        resolved_user_ids = user_ids
+
     result: dict[str, np.ndarray] = {}
 
-    for user_id in user_ids:
+    for user_id in resolved_user_ids:
         # Get the events this user has attended
         user_events = client.query("data_ml/updateUserPreferences:getByUserId", {"userId": user_id})
         event_ids = [row["eventId"] for row in user_events]
@@ -92,18 +99,29 @@ def build_user_tag_weights(user_tag_counts: dict[str, np.ndarray], alpha: float 
     return user_preference_weights
 
 
-def main(users: list[str]) -> None:
-    user_event_multihot = get_user_event_multihot(USERS)
+def main(users: list[str], update_db: bool) -> None:
+    user_event_multihot = get_user_event_multihot(users)
 
     user_preference_weights = build_user_tag_weights(user_event_multihot)
 
-    print(user_preference_weights)
+    if update_db:
+        for user_id, weights in user_preference_weights.items():
+            client.mutation(
+                "data_ml/updateUserPreferences:upsertUserTagWeights",
+                {
+                    "userId": user_id,
+                    "weights": weights.tolist()
+                }
+            )
+    else:
+        print(user_preference_weights)
 
 
-USERS = ['k57e25ntng6swp9n9m4qrpxm8x83rce6', 'k57256e442mxyg18bgazjnrr7983r5de']
+USERS = ['ALL']
+UPDATE_DB = False
 
 if __name__ == "__main__":
-    main(USERS)
+    main(USERS, UPDATE_DB)
 
 
 
