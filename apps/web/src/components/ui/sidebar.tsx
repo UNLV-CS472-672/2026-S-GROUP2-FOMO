@@ -2,6 +2,7 @@
 
 import * as Dialog from '@radix-ui/react-dialog';
 import { Slot } from '@radix-ui/react-slot';
+import { PanelLeft } from 'lucide-react';
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -216,16 +217,7 @@ export function SidebarTrigger({ className, ...props }: React.ComponentProps<'bu
       {...props}
     >
       <span className="sr-only">Toggle sidebar</span>
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        className="h-4 w-4"
-      >
-        <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
-        <path d="M9 4.5v15" />
-      </svg>
+      <PanelLeft className="h-4 w-4" />
     </button>
   );
 }
