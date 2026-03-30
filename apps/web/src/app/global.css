@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@custom-variant dark (&:is(.dark *));
 @import '@fomo/theme/global.css';
 
 :root {
