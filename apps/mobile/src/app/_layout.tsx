@@ -1,6 +1,7 @@
 import '@/global.css';
 
 import { useAuth } from '@clerk/expo';
+import { navigationThemeColors } from '@fomo/theme/native';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useConvexAuth } from 'convex/react';
 import { Redirect, Stack, useSegments } from 'expo-router';
@@ -31,7 +32,7 @@ function RootNavigator() {
 
   if (authState === 'loading') {
     return (
-      <View className="flex-1 items-center justify-center bg-app-background">
+      <View className="flex-1 items-center justify-center bg-background">
         <ActivityIndicator />
       </View>
     );
@@ -63,7 +64,22 @@ function RootNavigator() {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const theme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+  const theme =
+    colorScheme === 'dark'
+      ? {
+          ...DarkTheme,
+          colors: {
+            ...DarkTheme.colors,
+            ...navigationThemeColors.dark,
+          },
+        }
+      : {
+          ...DefaultTheme,
+          colors: {
+            ...DefaultTheme.colors,
+            ...navigationThemeColors.light,
+          },
+        };
 
   return (
     <ThemeProvider value={theme}>

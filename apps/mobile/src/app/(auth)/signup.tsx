@@ -7,11 +7,13 @@ import { VerificationStep } from '@/features/auth/components/steps/verification'
 import { AuthWrapper } from '@/features/auth/components/wrapper';
 import { useGoogleSignIn } from '@/features/auth/hooks/use-google-sign-in';
 import { useSignup } from '@/features/auth/hooks/use-signup';
+import { useAppTheme } from '@/lib/use-app-theme';
 import { useNavigation } from 'expo-router';
 import { useLayoutEffect } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
 export default function SignUpScreen() {
+  const theme = useAppTheme();
   const {
     state,
     shouldShowAuthLoader,
@@ -58,9 +60,9 @@ export default function SignUpScreen() {
 
   if (shouldShowAuthLoader) {
     return (
-      <View className="flex-1 items-center justify-center bg-app-background px-8">
-        <ActivityIndicator size="large" color="#4B5563" />
-        <Text className="mt-3 text-sm text-app-icon">{authLoadingMessage}</Text>
+      <View className="flex-1 items-center justify-center bg-background px-8">
+        <ActivityIndicator size="large" color={theme.mutedText} />
+        <Text className="mt-3 text-sm text-muted-foreground">{authLoadingMessage}</Text>
       </View>
     );
   }

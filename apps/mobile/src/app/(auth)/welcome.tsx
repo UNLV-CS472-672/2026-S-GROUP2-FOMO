@@ -21,8 +21,10 @@ export default function Welcome() {
     <Screen className="items-center justify-center">
       <View>
         <Image source={require('@/assets/images/icon.png')} className="w-24 h-24 mt-4" />
-        <Text className="text-3xl font-medium text-app-text text-center">Welcome to</Text>
-        <Text className="text-[6rem] font-heading font-black text-app-text text-center">fomo</Text>
+        <Text className="text-3xl font-medium text-foreground text-center">Welcome to</Text>
+        <Text className="text-[6rem] font-heading font-black text-foreground text-center">
+          fomo
+        </Text>
       </View>
 
       <View className="mt-10 w-full flex px-12 gap-4">

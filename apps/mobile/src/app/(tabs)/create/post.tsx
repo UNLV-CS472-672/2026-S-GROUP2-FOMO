@@ -11,7 +11,7 @@ export default function CreatePostScreen() {
 
   return (
     <ScrollView
-      className="flex-1 bg-app-background"
+      className="flex-1 bg-background"
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{
         flexGrow: 1,
@@ -21,8 +21,8 @@ export default function CreatePostScreen() {
         rowGap: 8,
       }}
     >
-      <Text className="text-[30px] font-bold leading-8 text-app-text">Create Post</Text>
-      <Text className="text-center text-base leading-6 text-app-text">
+      <Text className="text-[30px] font-bold leading-8 text-foreground">Create Post</Text>
+      <Text className="text-center text-base leading-6 text-foreground">
         Post composer form goes here.
       </Text>
     </ScrollView>

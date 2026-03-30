@@ -1,6 +1,6 @@
 import { Button, ButtonText } from '@/components/ui/button';
+import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from 'react-native';
 
 type GoogleButtonProps = {
   onPress: () => void;
@@ -10,8 +10,7 @@ type GoogleButtonProps = {
 };
 
 export function GoogleButton({ onPress, loading, disabled, mode = 'login' }: GoogleButtonProps) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const theme = useAppTheme();
   const label = mode === 'signup' ? 'Sign up with Google' : 'Log in with Google';
 
   return (
@@ -22,7 +21,7 @@ export function GoogleButton({ onPress, loading, disabled, mode = 'login' }: Goo
       disabled={disabled || loading}
       className="flex-row items-center justify-center gap-2"
     >
-      <Ionicons name="logo-google" size={20} color={isDark ? 'white' : 'black'} />
+      <Ionicons name="logo-google" size={20} color={theme.primaryText} />
       <ButtonText variant="secondary">{label}</ButtonText>
     </Button>
   );

@@ -27,34 +27,34 @@ type AuthWrapperProps = {
 export function AuthWrapper({ eyebrow, title, subtitle, children, footer }: AuthWrapperProps) {
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-app-background"
+      className="flex-1 bg-background"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <View className="flex-1 bg-app-background">
+        <View className="flex-1 bg-background">
           <ScrollView
             className="flex-1"
             contentContainerClassName="flex-grow justify-center px-8 py-10"
             keyboardShouldPersistTaps="handled"
           >
             {eyebrow ? (
-              <Text className="text-xs font-semibold uppercase tracking-[1.2px] text-app-tint">
+              <Text className="text-xs font-semibold uppercase tracking-[1.2px] text-primary">
                 {eyebrow}
               </Text>
             ) : null}
 
-            <Text className="mt-3 text-3xl font-bold leading-9 text-app-text">{title}</Text>
+            <Text className="mt-3 text-3xl font-bold leading-9 text-foreground">{title}</Text>
 
             {subtitle ? (
-              <Text className="mt-2 text-base leading-6 text-app-icon">{subtitle}</Text>
+              <Text className="mt-2 text-base leading-6 text-muted-foreground">{subtitle}</Text>
             ) : null}
 
             <View className="mt-6 gap-5">{children}</View>
 
             <View className="mt-8 flex-row justify-center">
-              <Text className="text-base text-app-text">{footer.prompt} </Text>
+              <Text className="text-base text-foreground">{footer.prompt} </Text>
               <Link href={footer.link.href}>
-                <Text className="text-base font-semibold text-app-tint">{footer.link.label}</Text>
+                <Text className="text-base font-semibold text-primary">{footer.link.label}</Text>
               </Link>
             </View>
           </ScrollView>
