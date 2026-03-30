@@ -16,9 +16,11 @@ type ButtonTextProps = TextProps & {
 };
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-app-tint',
-  secondary: 'border border-app-primary-soft-border bg-app-primary-soft',
-  tertiary: 'border border-app-primary-soft-border bg-app-background',
+  primary: 'bg-primary',
+  secondary:
+    'border border-primary-soft-border bg-primary-soft dark:border-border-strong dark:bg-secondary',
+  tertiary:
+    'border border-primary-soft-border bg-primary-soft dark:border-border-strong dark:bg-foreground',
   ghost: 'bg-transparent',
   icon: 'bg-transparent',
 };
@@ -36,10 +38,10 @@ const iconSizeClasses: Record<ButtonSize, string> = {
 };
 
 const textVariantClasses: Record<ButtonVariant, string> = {
-  primary: 'text-app-tint-foreground',
-  secondary: 'text-app-primary-text',
-  tertiary: 'text-app-text',
-  ghost: 'text-app-primary-text',
+  primary: 'text-primary-foreground',
+  secondary: 'text-primary-text',
+  tertiary: 'text-primary-text dark:text-background',
+  ghost: 'text-primary-text',
   icon: '',
 };
 

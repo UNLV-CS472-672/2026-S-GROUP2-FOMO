@@ -6,7 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./native": "./src/native.ts",
-    "./theme.css": "./src/theme.css"
+    "./global.css": "./src/global.css"
   },
   "main": "./src/index.ts"
 }

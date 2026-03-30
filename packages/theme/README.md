@@ -20,7 +20,7 @@ Shared coral-orange design tokens for web and native.
 
 ## Web
 
-Import `packages/theme/src/theme.css` into global styles, then map semantic variables into Tailwind theme tokens.
+Import `@fomo/theme/global.css` into global styles for shared semantic variables and Tailwind theme tokens.
 
 ## Mobile
 

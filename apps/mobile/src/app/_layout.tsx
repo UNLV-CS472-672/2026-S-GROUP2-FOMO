@@ -32,7 +32,7 @@ function RootNavigator() {
 
   if (authState === 'loading') {
     return (
-      <View className="flex-1 items-center justify-center bg-app-background">
+      <View className="flex-1 items-center justify-center bg-background">
         <ActivityIndicator />
       </View>
     );

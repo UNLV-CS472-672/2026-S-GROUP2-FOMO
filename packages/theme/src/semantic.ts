@@ -1,7 +1,7 @@
 import { coralPalette } from './palette';
 
 export const brandSemanticColors = {
-  primary: coralPalette[600],
+  primary: coralPalette[400],
   primaryForeground: '#fff7f2',
   primaryHover: coralPalette[700],
   primaryActive: coralPalette[800],

@@ -6,11 +6,13 @@ import { VerificationStep } from '@/features/auth/components/steps/verification'
 import { AuthWrapper } from '@/features/auth/components/wrapper';
 import { useGoogleSignIn } from '@/features/auth/hooks/use-google-sign-in';
 import { useLogin } from '@/features/auth/hooks/use-login';
+import { useAppTheme } from '@/lib/use-app-theme';
 import { useNavigation } from 'expo-router';
 import { useLayoutEffect } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 export default function LoginScreen() {
+  const theme = useAppTheme();
   const {
     state,
     shouldShowAuthLoader,
@@ -48,9 +50,9 @@ export default function LoginScreen() {
 
   if (shouldShowAuthLoader) {
     return (
-      <View className="flex-1 items-center justify-center bg-app-background px-8">
-        <ActivityIndicator size="large" color="#4B5563" />
-        <Text className="mt-3 text-sm text-app-icon">{authLoadingMessage}</Text>
+      <View className="flex-1 items-center justify-center bg-background px-8">
+        <ActivityIndicator size="large" color={theme.mutedText} />
+        <Text className="mt-3 text-sm text-muted-foreground">{authLoadingMessage}</Text>
       </View>
     );
   }
@@ -86,17 +88,17 @@ export default function LoginScreen() {
         />
       ) : (
         <>
-          <View className="rounded-2xl bg-app-icon/8 p-1.5">
+          <View className="rounded-2xl bg-muted-foreground/8 p-1.5">
             <View className="flex-row gap-2">
               <Pressable
                 className={`flex-1 rounded-2xl px-4 py-3 ${
-                  !usingPassword ? 'bg-app-background' : 'bg-transparent'
+                  !usingPassword ? 'bg-background' : 'bg-transparent'
                 }`}
                 onPress={() => void switchChallengeMethod('email_code')}
               >
                 <Text
                   className={`text-center text-sm font-semibold ${
-                    !usingPassword ? 'text-app-text' : 'text-app-icon'
+                    !usingPassword ? 'text-foreground' : 'text-muted-foreground'
                   }`}
                 >
                   Email code
@@ -104,13 +106,13 @@ export default function LoginScreen() {
               </Pressable>
               <Pressable
                 className={`flex-1 rounded-2xl px-4 py-3 ${
-                  usingPassword ? 'bg-app-background' : 'bg-transparent'
+                  usingPassword ? 'bg-background' : 'bg-transparent'
                 }`}
                 onPress={() => void switchChallengeMethod('password')}
               >
                 <Text
                   className={`text-center text-sm font-semibold ${
-                    usingPassword ? 'text-app-text' : 'text-app-icon'
+                    usingPassword ? 'text-foreground' : 'text-muted-foreground'
                   }`}
                 >
                   Password

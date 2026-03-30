@@ -15,9 +15,9 @@ export const nativeTheme = {
     tint: brandSemanticColors.primary,
     tintForeground: brandSemanticColors.primaryForeground,
     tintHover: brandSemanticColors.primaryHover,
-    primarySoft: '#2d1712',
-    primarySoftBorder: '#6a3428',
-    primaryText: '#ffa071',
+    primarySoft: brandSemanticColors.primarySoft,
+    primarySoftBorder: brandSemanticColors.primarySoftBorder,
+    primaryText: brandSemanticColors.primaryText,
   },
 } as const;
 

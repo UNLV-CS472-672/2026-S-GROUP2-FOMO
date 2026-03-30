@@ -4,7 +4,7 @@ import { ScrollView, Text } from 'react-native';
 export default function NotFoundScreen() {
   return (
     <ScrollView
-      className="flex-1 bg-app-background"
+      className="flex-1 bg-background"
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{
         flexGrow: 1,
@@ -14,9 +14,9 @@ export default function NotFoundScreen() {
         rowGap: 12,
       }}
     >
-      <Text className="text-[28px] font-bold leading-8 text-app-text">Page not found</Text>
-      <Link href="/" className="rounded-xl bg-app-tint px-4 py-2">
-        <Text className="font-semibold text-app-tint-foreground">Go home</Text>
+      <Text className="text-[28px] font-bold leading-8 text-foreground">Page not found</Text>
+      <Link href="/" className="rounded-xl bg-primary px-4 py-2">
+        <Text className="font-semibold text-primary-foreground">Go home</Text>
       </Link>
     </ScrollView>
   );

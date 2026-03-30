@@ -1,3 +1,4 @@
+import { useAppTheme } from '@/lib/use-app-theme';
 import { useEffect, useMemo, useRef } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
@@ -14,6 +15,7 @@ export function VerificationCodeInput({
   onSubmitEditing,
   isSubmitting = false,
 }: VerificationCodeInputProps) {
+  const theme = useAppTheme();
   const inputRef = useRef<TextInput | null>(null);
   const lastSubmittedValueRef = useRef<string | null>(null);
   const digits = useMemo(
@@ -48,13 +50,13 @@ export function VerificationCodeInput({
               key={index}
               className={`h-14 flex-1 items-center justify-center rounded-xl border ${
                 isActive
-                  ? 'border-app-tint bg-app-primary-soft'
+                  ? 'border-primary bg-primary-soft'
                   : isFilled
-                    ? 'border-app-text/40 bg-app-background'
-                    : 'border-app-icon/30 bg-app-background'
+                    ? 'border-foreground/40 bg-background'
+                    : 'border-muted-foreground/30 bg-background'
               }`}
             >
-              <Text className="text-lg font-semibold text-app-text">{digit}</Text>
+              <Text className="text-lg font-semibold text-foreground">{digit}</Text>
             </View>
           );
         })}
@@ -63,7 +65,7 @@ export function VerificationCodeInput({
       <TextInput
         ref={inputRef}
         value={value}
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor={theme.mutedText}
         keyboardType="number-pad"
         onChangeText={(nextValue) => onChangeText(nextValue.replace(/\D/g, '').slice(0, 6))}
         className="absolute h-0 w-0 opacity-0"

@@ -1,3 +1,4 @@
+import { useAppTheme } from '@/lib/use-app-theme';
 import type { TextInputProps } from 'react-native';
 import { Text, TextInput, View } from 'react-native';
 
@@ -7,13 +8,15 @@ type AuthInputProps = TextInputProps & {
 };
 
 export function AuthInput({ label, error, className, ...props }: AuthInputProps) {
+  const theme = useAppTheme();
+
   return (
     <View>
-      <Text className="text-sm font-semibold text-app-text">{label}</Text>
-      <View className="mt-2 rounded-xl border border-app-icon/30 bg-app-background px-4">
+      <Text className="text-sm font-semibold text-foreground">{label}</Text>
+      <View className="mt-2 rounded-xl border border-muted-foreground/30 bg-background px-4">
         <TextInput
-          placeholderTextColor="#9CA3AF"
-          className={`py-3 text-base text-app-text ${className ?? ''}`.trim()}
+          placeholderTextColor={theme.mutedText}
+          className={`py-3 text-base text-foreground ${className ?? ''}`.trim()}
           {...props}
         />
       </View>

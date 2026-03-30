@@ -1,34 +1,95 @@
 @import 'tailwindcss';
 @import 'uniwind';
-@import '@fomo/theme/theme.css';
+@import '@fomo/theme/global.css';
 
 @layer theme {
   :root {
     @variant light {
-      --color-app-text: #201713;
-      --color-app-background: #fffaf6;
-      --color-app-surface: #fffdfb;
-      --color-app-tint: var(--brand-primary);
-      --color-app-tint-foreground: var(--brand-primary-foreground);
-      --color-app-tint-hover: var(--brand-primary-hover);
-      --color-app-primary-soft: var(--brand-primary-soft);
-      --color-app-primary-soft-border: var(--brand-primary-soft-border);
-      --color-app-primary-text: var(--brand-primary-text);
-      --color-app-icon: #786860;
-      --color-app-border: var(--brand-primary-soft-border);
+      --radius: 0.875rem;
+      --background: #fffaf6;
+      --foreground: #201713;
+      --card: #fffdfb;
+      --card-foreground: #201713;
+      --popover: #fffdfb;
+      --popover-foreground: #201713;
+      --primary: var(--brand-primary);
+      --primary-foreground: var(--brand-primary-foreground);
+      --secondary: #fff3eb;
+      --secondary-foreground: #201713;
+      --muted: #fff3eb;
+      --muted-foreground: #786860;
+      --accent: var(--brand-primary-soft);
+      --accent-foreground: var(--brand-primary-text);
+      --destructive: #dc2626;
+      --border: #ead8ce;
+      --input: #ead8ce;
+      --ring: var(--brand-primary-ring);
+      --chart-1: var(--brand-coral-500);
+      --chart-2: #f59e0b;
+      --chart-3: #0ea5e9;
+      --chart-4: #14b8a6;
+      --chart-5: #8b5cf6;
+      --sidebar: #fffdfb;
+      --sidebar-foreground: #201713;
+      --sidebar-primary: var(--brand-primary);
+      --sidebar-primary-foreground: var(--brand-primary-foreground);
+      --sidebar-accent: var(--brand-primary-soft);
+      --sidebar-accent-foreground: var(--brand-primary-text);
+      --sidebar-border: #ead8ce;
+      --sidebar-ring: var(--brand-primary-ring);
+      --surface: #fffdfb;
+      --surface-muted: #fff3eb;
+      --border-strong: #d8c1b5;
+      --primary-hover: var(--brand-primary-hover);
+      --primary-active: var(--brand-primary-active);
+      --primary-soft: var(--brand-primary-soft);
+      --primary-soft-border: var(--brand-primary-soft-border);
+      --primary-text: var(--brand-primary-text);
+      --primary-ring: var(--brand-primary-ring);
     }
+
     @variant dark {
-      --color-app-text: #f7eee8;
-      --color-app-background: #181311;
-      --color-app-surface: #211916;
-      --color-app-tint: var(--brand-primary);
-      --color-app-tint-foreground: var(--brand-primary-foreground);
-      --color-app-tint-hover: var(--brand-primary-hover);
-      --color-app-primary-soft: #2d1712;
-      --color-app-primary-soft-border: #6a3428;
-      --color-app-primary-text: #ffa071;
-      --color-app-icon: #baa99f;
-      --color-app-border: #6a3428;
+      --radius: 0.875rem;
+      --background: #181311;
+      --foreground: #f7eee8;
+      --card: #211916;
+      --card-foreground: #f7eee8;
+      --popover: #211916;
+      --popover-foreground: #f7eee8;
+      --primary: var(--brand-primary);
+      --primary-foreground: var(--brand-primary-foreground);
+      --secondary: #2a201d;
+      --secondary-foreground: #f7eee8;
+      --muted: #2a201d;
+      --muted-foreground: #baa99f;
+      --accent: #2a201d;
+      --accent-foreground: #f7eee8;
+      --destructive: #ef4444;
+      --border: #4e3b33;
+      --input: #4e3b33;
+      --ring: var(--brand-primary-ring);
+      --chart-1: var(--brand-coral-400);
+      --chart-2: #f59e0b;
+      --chart-3: #38bdf8;
+      --chart-4: #2dd4bf;
+      --chart-5: #a78bfa;
+      --sidebar: #211916;
+      --sidebar-foreground: #f7eee8;
+      --sidebar-primary: var(--brand-primary);
+      --sidebar-primary-foreground: var(--brand-primary-foreground);
+      --sidebar-accent: #2a201d;
+      --sidebar-accent-foreground: #f7eee8;
+      --sidebar-border: #4e3b33;
+      --sidebar-ring: var(--brand-primary-ring);
+      --surface: #211916;
+      --surface-muted: #2a201d;
+      --border-strong: #6a4d42;
+      --primary-hover: var(--brand-primary-hover);
+      --primary-active: var(--brand-primary-active);
+      --primary-soft: var(--brand-primary-soft);
+      --primary-soft-border: var(--brand-primary-soft-border);
+      --primary-text: var(--brand-primary-text);
+      --primary-ring: var(--brand-primary-ring);
     }
   }
 }

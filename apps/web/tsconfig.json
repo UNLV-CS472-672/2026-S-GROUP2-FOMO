@@ -19,9 +19,7 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@fomo/theme": ["../../packages/theme/src/index.ts"],
-      "@fomo/theme/*": ["../../packages/theme/src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "exclude": ["node_modules"],

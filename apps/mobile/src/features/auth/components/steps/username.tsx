@@ -22,11 +22,11 @@ export function UsernameStep({
   return (
     <>
       {emailAddress ? (
-        <View className="rounded-xl border border-app-icon/15 bg-app-background px-4 py-3">
-          <Text className="text-xs font-semibold uppercase tracking-[1.2px] text-app-icon/80">
+        <View className="rounded-xl border border-muted-foreground/15 bg-background px-4 py-3">
+          <Text className="text-xs font-semibold uppercase tracking-[1.2px] text-muted-foreground/80">
             Account email
           </Text>
-          <Text className="mt-1 text-base font-medium text-app-text">{emailAddress}</Text>
+          <Text className="mt-1 text-base font-medium text-foreground">{emailAddress}</Text>
         </View>
       ) : null}
 
