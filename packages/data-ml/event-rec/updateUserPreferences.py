@@ -5,12 +5,17 @@ from convex import ConvexClient
 from dotenv import load_dotenv
 
 load_dotenv()
+
 CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
 
-if CONVEX_CLOUD_URL is None:
-    raise EnvironmentError("Required environment variable CONVEX_CLOUD_URL is not set")
+client: Optional[ConvexClient] = (
+    ConvexClient(CONVEX_CLOUD_URL) if CONVEX_CLOUD_URL else None
+)
 
-client = ConvexClient(CONVEX_CLOUD_URL)
+def get_client() -> ConvexClient:
+    if client is None:
+        raise RuntimeError("ConvexClient not initialized")
+    return client
 
 # Controls how quickly scores saturate toward 1
 ALPHA = 1.0
