@@ -1,6 +1,10 @@
-import { sampleFriends, samplePastEvents } from '@/features/profile/sample-social-data';
+import { ProfileFriendsDialog } from '@/features/profile/components/profile-friends-dialog';
+import {
+  sampleFriends,
+  samplePastEvents,
+  sampleRecommendedFriends,
+} from '@/features/profile/sample-social-data';
 import Image from 'next/image';
-import Link from 'next/link';
 
 type ProfilePageProps = {
   params: Promise<{
@@ -15,7 +19,6 @@ function formatHandle(handle: string) {
 export default async function ProfilePage({ params }: ProfilePageProps) {
   const { handle } = await params;
   const cleanHandle = formatHandle(handle);
-  const friendsHref = `/profile/${cleanHandle}/friends`;
 
   return (
     <section>
@@ -48,17 +51,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               </div>
             </div>
 
-            <Link
-              href={friendsHref}
-              className="rounded-xl bg-zinc-100 px-3 py-3 transition-colors hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-            >
-              <div className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
-                {sampleFriends.length}
-              </div>
-              <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
-                Friends
-              </div>
-            </Link>
+            <ProfileFriendsDialog
+              handle={cleanHandle}
+              friends={sampleFriends}
+              recommendedFriends={sampleRecommendedFriends}
+            />
           </div>
 
           <p className="mt-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
