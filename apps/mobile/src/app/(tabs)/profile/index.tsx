@@ -22,9 +22,6 @@ export default function ProfileScreen() {
   const router = useRouter();
   const theme = useAppTheme();
 
-  // Authentication state from both Clerk and Convex
-  const { isAuthenticated, isLoading } = useConvexAuth();
-  const { signOut, userId } = useAuth();
   const { user } = useUser();
   const username = user?.username ?? 'Guest';
   const { isGuestMode } = useGuest();
