@@ -61,6 +61,14 @@
   --brand-coral-900: #7e1810;
   --brand-coral-950: #440806;
 
+  --brand-amber-500: #f59e0b;
+  --brand-sky-500: #0ea5e9;
+  --brand-sky-400: #38bdf8;
+  --brand-teal-500: #14b8a6;
+  --brand-teal-400: #2dd4bf;
+  --brand-violet-500: #8b5cf6;
+  --brand-violet-400: #a78bfa;
+
   --radius: 0.875rem;
   --brand-primary: var(--brand-coral-400);
   --brand-primary-foreground: #fff7f2;
@@ -90,10 +98,10 @@
   --input: #ead8ce;
   --ring: var(--brand-primary-ring);
   --chart-1: var(--brand-coral-500);
-  --chart-2: #f59e0b;
-  --chart-3: #0ea5e9;
-  --chart-4: #14b8a6;
-  --chart-5: #8b5cf6;
+  --chart-2: var(--brand-amber-500);
+  --chart-3: var(--brand-sky-500);
+  --chart-4: var(--brand-teal-500);
+  --chart-5: var(--brand-violet-500);
   --sidebar: #fffdfb;
   --sidebar-foreground: #201713;
   --sidebar-primary: var(--brand-primary);
@@ -133,10 +141,10 @@
   --input: #4e3b33;
   --ring: var(--brand-primary-ring);
   --chart-1: var(--brand-coral-400);
-  --chart-2: #f59e0b;
-  --chart-3: #38bdf8;
-  --chart-4: #2dd4bf;
-  --chart-5: #a78bfa;
+  --chart-2: var(--brand-amber-500);
+  --chart-3: var(--brand-sky-400);
+  --chart-4: var(--brand-teal-400);
+  --chart-5: var(--brand-violet-400);
   --sidebar: #211916;
   --sidebar-foreground: #f7eee8;
   --sidebar-primary: var(--brand-primary);
