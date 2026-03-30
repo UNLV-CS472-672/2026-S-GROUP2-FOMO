@@ -5,7 +5,7 @@ import MapboxGL from '@rnmapbox/maps';
 import { useRouter } from 'expo-router';
 import type { Point } from 'geojson';
 import { useEffect, useMemo, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 MapboxGL.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
@@ -15,6 +15,8 @@ export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
   const heatmapGeoJSON = useMemo(
     () => pointsToGeoJSON(eventSeeds.map((e, i) => ({ ...e, weight: eventSeedAttendees[i] ?? 1 }))),
@@ -36,7 +38,7 @@ export default function MapScreen() {
     <View className="absolute inset-0">
       <MapboxGL.MapView
         style={StyleSheet.absoluteFill}
-        styleURL={MapboxGL.StyleURL.Dark}
+        styleURL={isDark ? MapboxGL.StyleURL.Dark : MapboxGL.StyleURL.Street}
         logoEnabled={false}
         attributionEnabled={false}
         scaleBarEnabled={false}
@@ -91,10 +93,19 @@ export default function MapScreen() {
       {/* Search bar overlay */}
       <View className="absolute left-4 right-4" style={{ top: insets.top + 12 }}>
         <Pressable
-          className="rounded-xl border border-white/[0.12] bg-[rgba(18,18,18,0.92)] px-4 py-3 active:bg-[rgba(38,38,38,0.92)]"
+          style={{
+            backgroundColor: isDark ? 'rgba(18,18,18,0.92)' : 'rgba(255,255,255,0.92)',
+            borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
+          }}
+          className="rounded-xl border px-4 py-3"
           onPress={() => push('/(tabs)/(map)/search')}
         >
-          <Text className="text-[15px] text-white/40">Search places...</Text>
+          <Text
+            style={{ color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)' }}
+            className="text-[15px]"
+          >
+            Search places...
+          </Text>
         </Pressable>
       </View>
     </View>

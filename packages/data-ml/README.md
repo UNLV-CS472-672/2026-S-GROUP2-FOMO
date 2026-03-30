@@ -3,7 +3,7 @@
 This package contains functions that modify Convex datatables via ML algorithms.
 Primarily, the directory is utilized for FOMO's recommendation engine for friends, events, and posts.
 
-## Friend Recommendations (friendrec.py)
+## Friend Recommendations (friendRecs.py)
 
 Looks into three criteria for gauging friend recommendations for each user.:
 
