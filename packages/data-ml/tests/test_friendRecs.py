@@ -441,7 +441,9 @@ def test_main_one_user_calls_upsert_friend_recs(mock_main_dependencies: dict[str
 #  main_all_attendees()
 # ------------------------------
 @pytest.fixture
-def mock_main_all_attendees_dependencies(mock_client: MagicMock) -> Generator[dict[str, MagicMock], None, None]:
+def mock_main_all_attendees_dependencies(
+    mock_client: MagicMock,
+) -> Generator[dict[str, MagicMock | list[str]], None, None]:
     user_ids = ["u1", "u2"]
 
     with patch("friendRecs.get_user_ids_with_event_attendance") as mock_get_ids, \

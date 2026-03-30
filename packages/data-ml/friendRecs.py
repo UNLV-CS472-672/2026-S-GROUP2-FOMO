@@ -26,8 +26,9 @@ def user_exists(user_id: str) -> bool:
 
 # Get all unique userIds that have at least one row in "usersToEvents"
 def get_user_ids_with_event_attendance() -> list[str]:
-    return get_client().query(
-        "data_ml/users:getUserIdsWithEventAttendance", {})
+    # Cast to a list[str] to satisfy myPy since Convex returns Any.
+    user_ids: list[str] = get_client().query("data_ml/users:getUserIdsWithEventAttendance",{})
+    return user_ids
 
 # Combines "usersToEvents" and "events" into a single dataframe.
 def join_user_events() -> pd.DataFrame:
