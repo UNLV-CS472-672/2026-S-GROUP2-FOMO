@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 @import 'uniwind';
-@import '../../../packages/theme/src/theme.css';
+@import '@fomo/theme/theme.css';
 
 @layer theme {
   :root {

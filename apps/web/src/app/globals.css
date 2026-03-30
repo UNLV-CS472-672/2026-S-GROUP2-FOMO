@@ -1,5 +1,5 @@
-@import '../../../../packages/theme/src/theme.css';
 @import 'tailwindcss';
+@import '@fomo/theme/theme.css';
 
 :root {
   --background: #fffaf6;
