@@ -1,24 +1,58 @@
-# @fomo/backend/convex
+# @fomo/backend
 
-This package contains generated and helper functions for Convex.
+This package contains Convex functions and backend logic.
 
-## .
+## Convex commands
 
-- `schema.ts` - blueprint for FOMO Convex dataframe; do not move to a subdirectory
-- `seed.ts` - generates fake mock data; do not move to a subdirectory
-- `auth.ts` - utilized by Clerk; potentially move to a 'frontend' dir (?)
-- `auth.config.ts` - utilized by Clerk; potentially move to a 'frontend' dir (?)
+- `pnpm convex:dev` - run local Convex dev server
+- `pnpm convex:codegen` - generate Convex types
+- `pnpm convex:deploy` - deploy backend to Convex
 
-## \_generated
+## Ticketmaster ingestion
 
-Functions that are automatically created by Convex. Don't touch these.
+The Ticketmaster ingestion action is:
 
-## data_ml
+- `eventsIngest:syncTicketmasterLasVegas`
 
-Helper functions utilized by `@fomo/packages/data_ml`.
-All files should correspond to a Convex datatable.
+### 1. Set required Convex env vars
 
-- `friendRecs.ts` - helper functions for `friendRecs` table
-- `friends.ts` - helper functions for `friends` table
-- `users.ts` - helper functions for `users` table
-- `universal.ts` - special case; extracts from ANY data table
+From `packages/backend`, set the Ticketmaster API key in Convex deployment env vars:
+
+```bash
+pnpm exec convex env set TICKETMASTER_API_KEY <your_ticketmaster_api_key>
+```
+
+### 2. Start Convex dev
+
+```bash
+pnpm dev
+```
+
+Keep this running in one terminal.
+
+### 3. Dry run ingestion (no DB writes)
+
+```bash
+pnpm exec convex run eventsIngest:syncTicketmasterLasVegas '{"dryRun":true,"eventCount":15}'
+```
+
+### 4. Run ingestion (writes to `events`)
+
+```bash
+pnpm exec convex run eventsIngest:syncTicketmasterLasVegas '{"dryRun":false,"eventCount":15}'
+```
+
+### 5. Verify in dashboard
+
+```bash
+pnpm dashboard
+```
+
+In Convex dashboard, go to `Data` and inspect `events`.
+
+## Arguments
+
+- `category` is an optional argument to filter events by category (for example `sports`, `concerts`, `music`, `arts`, `film`, `miscellaneous`).
+- `dryRun` if true, allows you to see ingested events in JSON format and does not write to the Convex DB.
+- `eventCount` specifies the number of unique events to be ingested (deduped by attraction + venue).
+- `sort` is an optional argument with format `<date | relevance>,<asc | desc>`, it currently defaults to `relevance,desc`.
