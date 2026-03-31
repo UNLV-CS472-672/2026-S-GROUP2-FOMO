@@ -1,5 +1,6 @@
 import PostGrid from '@/components/ui/post-grid';
 import { Screen } from '@/components/ui/screen';
+import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
@@ -17,6 +18,7 @@ interface Ad {
 }
 
 export default function EventDetails() {
+  const theme = useAppTheme();
   const { ad: adParam } = useLocalSearchParams<{ ad?: string | string[] }>();
   const parsedAdParam = Array.isArray(adParam) ? adParam[0] : adParam;
 
@@ -33,7 +35,7 @@ export default function EventDetails() {
     return (
       <Screen className="items-center justify-center">
         <Stack.Screen options={{ title: 'Event Details' }} />
-        <Text className="text-app-text">Event not found</Text>
+        <Text className="text-foreground">Event not found</Text>
       </Screen>
     );
   }
@@ -46,23 +48,23 @@ export default function EventDetails() {
           <View>
             <Image
               source={ad.image}
-              className="h-44 w-full rounded-2xl border border-app-border"
+              className="h-44 w-full rounded-2xl border border-border"
               resizeMode="cover"
             />
-            <Text className="mt-3 text-base font-semibold text-app-text">{ad.description}</Text>
+            <Text className="mt-3 text-base font-semibold text-foreground">{ad.description}</Text>
           </View>
           <TouchableOpacity
-            className="h-12 w-12 items-center justify-center rounded-full border border-app-border bg-background"
+            className="h-12 w-12 items-center justify-center rounded-full border border-border bg-background"
             activeOpacity={0.75}
             onPress={() => {}}
             accessibilityRole="button"
             accessibilityLabel="Like ad"
           >
-            <Ionicons name="heart" size={24} color="#687076" />
+            <Ionicons name="heart" size={24} color={theme.mutedText} />
           </TouchableOpacity>
         </View>
 
-        <View className="w-[60%] overflow-hidden rounded-2xl border border-app-border bg-background">
+        <View className="w-[60%] overflow-hidden rounded-2xl border border-border bg-background">
           <View className="flex-1">
             <PostGrid posts={ad.posts} />
           </View>

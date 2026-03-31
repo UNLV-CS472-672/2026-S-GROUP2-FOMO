@@ -1,4 +1,5 @@
 import { Button, ButtonText } from '@/components/ui/button';
+import { useAppTheme } from '@/lib/use-app-theme';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { VerificationCodeInput } from './code-input';
@@ -28,6 +29,7 @@ export function VerificationStep({
   submitLoadingLabel,
   error,
 }: VerificationStepProps) {
+  const theme = useAppTheme();
   const [now, setNow] = useState(Date.now());
   const resendCountdown = resendAvailableAt
     ? Math.max(0, Math.ceil((resendAvailableAt - now) / 1000))
@@ -59,13 +61,15 @@ export function VerificationStep({
           onSubmitEditing={handleSubmit}
           isSubmitting={isSubmitting}
         />
-        {error ? <Text className="mt-1.5 text-xs text-red-600">{error}</Text> : null}
+        {error ? <Text className="mt-1.5 text-xs text-destructive">{error}</Text> : null}
       </View>
 
       <View className="flex-row items-center justify-between">
         <Pressable onPress={onResend} disabled={!canResend} hitSlop={8}>
           <Text
-            className={!canResend ? 'text-sm text-app-icon' : 'text-sm font-semibold text-app-tint'}
+            className={
+              !canResend ? 'text-sm text-muted-foreground' : 'text-sm font-semibold text-primary'
+            }
           >
             {isResending
               ? 'Resending code...'
@@ -75,7 +79,7 @@ export function VerificationStep({
           </Text>
         </Pressable>
 
-        {isResending ? <ActivityIndicator size="small" color="#4B5563" /> : null}
+        {isResending ? <ActivityIndicator size="small" color={theme.mutedText} /> : null}
       </View>
 
       <Button onPress={handleSubmit} disabled={!value || isSubmitting}>

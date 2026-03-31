@@ -1,15 +1,20 @@
 import { HeaderBackButton } from '@react-navigation/elements';
 import { useRouter } from 'expo-router';
 
-type AuthHeaderBackButtonProps = {
+import { useAppTheme } from '@/lib/use-app-theme';
+
+type AppHeaderBackButtonProps = {
   onPress?: () => void;
 };
 
-export function AuthHeaderBackButton({ onPress }: AuthHeaderBackButtonProps) {
+export function AppHeaderBackButton({ onPress }: AppHeaderBackButtonProps) {
   const router = useRouter();
+  const theme = useAppTheme();
 
   return (
     <HeaderBackButton
+      tintColor={theme.tint}
+      pressColor={theme.primarySoft}
       onPress={() => {
         if (onPress) {
           onPress();

@@ -44,9 +44,9 @@ export function IdentifierStep({
       />
 
       <View className="flex-row items-center gap-4">
-        <View className="flex-1 border-b border-app-icon/20" />
-        <Text className="text-sm text-app-icon">{dividerLabel}</Text>
-        <View className="flex-1 border-b border-app-icon/20" />
+        <View className="flex-1 border-b border-muted-foreground/20" />
+        <Text className="text-sm text-muted-foreground">{dividerLabel}</Text>
+        <View className="flex-1 border-b border-muted-foreground/20" />
       </View>
 
       <AuthInput

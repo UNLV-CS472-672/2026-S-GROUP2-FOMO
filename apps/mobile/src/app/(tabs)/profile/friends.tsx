@@ -1,10 +1,12 @@
 import FriendCell from '@/components/profile/friend-cell';
 import { Screen } from '@/components/ui/screen';
+import { useAppTheme } from '@/lib/use-app-theme';
 import { useMemo, useState } from 'react';
 import type { ImageSourcePropType } from 'react-native';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function FriendsScreen() {
+  const theme = useAppTheme();
   const [searchText, setSearchText] = useState('');
   const [isRecommendedCollapsed, setIsRecommendedCollapsed] = useState(false);
 
@@ -97,21 +99,21 @@ export default function FriendsScreen() {
             value={searchText}
             onChangeText={setSearchText}
             placeholder="Search friends"
-            placeholderTextColor="#687076"
-            className="rounded-lg border border-app-border bg-app-background px-4 py-2 text-base text-app-text"
+            placeholderTextColor={theme.mutedText}
+            className="rounded-lg border border-border bg-background px-4 py-2 text-base text-foreground"
             accessibilityLabel="Search friends"
           />
         </View>
 
         {/* Recommended Friends */}
-        <View className="mb-4 border-y border-neutral-300">
+        <View className="mb-4 border-y border-border">
           <TouchableOpacity
             onPress={() => setIsRecommendedCollapsed((current) => !current)}
             className="flex-row items-center justify-between px-4 py-3"
             accessibilityRole="button"
             accessibilityLabel="Toggle recommended friends"
           >
-            <Text className="text-lg font-bold text-app-text">Recommended Friends</Text>
+            <Text className="text-lg font-bold text-foreground">Recommended Friends</Text>
             <Text className="text-sm text-muted-foreground">
               {isRecommendedCollapsed ? 'Show' : 'Hide'}
             </Text>
@@ -139,9 +141,9 @@ export default function FriendsScreen() {
         </View>
 
         {/* Friends List */}
-        <View className="border-y border-neutral-300">
+        <View className="border-y border-border">
           <View className="px-4 py-3">
-            <Text className="text-lg font-bold text-app-text">Friends</Text>
+            <Text className="text-lg font-bold text-foreground">Friends</Text>
           </View>
           <View className="px-4 pb-1">
             {filteredFriends.length > 0 ? (
