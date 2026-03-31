@@ -151,7 +151,7 @@ def main(users: list[str], update_db: bool) -> None:
 
 
 USERS = ['ALL']
-UPDATE_DB = True
+UPDATE_DB = False
 
 if __name__ == "__main__":
     main(USERS, UPDATE_DB)
