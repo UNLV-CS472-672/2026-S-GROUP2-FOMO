@@ -8,6 +8,7 @@ from typing import Generator
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "event-rec"))
 from updateUserPreferences import (
     get_user_event_multihot,
+    get_initial_preferences,
     build_user_tag_weights,
     main,
 )
@@ -73,6 +74,11 @@ def sample_mat_2x3() -> np.ndarray:
 @pytest.fixture
 def sample_user_tag_counts(sample_mat_2x3: np.ndarray) -> dict[str, np.ndarray]:
     return {"u1": sample_mat_2x3}
+
+# Zero prior — used when we want build_user_tag_weights tests to ignore cold-start
+@pytest.fixture
+def zero_prior() -> dict[str, np.ndarray]:
+    return {"u1": np.zeros(3, dtype=np.float32)}
 
 
 
@@ -153,45 +159,48 @@ def test_get_user_event_multihot_all_resolves_users(mock_client: MagicMock, samp
 # ------------------------------
 
 # Should return a dict
-def test_build_user_tag_weights_returns_dict(sample_user_tag_counts: dict[str, np.ndarray]) -> None:
-    result = build_user_tag_weights(sample_user_tag_counts)
+def test_build_user_tag_weights_returns_dict(zero_prior: dict[str, np.ndarray], sample_user_tag_counts: dict[str, np.ndarray]) -> None:
+    result = build_user_tag_weights(zero_prior, sample_user_tag_counts)
     assert isinstance(result, dict)
 
 # Should have an entry per user
-def test_build_user_tag_weights_has_entry_per_user(sample_user_tag_counts: dict[str, np.ndarray]) -> None:
-    result = build_user_tag_weights(sample_user_tag_counts)
+def test_build_user_tag_weights_has_entry_per_user(zero_prior: dict[str, np.ndarray], sample_user_tag_counts: dict[str, np.ndarray]) -> None:
+    result = build_user_tag_weights(zero_prior, sample_user_tag_counts)
     assert "u1" in result
 
 # Output weights should be 1D vector of length num_tags
-def test_build_user_tag_weights_correct_shape(sample_user_tag_counts: dict[str, np.ndarray]) -> None:
-    result = build_user_tag_weights(sample_user_tag_counts)
+def test_build_user_tag_weights_correct_shape(zero_prior: dict[str, np.ndarray], sample_user_tag_counts: dict[str, np.ndarray]) -> None:
+    result = build_user_tag_weights(zero_prior, sample_user_tag_counts)
     assert result["u1"].shape == (3,)
 
 # All weights should be bounded between 0 and 1
-def test_build_user_tag_weights_bounded(sample_user_tag_counts: dict[str, np.ndarray]) -> None:
-    result = build_user_tag_weights(sample_user_tag_counts)
+def test_build_user_tag_weights_bounded(zero_prior: dict[str, np.ndarray], sample_user_tag_counts: dict[str, np.ndarray]) -> None:
+    result = build_user_tag_weights(zero_prior, sample_user_tag_counts)
     weights = result["u1"]
     assert np.all(weights >= 0)
     assert np.all(weights < 1)
 
-# User with no events should return all-zero weights
+# User with no events and no prior should return the BETA-only baseline weight
 def test_build_user_tag_weights_no_events_returns_baseline() -> None:
     empty_mat = np.zeros((0, 3), dtype=np.float32)
-    result = build_user_tag_weights({"u1": empty_mat})
-    expected = 0.75 / (0.75 + 1.0)  # beta / (beta + alpha)
+    prior     = {"u1": np.zeros(3, dtype=np.float32)}
+    result    = build_user_tag_weights(prior, {"u1": empty_mat})
+    # zero prior + zero events → tag_weights=0 → 1 - exp(-(0 + BETA) / TAU)
+    # BETA=0.1, TAU=0.5 → 1 - exp(-0.2) ≈ 0.1813
+    expected = 1.0 - np.exp(-0.1 / 0.5)
     assert np.allclose(result["u1"], expected)
 
 # Should raise ValueError if matrix is not 2D
 def test_build_user_tag_weights_raises_on_1d_input() -> None:
     bad_input = {"u1": np.array([1.0, 0.0, 1.0])}
     with pytest.raises(ValueError):
-        build_user_tag_weights(bad_input)
+        build_user_tag_weights({"u1": np.zeros(3, dtype=np.float32)}, bad_input)
 
 # Should raise ValueError if matrix has negative values
 def test_build_user_tag_weights_raises_on_negative_values() -> None:
     bad_input = {"u1": np.array([[-1.0, 0.0], [1.0, 0.0]])}
     with pytest.raises(ValueError):
-        build_user_tag_weights(bad_input)
+        build_user_tag_weights({"u1": np.zeros(2, dtype=np.float32)}, bad_input)
 
 # Tags attended more should have higher weights than tags never attended
 def test_build_user_tag_weights_higher_attendance_higher_weight() -> None:
@@ -201,9 +210,47 @@ def test_build_user_tag_weights_higher_attendance_higher_weight() -> None:
         [1.0, 0.0],
         [1.0, 1.0],
     ], dtype=np.float32)
-    result = build_user_tag_weights({"u1": mat})
+    prior  = {"u1": np.zeros(2, dtype=np.float32)}
+    result = build_user_tag_weights(prior, {"u1": mat})
     assert result["u1"][0] > result["u1"][1]
 
+
+
+# ------------------------------
+#  get_initial_preferences()
+# ------------------------------
+
+# Should return a dict
+def test_get_initial_preferences_returns_dict(mock_client: MagicMock) -> None:
+    mock_client.query.return_value = {"tagIds": ["t1", "t2"]}
+    result = get_initial_preferences({"u1": np.zeros((2, 3), dtype=np.float32)})
+    assert isinstance(result, dict)
+
+# Should have an entry per user
+def test_get_initial_preferences_has_entry_per_user(mock_client: MagicMock) -> None:
+    mock_client.query.return_value = {"tagIds": ["t1"]}
+    result = get_initial_preferences({"u1": np.zeros((2, 3), dtype=np.float32)})
+    assert "u1" in result
+
+# Preferred tag indices should be set to 0.5, others stay 0
+def test_get_initial_preferences_sets_prior_strength(mock_client: MagicMock) -> None:
+    import updateUserPreferences
+    updateUserPreferences.TAG_ID_TO_IDX = {"t1": 0, "t2": 1, "t3": 2}
+    updateUserPreferences.NUM_TAGS = 3
+    mock_client.query.return_value = {"tagIds": ["t1", "t3"]}
+    result = get_initial_preferences({"u1": np.zeros((0, 3), dtype=np.float32)})
+    assert result["u1"][0] == pytest.approx(0.5)  # t1 preferred
+    assert result["u1"][1] == pytest.approx(0.0)  # t2 not preferred
+    assert result["u1"][2] == pytest.approx(0.5)  # t3 preferred
+
+# User with no preferred tags row (None) should return a zero vector
+def test_get_initial_preferences_handles_none(mock_client: MagicMock) -> None:
+    import updateUserPreferences
+    updateUserPreferences.TAG_ID_TO_IDX = {"t1": 0, "t2": 1, "t3": 2}
+    updateUserPreferences.NUM_TAGS = 3
+    mock_client.query.return_value = None
+    result = get_initial_preferences({"u1": np.zeros((0, 3), dtype=np.float32)})
+    assert np.all(result["u1"] == 0.0)
 
 
 # ------------------------------
@@ -213,15 +260,18 @@ def test_build_user_tag_weights_higher_attendance_higher_weight() -> None:
 @pytest.fixture
 def mock_main_dependencies(mock_client: MagicMock) -> Generator[dict[str, MagicMock], None, None]:
     with patch("updateUserPreferences.get_user_event_multihot") as mock_multihot, \
-         patch("updateUserPreferences.build_user_tag_weights")  as mock_build:
+         patch("updateUserPreferences.get_initial_preferences")  as mock_initial, \
+         patch("updateUserPreferences.build_user_tag_weights")   as mock_build:
 
         mock_multihot.return_value = {"u1": np.zeros((2, 3), dtype=np.float32)}
+        mock_initial.return_value  = {"u1": np.zeros(3, dtype=np.float32)}
         mock_build.return_value    = {"u1": np.array([0.5, 0.3, 0.2], dtype=np.float32)}
 
         yield {
-            "get_user_event_multihot": mock_multihot,
-            "build_user_tag_weights":  mock_build,
-            "client":                  mock_client,
+            "get_user_event_multihot":  mock_multihot,
+            "get_initial_preferences":  mock_initial,
+            "build_user_tag_weights":   mock_build,
+            "client":                   mock_client,
         }
 
 # When update_db=True, mutation should be called once per user
@@ -233,6 +283,11 @@ def test_main_calls_mutation_when_update_db_true(mock_main_dependencies: dict[st
 def test_main_does_not_call_mutation_when_update_db_false(mock_main_dependencies: dict[str, MagicMock]) -> None:
     main(["u1"], update_db=False)
     mock_main_dependencies["client"].mutation.assert_not_called()
+
+# get_initial_preferences should always be called once
+def test_main_calls_get_initial_preferences(mock_main_dependencies: dict[str, MagicMock]) -> None:
+    main(["u1"], update_db=False)
+    mock_main_dependencies["get_initial_preferences"].assert_called_once()
 
 # get_user_event_multihot should always be called once
 def test_main_calls_get_user_event_multihot(mock_main_dependencies: dict[str, MagicMock]) -> None:
