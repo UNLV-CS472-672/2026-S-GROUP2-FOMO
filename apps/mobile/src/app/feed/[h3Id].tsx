@@ -177,7 +177,7 @@ export default function FeedModal() {
   };
 
   return (
-    <View className="flex-1 bg-app-background" onLayout={onLayout}>
+    <View className="flex-1 bg-background" onLayout={onLayout}>
       <Stack.Screen options={{ title: 'Feed' }} />
       <Billboard>
         <View className="flex-1">

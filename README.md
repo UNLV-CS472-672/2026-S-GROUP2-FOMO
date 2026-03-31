@@ -11,6 +11,7 @@ This monorepo contains:
 | `@fomo/backend` | Convex functions + DB schemas                                   |
 | `@fomo/web`     | Next.js web app                                                 |
 | `@fomo/mobile`  | Expo mobile app                                                 |
+| `@fomo/theme`   | Shared design tokens and theme exports for web + mobile         |
 | `@fomo/env`     | Typed environment config used by backend + web (+ mobile later) |
 
 ## ⚙️ Setup & Development

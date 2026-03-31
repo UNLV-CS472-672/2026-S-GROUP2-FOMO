@@ -1,3 +1,4 @@
+import { AppHeaderBackButton } from '@/components/navigation/header-back-button';
 import { Stack } from 'expo-router';
 
 export default function CreateLayout() {
@@ -6,6 +7,7 @@ export default function CreateLayout() {
       screenOptions={{
         headerShown: false,
         headerBackButtonDisplayMode: 'minimal',
+        headerLeft: () => <AppHeaderBackButton />,
       }}
     >
       <Stack.Screen name="index" />

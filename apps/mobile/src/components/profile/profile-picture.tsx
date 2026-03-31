@@ -8,7 +8,7 @@ type Props = {
 export default function ProfilePicture({ imageSource, onPress }: Props) {
   return (
     <TouchableOpacity onPress={onPress}>
-      <View className="rounded-x1 border-2 border-app-border p-[2px]">
+      <View className="rounded-x1 border-2 border-border p-[2px]">
         <Image source={imageSource} className="h-23 w-23 rounded-x1" />
       </View>
     </TouchableOpacity>
