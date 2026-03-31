@@ -7,6 +7,9 @@ from twoTowerModel import UserTower, EventTower
 from twoTowerTrainer import TwoTowerTrainer
 from eventRecDataset import get_data_loader
 
+from convex import ConvexClient
+from dotenv import load_dotenv
+
 
 load_dotenv()
 
@@ -17,9 +20,15 @@ if CONVEX_CLOUD_URL is None:
 client = ConvexClient(CONVEX_CLOUD_URL)
 
 
-def main(epochs: int = 10) -> None:
+def main(epochs: int = 100) -> None:
     train_loader, test_loader = get_data_loader()
 
+    for batch_idx, (inputs, labels, bad) in enumerate(train_loader):
+        print(f"Batch {batch_idx}")
+        print("Inputs shape:", inputs.shape)
+        # print("Labels:", labels)
+        # print("Bad:", bad)
+        break
     user_tags, _, _ = next(iter(train_loader))
     num_tags = user_tags.shape[1]
 
