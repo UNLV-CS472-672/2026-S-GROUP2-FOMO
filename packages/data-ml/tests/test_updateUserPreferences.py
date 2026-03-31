@@ -182,12 +182,12 @@ def test_build_user_tag_weights_bounded(zero_prior: dict[str, np.ndarray], sampl
 
 # User with no events and no prior should return the BETA-only baseline weight
 def test_build_user_tag_weights_no_events_returns_baseline() -> None:
+    import updateUserPreferences
     empty_mat = np.zeros((0, 3), dtype=np.float32)
     prior     = {"u1": np.zeros(3, dtype=np.float32)}
     result    = build_user_tag_weights(prior, {"u1": empty_mat})
     # zero prior + zero events → tag_weights=0 → 1 - exp(-(0 + BETA) / TAU)
-    # BETA=0.1, TAU=0.5 → 1 - exp(-0.2) ≈ 0.1813
-    expected = 1.0 - np.exp(-0.1 / 0.5)
+    expected = 1.0 - np.exp(-updateUserPreferences.BETA / updateUserPreferences.TAU)
     assert np.allclose(result["u1"], expected)
 
 # Should raise ValueError if matrix is not 2D
