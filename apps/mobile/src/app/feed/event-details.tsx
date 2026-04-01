@@ -1,7 +1,7 @@
 import { Screen } from '@/components/ui/screen';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -36,6 +36,9 @@ export default function EventDetails() {
     }
   }
 
+  const visiblePosts = ad?.posts.slice(0, visibleCount) ?? [];
+  const hasMorePosts = visibleCount < (ad?.posts.length ?? 0);
+
   if (!ad) {
     return (
       <Screen className="items-center justify-center">
@@ -44,9 +47,6 @@ export default function EventDetails() {
       </Screen>
     );
   }
-
-  const visiblePosts = useMemo(() => ad.posts.slice(0, visibleCount), [ad.posts, visibleCount]);
-  const hasMorePosts = visibleCount < ad.posts.length;
 
   const hashtagsText =
     ad.hashtags && ad.hashtags.length > 0 ? ad.hashtags.join(' ') : '#event #community #trending';
