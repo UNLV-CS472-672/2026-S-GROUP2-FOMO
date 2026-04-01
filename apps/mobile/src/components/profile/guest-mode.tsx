@@ -14,10 +14,10 @@ export function GuestMode() {
   };
   return (
     <View className="flex-1 justify-center px-8">
-      <Text className="mb-6 text-center text-3xl font-bold text-app-text">
+      <Text className="mb-6 text-center text-3xl font-bold text-foreground">
         Welcome to <Text className="font-heading text-4xl font-black">fomo</Text>
       </Text>
-      <Text className="mb-6 text-center leading-6 text-app-text">
+      <Text className="mb-6 text-center leading-6 text-foreground">
         You are browsing in guest mode. This is a read-only experience.
       </Text>
       <Button className="mt-2" onPress={() => void handleSignIn()}>

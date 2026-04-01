@@ -1,4 +1,5 @@
 import { Screen } from '@/components/ui/screen';
+import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -21,6 +22,7 @@ interface Ad {
 const POSTS_PAGE_SIZE = 12;
 
 export default function EventDetails() {
+  const theme = useAppTheme();
   const { ad: adParam } = useLocalSearchParams<{ ad?: string | string[] }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -43,7 +45,7 @@ export default function EventDetails() {
     return (
       <Screen className="items-center justify-center">
         <Stack.Screen options={{ title: 'Event Details' }} />
-        <Text className="text-app-text">Event not found</Text>
+        <Text className="text-foreground">Event not found</Text>
       </Screen>
     );
   }
