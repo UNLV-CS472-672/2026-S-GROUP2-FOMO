@@ -23,6 +23,13 @@ export default function CreateLayout() {
           title: 'Create Post',
         }}
       />
+      <Stack.Screen
+        name="camera-screen"
+        options={{
+          presentation: 'modal',
+          title: 'Camera',
+        }}
+      />
     </Stack>
   );
 }
