@@ -26,8 +26,17 @@ export default function CreateLayout() {
       <Stack.Screen
         name="camera-screen"
         options={{
-          presentation: 'modal',
+          presentation: 'fullScreenModal',
           title: 'Camera',
+          contentStyle: { backgroundColor: 'black' },
+        }}
+      />
+      <Stack.Screen
+        name="gallery-screen"
+        options={{
+          presentation: 'modal',
+          title: 'Gallery',
+          headerShown: true,
         }}
       />
     </Stack>
