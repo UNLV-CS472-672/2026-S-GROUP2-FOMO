@@ -10,6 +10,7 @@ from eventRecDataset import get_data_loader
 from convex import ConvexClient
 from dotenv import load_dotenv
 
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 load_dotenv()
 
@@ -19,21 +20,14 @@ if CONVEX_CLOUD_URL is None:
 
 client = ConvexClient(CONVEX_CLOUD_URL)
 
-
 def main(epochs: int = 100) -> None:
     train_loader, test_loader = get_data_loader()
 
-    for batch_idx, (inputs, labels, bad) in enumerate(train_loader):
-        print(f"Batch {batch_idx}")
-        print("Inputs shape:", inputs.shape)
-        # print("Labels:", labels)
-        # print("Bad:", bad)
-        break
     user_tags, _, _ = next(iter(train_loader))
     num_tags = user_tags.shape[1]
 
-    user_tower = UserTower(input_dim=num_tags)
-    event_tower = EventTower(input_dim=num_tags)
+    user_tower = UserTower(input_dim=num_tags).to(DEVICE)
+    event_tower = EventTower(input_dim=num_tags).to(DEVICE)
 
     trainer = TwoTowerTrainer(user_tower, event_tower)
 
@@ -41,6 +35,10 @@ def main(epochs: int = 100) -> None:
         # --- training ---
         total_loss = 0.0
         for user_tags, pos_event_tags, neg_event_tags in train_loader:
+            user_tags = user_tags.to(DEVICE)
+            pos_event_tags = pos_event_tags.to(DEVICE)
+            neg_event_tags = neg_event_tags.to(DEVICE)
+
             loss = trainer.train(user_tags, pos_event_tags, neg_event_tags)
             total_loss += loss
 
@@ -50,6 +48,10 @@ def main(epochs: int = 100) -> None:
         eval_loss = 0.0
         with torch.no_grad():
             for user_tags, pos_event_tags, neg_event_tags in test_loader:
+                user_tags = user_tags.to(DEVICE)
+                pos_event_tags = pos_event_tags.to(DEVICE)
+                neg_event_tags = neg_event_tags.to(DEVICE)
+
                 user_vec = user_tower(user_tags)
                 pos_vec = event_tower(pos_event_tags)
                 neg_vec = event_tower(neg_event_tags)
@@ -58,6 +60,14 @@ def main(epochs: int = 100) -> None:
         avg_eval = eval_loss / len(test_loader)
         print(f"Epoch {epoch + 1}/{epochs} | train loss: {avg_loss:.4f} | test loss: {avg_eval:.4f}")
 
+    torch.save({
+        'user_tower': user_tower.state_dict(),
+        'event_tower': event_tower.state_dict(),
+        'num_tags': num_tags,
+        'epochs': epochs,
+    }, 'model.pt')
+
+    print("Model saved to model.pt")
 
 if __name__ == "__main__":
     main()

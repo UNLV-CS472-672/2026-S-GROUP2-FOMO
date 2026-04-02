@@ -2,7 +2,6 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 
-
 class TwoTowerTrainer():
     def __init__(self, user_tower, event_tower, lr=3e-3):
         self.user_tower = user_tower
