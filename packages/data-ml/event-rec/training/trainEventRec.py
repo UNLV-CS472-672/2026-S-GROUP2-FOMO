@@ -1,7 +1,5 @@
 import torch
 from dotenv import load_dotenv
-import sys
-from pathlib import Path
 
 from models.twoTowerModel import UserTower, EventTower
 from training.twoTowerTrainer import TwoTowerTrainer
