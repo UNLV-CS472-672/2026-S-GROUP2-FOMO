@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 import { Pressable, PressableProps, Text, TextProps } from 'react-native';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'ghost' | 'icon';
+export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'destructive' | 'ghost' | 'icon';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 type ButtonProps = PressableProps & {
@@ -16,9 +16,12 @@ type ButtonTextProps = TextProps & {
 };
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-app-tint',
-  secondary: 'border border-app-icon/30 bg-app-background',
-  tertiary: 'bg-app-background',
+  primary: 'bg-primary',
+  secondary:
+    'border border-primary-soft-border bg-primary-soft dark:border-border-strong dark:bg-secondary',
+  tertiary:
+    'border border-primary-soft-border bg-primary-soft dark:border-border-strong dark:bg-foreground',
+  destructive: 'border border-destructive/20 bg-destructive/10',
   ghost: 'bg-transparent',
   icon: 'bg-transparent',
 };
@@ -36,10 +39,11 @@ const iconSizeClasses: Record<ButtonSize, string> = {
 };
 
 const textVariantClasses: Record<ButtonVariant, string> = {
-  primary: 'text-app-background',
-  secondary: 'text-app-text',
-  tertiary: 'text-app-text',
-  ghost: 'text-app-text',
+  primary: 'text-primary-foreground',
+  secondary: 'text-primary-text',
+  tertiary: 'text-primary-text dark:text-background',
+  destructive: 'text-destructive',
+  ghost: 'text-primary-text',
   icon: '',
 };
 

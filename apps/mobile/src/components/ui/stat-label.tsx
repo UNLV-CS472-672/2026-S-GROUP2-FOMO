@@ -17,7 +17,7 @@ export default function StatLabel({ value, label, onPress }: StatLabelProps) {
     >
       <View className="items-center">
         <Text className="text-lg font-bold text-foreground">{value}</Text>
-        <Text className="text-muted-foreground text-center">{label}</Text>
+        <Text className="text-center text-muted-foreground">{label}</Text>
       </View>
     </Pressable>
   );

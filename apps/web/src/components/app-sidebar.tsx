@@ -48,7 +48,7 @@ export function AppSidebar() {
               className={open ? 'justify-start' : 'justify-center px-0'}
             >
               <Link href="/" className={open ? 'min-w-0' : 'justify-center'}>
-                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-xs font-semibold text-white dark:bg-zinc-100 dark:text-zinc-950">
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-semibold text-primary-foreground shadow-[0_14px_28px_rgba(198,29,8,0.18)]">
                   F
                 </span>
                 {open ? <span>FOMO</span> : null}
@@ -122,9 +122,9 @@ export function AppSidebar() {
             <SidebarMenuItem>
               <div
                 className={[
-                  'relative rounded-xl border border-zinc-200 dark:border-zinc-800',
+                  'relative rounded-xl border border-border',
                   isRouteActive(pathname, '/profile')
-                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950'
+                    ? 'border-primary-soft-border bg-primary text-primary-foreground shadow-[0_18px_36px_rgba(198,29,8,0.18)]'
                     : 'bg-transparent',
                 ].join(' ')}
               >
@@ -135,7 +135,7 @@ export function AppSidebar() {
                     'w-full',
                     open ? 'justify-start pr-14' : 'justify-center px-0',
                     isRouteActive(pathname, '/profile')
-                      ? 'text-white hover:bg-transparent dark:text-zinc-950 dark:hover:bg-transparent'
+                      ? 'text-primary-foreground hover:bg-transparent'
                       : '',
                   ].join(' ')}
                 >

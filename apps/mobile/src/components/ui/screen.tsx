@@ -1,3 +1,4 @@
+import { useAppTheme } from '@/lib/use-app-theme';
 import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
 import type { ViewProps } from 'react-native';
@@ -9,8 +10,14 @@ type ScreenProps = ViewProps & {
 };
 
 export function Screen({ children, className, ...props }: ScreenProps) {
+  const theme = useAppTheme();
+
   return (
-    <View className={cn('flex-1 bg-app-background', className)} {...props}>
+    <View
+      className={cn('flex-1 bg-background', className)}
+      style={[{ backgroundColor: theme.background }, props.style]}
+      {...props}
+    >
       {children}
     </View>
   );

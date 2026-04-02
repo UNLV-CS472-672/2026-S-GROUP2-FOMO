@@ -1,26 +1,100 @@
 @import 'tailwindcss';
 @import 'uniwind';
+@import '@fomo/theme/global.css';
 
 @layer theme {
   :root {
     @variant light {
-      --color-app-text: #11181c;
-      --color-app-background: #ffffff;
-      --color-app-tint: #0a7ea4;
-      --color-app-icon: #687076;
-      --color-app-border: #f59e0b;
+      --radius: 0.875rem;
+      --background: #fffaf6;
+      --foreground: #201713;
+      --card: #fffdfb;
+      --card-foreground: #201713;
+      --popover: #fffdfb;
+      --popover-foreground: #201713;
+      --primary: var(--brand-primary);
+      --primary-foreground: var(--brand-primary-foreground);
+      --secondary: var(--surface-muted);
+      --secondary-foreground: #201713;
+      --muted: var(--surface-muted);
+      --muted-foreground: #786860;
+      --accent: var(--brand-primary-soft);
+      --accent-foreground: var(--brand-primary-text);
+      --destructive: #dc2626;
+      --border: var(--brand-primary-soft-border);
+      --input: var(--brand-primary-soft-border);
+      --ring: var(--brand-primary-ring);
+      --chart-1: var(--brand-coral-500);
+      --chart-2: var(--brand-amber-500);
+      --chart-3: var(--brand-sky-500);
+      --chart-4: var(--brand-teal-500);
+      --chart-5: var(--brand-violet-500);
+      --sidebar: #fffdfb;
+      --sidebar-foreground: #201713;
+      --sidebar-primary: var(--brand-primary);
+      --sidebar-primary-foreground: var(--brand-primary-foreground);
+      --sidebar-accent: var(--brand-primary-soft);
+      --sidebar-accent-foreground: var(--brand-primary-text);
+      --sidebar-border: var(--brand-primary-soft-border);
+      --sidebar-ring: var(--brand-primary-ring);
+      --surface: #fffdfb;
+      --surface-muted: var(--brand-primary-soft);
+      --border-strong: var(--brand-primary-soft-border);
+      --primary-hover: var(--brand-primary-hover);
+      --primary-active: var(--brand-primary-active);
+      --primary-soft: var(--brand-primary-soft);
+      --primary-soft-border: var(--brand-primary-soft-border);
+      --primary-text: var(--brand-primary-text);
+      --primary-ring: var(--brand-primary-ring);
     }
+
     @variant dark {
-      --color-app-text: #ecedee;
-      --color-app-background: #151718;
-      --color-app-tint: #ffffff;
-      --color-app-icon: #9ba1a6;
-      --color-app-border: #f59e0b;
+      --radius: 0.875rem;
+      --background: #181311;
+      --foreground: #f7eee8;
+      --card: #211916;
+      --card-foreground: #f7eee8;
+      --popover: #211916;
+      --popover-foreground: #f7eee8;
+      --primary: var(--brand-primary);
+      --primary-foreground: var(--brand-primary-foreground);
+      --secondary: var(--surface-muted);
+      --secondary-foreground: #f7eee8;
+      --muted: var(--surface-muted);
+      --muted-foreground: #baa99f;
+      --accent: var(--surface-muted);
+      --accent-foreground: #f7eee8;
+      --destructive: #ef4444;
+      --border: var(--border-strong);
+      --input: var(--border-strong);
+      --ring: var(--brand-primary-ring);
+      --chart-1: var(--brand-coral-400);
+      --chart-2: var(--brand-amber-500);
+      --chart-3: var(--brand-sky-400);
+      --chart-4: var(--brand-teal-400);
+      --chart-5: var(--brand-violet-400);
+      --sidebar: #211916;
+      --sidebar-foreground: #f7eee8;
+      --sidebar-primary: var(--brand-primary);
+      --sidebar-primary-foreground: var(--brand-primary-foreground);
+      --sidebar-accent: var(--surface-muted);
+      --sidebar-accent-foreground: #f7eee8;
+      --sidebar-border: var(--border-strong);
+      --sidebar-ring: var(--brand-primary-ring);
+      --surface: #211916;
+      --surface-muted: #2a201d;
+      --border-strong: #6a4d42;
+      --primary-hover: var(--brand-primary-hover);
+      --primary-active: var(--brand-primary-active);
+      --primary-soft: var(--brand-primary-soft);
+      --primary-soft-border: var(--brand-primary-soft-border);
+      --primary-text: var(--brand-primary-text);
+      --primary-ring: var(--brand-primary-ring);
     }
   }
 }
 
 @theme {
   /* Custom native fonts loaded via expo-font config plugin. */
-  --font-heading: "Cabinet Grotesk Variable";
+  --font-heading: 'Cabinet Grotesk Variable';
 }
