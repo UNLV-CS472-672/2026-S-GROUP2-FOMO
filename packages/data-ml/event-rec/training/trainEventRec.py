@@ -1,24 +1,13 @@
-import os
 import torch
-import numpy as np
 from dotenv import load_dotenv
+import sys
+from pathlib import Path
 
-from twoTowerModel import UserTower, EventTower
-from twoTowerTrainer import TwoTowerTrainer
-from eventRecDataset import get_data_loader
-
-from convex import ConvexClient
-from dotenv import load_dotenv
+from models.twoTowerModel import UserTower, EventTower
+from training.twoTowerTrainer import TwoTowerTrainer
+from data.eventRecDataset import get_data_loader
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-load_dotenv()
-
-CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
-if CONVEX_CLOUD_URL is None:
-    raise EnvironmentError("CONVEX_CLOUD_URL not set")
-
-client = ConvexClient(CONVEX_CLOUD_URL)
 
 def main(epochs: int = 100) -> None:
     train_loader, test_loader = get_data_loader()
@@ -31,7 +20,7 @@ def main(epochs: int = 100) -> None:
 
     trainer = TwoTowerTrainer(user_tower, event_tower)
 
-    for epoch in range(epochs):
+    for epoch in range(0):
         # --- training ---
         total_loss = 0.0
         for user_tags, pos_event_tags, neg_event_tags in train_loader:
@@ -60,12 +49,13 @@ def main(epochs: int = 100) -> None:
         avg_eval = eval_loss / len(test_loader)
         print(f"Epoch {epoch + 1}/{epochs} | train loss: {avg_loss:.4f} | test loss: {avg_eval:.4f}")
 
+    path = "models/"
     torch.save({
         'user_tower': user_tower.state_dict(),
         'event_tower': event_tower.state_dict(),
         'num_tags': num_tags,
         'epochs': epochs,
-    }, 'model.pt')
+    }, path + 'model.pt')
 
     print("Model saved to model.pt")
 

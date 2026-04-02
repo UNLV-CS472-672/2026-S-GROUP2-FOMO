@@ -321,7 +321,7 @@ def main():
     random.seed(42)
     np.random.seed(42)
 
-    out = Path(__file__).parent
+    out = Path("training/training_data")
     out.mkdir(exist_ok=True)
 
     print("Generating users...")

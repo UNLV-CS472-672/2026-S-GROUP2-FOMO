@@ -9,15 +9,12 @@ Supports two modes:
      Pulls live data from Convex.
 
 Usage (offline):
-    train_loader, test_loader = get_data_loader(mode="offline", data_dir="training_data/")
+    train_loader, test_loader = get_data_loader(mode="offline", data_dir="training/")
 
 Usage (online / original behaviour):
     train_loader, test_loader = get_data_loader(mode="online")
 """
 
-import os
-import json
-import random
 from pathlib import Path
 
 import numpy as np
@@ -95,15 +92,9 @@ def _load_offline(data_dir: str, batch_size: int = 32):
 def _load_online(batch_size: int = 32):
     """Pull live data from Convex"""
     # Imports only needed here
-    from convex import ConvexClient
-    from dotenv import load_dotenv
+    from utils.utils import get_client
 
-    load_dotenv()
-    CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
-    if CONVEX_CLOUD_URL is None:
-        raise EnvironmentError("CONVEX_CLOUD_URL not set")
-
-    client = ConvexClient(CONVEX_CLOUD_URL)
+    client = get_client()
 
     # Pull and shuffle users
     users = client.query("data_ml/universal:queryAll", {"table_name": "users"})
@@ -129,7 +120,7 @@ def _load_online(batch_size: int = 32):
 
 def get_data_loader(
     mode: str = "offline",
-    data_dir: str = "training_data/",
+    data_dir: str = "training/training_data/",
     batch_size: int = 32,
 ):
     """
