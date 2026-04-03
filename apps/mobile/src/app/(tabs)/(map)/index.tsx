@@ -1,3 +1,4 @@
+import { EventMarker } from '@/features/map/components/event-marker';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { coordsToH3Cell, pointsToGeoJSON } from '@/features/map/utils/h3';
 import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
@@ -62,6 +63,17 @@ export default function MapScreen() {
             pulsing={{ isEnabled: true, color: '#f59e0b', radius: 50 }}
           />
         )}
+
+        {eventSeeds.map((event, i) => (
+          <EventMarker
+            key={event.name}
+            id={`event-${i}`}
+            coordinate={[event.longitude, event.latitude]}
+            name={event.name}
+            weight={eventSeedAttendees[i] ?? 1}
+            onPress={() => push(`/feed/${coordsToH3Cell(event.longitude, event.latitude)}`)}
+          />
+        ))}
 
         <MapboxGL.ShapeSource id="activity" shape={heatmapGeoJSON}>
           <MapboxGL.HeatmapLayer
