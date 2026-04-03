@@ -112,6 +112,22 @@ export default function MapScreen() {
           <Text className="text-[15px] text-muted-foreground">Search places...</Text>
         </Pressable>
       </View>
+
+      {/* Recenter button */}
+      <Pressable
+        className="absolute right-4 items-center justify-center rounded-full border border-border/80 bg-card/95"
+        style={{ bottom: insets.bottom + 24, width: 44, height: 44 }}
+        onPress={() =>
+          cameraRef.current?.setCamera({
+            centerCoordinate,
+            zoomLevel: 13,
+            animationMode: 'flyTo',
+            animationDuration: 800,
+          })
+        }
+      >
+        <Text style={{ fontSize: 20 }}>⌖</Text>
+      </Pressable>
     </View>
   );
 }
