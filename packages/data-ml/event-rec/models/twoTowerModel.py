@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class UserTower(nn.Module):
-    def __init__(self, input_dim: int, hidden_dim: int = 128, embed_dim: int = 64):
+    def __init__(self, input_dim: int, hidden_dim: int = 128, embed_dim: int = 64) -> None:
         super().__init__()
 
         self.mlp = nn.Sequential(
@@ -18,7 +18,7 @@ class UserTower(nn.Module):
 
 
 class EventTower(nn.Module):
-    def __init__(self, input_dim: int, hidden_dim: int = 128, embed_dim:int = 64):
+    def __init__(self, input_dim: int, hidden_dim: int = 128, embed_dim:int = 64) -> None:
         super().__init__()
 
         self.mlp = nn.Sequential(

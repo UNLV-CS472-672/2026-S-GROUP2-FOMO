@@ -5,7 +5,7 @@ from models.twoTowerModel import UserTower, EventTower
 
 from convex import ConvexClient
 from dotenv import load_dotenv
-from utils.utilities import get_client
+from utils.utils import get_client
 
 
 def get_tag_count(client: ConvexClient) -> int:
@@ -19,10 +19,8 @@ def get_user_weights(users: list[str]) -> list[str]:
 
 def get_events(client: ConvexClient) -> dict[str, np.ndarry]:
     event_weights = None
+    
     return event_weights
-
-# def get_recommendations(user_tower: UserTower, event_tower: EventTower, user_weights: torch.Tensor, event_tensor: torch.Tensor, users: list[str], k=10) -> list[str]:
-
 
 
 def main(users: list[str], update_db: bool, k: int = 10) -> None:
