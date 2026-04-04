@@ -6,7 +6,7 @@ import MapboxGL from '@rnmapbox/maps';
 import { useRouter } from 'expo-router';
 import type { Point } from 'geojson';
 import { useEffect, useMemo, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
@@ -17,6 +17,7 @@ export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
+  const { height: screenHeight } = useWindowDimensions();
   const { theme } = useUniwind();
   const isDark = theme === 'dark';
 
@@ -116,7 +117,7 @@ export default function MapScreen() {
       {/* Recenter button */}
       <Pressable
         className="absolute right-4 items-center justify-center rounded-full border border-border/80 bg-card/95"
-        style={{ bottom: insets.bottom + 24, width: 44, height: 44 }}
+        style={{ bottom: insets.bottom + screenHeight * 0.1, width: 48, height: 48 }}
         onPress={() =>
           cameraRef.current?.setCamera({
             centerCoordinate,
@@ -126,7 +127,7 @@ export default function MapScreen() {
           })
         }
       >
-        <Text style={{ fontSize: 20 }}>⌖</Text>
+        <Text style={{ fontSize: 24, color: '#f59e0b' }}>↗</Text>
       </Pressable>
     </View>
   );
