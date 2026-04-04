@@ -48,11 +48,19 @@ export const upsertUserTagWeights = mutation({
 });
 
 export const getUserTagWeights = query({
-  args: { userID: v.id('users') },
-  handler: async (ctx, { userID }) => {
-    return await ctx.db
-      .query('userTagWeights')
-      .withIndex('by_userId', (q) => q.eq('userId', userID))
-      .unique();
+  args: { userIDs: v.array(v.id('users')) },
+  handler: async (ctx, { userIDs }) => {
+    const results = await Promise.all(
+      userIDs.map(async (userID) => {
+        const doc = await ctx.db
+          .query('userTagWeights')
+          .withIndex('by_userId', (q) => q.eq('userId', userID))
+          .unique();
+
+        return doc?.weights ?? null;
+      })
+    );
+
+    return results;
   },
 });

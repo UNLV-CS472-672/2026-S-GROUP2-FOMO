@@ -7,45 +7,67 @@ from convex import ConvexClient
 from dotenv import load_dotenv
 from utils.utils import get_client
 
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def get_tag_count(client: ConvexClient) -> int:
+def get_tag_count(client: ConvexClient) -> tuple[int, dict[str, int]]:
     tags = client.query("data_ml/universal:queryAll", {"table_name": "tags"})
-    return len(tags)
 
-def get_user_weights(users: list[str]) -> list[str]:
-    user_weights = None # temporary
+    tag_id_to_idx = {tag["_id"]: i for i, tag in enumerate(tags)}
 
-    return user_weights
+    return len(tags), tag_id_to_idx
 
-def get_events(client: ConvexClient) -> dict[str, np.ndarry]:
-    event_weights = None
+def get_user_weights(client: ConvexClient, users: list[str]) -> list[list[float]]:
+    user_weights = client.query("data_ml/eventRec:getUserTagWeights", {"userIDs": users})
 
-    return event_weights
+    user_weight_tensor = torch.from_numpy(np.array(user_weights, dtype=np.float32))
+    return user_weight_tensor
+
+# Needs to be updated to only provide recs for events not already ended
+def get_events(client: ConvexClient, num_tags: int, tag_id_to_idx: dict[str, int]) -> dict[str, np.ndarry]:
+    all_events = client.query("data_ml/universal:queryAll", {"table_name": "events"})
+
+    event_ids = [event["_id"] for event in all_events]
+
+    result: dict[str, np.ndarray] = {}
+    # Get tags associated with the events and create a onehot of the tags for the event
+    for event_id in event_ids:
+        vec = np.zeros(num_tags, dtype=np.float32)
+        event_tags = client.query("data_ml/eventRec:getByEventId", {"eventId": event_id})
+        for row in event_tags:
+            tag_id = row["tagId"]
+
+            if tag_id in tag_id_to_idx:
+                vec[tag_id_to_idx[tag_id]] = 1.0
+
+        result[event_id] = vec
+
+    return result
 
 
 def main(users: list[str], update_db: bool, k: int = 10) -> None:
     client = get_client()
 
     # ── Preprocessing
-    tag_count = get_tag_count(client)
+    tag_count, tag_id_to_idx = get_tag_count(client)
 
     if len(users) == 1 and users[0] == "ALL":
         all_users = client.query("data_ml/universal:queryAll", {"table_name": "users"})
         users = [row["_id"] for row in all_users]
 
-    user_weights = get_user_weights(users)
-    events = get_events(client)
+    # user_weights returns a tensor of the user weights (users, num_tags)
+    user_weights = get_user_weights(client, users).to(DEVICE)
+    events = get_events(client, tag_count, tag_id_to_idx)
 
     event_ids = list(events.keys())
 
     event_matrix_multihot = np.stack([events[event_id] for event_id in event_ids])
-    event_tensor = torch.from_numpy(event_matrix_multihot)
+    event_tensor = torch.from_numpy(event_matrix_multihot).to(DEVICE)
 
     # Load model
-    user_tower = UserTower(tag_count)
-    event_tower = EventTower(tag_count)
+    user_tower = UserTower(tag_count).to(DEVICE)
+    event_tower = EventTower(tag_count).to(DEVICE)
 
-    model_weights = torch.load("model.pt")
+    model_weights = torch.load("models/model.pt", map_location=DEVICE)
 
     user_tower.load_state_dict(model_weights['user_tower'])
     event_tower.load_state_dict(model_weights['event_tower'])
@@ -58,7 +80,7 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
     user_logits = user_tower(user_weights)
     event_logits = event_tower(event_tensor)
 
-    scores = user_logits @ event_logits.T
+    scores = (user_logits @ event_logits.T + 1) / 2
 
     top_scores, top_indices = torch.topk(scores, k=k, dim=1)
 
@@ -74,7 +96,10 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
         pass
     else:
         for user_id in users:
-            print(f"{user_id}: {recommendations[user_id]}")
+            print(f"\nUser {user_id}:")
+            for rank, rec in enumerate(recommendations[user_id], start=1):
+                event_id, score = next(iter(rec.items()))
+                print(f"  {rank}. {event_id}: {score:.4f}")
 
 
 USERS = ["ALL"]
