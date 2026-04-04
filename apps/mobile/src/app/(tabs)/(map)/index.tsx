@@ -12,6 +12,17 @@ import { useUniwind } from 'uniwind';
 
 MapboxGL.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
 
+const MIN_WEIGHT = Math.min(...eventSeedAttendees);
+const MAX_WEIGHT = Math.max(...eventSeedAttendees);
+
+// hardcoded from feed
+const EVENT_IMAGES = [
+  require('@/assets/images/rigrig.jpg'),
+  require('@/assets/images/jonah-mog.png'),
+  require('@/assets/images/git-learning-class.png'),
+  require('@/assets/images/rate-my-date.jpg'),
+];
+
 export default function MapScreen() {
   const { push } = useRouter();
   const insets = useSafeAreaInsets();
@@ -70,8 +81,10 @@ export default function MapScreen() {
             key={event.name}
             id={`event-${i}`}
             coordinate={[event.longitude, event.latitude]}
-            name={event.name}
+            image={EVENT_IMAGES[i % EVENT_IMAGES.length]}
             weight={eventSeedAttendees[i] ?? 1}
+            minWeight={MIN_WEIGHT}
+            maxWeight={MAX_WEIGHT}
             onPress={() => push(`/feed/${coordsToH3Cell(event.longitude, event.latitude)}`)}
           />
         ))}

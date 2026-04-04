@@ -1,57 +1,72 @@
 import MapboxGL from '@rnmapbox/maps';
-import { Pressable, Text, View } from 'react-native';
+import { Image, ImageSourcePropType, Pressable, View } from 'react-native';
 
 interface EventMarkerProps {
   id: string;
   coordinate: [number, number];
-  name: string;
+  image: ImageSourcePropType;
+  // Raw attendee weight — same value passed to the heatmap layer (0–6 scale).
   weight: number;
+  minWeight: number;
+  maxWeight: number;
   onPress: () => void;
 }
 
-// Extracts up to 2 initials from an event name (e.g. "Baby Keem Concert" → "BK").
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? '')
-    .join('');
-}
-
-// Renders a map pin styled to match the heatmap.
-// Opacity and size scale with the same 0–6 weight used by the heatmap layer.
-export function EventMarker({ id, coordinate, name, weight, onPress }: EventMarkerProps) {
-  // Normalize to 0–1 using the same max weight (6) as the heatmap weight expression.
-  const t = Math.min(weight / 6, 1);
-  const size = 32 + t * 40;
-  const opacity = 0.3 + t * 0.7;
+/*
+ * function provides event markers similar to life360
+ * size scales with heatmap layer (one to one match)
+ */
+export function EventMarker({
+  id,
+  coordinate,
+  image,
+  weight,
+  minWeight,
+  maxWeight,
+  onPress,
+}: EventMarkerProps) {
+  // normalize against actual min/max so the full range is always used
+  const t = (weight - minWeight) / (maxWeight - minWeight || 1);
+  const size = 44 + t * 44;
+  const stemWidth = size * 0.28;
+  const stemHeight = size * 0.22;
 
   return (
-    <MapboxGL.MarkerView id={id} coordinate={coordinate} allowOverlap anchor={{ x: 0.5, y: 0.5 }}>
-      <Pressable onPress={onPress}>
+    <MapboxGL.MarkerView id={id} coordinate={coordinate} allowOverlap anchor={{ x: 0.5, y: 1 }}>
+      <Pressable onPress={onPress} style={{ alignItems: 'center' }}>
+        {/* Hover shadow + circle */}
         <View
           style={{
             width: size,
             height: size,
             borderRadius: size / 2,
-            borderWidth: 1 + t * 2,
-            borderColor: `rgba(245,158,11,${opacity})`,
-            backgroundColor: `rgba(245,158,11,${opacity * 0.25})`,
-            alignItems: 'center',
-            justifyContent: 'center',
+            borderWidth: 2.5,
+            borderColor: '#FF6B47',
+            overflow: 'hidden',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.35,
+            shadowRadius: 6,
+            elevation: 10,
           }}
         >
-          <Text
-            style={{
-              color: `rgba(245,158,11,${opacity})`,
-              fontWeight: '700',
-              fontSize: 10 + t * 6,
-            }}
-            numberOfLines={1}
-          >
-            {getInitials(name)}
-          </Text>
+          <Image source={image} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
         </View>
+
+        {/* Stem triangle */}
+        <View
+          style={{
+            width: 0,
+            height: 0,
+            borderLeftWidth: stemWidth / 2,
+            borderRightWidth: stemWidth / 2,
+            borderTopWidth: stemHeight,
+            borderLeftColor: 'transparent',
+            borderRightColor: 'transparent',
+            borderTopColor: '#FF6B47',
+            marginTop: -1,
+          }}
+        />
       </Pressable>
     </MapboxGL.MarkerView>
   );
