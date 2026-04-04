@@ -29,8 +29,8 @@ export function useLogin() {
 
   // derived state
   const isBusy = status !== 'idle';
-  const shouldShowAuthLoader = !isLoaded || Boolean(isSignedIn);
-  const authLoadingMessage = isSignedIn ? 'Finishing sign in...' : 'Loading authentication...';
+  const shouldShowAuthLoader = !isLoaded;
+  const authLoadingMessage = 'Finishing sign in...';
 
   // ------- state setters -------
   const clearErrors = () => setErrors(null);

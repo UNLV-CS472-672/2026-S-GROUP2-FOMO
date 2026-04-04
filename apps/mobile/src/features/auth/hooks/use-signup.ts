@@ -71,8 +71,8 @@ export function useSignup() {
   const [usernameEntryStep, setUsernameEntryStep] = useState<UsernameEntryStep>('password');
 
   // derived state
-  const shouldShowAuthLoader = !isLoaded || Boolean(isSignedIn);
-  const authLoadingMessage = isSignedIn ? 'Finishing sign in...' : 'Loading authentication...';
+  const shouldShowAuthLoader = !isLoaded;
+  const authLoadingMessage = 'Finishing sign in...';
   const isBusy = status !== 'idle';
 
   // ------- state setters -------
