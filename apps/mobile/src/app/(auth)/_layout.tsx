@@ -1,4 +1,4 @@
-import { AuthHeaderBackButton } from '@/features/auth/components/header-back-button';
+import { AppHeaderBackButton } from '@/components/navigation/header-back-button';
 import { Stack } from 'expo-router';
 
 export default function AuthLayout() {
@@ -7,6 +7,7 @@ export default function AuthLayout() {
       screenOptions={{
         headerShown: true,
         headerTitleAlign: 'center',
+        headerLeft: () => <AppHeaderBackButton />,
       }}
     >
       <Stack.Screen name="welcome" options={{ headerShown: false }} />
@@ -14,7 +15,6 @@ export default function AuthLayout() {
         name="login"
         options={{
           title: 'Log in',
-          headerLeft: () => <AuthHeaderBackButton />,
         }}
       />
       <Stack.Screen
@@ -22,7 +22,6 @@ export default function AuthLayout() {
         options={{
           title: 'Sign up',
           headerBackButtonMenuEnabled: true,
-          headerLeft: () => <AuthHeaderBackButton />,
         }}
       />
     </Stack>

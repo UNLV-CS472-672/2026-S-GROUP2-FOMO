@@ -90,4 +90,10 @@ export default defineSchema({
     .index('by_userAId', ['userAId'])
     .index('by_userBId', ['userBId'])
     .index('by_userA_userB', ['userAId', 'userBId']),
+
+  userTagWeights: defineTable({
+    userId: v.id('users'),
+    weights: v.array(v.number()),
+    updatedAt: v.number(),
+  }).index('by_userId', ['userId']),
 });

@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from typing import Optional
 
 from convex import ConvexClient
 from dotenv import load_dotenv
@@ -9,26 +10,35 @@ load_dotenv()
 
 CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
 
-if CONVEX_CLOUD_URL is None:
-    raise EnvironmentError("Required environment variable CONVEX_CLOUD_URL is not set")
+client: Optional[ConvexClient] = (
+    ConvexClient(CONVEX_CLOUD_URL) if CONVEX_CLOUD_URL else None
+)
 
-client = ConvexClient(CONVEX_CLOUD_URL)
+def get_client() -> ConvexClient:
+    if client is None:
+        raise RuntimeError("ConvexClient not initialized")
+    return client
 
 
 # Checks if a userid exists in the "users" table.
 def user_exists(user_id: str) -> bool:
-    return client.query("data_ml/users:userExists", {"userId": user_id}) is not None
-    
+    return get_client().query("data_ml/users:userExists", {"userId": user_id}) is not None
+
+# Get all unique userIds that have at least one row in "usersToEvents"
+def get_user_ids_with_event_attendance() -> list[str]:
+    # Cast to a list[str] to satisfy myPy since Convex returns Any.
+    user_ids: list[str] = get_client().query("data_ml/users:getUserIdsWithEventAttendance",{})
+    return user_ids
 
 # Combines "usersToEvents" and "events" into a single dataframe.
 def join_user_events() -> pd.DataFrame:
 
     # Store "usersToEvents" and "events" into dataframes.
-    usersToEvents_data = client.query("data_ml/universal:queryAll", {"table_name": "usersToEvents"})
+    usersToEvents_data = get_client().query("data_ml/universal:queryAll", {"table_name": "usersToEvents"})
     usersToEvents_df = pd.json_normalize(usersToEvents_data)
     usersToEvents_df = usersToEvents_df[["eventId", "userId"]]
 
-    events_data = client.query("data_ml/universal:queryAll", {"table_name": "events"})
+    events_data = get_client().query("data_ml/universal:queryAll", {"table_name": "events"})
     events_df = pd.json_normalize(events_data)
     events_df = events_df[["_id", "name"]]
 
@@ -57,11 +67,11 @@ def raw_matrix_eventTags() -> pd.DataFrame:
     user_events_df = join_user_events()
 
     # Join "events" and "tags" dataframes.
-    eventTags_json = client.query("data_ml/universal:queryAll", {"table_name": "eventTags"})
+    eventTags_json = get_client().query("data_ml/universal:queryAll", {"table_name": "eventTags"})
     eventTags_df = pd.json_normalize(eventTags_json)
     eventTags_df = eventTags_df[["eventId", "tagId"]]
 
-    tags_json = client.query("data_ml/universal:queryAll", {"table_name": "tags"})
+    tags_json = get_client().query("data_ml/universal:queryAll", {"table_name": "tags"})
     tags_df = pd.json_normalize(tags_json)
     tags_df = tags_df[["_id", "name"]]
 
@@ -83,11 +93,11 @@ def raw_matrix_eventTags() -> pd.DataFrame:
 def raw_matrix_postTags() -> pd.DataFrame:
 
     # Join "users" and "posts" dataframes.
-    users_json = client.query("data_ml/universal:queryAll", {"table_name": "users"})
+    users_json = get_client().query("data_ml/universal:queryAll", {"table_name": "users"})
     users_df = pd.json_normalize(users_json)
     users_df = users_df[["_id"]]
 
-    posts_json = client.query("data_ml/universal:queryAll", {"table_name": "posts"})
+    posts_json = get_client().query("data_ml/universal:queryAll", {"table_name": "posts"})
     posts_df = pd.json_normalize(posts_json)
     posts_df = posts_df[["_id", "authorId"]]
 
@@ -96,11 +106,11 @@ def raw_matrix_postTags() -> pd.DataFrame:
     users_posts_df = users_posts_df.rename(columns={"_id_x": "user_id"})
 
     # Join "postTags" and "tags" dataframes
-    postTags_json = client.query("data_ml/universal:queryAll", {"table_name": "postTags"})
+    postTags_json = get_client().query("data_ml/universal:queryAll", {"table_name": "postTags"})
     postTags_df = pd.json_normalize(postTags_json)
     postTags_df = postTags_df[["postId", "tagId"]]
 
-    tags_json = client.query("data_ml/universal:queryAll", {"table_name": "tags"})
+    tags_json = get_client().query("data_ml/universal:queryAll", {"table_name": "tags"})
     tags_df = pd.json_normalize(tags_json)
     tags_df = tags_df[["_id", "name"]]
 
@@ -165,7 +175,7 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> N
     top_sim_scores = [
         {"userId": friendId, "score": float(score)}
         for friendId, score in top_sim_scores["similarity_score"].items() 
-        if client.query("data_ml/friends:friendExists", {"userAId": userId, "userBId": friendId}) is None
+        if get_client().query("data_ml/friends:friendExists", {"userAId": userId, "userBId": friendId},) is None
     ]
 
     # If list is larger than rec_amt, truncate.
@@ -173,16 +183,17 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> N
     top_sim_scores = top_sim_scores[:rec_amt]
     
     # Add row if user doesn't have any recommended friends, if they do, update names if values changed.
-    client.mutation("data_ml/friendRecs:upsert", {"userId": userId,
-                                          "recs": top_sim_scores
-                                          })  
+    get_client().mutation(
+        "data_ml/friendRecs:upsert",
+        {"userId": userId, "recs": top_sim_scores},
+    )
 
 
 
-def main(user: str, rec_amt: int, seed: bool) -> None:
+def main_one_user(user: str, rec_amt: int, seed: bool) -> None:
     
     if seed:
-        client.mutation("seed:seed")    
+        get_client().mutation("seed:seed")    
         
     if not user_exists(user):
         raise Exception(f"\"{user}\" cannot be found in users.")
@@ -202,11 +213,38 @@ def main(user: str, rec_amt: int, seed: bool) -> None:
     simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
     upsert_friend_recs(simscores_weighted, user, rec_amt)
 
+# For all users with event attendance. We can change this to all users
+# in general in the future.
+def main_all_attendees(rec_amt: int, seed: bool) -> None:
+    if seed:
+        get_client().mutation("seed:seed")
+
+    user_ids = get_user_ids_with_event_attendance()
+    if not user_ids:
+        raise Exception("No users with event attendance found in `usersToEvents`.")
+
+    # Build all raw matrices once and only generate similarity scores for each user
+    raw_events_df = raw_matrix_events()
+    raw_eventTags_df = raw_matrix_eventTags()
+    raw_postTags_df = raw_matrix_postTags()
+
+    for user_id in user_ids:
+        if not user_exists(user_id):
+            raise Exception(f"\"{user_id}\" cannot be found in users.")
+
+        simscores_events_df = similarity_score(raw_events_df, user_id)
+        simscores_eventTags_df = similarity_score(raw_eventTags_df, user_id)
+        simscores_postTags_df = similarity_score(raw_postTags_df, user_id)
+
+        simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
+
+        upsert_friend_recs(simscores_weighted, user_id, rec_amt)
+
 
 USER     = "n170a6cc33hgr22xbxsmnh1txd82713v"  # By user_id.
-REC_AMT  = 5         # friendRec schema only currently supports 5. 
+REC_AMT  = 5         # friendRecs schema only currently supports 5. 
 SEED     = False     # Dictates if fake data needs to be populated into Convex.
 
 if __name__ == "__main__":
-    main(USER, REC_AMT, SEED)
+    main_all_attendees(REC_AMT, SEED)
 

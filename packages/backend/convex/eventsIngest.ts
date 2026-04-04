@@ -77,6 +77,7 @@ type SyncTicketmasterDryRunResult = {
     stateCode: string;
     countryCode: string;
   };
+  categoryFilter: string | null;
   pagesProcessed: number;
   fetchedCount: number;
   consideredCount: number;
@@ -93,6 +94,7 @@ type SyncTicketmasterRunResult = {
     stateCode: string;
     countryCode: string;
   };
+  categoryFilter: string | null;
   pagesProcessed: number;
   fetchedCount: number;
   consideredCount: number;
@@ -102,6 +104,33 @@ type SyncTicketmasterRunResult = {
 } & UpsertNormalizedEventsResult;
 
 type SyncTicketmasterResult = SyncTicketmasterDryRunResult | SyncTicketmasterRunResult;
+
+const TICKETMASTER_SEGMENTS = {
+  music: 'Music',
+  concerts: 'Music',
+  concert: 'Music',
+  sport: 'Sports',
+  sports: 'Sports',
+  arts: 'Arts & Theatre',
+  theatre: 'Arts & Theatre',
+  theater: 'Arts & Theatre',
+  film: 'Film',
+  movie: 'Film',
+  movies: 'Film',
+  misc: 'Miscellaneous',
+  miscellaneous: 'Miscellaneous',
+} as const;
+
+function resolveTicketmasterCategoryFilter(category?: string): string | null {
+  const trimmed = category?.trim();
+  if (!trimmed) return null;
+
+  const normalized = trimmed.toLowerCase();
+  const mapped = TICKETMASTER_SEGMENTS[normalized as keyof typeof TICKETMASTER_SEGMENTS];
+  if (mapped) return mapped;
+
+  return trimmed;
+}
 
 function parseTimestamp(dateTime?: string, localDate?: string): number | null {
   if (dateTime) {
@@ -241,6 +270,7 @@ async function fetchTicketmasterEventsPage(
     city,
     stateCode,
     countryCode,
+    categoryFilter,
     size,
     page,
     sort,
@@ -248,6 +278,7 @@ async function fetchTicketmasterEventsPage(
     city: string;
     stateCode: string;
     countryCode: string;
+    categoryFilter?: string | null;
     size: number;
     page: number;
     sort: string;
@@ -264,6 +295,9 @@ async function fetchTicketmasterEventsPage(
     page: String(page),
     sort,
   });
+  if (categoryFilter) {
+    params.set('segmentName', categoryFilter);
+  }
 
   const response = await fetch(`https://app.ticketmaster.com/discovery/v2/events.json?${params}`);
   if (!response.ok) {
@@ -331,6 +365,7 @@ export const syncTicketmasterLasVegas = action({
     eventCount: v.optional(v.number()),
     sort: v.optional(v.string()),
     dryRun: v.optional(v.boolean()),
+    category: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<SyncTicketmasterResult> => {
     const apiKey = process.env.TICKETMASTER_API_KEY;
@@ -344,6 +379,7 @@ export const syncTicketmasterLasVegas = action({
     const sort = args.sort ?? 'relevance,desc';
     const targetEventCount = Math.max(1, Math.floor(args.eventCount ?? 100));
     const dryRun = args.dryRun ?? false;
+    const categoryFilter = resolveTicketmasterCategoryFilter(args.category);
     const searchPageSize = 100;
 
     const normalizedEvents: NormalizedEvent[] = [];
@@ -366,6 +402,7 @@ export const syncTicketmasterLasVegas = action({
         city,
         stateCode,
         countryCode,
+        categoryFilter,
         size: searchPageSize,
         page: currentPage,
         sort,
@@ -447,6 +484,7 @@ export const syncTicketmasterLasVegas = action({
       return {
         dryRun: true,
         location: { city, stateCode, countryCode },
+        categoryFilter,
         pagesProcessed,
         fetchedCount,
         consideredCount,
@@ -467,6 +505,7 @@ export const syncTicketmasterLasVegas = action({
     return {
       dryRun: false,
       location: { city, stateCode, countryCode },
+      categoryFilter,
       pagesProcessed,
       fetchedCount,
       consideredCount,

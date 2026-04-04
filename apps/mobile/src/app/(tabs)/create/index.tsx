@@ -23,8 +23,10 @@ export default function CreateScreen() {
           rowGap: 12,
         }}
       >
-        <Text className="text-[30px] font-bold leading-8 text-app-text">Create</Text>
-        <Text className="text-base leading-6 text-app-text">Choose what you want to publish.</Text>
+        <Text className="text-[30px] font-bold leading-8 text-foreground">Create</Text>
+        <Text className="text-base leading-6 text-foreground">
+          Choose what you want to publish.
+        </Text>
 
         {isGuestMode ? (
           <GuestMode />
@@ -39,7 +41,7 @@ export default function CreateScreen() {
               <ButtonText variant="secondary" className="text-xl">
                 Create Event
               </ButtonText>
-              <ButtonText className="mt-1 text-base leading-6 text-app-text">
+              <ButtonText className="mt-1 text-base leading-6 text-foreground">
                 Host an event with location, time, and details.
               </ButtonText>
             </Button>
@@ -53,7 +55,7 @@ export default function CreateScreen() {
               <ButtonText variant="secondary" className="text-xl">
                 Create Post
               </ButtonText>
-              <ButtonText className="mt-1 text-base leading-6 text-app-text">
+              <ButtonText className="mt-1 text-base leading-6 text-foreground">
                 Share an update, photo, or thought with the community.
               </ButtonText>
             </Button>

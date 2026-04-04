@@ -21,7 +21,17 @@
     "scope-enum": [
       2,
       "always",
-      ["backend", "mobile", "web", "deps", "config", "api"]
+      [
+        "backend",
+        "mobile",
+        "web",
+        "deps",
+        "config",
+        "api",
+        "data-ml",
+        "theme",
+        "env"
+      ]
     ],
     "subject-case": [0, "never", ["sentence-case"]]
   }
