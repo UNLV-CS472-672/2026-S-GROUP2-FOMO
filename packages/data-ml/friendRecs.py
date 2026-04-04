@@ -241,7 +241,7 @@ def main_all_attendees(rec_amt: int, seed: bool) -> None:
 
 USER     = "n170a6cc33hgr22xbxsmnh1txd82713v"  # By user_id.
 REC_AMT  = 5         # friendRecs schema only currently supports 5. 
-SEED     = False     # Dictates if fake data needs to be populated into Convex.
+SEED     = True     # Dictates if fake data needs to be populated into Convex.
 
 if __name__ == "__main__":
     main_all_attendees(REC_AMT, SEED)

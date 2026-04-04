@@ -20,7 +20,14 @@ export default function MapScreen() {
   const isDark = theme === 'dark';
 
   const heatmapGeoJSON = useMemo(
-    () => pointsToGeoJSON(eventSeeds.map((e, i) => ({ ...e, weight: eventSeedAttendees[i] ?? 1 }))),
+    () =>
+      pointsToGeoJSON(
+        eventSeeds.map((e, i) => ({
+          latitude: e.location.latitude,
+          longitude: e.location.longitude,
+          weight: eventSeedAttendees[i] ?? 1,
+        }))
+      ),
     []
   );
 
