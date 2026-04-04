@@ -15,6 +15,12 @@ export default defineSchema({
     description: v.string(),
     startDate: v.number(), // ms since epoch
     endDate: v.number(), // ms since epoch
+    // location: v.object({
+    //     latitude: v.number(),
+    //     longitude: v.number(),
+    //     h3_index: v.number(),
+    //   }),
+
     latitude: v.number(),
     longitude: v.number(),
   })
