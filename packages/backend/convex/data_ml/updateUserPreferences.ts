@@ -20,3 +20,13 @@ export const getByEventId = query({
       .collect();
   },
 });
+
+export const getUserTagWeights = query({
+  args: { userID: v.id('userTagWeights') },
+  handler: async (ctx, { userID }) => {
+    return await ctx.db
+      .query('userTagWeights')
+      .withIndex('by_userId', (q) => q.eq('weights', weights))
+      .collect();
+  },
+});

@@ -19,7 +19,7 @@ def get_user_weights(users: list[str]) -> list[str]:
 
 def get_events(client: ConvexClient) -> dict[str, np.ndarry]:
     event_weights = None
-    
+
     return event_weights
 
 
