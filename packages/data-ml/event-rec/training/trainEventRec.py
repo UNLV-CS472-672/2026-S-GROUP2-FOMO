@@ -1,4 +1,5 @@
 import torch
+from pathlib import Path
 from dotenv import load_dotenv
 
 from models.twoTowerModel import UserTower, EventTower
@@ -7,7 +8,7 @@ from data.eventRecDataset import get_data_loader
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def main(epochs: int = 100) -> None:
+def main(epochs: int = 100, model_path: str | None = None) -> None:
     train_loader, test_loader = get_data_loader()
 
     user_tags, _, _ = next(iter(train_loader))
@@ -16,46 +17,63 @@ def main(epochs: int = 100) -> None:
     user_tower = UserTower(input_dim=num_tags).to(DEVICE)
     event_tower = EventTower(input_dim=num_tags).to(DEVICE)
 
+    if model_path is not None:
+        checkpoint = torch.load(model_path, map_location=DEVICE)
+        user_tower.load_state_dict(checkpoint['user_tower'])
+        event_tower.load_state_dict(checkpoint['event_tower'])
+        print(f"Loaded model from {model_path}")
+    else:
+        print("Training from scratch")
+
     trainer = TwoTowerTrainer(user_tower, event_tower)
 
-    for epoch in range(0):
-        # --- training ---
-        total_loss = 0.0
-        for user_tags, pos_event_tags, neg_event_tags in train_loader:
-            user_tags = user_tags.to(DEVICE)
-            pos_event_tags = pos_event_tags.to(DEVICE)
-            neg_event_tags = neg_event_tags.to(DEVICE)
+    def save_model(epochs_completed: int) -> None:
+        models_dir = Path("models")
+        existing = len(list(models_dir.glob("model*.pt")))
+        save_path = models_dir / f"model{existing + 1}.pt"
+        torch.save({
+            'user_tower': user_tower.state_dict(),
+            'event_tower': event_tower.state_dict(),
+            'num_tags': num_tags,
+            'epochs': epochs_completed,
+        }, save_path)
+        print(f"Model saved to {save_path}")
 
-            loss = trainer.train(user_tags, pos_event_tags, neg_event_tags)
-            total_loss += loss
-
-        avg_loss = total_loss / len(train_loader)
-
-        # --- evaluation ---
-        eval_loss = 0.0
-        with torch.no_grad():
-            for user_tags, pos_event_tags, neg_event_tags in test_loader:
+    try:
+        for epoch in range(epochs):
+            # --- training ---
+            total_loss = 0.0
+            for user_tags, pos_event_tags, neg_event_tags in train_loader:
                 user_tags = user_tags.to(DEVICE)
                 pos_event_tags = pos_event_tags.to(DEVICE)
                 neg_event_tags = neg_event_tags.to(DEVICE)
 
-                user_vec = user_tower(user_tags)
-                pos_vec = event_tower(pos_event_tags)
-                neg_vec = event_tower(neg_event_tags)
-                eval_loss += trainer.bpr_loss(user_vec, pos_vec, neg_vec).item()
+                loss = trainer.train(user_tags, pos_event_tags, neg_event_tags)
+                total_loss += loss
 
-        avg_eval = eval_loss / len(test_loader)
-        print(f"Epoch {epoch + 1}/{epochs} | train loss: {avg_loss:.4f} | test loss: {avg_eval:.4f}")
+            avg_loss = total_loss / len(train_loader)
 
-    path = "models/"
-    torch.save({
-        'user_tower': user_tower.state_dict(),
-        'event_tower': event_tower.state_dict(),
-        'num_tags': num_tags,
-        'epochs': epochs,
-    }, path + 'model.pt')
+            # --- evaluation ---
+            eval_loss = 0.0
+            with torch.no_grad():
+                for user_tags, pos_event_tags, neg_event_tags in test_loader:
+                    user_tags = user_tags.to(DEVICE)
+                    pos_event_tags = pos_event_tags.to(DEVICE)
+                    neg_event_tags = neg_event_tags.to(DEVICE)
 
-    print("Model saved to model.pt")
+                    user_vec = user_tower(user_tags)
+                    pos_vec = event_tower(pos_event_tags)
+                    neg_vec = event_tower(neg_event_tags)
+                    eval_loss += trainer.bpr_loss(user_vec, pos_vec, neg_vec).item()
+
+            avg_eval = eval_loss / len(test_loader)
+            print(f"Epoch {epoch + 1}/{epochs} | train loss: {avg_loss:.4f} | test loss: {avg_eval:.4f}")
+
+        save_model(epochs)
+
+    except KeyboardInterrupt:
+        print("\nInterrupted — saving current model state...")
+        save_model(epoch + 1)
 
 if __name__ == "__main__":
-    main()
+    main(model_path="models/model.pt")
