@@ -6,7 +6,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useConvexAuth } from 'convex/react';
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
@@ -23,20 +23,11 @@ function RootNavigator() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { isGuestMode, isGuestLoading } = useGuest();
   const segments = useSegments();
-  const [convexTimedOut, setConvexTimedOut] = useState(false);
-
-  useEffect(() => {
-    if (!isLoading) return;
-    const timer = setTimeout(() => setConvexTimedOut(true), 5000);
-    return () => clearTimeout(timer);
-  }, [isLoading]);
 
   const authState =
-    !isClerkLoaded ||
-    isGuestLoading ||
-    (isSignedIn && !convexTimedOut && (isLoading || !isAuthenticated))
+    !isClerkLoaded || isGuestLoading || isLoading || (isSignedIn && !isAuthenticated)
       ? 'loading'
-      : isAuthenticated || (isSignedIn && convexTimedOut)
+      : isAuthenticated
         ? 'authenticated'
         : isGuestMode
           ? 'guest'
