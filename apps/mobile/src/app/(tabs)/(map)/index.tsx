@@ -43,6 +43,7 @@ export default function MapScreen() {
     cameraRef.current?.setCamera({
       centerCoordinate,
       zoomLevel: DEFAULT_ZOOM_LEVEL,
+      heading: 0,
       animationMode: 'flyTo',
       animationDuration: 1200,
     });
@@ -62,6 +63,7 @@ export default function MapScreen() {
           defaultSettings={{
             centerCoordinate,
             zoomLevel: DEFAULT_ZOOM_LEVEL,
+            heading: 0,
           }}
         />
         {locationGranted && (
@@ -140,6 +142,7 @@ export default function MapScreen() {
           cameraRef.current?.setCamera({
             centerCoordinate,
             zoomLevel: DEFAULT_ZOOM_LEVEL,
+            heading: 0,
             animationMode: 'flyTo',
             animationDuration: 800,
           })

@@ -33,38 +33,29 @@ export function EventMarker({
 
   return (
     <MapboxGL.MarkerView id={id} coordinate={coordinate} allowOverlap anchor={{ x: 0.5, y: 1 }}>
-      <Pressable onPress={onPress} style={{ alignItems: 'center' }}>
-        {/* Hover shadow + circle */}
+      <Pressable onPress={onPress} className="items-center">
         <View
+          className="overflow-hidden rounded-full border-2 border-primary bg-background shadow-sm"
           style={{
             width: size,
             height: size,
-            borderRadius: size / 2,
-            borderWidth: 2.5,
-            borderColor: '#FF6B47',
-            overflow: 'hidden',
-            shadowColor: '#000',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.35,
             shadowRadius: 6,
             elevation: 10,
           }}
         >
-          <Image source={image} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+          <Image source={image} className="h-full w-full" resizeMode="cover" />
         </View>
 
-        {/* Stem triangle */}
         <View
+          className="-mt-px border-l-transparent border-r-transparent border-t-primary"
           style={{
             width: 0,
             height: 0,
             borderLeftWidth: stemWidth / 2,
             borderRightWidth: stemWidth / 2,
             borderTopWidth: stemHeight,
-            borderLeftColor: 'transparent',
-            borderRightColor: 'transparent',
-            borderTopColor: '#FF6B47',
-            marginTop: -1,
           }}
         />
       </Pressable>
