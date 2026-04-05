@@ -5,7 +5,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
 import MapboxGL from '@rnmapbox/maps';
 import { useRouter } from 'expo-router';
-import type { Point } from 'geojson';
 import { useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -57,10 +56,6 @@ export default function MapScreen() {
         logoEnabled={false}
         attributionEnabled={false}
         scaleBarEnabled={false}
-        onPress={(feature) => {
-          const [lng, lat] = (feature.geometry as Point).coordinates;
-          push(`/feed/${coordsToH3Cell(lng, lat)}`);
-        }}
       >
         <MapboxGL.Camera
           ref={cameraRef}
@@ -86,7 +81,7 @@ export default function MapScreen() {
             weight={eventSeedAttendees[i] ?? 1}
             minWeight={MIN_WEIGHT}
             maxWeight={MAX_WEIGHT}
-            onPress={() => push(`/feed/${coordsToH3Cell(event.longitude, event.latitude)}`)}
+            onPress={() => push(`/feed/event/${coordsToH3Cell(event.longitude, event.latitude)}`)}
           />
         ))}
 
@@ -130,8 +125,17 @@ export default function MapScreen() {
 
       {/* Recenter button */}
       <Pressable
-        className="absolute right-4 items-center justify-center rounded-full border border-border/80 bg-card/95"
-        style={{ bottom: insets.bottom + screenHeight * 0.1, width: 48, height: 48 }}
+        accessibilityLabel="Recenter map on your location"
+        accessibilityRole="button"
+        android_ripple={{ color: 'rgba(245,158,11,0.16)', radius: 27 }}
+        className="absolute right-4 size-[54px] items-center justify-center rounded-full border border-border/80 bg-card/95 shadow-sm"
+        disabled={!hasResolvedLocation}
+        hitSlop={10}
+        style={({ pressed }) => [
+          { bottom: insets.bottom + screenHeight * 0.1 },
+          pressed && { opacity: 0.9, transform: [{ scale: 0.96 }] },
+          !hasResolvedLocation && { opacity: 0.55 },
+        ]}
         onPress={() =>
           cameraRef.current?.setCamera({
             centerCoordinate,
@@ -141,7 +145,9 @@ export default function MapScreen() {
           })
         }
       >
-        <MaterialIcons name="near-me" size={22} color="#f59e0b" />
+        <View className="size-[34px] items-center justify-center rounded-full bg-amber-500/10">
+          <MaterialIcons name="my-location" size={20} color="#f59e0b" />
+        </View>
       </Pressable>
     </View>
   );
