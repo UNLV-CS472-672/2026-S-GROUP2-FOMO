@@ -1,6 +1,7 @@
 import { EventMarker } from '@/features/map/components/event-marker';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { coordsToH3Cell, pointsToGeoJSON } from '@/features/map/utils/h3';
+import { MaterialIcons } from '@expo/vector-icons';
 import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
 import MapboxGL from '@rnmapbox/maps';
 import { useRouter } from 'expo-router';
@@ -140,7 +141,7 @@ export default function MapScreen() {
           })
         }
       >
-        <Text style={{ fontSize: 24, color: '#f59e0b' }}>↗</Text>
+        <MaterialIcons name="near-me" size={22} color="#f59e0b" />
       </Pressable>
     </View>
   );
