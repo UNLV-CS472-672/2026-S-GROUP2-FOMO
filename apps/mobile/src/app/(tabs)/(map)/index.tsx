@@ -1,12 +1,12 @@
+import { Icon } from '@/components/icon';
 import { EventMarker } from '@/features/map/components/event-marker';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { coordsToH3Cell, pointsToGeoJSON } from '@/features/map/utils/h3';
-import { MaterialIcons } from '@expo/vector-icons';
 import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
 import MapboxGL from '@rnmapbox/maps';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
@@ -14,6 +14,7 @@ MapboxGL.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
 
 const MIN_WEIGHT = Math.min(...eventSeedAttendees);
 const MAX_WEIGHT = Math.max(...eventSeedAttendees);
+const DEFAULT_ZOOM_LEVEL = 13;
 
 // hardcoded from feed
 const EVENT_IMAGES = [
@@ -28,7 +29,6 @@ export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
-  const { height: screenHeight } = useWindowDimensions();
   const { theme } = useUniwind();
   const isDark = theme === 'dark';
 
@@ -42,7 +42,7 @@ export default function MapScreen() {
 
     cameraRef.current?.setCamera({
       centerCoordinate,
-      zoomLevel: 13,
+      zoomLevel: DEFAULT_ZOOM_LEVEL,
       animationMode: 'flyTo',
       animationDuration: 1200,
     });
@@ -61,7 +61,7 @@ export default function MapScreen() {
           ref={cameraRef}
           defaultSettings={{
             centerCoordinate,
-            zoomLevel: 13,
+            zoomLevel: DEFAULT_ZOOM_LEVEL,
           }}
         />
         {locationGranted && (
@@ -127,27 +127,25 @@ export default function MapScreen() {
       <Pressable
         accessibilityLabel="Recenter map on your location"
         accessibilityRole="button"
-        android_ripple={{ color: 'rgba(245,158,11,0.16)', radius: 27 }}
-        className="absolute right-4 size-[54px] items-center justify-center rounded-full border border-border/80 bg-card/95 shadow-sm"
+        android_ripple={{ color: 'rgba(0,0,0,0.08)', radius: 24 }}
+        className="absolute right-4 size-12 items-center justify-center rounded-full bg-card shadow-sm"
         disabled={!hasResolvedLocation}
         hitSlop={10}
         style={({ pressed }) => [
-          { bottom: insets.bottom + screenHeight * 0.1 },
+          { bottom: insets.bottom + 88 },
           pressed && { opacity: 0.9, transform: [{ scale: 0.96 }] },
           !hasResolvedLocation && { opacity: 0.55 },
         ]}
         onPress={() =>
           cameraRef.current?.setCamera({
             centerCoordinate,
-            zoomLevel: 13,
+            zoomLevel: DEFAULT_ZOOM_LEVEL,
             animationMode: 'flyTo',
             animationDuration: 800,
           })
         }
       >
-        <View className="size-[34px] items-center justify-center rounded-full bg-amber-500/10">
-          <MaterialIcons name="my-location" size={20} color="#f59e0b" />
-        </View>
+        <Icon name="near-me" size={20} className="text-primary" />
       </Pressable>
     </View>
   );
