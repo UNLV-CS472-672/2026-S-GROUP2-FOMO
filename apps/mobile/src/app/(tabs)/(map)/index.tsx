@@ -85,12 +85,16 @@ export default function MapScreen() {
           <EventMarker
             key={event.name}
             id={`event-${i}`}
-            coordinate={[event.longitude, event.latitude]}
+            coordinate={[event.location.longitude, event.location.latitude]}
             image={EVENT_IMAGES[i % EVENT_IMAGES.length]}
             weight={eventSeedAttendees[i] ?? 1}
             minWeight={MIN_WEIGHT}
             maxWeight={MAX_WEIGHT}
-            onPress={() => push(`/feed/event/${coordsToH3Cell(event.longitude, event.latitude)}`)}
+            onPress={() =>
+              push(
+                `/feed/event/${coordsToH3Cell(event.location.longitude, event.location.latitude)}`
+              )
+            }
           />
         ))}
 
