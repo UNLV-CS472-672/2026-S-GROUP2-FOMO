@@ -1,11 +1,29 @@
 export type Coordinates = [number, number];
 
+export type MapboxMapEventHandler<T = Record<string, unknown>> = (e: T) => void;
+
 export type MapboxMap = {
-  on: (event: string, handler: () => void) => void;
+  on: (
+    event: string,
+    layerOrHandler: string | MapboxMapEventHandler,
+    handler?: MapboxMapEventHandler
+  ) => void;
+  off: (
+    event: string,
+    layerOrHandler: string | MapboxMapEventHandler,
+    handler?: MapboxMapEventHandler
+  ) => void;
   flyTo: (options: Record<string, unknown>) => void;
   jumpTo: (options: Record<string, unknown>) => void;
   resize: () => void;
   remove: () => void;
+  addSource: (id: string, source: Record<string, unknown>) => void;
+  getSource: (id: string) => { setData: (data: unknown) => void } | undefined;
+  addLayer: (layer: Record<string, unknown>) => void;
+  getLayer: (id: string) => unknown;
+  removeLayer: (id: string) => void;
+  removeSource: (id: string) => void;
+  getCanvas: () => HTMLCanvasElement;
 };
 
 export type MapboxMarker = {
