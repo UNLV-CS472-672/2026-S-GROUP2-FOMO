@@ -9,7 +9,7 @@ export const eventSeeds = [
     location: {
       latitude: 36.12730186736902,
       longitude: -115.19299595922035,
-      h3_index: latLngToH3Index(36.12730186736902, -115.19299595922035),
+      h3Index: latLngToH3Index(36.12730186736902, -115.19299595922035),
     },
   },
   {
@@ -19,7 +19,7 @@ export const eventSeeds = [
     location: {
       latitude: 36.10470771447518,
       longitude: -115.16859227452814,
-      h3_index: latLngToH3Index(36.10470771447518, -115.16859227452814),
+      h3Index: latLngToH3Index(36.10470771447518, -115.16859227452814),
     },
   },
   {
@@ -29,7 +29,7 @@ export const eventSeeds = [
     location: {
       latitude: 36.10790291877858,
       longitude: -115.14269190902489,
-      h3_index: latLngToH3Index(36.10790291877858, -115.14269190902489),
+      h3Index: latLngToH3Index(36.10790291877858, -115.14269190902489),
     },
   },
   {
@@ -40,7 +40,7 @@ export const eventSeeds = [
     location: {
       latitude: 36.15958759998514,
       longitude: -115.15239854806732,
-      h3_index: latLngToH3Index(36.15958759998514, -115.15239854806732),
+      h3Index: latLngToH3Index(36.15958759998514, -115.15239854806732),
     },
   },
   {
@@ -51,7 +51,7 @@ export const eventSeeds = [
     location: {
       latitude: 36.09086216508982,
       longitude: -115.18328464909499,
-      h3_index: latLngToH3Index(36.09086216508982, -115.18328464909499),
+      h3Index: latLngToH3Index(36.09086216508982, -115.18328464909499),
     },
   },
   {
@@ -62,7 +62,7 @@ export const eventSeeds = [
     location: {
       latitude: 36.12871445143533,
       longitude: -115.15149229313623,
-      h3_index: latLngToH3Index(36.12871445143533, -115.15149229313623),
+      h3Index: latLngToH3Index(36.12871445143533, -115.15149229313623),
     },
   },
   {
@@ -72,7 +72,7 @@ export const eventSeeds = [
     location: {
       latitude: 36.10987909759377,
       longitude: -115.17538973403965,
-      h3_index: latLngToH3Index(36.10987909759377, -115.17538973403965),
+      h3Index: latLngToH3Index(36.10987909759377, -115.17538973403965),
     },
   },
   {
@@ -82,7 +82,7 @@ export const eventSeeds = [
     location: {
       latitude: 36.03809903957797,
       longitude: -115.24699453074136,
-      h3_index: latLngToH3Index(36.03809903957797, -115.24699453074136),
+      h3Index: latLngToH3Index(36.03809903957797, -115.24699453074136),
     },
   },
   {
@@ -92,7 +92,7 @@ export const eventSeeds = [
     location: {
       latitude: 36.15909747099756,
       longitude: -115.15269829421878,
-      h3_index: latLngToH3Index(36.15909747099756, -115.15269829421878),
+      h3Index: latLngToH3Index(36.15909747099756, -115.15269829421878),
     },
   },
 ];

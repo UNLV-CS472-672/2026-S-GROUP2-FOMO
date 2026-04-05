@@ -18,7 +18,7 @@ export default defineSchema({
     location: v.object({
       latitude: v.number(),
       longitude: v.number(),
-      h3_index: v.string(),
+      h3Index: v.string(),
     }),
 
     // latitude: v.number(),

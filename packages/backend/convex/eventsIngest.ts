@@ -12,7 +12,7 @@ const normalizedEventValidator = v.object({
   location: v.object({
     latitude: v.number(),
     longitude: v.number(),
-    h3_index: v.string(),
+    h3Index: v.string(),
   }),
 });
 
@@ -25,7 +25,7 @@ type NormalizedEvent = {
   location: {
     latitude: number;
     longitude: number;
-    h3_index: string;
+    h3Index: string;
   };
 };
 
@@ -270,7 +270,7 @@ function normalizeTicketmasterEvent(
     location: {
       latitude,
       longitude,
-      h3_index: latLngToH3Index(latitude, longitude),
+      h3Index: latLngToH3Index(latitude, longitude),
     },
   };
 }
@@ -353,7 +353,7 @@ export const upsertNormalizedEvents = internalMutation({
         existing.endDate !== event.endDate ||
         existing.location?.latitude !== event.location.latitude ||
         existing.location?.longitude !== event.location.longitude ||
-        existing.location?.h3_index !== event.location.h3_index
+        existing.location?.h3Index !== event.location.h3Index
       ) {
         await ctx.db.patch(existing._id, {
           organization: event.organization,
