@@ -1,3 +1,4 @@
+import { env } from '@fomo/env/backend';
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
 import { action, internalMutation } from './_generated/server';
@@ -368,7 +369,7 @@ export const syncTicketmasterLasVegas = action({
     category: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<SyncTicketmasterResult> => {
-    const apiKey = process.env.TICKETMASTER_API_KEY;
+    const apiKey = env.TICKETMASTER_API_KEY;
     if (!apiKey) {
       throw new Error('Missing TICKETMASTER_API_KEY. Set it in Convex environment variables.');
     }
