@@ -1,4 +1,5 @@
 import '@/global.css';
+import 'react-native-gesture-handler';
 
 import { useAuth } from '@clerk/expo';
 import { navigationThemeColors } from '@fomo/theme/native';
@@ -8,6 +9,7 @@ import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
 
@@ -85,15 +87,17 @@ export default function RootLayout() {
   );
 
   return (
-    <ThemeProvider value={navigationTheme}>
-      <ClerkProvider>
-        <ConvexProvider>
-          <GuestProvider>
-            <RootNavigator />
-            <StatusBar style={isDark ? 'light' : 'dark'} />
-          </GuestProvider>
-        </ConvexProvider>
-      </ClerkProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={navigationTheme}>
+        <ClerkProvider>
+          <ConvexProvider>
+            <GuestProvider>
+              <RootNavigator />
+              <StatusBar style={isDark ? 'light' : 'dark'} />
+            </GuestProvider>
+          </ConvexProvider>
+        </ClerkProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
