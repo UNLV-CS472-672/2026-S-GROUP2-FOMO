@@ -1,6 +1,8 @@
 import { buildClerkErrorState, clearAuthErrors, LoginErrors } from '@/features/auth/utils/errors';
 import { useAuth } from '@clerk/expo';
 import { useSignIn } from '@clerk/expo/legacy';
+import { api } from '@fomo/backend/convex/_generated/api';
+import { useMutation } from 'convex/react';
 import { useState } from 'react';
 
 type LoginStep = 'identifier' | 'challenge';
@@ -15,6 +17,7 @@ type LoginStatus =
 export function useLogin() {
   const { isSignedIn } = useAuth();
   const { isLoaded, signIn, setActive } = useSignIn();
+  const ensureUser = useMutation(api.users.ensureCurrentUser);
 
   // state
   const [step, setStep] = useState<LoginStep>('identifier');
@@ -175,6 +178,7 @@ export function useLogin() {
 
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
+        await ensureUser();
       }
     } catch (error) {
       handleClerkError(error);
@@ -196,6 +200,7 @@ export function useLogin() {
       const result = await signIn.create({ identifier: trimmedIdentifier, password });
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
+        await ensureUser();
       }
     } catch (error) {
       handleClerkError(error);

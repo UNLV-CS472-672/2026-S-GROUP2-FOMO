@@ -9,6 +9,8 @@ import {
 import { useAuth } from '@clerk/expo';
 import { useSignUp } from '@clerk/expo/legacy';
 import type { SignUpResource } from '@clerk/shared/types';
+import { api } from '@fomo/backend/convex/_generated/api';
+import { useMutation } from 'convex/react';
 import { useState } from 'react';
 
 type SignUpStep = 'identifier' | 'verify' | 'password' | 'username';
@@ -57,6 +59,7 @@ function getNextIncompleteStep(
 export function useSignup() {
   const { isSignedIn } = useAuth();
   const { isLoaded, signUp, setActive } = useSignUp();
+  const ensureUser = useMutation(api.users.ensureCurrentUser);
 
   // state
   const [step, setStep] = useState<SignUpStep>('identifier');
@@ -172,6 +175,7 @@ export function useSignup() {
       if (attempt.status === 'complete') {
         setCodeValue('');
         await setActive({ session: attempt.createdSessionId });
+        await ensureUser();
         return;
       }
 
@@ -254,6 +258,7 @@ export function useSignup() {
 
       if (getClerkStatus(attemptMeta) === 'complete' && attemptMeta.createdSessionId) {
         await setActive({ session: attemptMeta.createdSessionId });
+        await ensureUser();
         return;
       }
 
@@ -297,6 +302,7 @@ export function useSignup() {
 
       if (getClerkStatus(attemptMeta) === 'complete' && attemptMeta.createdSessionId) {
         await setActive({ session: attemptMeta.createdSessionId });
+        await ensureUser();
         return;
       }
 

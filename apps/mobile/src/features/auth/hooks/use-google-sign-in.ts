@@ -8,6 +8,8 @@ import {
 import { useAuth } from '@clerk/expo';
 import { useSignInWithGoogle } from '@clerk/expo/google';
 import type { SignUpResource } from '@clerk/shared/types';
+import { api } from '@fomo/backend/convex/_generated/api';
+import { useMutation } from 'convex/react';
 import { useState } from 'react';
 import { Platform } from 'react-native';
 
@@ -116,6 +118,7 @@ export function useGoogleSignIn({
 }: UseGoogleSignInArgs) {
   const { isSignedIn } = useAuth({ treatPendingAsSignedOut: false });
   const { startGoogleAuthenticationFlow } = useSignInWithGoogle();
+  const ensureUser = useMutation(api.users.ensureCurrentUser);
 
   // state
   const [loadingProvider, setLoadingProvider] = useState<SocialProvider | null>(null);
@@ -163,6 +166,7 @@ export function useGoogleSignIn({
 
       if (resolvedSessionId && result.setActive) {
         await result.setActive({ session: resolvedSessionId });
+        await ensureUser();
         return;
       }
 
@@ -258,6 +262,7 @@ export function useGoogleSignIn({
 
       if (getClerkStatus(signUpAttemptMeta) === 'complete' && signUpAttemptMeta.createdSessionId) {
         await pendingUsernameSetup.setActive?.({ session: signUpAttemptMeta.createdSessionId });
+        await ensureUser();
         setPendingUsernameSetup(null);
         return;
       }
