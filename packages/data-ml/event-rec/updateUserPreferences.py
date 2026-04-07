@@ -20,7 +20,7 @@ def get_client() -> ConvexClient:
 
 # Baseline count for every tag
 BETA = 0.15
-TAU = 1.25
+TAU = 1.0
 
 NUM_TAGS = 0
 TAG_ID_TO_IDX = {}
@@ -151,7 +151,7 @@ def main(users: list[str], update_db: bool) -> None:
 
 
 USERS = ['ALL']
-UPDATE_DB = False
+UPDATE_DB = True
 
 if __name__ == "__main__":
     main(USERS, UPDATE_DB)

@@ -16,7 +16,8 @@ from friendRecs import (
     similarity_score,
     sim_scores_weighted,
     upsert_friend_recs,
-    main
+    main_one_user,
+    main_all_attendees,
 )
 
 
@@ -108,14 +109,18 @@ def test_user_exists_returns_true(mock_client: MagicMock) -> None:
     mock_client.query.return_value = {"_id": "u1", "name": "seed|alice"}
     result = user_exists("u1")
     assert result is True
-    mock_client.query.assert_called_once_with("query:userId", {"userId": "u1"})
+    mock_client.query.assert_called_once_with(
+        "data_ml/users:userExists", {"userId": "u1"}
+    )
 
 # Should return false, since this fake data DOES NOT exist in "users"
 def test_user_exists_returns_false(mock_client: MagicMock) -> None:
     mock_client.query.return_value = None
     result = user_exists("u1")
     assert result is False
-    mock_client.query.assert_called_once_with("query:userId", {"userId": "u1"})
+    mock_client.query.assert_called_once_with(
+        "data_ml/users:userExists", {"userId": "u1"}
+    )
 
     
     
@@ -365,7 +370,7 @@ def test_upsert_friend_recs_calls_mutation(mock_client: MagicMock, sample_score_
     
 
 # ------------------------------
-#  main()
+#  main_one_user()
 # ------------------------------
 
 # Simulate every function call within main.
@@ -399,35 +404,115 @@ def mock_main_dependencies(mock_client: MagicMock) -> Generator[dict[str, MagicM
         }
 
 # Ensure exception invoked when input "user" can't be found in Convex.
-def test_main_raises_if_user_not_found(mock_main_dependencies: dict[str, MagicMock]) -> None:
+def test_main_one_user_raises_if_user_not_found(mock_main_dependencies: dict[str, MagicMock]) -> None:
     mock_main_dependencies["user_exists"].return_value = False
     with pytest.raises(Exception):
-        main("gorilla-sushi", 5, False)
+        main_one_user("gorilla-sushi", 5, False)
 
 # Ensure seed function is not called when seed is false.
-def test_main_does_not_seed_when_false(mock_main_dependencies: dict[str, MagicMock]) -> None:
-    main("alice", 5, False)
+def test_main_one_user_does_not_seed_when_false(mock_main_dependencies: dict[str, MagicMock]) -> None:
+    main_one_user("alice", 5, False)
     mock_main_dependencies["client"].mutation.assert_not_called()
 
 # Ensure seed function is not called when seed is true.
-def test_main_seeds_when_true(mock_main_dependencies: dict[str, MagicMock]) -> None:
-    main("alice", 5, True)
+def test_main_one_user_seeds_when_true(mock_main_dependencies: dict[str, MagicMock]) -> None:
+    main_one_user("alice", 5, True)
     mock_main_dependencies["client"].mutation.assert_called_once_with("seed:seed")
 
 # Ensure all raw_matrix functions are invoked once.
-def test_main_calls_all_raw_matrix_functions(mock_main_dependencies: dict[str, MagicMock]) -> None:
-    main("alice", 5, False)
+def test_main_one_user_calls_all_raw_matrix_functions(mock_main_dependencies: dict[str, MagicMock]) -> None:
+    main_one_user("alice", 5, False)
     mock_main_dependencies["raw_matrix_events"].assert_called_once()
     mock_main_dependencies["raw_matrix_eventTags"].assert_called_once()
     mock_main_dependencies["raw_matrix_postTags"].assert_called_once()
 
 # Ensure sim_scores_weighted() is invoked once.
-def test_main_calls_sim_scores_weighted(mock_main_dependencies: dict[str, MagicMock]) -> None:
-    main("alice", 5, False)
+def test_main_one_user_calls_sim_scores_weighted(mock_main_dependencies: dict[str, MagicMock]) -> None:
+    main_one_user("alice", 5, False)
     mock_main_dependencies["sim_scores_weighted"].assert_called_once()
 
 # Ensure upsert_friend_recs() is invoked once.
-def test_main_calls_upsert_friend_recs(mock_main_dependencies: dict[str, MagicMock]) -> None:
-    main("alice", 5, False)
+def test_main_one_user_calls_upsert_friend_recs(mock_main_dependencies: dict[str, MagicMock]) -> None:
+    main_one_user("alice", 5, False)
     mock_main_dependencies["upsert_friend_recs"].assert_called_once()
+
+
+# ------------------------------
+#  main_all_attendees()
+# ------------------------------
+@pytest.fixture
+def mock_main_all_attendees_dependencies(
+    mock_client: MagicMock,
+) -> Generator[dict[str, MagicMock | list[str]], None, None]:
+    user_ids = ["u1", "u2"]
+
+    with patch("friendRecs.get_user_ids_with_event_attendance") as mock_get_ids, \
+         patch("friendRecs.user_exists") as mock_user_exists, \
+         patch("friendRecs.raw_matrix_events") as mock_raw_events, \
+         patch("friendRecs.raw_matrix_eventTags") as mock_raw_event_tags, \
+         patch("friendRecs.raw_matrix_postTags") as mock_raw_post_tags, \
+         patch("friendRecs.similarity_score") as mock_sim_score, \
+         patch("friendRecs.sim_scores_weighted") as mock_weighted, \
+         patch("friendRecs.upsert_friend_recs") as mock_upsert:
+
+        mock_get_ids.return_value = user_ids
+        mock_user_exists.return_value = True
+        mock_raw_events.return_value = MagicMock()
+        mock_raw_event_tags.return_value = MagicMock()
+        mock_raw_post_tags.return_value = MagicMock()
+        mock_sim_score.return_value = MagicMock()
+        mock_weighted.return_value = MagicMock()
+
+        yield {
+            "user_ids": user_ids,
+            "get_user_ids_with_event_attendance": mock_get_ids,
+            "user_exists": mock_user_exists,
+            "raw_matrix_events": mock_raw_events,
+            "raw_matrix_eventTags": mock_raw_event_tags,
+            "raw_matrix_postTags": mock_raw_post_tags,
+            "similarity_score": mock_sim_score,
+            "sim_scores_weighted": mock_weighted,
+            "upsert_friend_recs": mock_upsert,
+            "client": mock_client,
+        }
+
+# Ensure seed function is not called when seed is false.
+def test_main_all_attendees_seeds_when_true(mock_main_all_attendees_dependencies: dict[str, MagicMock]) -> None:
+    main_all_attendees(5, True)
+    mock_main_all_attendees_dependencies["client"].mutation.assert_called_once_with("seed:seed")
+
+
+# Ensure raw_matrix functions are each built once.
+def test_main_all_attendees_builds_raw_matrices_once(mock_main_all_attendees_dependencies: dict[str, MagicMock]) -> None:
+    main_all_attendees(5, False)
+    mock_main_all_attendees_dependencies["raw_matrix_events"].assert_called_once()
+    mock_main_all_attendees_dependencies["raw_matrix_eventTags"].assert_called_once()
+    mock_main_all_attendees_dependencies["raw_matrix_postTags"].assert_called_once()
+
+
+# Ensure similarity_score() is called 3 times per attendee user.
+def test_main_all_attendees_calls_similarity_for_each_user_and_each_modality(
+    mock_main_all_attendees_dependencies: dict[str, MagicMock],
+) -> None:
+    user_ids = mock_main_all_attendees_dependencies["user_ids"]
+    main_all_attendees(5, False)
+
+    # 3 modalities: events, eventTags, postTags
+    assert (
+        mock_main_all_attendees_dependencies["similarity_score"].call_count
+        == 3 * len(user_ids)
+    )
+
+
+# Ensure upsert_friend_recs() is invoked once per attendee user.
+def test_main_all_attendees_upserts_for_each_user(mock_main_all_attendees_dependencies: dict[str, MagicMock]) -> None:
+    user_ids = mock_main_all_attendees_dependencies["user_ids"]
+    main_all_attendees(5, False)
+    assert (
+        mock_main_all_attendees_dependencies["upsert_friend_recs"].call_count
+        == len(user_ids)
+    )
+
+    called_user_ids = [call_args[0][1] for call_args in mock_main_all_attendees_dependencies["upsert_friend_recs"].call_args_list]
+    assert called_user_ids == user_ids
     
