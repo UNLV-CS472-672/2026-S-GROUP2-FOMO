@@ -84,8 +84,8 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       convex:
-        specifier: ^1.31.7
-        version: 1.31.7(@clerk/clerk-react@5.61.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
+        specifier: ^1.32.0
+        version: 1.34.1(@clerk/clerk-react@5.61.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6)
       expo:
         specifier: ~54.0.33
         version: 54.0.33(@babel/core@7.29.0)(@expo/metro-runtime@6.1.2)(bufferutil@4.1.0)(expo-router@6.0.23)(graphql@16.13.2)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.2.3)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6))(react@19.1.0)(utf-8-validate@6.0.6)
@@ -254,15 +254,21 @@ importers:
         specifier: workspace:*
         version: link:../env
       convex:
-        specifier: ^1.31.7
-        version: 1.31.7(@clerk/clerk-react@5.61.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
+        specifier: ^1.32.0
+        version: 1.34.1(@clerk/clerk-react@5.61.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6)
       h3-js:
         specifier: ^4.4.0
         version: 4.4.0
     devDependencies:
+      '@edge-runtime/vm':
+        specifier: ^5.0.0
+        version: 5.0.0
+      convex-test:
+        specifier: ^0.0.47
+        version: 0.0.47(convex@1.34.1(@clerk/clerk-react@5.61.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6))
       vitest:
         specifier: ^4.1.3
-        version: 4.1.3(@types/node@25.5.0)(vite@8.0.7(@types/node@25.5.0)(esbuild@0.27.0)(jiti@2.6.1)(terser@5.46.0)(yaml@2.8.2))
+        version: 4.1.3(@edge-runtime/vm@5.0.0)(@types/node@25.5.0)(vite@8.0.7(@types/node@25.5.0)(esbuild@0.27.0)(jiti@2.6.1)(terser@5.46.0)(yaml@2.8.2))
 
   packages/env: {}
 
@@ -1338,6 +1344,20 @@ packages:
         integrity: sha512-/yCrWGCoA1SVKOks25EGadP9Pnj0oAIHGpl2wH2M2Y46dPM2ueb8wyCVOD7O3WCTkaJ0IkKvzhl1JY7+uCT2Dw==,
       }
     engines: { node: '>=v18' }
+
+  '@edge-runtime/primitives@6.0.0':
+    resolution:
+      {
+        integrity: sha512-FqoxaBT+prPBHBwE1WXS1ocnu/VLTQyZ6NMUBAdbP7N2hsFTTxMC/jMu2D/8GAlMQfxeuppcPuCUk/HO3fpIvA==,
+      }
+    engines: { node: '>=18' }
+
+  '@edge-runtime/vm@5.0.0':
+    resolution:
+      {
+        integrity: sha512-NKBGBSIKUG584qrS1tyxVpX/AKJKQw5HgjYEnPLC0QsTw79JrGn+qUr8CXFb955Iy7GUdiiUv1rJ6JBGvaKb6w==,
+      }
+    engines: { node: '>=18' }
 
   '@egjs/hammerjs@2.0.17':
     resolution:
@@ -5814,10 +5834,18 @@ packages:
         integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==,
       }
 
-  convex@1.31.7:
+  convex-test@0.0.47:
     resolution:
       {
-        integrity: sha512-PtNMe1mAIOvA8Yz100QTOaIdgt2rIuWqencVXrb4McdhxBHZ8IJ1eXTnrgCC9HydyilGT1pOn+KNqT14mqn9fQ==,
+        integrity: sha512-EBJQ2Ys2sHWFCZYYO1bAqudrrMW3y+SP7BF2+E5rYIGVntU4v+EoWxx1h/X+2ISMKvecf4RJLV6ojBvWNUFDcw==,
+      }
+    peerDependencies:
+      convex: ^1.32.0
+
+  convex@1.34.1:
+    resolution:
+      {
+        integrity: sha512-ooyFnZVVq0u6b5zt0Ptq8QB2ixhf/2vXe+PIcUtdtrs0lq/TwpkmmruHdqkFmWgMd6N+Tmfy8AGkz6QnZUYZBA==,
       }
     engines: { node: '>=18.0.0', npm: '>=7.0.0' }
     hasBin: true
@@ -11418,6 +11446,21 @@ packages:
       utf-8-validate:
         optional: true
 
+  ws@8.18.0:
+    resolution:
+      {
+        integrity: sha512-8VbfWfHLbbwu3+N6OKsOMpBdT4kXPDDB9cJk2bJ6mh9ucxdlnNvH1e+roYkKmN9Nxw2yjz7VzeO9oOz2zJ04Pw==,
+      }
+    engines: { node: '>=10.0.0' }
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   ws@8.18.3:
     resolution:
       {
@@ -12496,6 +12539,12 @@ snapshots:
     dependencies:
       '@types/conventional-commits-parser': 5.0.2
       chalk: 5.6.2
+
+  '@edge-runtime/primitives@6.0.0': {}
+
+  '@edge-runtime/vm@5.0.0':
+    dependencies:
+      '@edge-runtime/primitives': 6.0.0
 
   '@egjs/hammerjs@2.0.17':
     dependencies:
@@ -15694,13 +15743,21 @@ snapshots:
 
   convert-source-map@2.0.0: {}
 
-  convex@1.31.7(@clerk/clerk-react@5.61.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0):
+  convex-test@0.0.47(convex@1.34.1(@clerk/clerk-react@5.61.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6)):
+    dependencies:
+      convex: 1.34.1(@clerk/clerk-react@5.61.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6)
+
+  convex@1.34.1(@clerk/clerk-react@5.61.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6):
     dependencies:
       esbuild: 0.27.0
       prettier: 3.7.4
+      ws: 8.18.0(bufferutil@4.1.0)(utf-8-validate@6.0.6)
     optionalDependencies:
       '@clerk/clerk-react': 5.61.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react: 19.1.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   core-js-compat@3.48.0:
     dependencies:
@@ -19236,7 +19293,7 @@ snapshots:
       terser: 5.46.0
       yaml: 2.8.2
 
-  vitest@4.1.3(@types/node@25.5.0)(vite@8.0.7(@types/node@25.5.0)(esbuild@0.27.0)(jiti@2.6.1)(terser@5.46.0)(yaml@2.8.2)):
+  vitest@4.1.3(@edge-runtime/vm@5.0.0)(@types/node@25.5.0)(vite@8.0.7(@types/node@25.5.0)(esbuild@0.27.0)(jiti@2.6.1)(terser@5.46.0)(yaml@2.8.2)):
     dependencies:
       '@vitest/expect': 4.1.3
       '@vitest/mocker': 4.1.3(vite@8.0.7(@types/node@25.5.0)(esbuild@0.27.0)(jiti@2.6.1)(terser@5.46.0)(yaml@2.8.2))
@@ -19259,6 +19316,7 @@ snapshots:
       vite: 8.0.7(@types/node@25.5.0)(esbuild@0.27.0)(jiti@2.6.1)(terser@5.46.0)(yaml@2.8.2)
       why-is-node-running: 2.3.0
     optionalDependencies:
+      '@edge-runtime/vm': 5.0.0
       '@types/node': 25.5.0
     transitivePeerDependencies:
       - msw
@@ -19381,6 +19439,11 @@ snapshots:
       utf-8-validate: 6.0.6
 
   ws@7.5.10(bufferutil@4.1.0)(utf-8-validate@6.0.6):
+    optionalDependencies:
+      bufferutil: 4.1.0
+      utf-8-validate: 6.0.6
+
+  ws@8.18.0(bufferutil@4.1.0)(utf-8-validate@6.0.6):
     optionalDependencies:
       bufferutil: 4.1.0
       utf-8-validate: 6.0.6
