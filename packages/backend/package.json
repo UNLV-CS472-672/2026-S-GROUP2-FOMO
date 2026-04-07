@@ -12,11 +12,16 @@
     "dev:mobile": "pnpm dev",
     "dev:web": "pnpm dev",
     "logs": "convex logs",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "tsc -p convex/tsconfig.json --noEmit"
   },
   "dependencies": {
     "@fomo/env": "workspace:*",
     "convex": "^1.31.7",
     "h3-js": "^4.4.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.3"
   }
 }

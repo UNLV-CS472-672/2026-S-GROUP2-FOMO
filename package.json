@@ -23,6 +23,7 @@
     "mobile:prebuild": "turbo run prebuild --filter=@fomo/mobile",
     "mobile:prebuild:clean": "turbo run prebuild:clean --filter=@fomo/mobile",
     "prepare": "husky",
+    "test": "turbo run test",
     "typecheck": "turbo typecheck"
   },
   "lint-staged": {
