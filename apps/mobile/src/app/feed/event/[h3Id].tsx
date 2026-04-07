@@ -43,7 +43,7 @@ export default function EventDetails() {
     if (!resolvedH3Id) return null;
 
     const eventIndex = eventSeeds.findIndex(
-      (seed) => coordsToH3Cell(seed.longitude, seed.latitude) === resolvedH3Id
+      (seed) => coordsToH3Cell(seed.location.longitude, seed.location.latitude) === resolvedH3Id
     );
 
     if (eventIndex === -1) return null;
