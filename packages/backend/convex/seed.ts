@@ -1,6 +1,7 @@
 import { mutation } from './_generated/server';
 import { latLngToH3Index } from './data_ml/events';
 
+//TODO get from backend instead
 export const eventSeeds = [
   {
     name: 'Coffee + Homework',
