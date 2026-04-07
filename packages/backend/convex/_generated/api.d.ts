@@ -10,6 +10,7 @@
 
 import type * as auth from "../auth.js";
 import type * as data_ml_eventRec from "../data_ml/eventRec.js";
+import type * as data_ml_events from "../data_ml/events.js";
 import type * as data_ml_friendRecs from "../data_ml/friendRecs.js";
 import type * as data_ml_friends from "../data_ml/friends.js";
 import type * as data_ml_universal from "../data_ml/universal.js";
@@ -27,6 +28,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   "data_ml/eventRec": typeof data_ml_eventRec;
+  "data_ml/events": typeof data_ml_events;
   "data_ml/friendRecs": typeof data_ml_friendRecs;
   "data_ml/friends": typeof data_ml_friends;
   "data_ml/universal": typeof data_ml_universal;
