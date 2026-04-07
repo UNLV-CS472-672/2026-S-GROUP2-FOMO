@@ -16,11 +16,22 @@ def get_tag_count(client: ConvexClient) -> tuple[int, dict[str, int]]:
 
     return len(tags), tag_id_to_idx
 
-def get_user_weights(client: ConvexClient, users: list[str]) -> list[list[float]]:
+def get_user_weights(client: ConvexClient, users: list[str], tag_count: int) -> torch.Tensor:
     user_weights = client.query("data_ml/eventRec:getUserTagWeights", {"userIDs": users})
 
-    user_weight_tensor = torch.from_numpy(np.array(user_weights, dtype=np.float32))
-    return user_weight_tensor
+    fixed = []
+    for w in user_weights:
+        if w is None:
+            fixed.append(np.zeros(tag_count, dtype=np.float32))
+        else:
+            arr = np.array(w, dtype=np.float32)
+            if len(arr) < tag_count:
+                arr = np.pad(arr, (0, tag_count - len(arr)))
+            elif len(arr) > tag_count:
+                arr = arr[:tag_count]
+            fixed.append(arr)
+
+    return torch.from_numpy(np.stack(fixed))
 
 # Needs to be updated to only provide recs for events not already ended
 def get_events(client: ConvexClient, num_tags: int, tag_id_to_idx: dict[str, int]) -> dict[str, np.ndarry]:
@@ -55,7 +66,7 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
         users = [row["_id"] for row in all_users]
 
     # user_weights returns a tensor of the user weights (users, num_tags)
-    user_weights = get_user_weights(client, users).to(DEVICE)
+    user_weights = get_user_weights(client, users, tag_count).to(DEVICE)
     events = get_events(client, tag_count, tag_id_to_idx)
 
     event_ids = list(events.keys())
@@ -82,6 +93,7 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
 
     scores = (user_logits @ event_logits.T + 1) / 2
 
+    k = min(k, scores.shape[1])
     top_scores, top_indices = torch.topk(scores, k=k, dim=1)
 
     # ── Build Recommendations
@@ -95,6 +107,14 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
     if update_db:
         pass
     else:
+        print("\nUser Weights:")
+        for i, user_id in enumerate(users):
+            print(f"  {user_id}: {user_weights[i].cpu().numpy()}")
+
+        print("\nEvent One-Hots:")
+        for event_id in event_ids:
+            print(f"  {event_id}: {events[event_id]}")
+
         for user_id in users:
             print(f"\nUser {user_id}:")
             for rank, rec in enumerate(recommendations[user_id], start=1):
