@@ -381,9 +381,6 @@ export const syncTicketmasterLasVegas = action({
   },
   handler: async (ctx, args): Promise<SyncTicketmasterResult> => {
     const apiKey = env.TICKETMASTER_API_KEY;
-    if (!apiKey) {
-      throw new Error('Missing TICKETMASTER_API_KEY. Set it in Convex environment variables.');
-    }
 
     const city = 'Las Vegas';
     const stateCode = 'NV';

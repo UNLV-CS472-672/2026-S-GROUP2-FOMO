@@ -4,10 +4,6 @@ import { env } from '@fomo/env/mobile';
 
 const publishableKey = env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-if (!publishableKey) {
-  throw new Error('Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in your app env');
-}
-
 export default function AppClerkProvider({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
