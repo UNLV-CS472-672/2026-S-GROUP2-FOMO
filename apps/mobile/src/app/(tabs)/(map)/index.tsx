@@ -6,7 +6,7 @@ import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
 import MapboxGL from '@rnmapbox/maps';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
@@ -125,16 +125,6 @@ export default function MapScreen() {
           />
         </MapboxGL.ShapeSource>
       </MapboxGL.MapView>
-
-      {/* Search bar overlay */}
-      <View className="absolute left-4 right-4" style={{ top: insets.top + 12 }}>
-        <Pressable
-          className="rounded-xl border border-border/80 bg-card/95 px-4 py-3"
-          onPress={() => push('/(tabs)/(map)/search')}
-        >
-          <Text className="text-[15px] text-muted-foreground">Search places...</Text>
-        </Pressable>
-      </View>
 
       {/* Recenter button */}
       <Pressable
