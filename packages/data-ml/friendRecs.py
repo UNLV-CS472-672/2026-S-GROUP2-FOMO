@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
 
 load_dotenv()
-
 CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
 
 client: Optional[ConvexClient] = (
