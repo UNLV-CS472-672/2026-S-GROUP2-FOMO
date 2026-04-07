@@ -27,7 +27,7 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="(map)"
+        name="(map)/index"
         options={{
           tabBarIcon: ({ color, focused, size }) => (
             <MaterialCommunityIcons

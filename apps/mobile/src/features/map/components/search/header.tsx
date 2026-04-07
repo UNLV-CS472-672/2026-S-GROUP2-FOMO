@@ -5,29 +5,47 @@ import Animated, {
   Extrapolation,
   interpolate,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
+  withRepeat,
+  withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
 
 interface SearchHeaderProps {
   query: string;
+  isListening: boolean;
   placeholderTextColor: string;
   animatedIndex?: SharedValue<number>;
   onChangeQuery: (value: string) => void;
   onCancel: () => void;
   onExpand: () => void;
+  onVoiceSearch: () => void;
 }
 
 export function SearchHeader({
   query,
+  isListening,
   placeholderTextColor,
   animatedIndex,
   onChangeQuery,
   onCancel,
   onExpand,
+  onVoiceSearch,
 }: SearchHeaderProps) {
   const fallbackAnimatedIndex = useSharedValue(0);
+  const listeningPulse = useSharedValue(0);
   const resolvedAnimatedIndex = animatedIndex ?? fallbackAnimatedIndex;
+  const listeningProgress = useDerivedValue(() => {
+    if (isListening) {
+      listeningPulse.value = withRepeat(withTiming(1, { duration: 900 }), -1, true);
+      return 1;
+    }
+
+    listeningPulse.value = withTiming(0, { duration: 180 });
+    return 0;
+  }, [isListening]);
+
   const progress = useAnimatedStyle(() => {
     const cancelProgress = interpolate(
       resolvedAnimatedIndex.value,
@@ -55,32 +73,63 @@ export function SearchHeader({
     };
   });
 
+  const micBadgeAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(listeningPulse.value, [0, 1], [0.45, 1], Extrapolation.CLAMP),
+    transform: [
+      { scale: interpolate(listeningPulse.value, [0, 1], [1, 1.18], Extrapolation.CLAMP) },
+    ],
+  }));
+
+  const listeningRowAnimatedStyle = useAnimatedStyle(() => ({
+    maxHeight: interpolate(listeningProgress.value, [0, 1], [0, 28], Extrapolation.CLAMP),
+    opacity: listeningProgress.value,
+    marginTop: interpolate(listeningProgress.value, [0, 1], [0, 10], Extrapolation.CLAMP),
+  }));
+
   return (
     <View className="relative z-10 mx-4 mt-2 mb-8">
       <Animated.View style={inputAnimatedStyle}>
-        <View className="flex-row items-center gap-3 rounded-2xl border border-border bg-background px-4 py-3 pb-4">
-          <Icon name="search" size={24} className="text-muted-foreground" />
-          <BottomSheetTextInput
-            value={query}
-            onChangeText={onChangeQuery}
-            onPressIn={onExpand}
-            onFocus={onExpand}
-            placeholder="Search places, events, or vibes"
-            placeholderTextColor={placeholderTextColor}
-            className="flex-1 text-base text-foreground"
-            accessibilityLabel="Search events or places"
-          />
-          {query.length > 0 ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Clear search"
-              className="items-center justify-center rounded-full "
-              hitSlop={8}
-              onPress={() => onChangeQuery('')}
-            >
-              <Icon name="close" size={20} className="text-muted-foreground" />
-            </Pressable>
-          ) : null}
+        <View className="rounded-2xl border border-border bg-background px-4 py-3 pb-4">
+          <View className="flex-row items-center gap-3">
+            <Icon name="search" size={24} className="text-muted-foreground" />
+            <BottomSheetTextInput
+              value={query}
+              onChangeText={onChangeQuery}
+              onPressIn={onExpand}
+              onFocus={onExpand}
+              placeholder="Search places, events, or vibes"
+              placeholderTextColor={placeholderTextColor}
+              className="flex-1 text-base text-foreground"
+              accessibilityLabel="Search events or places"
+            />
+            {query.length > 0 ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Clear search"
+                className="items-center justify-center rounded-full "
+                hitSlop={8}
+                onPress={() => onChangeQuery('')}
+              >
+                <Icon name="close" size={20} className="text-muted-foreground" />
+              </Pressable>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={isListening ? 'Stop voice search' : 'Voice search'}
+                className="items-center justify-center rounded-full"
+                hitSlop={8}
+                onPress={onVoiceSearch}
+              >
+                <Animated.View style={micBadgeAnimatedStyle}>
+                  <Icon
+                    name="mic"
+                    size={20}
+                    className={isListening ? 'text-primary' : 'text-muted-foreground'}
+                  />
+                </Animated.View>
+              </Pressable>
+            )}
+          </View>
         </View>
       </Animated.View>
 
