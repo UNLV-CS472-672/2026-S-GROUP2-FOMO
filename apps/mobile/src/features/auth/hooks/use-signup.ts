@@ -1,3 +1,4 @@
+import { useOnSignInComplete } from '@/features/auth/hooks/use-on-sign-in-complete';
 import { buildClerkErrorState, clearAuthErrors, SignUpErrors } from '@/features/auth/utils/errors';
 import {
   buildIncompleteSignUpMessage,
@@ -9,8 +10,6 @@ import {
 import { useAuth } from '@clerk/expo';
 import { useSignUp } from '@clerk/expo/legacy';
 import type { SignUpResource } from '@clerk/shared/types';
-import { api } from '@fomo/backend/convex/_generated/api';
-import { useMutation } from 'convex/react';
 import { useState } from 'react';
 
 type SignUpStep = 'identifier' | 'verify' | 'password' | 'username';
@@ -59,7 +58,7 @@ function getNextIncompleteStep(
 export function useSignup() {
   const { isSignedIn } = useAuth();
   const { isLoaded, signUp, setActive } = useSignUp();
-  const ensureUser = useMutation(api.users.ensureCurrentUser);
+  const onSignInComplete = useOnSignInComplete();
 
   // state
   const [step, setStep] = useState<SignUpStep>('identifier');
@@ -174,8 +173,7 @@ export function useSignup() {
 
       if (attempt.status === 'complete') {
         setCodeValue('');
-        await setActive({ session: attempt.createdSessionId });
-        await ensureUser();
+        await onSignInComplete({ sessionId: attempt.createdSessionId, setActive });
         return;
       }
 
@@ -257,8 +255,7 @@ export function useSignup() {
       setActiveSignUp(attempt);
 
       if (getClerkStatus(attemptMeta) === 'complete' && attemptMeta.createdSessionId) {
-        await setActive({ session: attemptMeta.createdSessionId });
-        await ensureUser();
+        await onSignInComplete({ sessionId: attemptMeta.createdSessionId, setActive });
         return;
       }
 
@@ -301,8 +298,7 @@ export function useSignup() {
       setActiveSignUp(attempt);
 
       if (getClerkStatus(attemptMeta) === 'complete' && attemptMeta.createdSessionId) {
-        await setActive({ session: attemptMeta.createdSessionId });
-        await ensureUser();
+        await onSignInComplete({ sessionId: attemptMeta.createdSessionId, setActive });
         return;
       }
 
