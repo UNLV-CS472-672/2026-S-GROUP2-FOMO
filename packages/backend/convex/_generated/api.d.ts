@@ -15,6 +15,7 @@ import type * as data_ml_friends from "../data_ml/friends.js";
 import type * as data_ml_universal from "../data_ml/universal.js";
 import type * as data_ml_updateUserPreferences from "../data_ml/updateUserPreferences.js";
 import type * as data_ml_users from "../data_ml/users.js";
+import type * as events from "../events.js";
 import type * as eventsIngest from "../eventsIngest.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   "data_ml/universal": typeof data_ml_universal;
   "data_ml/updateUserPreferences": typeof data_ml_updateUserPreferences;
   "data_ml/users": typeof data_ml_users;
+  events: typeof events;
   eventsIngest: typeof eventsIngest;
   seed: typeof seed;
   users: typeof users;

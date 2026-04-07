@@ -95,6 +95,26 @@ export const eventSeeds = [
       h3Index: latLngToH3Index(36.15909747099756, -115.15269829421878),
     },
   },
+  {
+    name: 'TEMP Search Bar Test Party',
+    organization: 'Debug Goblin LLC',
+    description: 'Temp event for testing duplicate-name search results. Delete me later.',
+    location: {
+      latitude: 36.1699,
+      longitude: -115.1398,
+      h3Index: latLngToH3Index(36.1699, -115.1398),
+    },
+  },
+  {
+    name: 'TEMP Search Bar Test Party',
+    organization: 'Second Debug Venue',
+    description: 'Second temp event with the same name to test event ID disambiguation.',
+    location: {
+      latitude: 36.1072,
+      longitude: -115.1439,
+      h3Index: latLngToH3Index(36.1072, -115.1439),
+    },
+  },
 ];
 
 // Attendee counts per event, parallel to eventSeeds — derived from userEventPairs in seed handler
@@ -171,7 +191,9 @@ export const seed = mutation({
     for (const e of eventSeeds) {
       const existing = await ctx.db
         .query('events')
-        .filter((q) => q.eq(q.field('name'), e.name))
+        .filter((q) =>
+          q.and(q.eq(q.field('name'), e.name), q.eq(q.field('organization'), e.organization))
+        )
         .first();
       eventIds.push(
         existing?._id ??

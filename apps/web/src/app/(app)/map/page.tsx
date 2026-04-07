@@ -1,7 +1,10 @@
 'use client';
 
 import { useSidebar } from '@/components/ui/sidebar';
-import { MapSearchOverlay } from '@/features/map/components/map-search-overlay';
+import {
+  MapSearchOverlay,
+  type MapSearchEvent,
+} from '@/features/map/components/map-search-overlay';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import {
   FALLBACK_COORDS,
@@ -173,6 +176,15 @@ export default function MapPage() {
     };
   }, [open, isMobile]);
 
+  function handleSearchEventSelect(event: MapSearchEvent) {
+    mapRef.current?.flyTo({
+      center: [event.location.longitude, event.location.latitude],
+      zoom: 15,
+      duration: 900,
+    });
+    setIsSearchOpen(false);
+  }
+
   return (
     <section className="relative h-[calc(100vh-7rem)] min-h-[32rem] overflow-hidden rounded-[2rem] border border-white/[0.12] bg-[#05070b]">
       {staticMapSrc ? (
@@ -189,7 +201,11 @@ export default function MapPage() {
         className={`absolute inset-0 transition-opacity duration-300 ${mapReady ? 'opacity-100' : 'opacity-0'}`}
       />
 
-      <MapSearchOverlay isOpen={isSearchOpen} onToggle={() => setIsSearchOpen((open) => !open)} />
+      <MapSearchOverlay
+        isOpen={isSearchOpen}
+        onToggle={() => setIsSearchOpen((open) => !open)}
+        onSelectEvent={handleSearchEventSelect}
+      />
 
       {loadError ? (
         <div className="absolute inset-x-4 bottom-4 z-10 rounded-xl border border-red-400/30 bg-black/70 px-4 py-3 text-sm text-red-100 backdrop-blur">
