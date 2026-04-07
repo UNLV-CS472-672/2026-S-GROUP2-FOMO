@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 describe('api.eventsIngest', () => {
-  it('syncTicketmasterLasVegas', () => {
-    // TODO
-    expect(true).toBe(true);
+  describe('syncTicketmasterLasVegas', () => {
+    it('TODO', () => {
+      // TODO
+      expect(true).toBe(true);
+    });
   });
 });

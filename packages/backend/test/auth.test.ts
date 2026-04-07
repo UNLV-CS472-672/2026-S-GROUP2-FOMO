@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 describe('api.auth', () => {
-  it('getIdentity', () => {
-    // TODO
-    expect(true).toBe(true);
+  describe('getIdentity', () => {
+    it('TODO', () => {
+      // TODO
+      expect(true).toBe(true);
+    });
   });
 });
