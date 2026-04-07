@@ -33,7 +33,14 @@ export default function MapScreen() {
   const isDark = theme === 'dark';
 
   const heatmapGeoJSON = useMemo(
-    () => pointsToGeoJSON(eventSeeds.map((e, i) => ({ ...e, weight: eventSeedAttendees[i] ?? 1 }))),
+    () =>
+      pointsToGeoJSON(
+        eventSeeds.map((e, i) => ({
+          latitude: e.location.latitude,
+          longitude: e.location.longitude,
+          weight: eventSeedAttendees[i] ?? 1,
+        }))
+      ),
     []
   );
 
@@ -78,12 +85,16 @@ export default function MapScreen() {
           <EventMarker
             key={event.name}
             id={`event-${i}`}
-            coordinate={[event.longitude, event.latitude]}
+            coordinate={[event.location.longitude, event.location.latitude]}
             image={EVENT_IMAGES[i % EVENT_IMAGES.length]}
             weight={eventSeedAttendees[i] ?? 1}
             minWeight={MIN_WEIGHT}
             maxWeight={MAX_WEIGHT}
-            onPress={() => push(`/feed/event/${coordsToH3Cell(event.longitude, event.latitude)}`)}
+            onPress={() =>
+              push(
+                `/feed/event/${coordsToH3Cell(event.location.longitude, event.location.latitude)}`
+              )
+            }
           />
         ))}
 
