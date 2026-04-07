@@ -13,6 +13,7 @@
     "dev:web": "pnpm dev",
     "logs": "convex logs",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "tsc -p convex/tsconfig.json --noEmit"
   },
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@edge-runtime/vm": "^5.0.0",
+    "@vitest/coverage-v8": "^4.1.3",
     "convex-test": "^0.0.47",
     "vitest": "^4.1.3"
   }
