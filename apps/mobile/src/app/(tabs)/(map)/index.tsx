@@ -4,6 +4,7 @@ import { SearchDrawer } from '@/features/map/components/search';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { coordsToH3Cell, pointsToGeoJSON } from '@/features/map/utils/h3';
 import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
+import { useIsFocused } from '@react-navigation/native';
 import MapboxGL from '@rnmapbox/maps';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef } from 'react';
@@ -27,6 +28,7 @@ const EVENT_IMAGES = [
 
 export default function MapScreen() {
   const { push } = useRouter();
+  const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
   const { theme } = useUniwind();
@@ -132,6 +134,7 @@ export default function MapScreen() {
         onSelectEvent={(h3Id) => push(`/feed/event/${h3Id}`)}
         animatedIndex={drawerAnimatedIndex}
         animatedPosition={drawerAnimatedPosition}
+        isFocused={isFocused}
       />
 
       <RecenterButton

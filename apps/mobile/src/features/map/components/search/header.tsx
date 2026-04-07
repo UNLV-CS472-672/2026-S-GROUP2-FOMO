@@ -1,5 +1,7 @@
 import { Icon } from '@/components/icon';
+import { SEARCH_DRAWER_STATE } from '@/features/map/components/search/constants';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import { type RefObject } from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, {
   Extrapolation,
@@ -17,6 +19,7 @@ interface SearchHeaderProps {
   isListening: boolean;
   placeholderTextColor: string;
   animatedIndex?: SharedValue<number>;
+  inputRef?: RefObject<any | null>;
   onChangeQuery: (value: string) => void;
   onCancel: () => void;
   onExpand: () => void;
@@ -28,11 +31,13 @@ export function SearchHeader({
   isListening,
   placeholderTextColor,
   animatedIndex,
+  inputRef,
   onChangeQuery,
   onCancel,
   onExpand,
   onVoiceSearch,
 }: SearchHeaderProps) {
+  const expandedStateStart = SEARCH_DRAWER_STATE.expanded - 0.4;
   const fallbackAnimatedIndex = useSharedValue(0);
   const listeningPulse = useSharedValue(0);
   const resolvedAnimatedIndex = animatedIndex ?? fallbackAnimatedIndex;
@@ -49,7 +54,7 @@ export function SearchHeader({
   const progress = useAnimatedStyle(() => {
     const cancelProgress = interpolate(
       resolvedAnimatedIndex.value,
-      [1.6, 2],
+      [expandedStateStart, SEARCH_DRAWER_STATE.expanded],
       [0, 1],
       Extrapolation.CLAMP
     );
@@ -63,7 +68,7 @@ export function SearchHeader({
   const inputAnimatedStyle = useAnimatedStyle(() => {
     const cancelProgress = interpolate(
       resolvedAnimatedIndex.value,
-      [1.6, 2],
+      [expandedStateStart, SEARCH_DRAWER_STATE.expanded],
       [0, 1],
       Extrapolation.CLAMP
     );
@@ -93,10 +98,13 @@ export function SearchHeader({
           <View className="flex-row items-center gap-3">
             <Icon name="search" size={24} className="text-muted-foreground" />
             <BottomSheetTextInput
+              ref={inputRef}
               value={query}
-              onChangeText={onChangeQuery}
+              onChangeText={(value) => {
+                onExpand();
+                onChangeQuery(value);
+              }}
               onPressIn={onExpand}
-              onFocus={onExpand}
               placeholder="Search places, events, or vibes"
               placeholderTextColor={placeholderTextColor}
               className="flex-1 text-base text-foreground"
