@@ -14,6 +14,7 @@ import { allPosts, recentPosts, taggedPosts } from '@/features/posts/post-data';
 import { useGuest } from '@/integrations/session/provider';
 import { useUser } from '@clerk/expo';
 import { useState } from 'react';
+import { FriendsScreenContent } from './friends';
 
 //import for icons
 import { MaterialIcons } from '@expo/vector-icons';
@@ -36,7 +37,7 @@ export default function ProfileScreen() {
       {isGuestMode ? (
         <GuestMode />
       ) : (
-        <ScrollView className="flex-1 bg-background pt-20">
+        <ScrollView className="flex-1 bg-background pt-20" contentContainerClassName="pb-8">
           <View className="flex-row items-start p-4">
             <ProfilePicture imageSource={require('@/assets/images/icon.png')} />
 
@@ -63,11 +64,7 @@ export default function ProfileScreen() {
                 <StatLabel value={42} label="Posts" onPress={() => {}} />
               </View>
               <View className="flex-1 items-center">
-                <StatLabel
-                  value={24}
-                  label="Followers"
-                  onPress={() => router.push('/profile/friends')}
-                />
+                <StatLabel value={24} label="Followers" onPress={() => {}} />
               </View>
             </View>
           </View>
@@ -115,6 +112,10 @@ export default function ProfileScreen() {
           {activeTab === 'all' && <PostGrid posts={allPosts} />}
           {activeTab === 'recent' && <PostGrid posts={recentPosts} />}
           {activeTab === 'tagged' && <PostGrid posts={taggedPosts} />}
+
+          <View className="mt-6 border-t border-primary-soft-border pt-2">
+            <FriendsScreenContent />
+          </View>
         </ScrollView>
       )}
     </Screen>
