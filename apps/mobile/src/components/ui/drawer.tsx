@@ -64,6 +64,9 @@ export function Drawer({
       index={index}
       snapPoints={snapPoints}
       enableDynamicSizing={false}
+      keyboardBehavior="extend"
+      keyboardBlurBehavior="restore"
+      android_keyboardInputMode="adjustResize"
       backdropComponent={renderBackdrop}
       onChange={handleChange}
       animatedIndex={animatedIndex}
