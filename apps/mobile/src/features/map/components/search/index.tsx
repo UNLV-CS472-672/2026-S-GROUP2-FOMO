@@ -33,7 +33,12 @@ export function SearchDrawer({
       <SearchHeader
         query={query}
         placeholderTextColor={theme.mutedText}
+        animatedIndex={animatedIndex}
         onChangeQuery={setQuery}
+        onCancel={() => {
+          setQuery('');
+          setSheetIndex(0);
+        }}
         onExpand={() => setSheetIndex(2)}
       />
 
