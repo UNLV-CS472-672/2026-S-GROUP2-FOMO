@@ -3,15 +3,51 @@ import { v } from 'convex/values';
 import { Doc, Id } from './_generated/dataModel';
 import { mutation, query, QueryCtx } from './_generated/server';
 
-// Initial `users.name` when inserting from JWT claims (Clerk “convex” template should include these).
-function displayNameFromIdentity(identity: {
-  name?: string;
-  givenName?: string;
-  familyName?: string;
-  email?: string;
-}): string {
-  const combined = [identity.givenName, identity.familyName].filter(Boolean).join(' ').trim();
-  return identity.name?.trim() || combined || identity.email?.split('@')[0]?.trim() || 'User';
+/** Optional snapshot from the Clerk client (`UserResource`) — preferred over JWT-only claims. */
+const clerkUserSnapshotValidator = v.object({
+  username: v.optional(v.string()),
+  firstName: v.optional(v.string()),
+  lastName: v.optional(v.string()),
+  fullName: v.optional(v.string()),
+  primaryEmailAddress: v.optional(v.string()),
+});
+
+type ClerkUserSnapshot = {
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+  primaryEmailAddress?: string;
+};
+
+function displayNameFromClerk(
+  identity: {
+    name?: string;
+    givenName?: string;
+    familyName?: string;
+    email?: string;
+  },
+  clerkUser: ClerkUserSnapshot
+): string {
+  const jwtCombined = [identity.givenName, identity.familyName].filter(Boolean).join(' ').trim();
+  const clerkCombined = [clerkUser?.firstName, clerkUser?.lastName]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  const emailLocal =
+    clerkUser?.primaryEmailAddress?.split('@')[0]?.trim() ||
+    identity.email?.split('@')[0]?.trim() ||
+    '';
+
+  return (
+    clerkUser?.fullName?.trim() ||
+    clerkCombined ||
+    clerkUser?.username?.trim() ||
+    identity.name?.trim() ||
+    jwtCombined ||
+    emailLocal ||
+    'User'
+  );
 }
 
 async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
@@ -80,8 +116,10 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
 
 // Called from the client after sign-in so `getCurrentProfile` can resolve without manual DB fixes.
 export const ensureCurrentUser = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    clerkUser: clerkUserSnapshotValidator,
+  },
+  handler: async (ctx, { clerkUser }) => {
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
@@ -99,7 +137,7 @@ export const ensureCurrentUser = mutation({
 
     // New Clerk user: row must use the same `tokenIdentifier` Convex puts on `ctx.auth`.
     return await ctx.db.insert('users', {
-      name: displayNameFromIdentity(identity),
+      name: displayNameFromClerk(identity, clerkUser),
       tokenIdentifier: identity.tokenIdentifier,
     });
   },
