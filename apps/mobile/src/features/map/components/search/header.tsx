@@ -68,7 +68,7 @@ export function SearchHeader({
   const inputAnimatedStyle = useAnimatedStyle(() => {
     const cancelProgress = interpolate(
       resolvedAnimatedIndex.value,
-      [expandedStateStart, SEARCH_DRAWER_STATE.expanded],
+      [expandedStateStart - 0.2, SEARCH_DRAWER_STATE.expanded],
       [0, 1],
       Extrapolation.CLAMP
     );

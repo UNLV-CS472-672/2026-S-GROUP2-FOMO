@@ -32,7 +32,7 @@ export function RecenterButton({
 
   return (
     <Animated.View
-      className="absolute right-4"
+      className="absolute right-5"
       pointerEvents="box-none"
       style={[animatedStyle, disabled && { opacity: 0.55 }]}
     >
