@@ -22,6 +22,7 @@
     "@expo/vector-icons": "^15.0.3",
     "@fomo/backend": "workspace:*",
     "@fomo/theme": "workspace:*",
+    "@gorhom/bottom-sheet": "^5.2.8",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
