@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
-import { mutation, query, QueryCtx } from './_generated/server';
+import { mutation, MutationCtx, query, QueryCtx } from './_generated/server';
 
 function displayNameFromClerk(identity: {
   name?: string;
@@ -13,6 +13,22 @@ function displayNameFromClerk(identity: {
   const emailLocal = identity.email?.split('@')[0]?.trim() || '';
 
   return identity.name?.trim() || jwtCombined || emailLocal || 'User';
+}
+
+function mutationCtxAsQueryCtx(ctx: MutationCtx): QueryCtx {
+  return ctx as unknown as QueryCtx;
+}
+
+async function getClerkTokenIdentifier(ctx: Pick<QueryCtx, 'auth'>): Promise<string | null> {
+  const identity = await ctx.auth.getUserIdentity();
+  return identity?.tokenIdentifier ?? null;
+}
+
+async function tokenIdentifierToConvexUser(ctx: Pick<QueryCtx, 'db'>, tokenIdentifier: string) {
+  return await ctx.db
+    .query('users')
+    .withIndex('by_token', (q) => q.eq('tokenIdentifier', tokenIdentifier))
+    .first();
 }
 
 async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
@@ -83,19 +99,24 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
 export const ensureCurrentUser = mutation({
   args: {},
   handler: async (ctx) => {
+    const queryCtx = mutationCtxAsQueryCtx(ctx);
+    const tokenIdentifier = await getClerkTokenIdentifier(queryCtx);
+
+    if (!tokenIdentifier) {
+      return null;
+    }
+
+    const user = await tokenIdentifierToConvexUser(queryCtx, tokenIdentifier);
+
+    if (user) {
+      return user._id;
+    }
+
+    //normally this is not needed, but when trying to resolve the name, we will use it
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
       return null;
-    }
-
-    const existing = await ctx.db
-      .query('users')
-      .withIndex('by_token', (q) => q.eq('tokenIdentifier', identity.tokenIdentifier))
-      .first();
-
-    if (existing) {
-      return existing._id;
     }
 
     // New Clerk user: row must use the same `tokenIdentifier` Convex puts on `ctx.auth`.
@@ -109,16 +130,13 @@ export const ensureCurrentUser = mutation({
 export const getCurrentProfile = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
+    const tokenIdentifier = await getClerkTokenIdentifier(ctx);
 
-    if (!identity) {
+    if (!tokenIdentifier) {
       return null;
     }
 
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_token', (q) => q.eq('tokenIdentifier', identity.tokenIdentifier))
-      .first();
+    const user = await tokenIdentifierToConvexUser(ctx, tokenIdentifier);
 
     if (!user) {
       return null;
