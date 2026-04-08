@@ -17,14 +17,14 @@ export default function FriendsScreen() {
     return recommendedFriends.filter(
       (f) => f.username.toLowerCase().includes(q) || f.realName?.toLowerCase().includes(q)
     );
-  }, [recommendedFriends, searchText]);
+  }, [searchText]);
 
   const filteredFriends = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     return friends.filter(
       (f) => f.username.toLowerCase().includes(q) || f.realName?.toLowerCase().includes(q)
     );
-  }, [friends, searchText]);
+  }, [searchText]);
 
   const handleFriendPress = (username: string) => {
     router.push(`/profile/visit-friend-profile?username=${encodeURIComponent(username)}`);
@@ -32,7 +32,7 @@ export default function FriendsScreen() {
 
   return (
     <Screen className="flex-1">
-      <ScrollView className="flex-1 bg-background pt-20" contentContainerClassName="pb-6">
+      <ScrollView className="flex-1 bg-background" contentContainerClassName="pt-5 pb-6">
         {/* Search */}
         <View className="px-4 pb-4">
           <TextInput

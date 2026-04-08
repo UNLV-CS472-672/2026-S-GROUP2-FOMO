@@ -36,7 +36,7 @@ export default function VisitFriendProfileScreen() {
   if (!friendProfile) {
     return (
       <Screen className="flex-1 items-center justify-center">
-        <Text className="text-foreground">Friend's profile not found</Text>
+        <Text className="text-foreground">Friend&apos;s profile not found</Text>
         <Button onPress={() => router.back()}>
           <ButtonText>Go Back</ButtonText>
         </Button>
@@ -56,7 +56,7 @@ export default function VisitFriendProfileScreen() {
             accessibilityRole="button"
             accessibilityLabel="Go back"
           >
-            <MaterialIcons name="arrow-back" size={28} color={theme.foreground} />
+            <MaterialIcons name="arrow-back" size={28} color={theme.text} />
           </TouchableOpacity>
           <Text className="text-lg font-bold text-foreground">Profile</Text>
           <View style={{ width: 28 }} />
