@@ -1,7 +1,6 @@
 import { Button, ButtonText } from '@/components/ui/button';
-import { signOutClerkExpo } from '@/lib/clerk-sign-out';
+import { signOutClerkExpo } from '@/features/auth/utils/clerk-sign-out';
 import { useClerk } from '@clerk/expo';
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
@@ -15,8 +14,8 @@ export default function SettingsScreen() {
 
     try {
       await signOutClerkExpo(clerk);
-      router.replace('/(auth)/welcome');
     } finally {
+      console.log('Signed out');
       setIsSigningOut(false);
     }
   }
