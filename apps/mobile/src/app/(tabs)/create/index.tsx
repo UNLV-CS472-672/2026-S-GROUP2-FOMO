@@ -4,7 +4,7 @@ import { ScrollView, Text } from 'react-native';
 import { GuestMode } from '@/components/profile/guest-mode';
 import { Button, ButtonText } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
-import { AppAuthenticated, AppGuestOnly } from '@/features/auth/components/auth-gate';
+import { Authenticated, GuestOnly } from '@/features/auth/components/auth-gate';
 
 export default function CreateScreen() {
   const { push } = useRouter();
@@ -27,10 +27,10 @@ export default function CreateScreen() {
           Choose what you want to publish.
         </Text>
 
-        <AppGuestOnly>
+        <GuestOnly>
           <GuestMode />
-        </AppGuestOnly>
-        <AppAuthenticated>
+        </GuestOnly>
+        <Authenticated>
           <>
             <Button
               variant="secondary"
@@ -60,7 +60,7 @@ export default function CreateScreen() {
               </ButtonText>
             </Button>
           </>
-        </AppAuthenticated>
+        </Authenticated>
       </ScrollView>
     </Screen>
   );

@@ -47,9 +47,3 @@ export function AuthLoading({ children }: AuthGateProps) {
 
   return <AuthGate when={isLoading}>{children}</AuthGate>;
 }
-
-export {
-  Authenticated as AppAuthenticated,
-  GuestOnly as AppGuestOnly,
-  Unauthenticated as AppUnauthenticated,
-};
