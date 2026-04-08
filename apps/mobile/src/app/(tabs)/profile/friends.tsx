@@ -1,76 +1,16 @@
 import FriendCell from '@/components/profile/friend-cell';
 import { Screen } from '@/components/ui/screen';
 import { useAppTheme } from '@/lib/use-app-theme';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import type { ImageSourcePropType } from 'react-native';
-import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { friends, recommendedFriends } from './friend-data';
 
 export default function FriendsScreen() {
+  const router = useRouter();
   const theme = useAppTheme();
   const [searchText, setSearchText] = useState('');
   const [isRecommendedCollapsed, setIsRecommendedCollapsed] = useState(false);
-
-  type Friend = { username: string; realName?: string; imageSource: ImageSourcePropType };
-
-  const recommendedFriends = useMemo<Friend[]>(
-    () => [
-      {
-        username: 'barfspoon',
-        realName: 'Broxtin',
-        imageSource: require('@/assets/images/icon.png'),
-      },
-      {
-        username: 'spongoi endless suffering',
-        imageSource: require('@/assets/images/react-logo.png'),
-      },
-      {
-        username: 'spongoi man failure',
-        realName: 'Koiyne',
-        imageSource: require('@/assets/images/react-logo.png'),
-      },
-      {
-        username: 'spongoi baby drives many cars',
-        realName: 'Ryuji Gouda',
-        imageSource: require('@/assets/images/react-logo.png'),
-      },
-    ],
-    []
-  );
-
-  const friends = useMemo<Friend[]>(
-    () => [
-      {
-        username: 'PMA',
-        realName: 'Nathan K',
-        imageSource: require('@/assets/images/icon.png'),
-      },
-      {
-        username: 'heptahedron',
-        imageSource: require('@/assets/images/android-icon-foreground.png'),
-      },
-      {
-        username: 'NDP',
-        realName: 'Nathan D P',
-        imageSource: require('@/assets/images/android-icon-monochrome.png'),
-      },
-      {
-        username: 'Akeegaii',
-        realName: 'Reecius',
-        imageSource: require('@/assets/images/splash-icon.png'),
-      },
-      {
-        username: 'StJimmy',
-        realName: 'Jimmy D',
-        imageSource: require('@/assets/images/favicon.png'),
-      },
-      {
-        username: 'MaymuzuD',
-        realName: 'Danyella M',
-        imageSource: require('@/assets/images/partial-react-logo.png'),
-      },
-    ],
-    []
-  );
 
   const filteredRecommended = useMemo(() => {
     const q = searchText.trim().toLowerCase();
@@ -87,7 +27,7 @@ export default function FriendsScreen() {
   }, [friends, searchText]);
 
   const handleFriendPress = (username: string) => {
-    Alert.alert('Friend selected', username);
+    router.push(`/profile/visit-friend-profile?username=${encodeURIComponent(username)}`);
   };
 
   return (

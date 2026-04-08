@@ -65,7 +65,7 @@ export default function ProfileScreen() {
               <View className="flex-1 items-center">
                 <StatLabel
                   value={24}
-                  label="Followers"
+                  label="Friends"
                   onPress={() => router.push('/profile/friends')}
                 />
               </View>
