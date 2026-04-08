@@ -10,7 +10,7 @@ type DrawerProps = {
   children: ReactNode;
   index?: number;
   onChange?: (index: number) => void;
-  snapPoints?: Array<number | string>;
+  snapPoints?: (number | string)[];
   backdropAppearsOnIndex?: number;
   backdropDisappearsOnIndex?: number;
   animatedIndex?: SharedValue<number>;

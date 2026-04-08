@@ -7,7 +7,6 @@ import Animated, {
   Extrapolation,
   interpolate,
   useAnimatedStyle,
-  useDerivedValue,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -41,15 +40,12 @@ export function SearchHeader({
   const fallbackAnimatedIndex = useSharedValue(0);
   const listeningPulse = useSharedValue(0);
   const resolvedAnimatedIndex = animatedIndex ?? fallbackAnimatedIndex;
-  const listeningProgress = useDerivedValue(() => {
-    if (isListening) {
-      listeningPulse.value = withRepeat(withTiming(1, { duration: 900 }), -1, true);
-      return 1;
-    }
 
+  if (isListening) {
+    listeningPulse.value = withRepeat(withTiming(1, { duration: 900 }), -1, true);
+  } else {
     listeningPulse.value = withTiming(0, { duration: 180 });
-    return 0;
-  }, [isListening]);
+  }
 
   const progress = useAnimatedStyle(() => {
     const cancelProgress = interpolate(
@@ -83,12 +79,6 @@ export function SearchHeader({
     transform: [
       { scale: interpolate(listeningPulse.value, [0, 1], [1, 1.18], Extrapolation.CLAMP) },
     ],
-  }));
-
-  const listeningRowAnimatedStyle = useAnimatedStyle(() => ({
-    maxHeight: interpolate(listeningProgress.value, [0, 1], [0, 28], Extrapolation.CLAMP),
-    opacity: listeningProgress.value,
-    marginTop: interpolate(listeningProgress.value, [0, 1], [0, 10], Extrapolation.CLAMP),
   }));
 
   return (

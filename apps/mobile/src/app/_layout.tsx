@@ -1,5 +1,4 @@
 import '@/global.css';
-import 'react-native-gesture-handler';
 
 import { useAuth } from '@clerk/expo';
 import { navigationThemeColors } from '@fomo/theme/native';
