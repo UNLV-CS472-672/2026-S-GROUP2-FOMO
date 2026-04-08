@@ -5,14 +5,26 @@ import { mutation, MutationCtx, query, QueryCtx } from './_generated/server';
 
 function displayNameFromClerk(identity: {
   name?: string;
+  username?: string;
+  nickname?: string;
+  preferredUsername?: string;
+  preferred_username?: string;
   givenName?: string;
   familyName?: string;
   email?: string;
 }): string {
+  const preferredHandle = [
+    identity.username,
+    identity.preferredUsername,
+    identity.preferred_username,
+    identity.nickname,
+  ]
+    .find((value) => Boolean(value?.trim()))
+    ?.trim();
   const jwtCombined = [identity.givenName, identity.familyName].filter(Boolean).join(' ').trim();
   const emailLocal = identity.email?.split('@')[0]?.trim() || '';
 
-  return identity.name?.trim() || jwtCombined || emailLocal || 'User';
+  return preferredHandle || identity.name?.trim() || jwtCombined || emailLocal || 'User';
 }
 
 function mutationCtxAsQueryCtx(ctx: MutationCtx): QueryCtx {
