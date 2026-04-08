@@ -1,9 +1,10 @@
 import { v } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
-import { mutation, query, QueryCtx } from './_generated/server';
+import { mutation, MutationCtx, query, QueryCtx } from './_generated/server';
 
-function displayNameFromClerk(identity: {
+type ClerkIdentity = {
+  tokenIdentifier: string;
   name?: string;
   username?: string;
   nickname?: string;
@@ -12,7 +13,9 @@ function displayNameFromClerk(identity: {
   givenName?: string;
   familyName?: string;
   email?: string;
-}): string {
+};
+
+function displayNameFromClerk(identity: ClerkIdentity): string {
   const preferredHandle = [
     identity.username,
     identity.preferredUsername,
@@ -27,16 +30,50 @@ function displayNameFromClerk(identity: {
   return preferredHandle || identity.name?.trim() || jwtCombined || emailLocal || 'User';
 }
 
-async function getClerkTokenIdentifier(ctx: QueryCtx): Promise<string | null> {
+async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
   const identity = await ctx.auth.getUserIdentity();
-  return identity?.tokenIdentifier ?? null;
+  if (!identity) {
+    throw new Error('No Clerk identity found');
+  }
+
+  return identity as ClerkIdentity;
 }
 
-async function tokenIdentifierToConvexUser(ctx: QueryCtx, tokenIdentifier: string) {
+/**
+ * Returns the Clerk JWT `tokenIdentifier` or throws if the client is not authenticated.
+ */
+async function getClerkTokenIdentifier(ctx: QueryCtx): Promise<string> {
+  const identity = await getClerkIdentity(ctx);
+  const tokenIdentifier = identity.tokenIdentifier;
+
+  return tokenIdentifier;
+}
+
+/**
+ * Best-effort lookup of the current Convex user row for this request.
+ * Returns null when logged out or when the user row hasn't been created yet.
+ *
+ * This should not throw; it's safe to use in queries that must gracefully return `null`.
+ */
+async function getCurrentConvexUserAllowNull(ctx: QueryCtx | MutationCtx) {
+  const tokenIdentifier = await getClerkTokenIdentifier(ctx);
   return await ctx.db
     .query('users')
     .withIndex('by_token', (q) => q.eq('tokenIdentifier', tokenIdentifier))
     .first();
+}
+
+/**
+ * Resolves the current Clerk identity to a Convex user document.
+ * This helper is strict: it throws when auth is missing or the user row does not exist.
+ */
+async function getCurrentConvexUser(ctx: QueryCtx): Promise<Doc<'users'>> {
+  const user = await getCurrentConvexUserAllowNull(ctx);
+  if (!user) {
+    throw new Error('No Convex user found for the current Clerk token');
+  }
+
+  return user;
 }
 
 async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
@@ -107,24 +144,12 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
 export const ensureCurrentUser = mutation({
   args: {},
   handler: async (ctx) => {
-    const tokenIdentifier = await getClerkTokenIdentifier(ctx);
-
-    if (!tokenIdentifier) {
-      return null;
+    const existing = await getCurrentConvexUserAllowNull(ctx);
+    if (existing) {
+      return existing._id;
     }
 
-    const user = await tokenIdentifierToConvexUser(ctx, tokenIdentifier);
-
-    if (user) {
-      return user._id;
-    }
-
-    //normally this is not needed, but when trying to resolve the name, we will use it
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      return null;
-    }
+    const identity = await getClerkIdentity(ctx);
 
     // New Clerk user: row must use the same `tokenIdentifier` Convex puts on `ctx.auth`.
     return await ctx.db.insert('users', {
@@ -137,18 +162,7 @@ export const ensureCurrentUser = mutation({
 export const getCurrentProfile = query({
   args: {},
   handler: async (ctx) => {
-    const tokenIdentifier = await getClerkTokenIdentifier(ctx);
-
-    if (!tokenIdentifier) {
-      return null;
-    }
-
-    const user = await tokenIdentifierToConvexUser(ctx, tokenIdentifier);
-
-    if (!user) {
-      return null;
-    }
-
+    const user = await getCurrentConvexUser(ctx);
     return await buildProfile(ctx, user);
   },
 });
@@ -159,7 +173,6 @@ export const getProfileById = query({
   },
   handler: async (ctx, { userId }) => {
     const user = await ctx.db.get(userId);
-
     if (!user) {
       return null;
     }
