@@ -50,7 +50,7 @@ export default function CreateScreen() {
               variant="secondary"
               size="lg"
               className="items-start text-xl font-semibold"
-              onPress={() => push('/create/post')}
+              onPress={() => push('/create/camera-screen')}
             >
               <ButtonText variant="secondary" className="text-xl">
                 Create Post
