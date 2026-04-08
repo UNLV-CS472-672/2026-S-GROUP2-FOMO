@@ -3,35 +3,36 @@ import '@/global.css';
 import { useAuth as useClerkAuth } from '@clerk/expo';
 import { navigationThemeColors } from '@fomo/theme/native';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { useConvexAuth } from 'convex/react';
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useMemo } from 'react';
-import { ActivityIndicator, View } from 'react-native';
 import 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
 
 import { AppHeaderBackButton } from '@/components/navigation/header-back-button';
-import { useAppAuthState } from '@/features/auth/hooks/use-auth-state';
+import { AuthLoadingScreen } from '@/features/auth/components/auth-loading-screen';
 import ClerkProvider from '@/integrations/clerk/provider';
 import ConvexProvider from '@/integrations/convex/provider';
-import GuestProvider from '@/integrations/session/provider';
-
-function AuthLoadingScreen() {
-  return (
-    <View className="flex-1 items-center justify-center bg-background">
-      <ActivityIndicator />
-    </View>
-  );
-}
+import GuestProvider, { useGuest } from '@/integrations/session/provider';
 
 function RootNavigator() {
   const { isLoaded: isClerkLoaded, isSignedIn: isClerkAuthenticated } = useClerkAuth();
-  const { isAuthenticated, isGuestMode, isLoading } = useAppAuthState();
+  const { isAuthenticated, isLoading: isConvexLoading } = useConvexAuth();
+  const { isGuestLoading, isGuestMode } = useGuest();
   const segments = useSegments();
+  const isLoading = isConvexLoading || isGuestLoading;
 
   const isAuthResolving = !isClerkLoaded || isLoading || (isClerkAuthenticated && !isAuthenticated);
   if (isAuthResolving) {
-    return <AuthLoadingScreen />;
+    return (
+      <AuthLoadingScreen
+        isClerkLoaded={isClerkLoaded}
+        isClerkAuthenticated={isClerkAuthenticated}
+        isAuthenticated={isAuthenticated}
+        isLoading={isLoading}
+      />
+    );
   }
 
   const isAuthenticatedRouteAllowed = segments[0] === '(tabs)' || segments[0] === 'feed';
