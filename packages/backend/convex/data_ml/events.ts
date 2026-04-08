@@ -16,17 +16,28 @@ export function latLngToH3Index(lat: number, lng: number, resolution: number = 9
   return latLngToCell(lat, lng, resolution);
 }
 
-export const getEvents = query({
+export const getEventsForGuestUser = query({
+  args: {},
+  handler: async (ctx) => {
+    const mock_events = eventSeeds;
+    return mock_events.map((event, i) => ({
+      ...event,
+      attendeeCount: 1.0 / i,
+    }));
+  },
+});
+
+export const getEventsForCurrentUser = query({
   args: {},
   handler: async (ctx) => {
     const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
 
     //TODO get events with recommendation score based on current user id
     const mock_events = eventSeeds;
-    return mock_events.map((event) => ({
+    return mock_events.map((event, i) => ({
       ...event,
-      attendeeCount: Math.floor(Math.random() * 100) + 1,
-      recommendationScore: Math.random(),
+      attendeeCount: i * 100,
+      recommendationScore: 1.0 / i,
     }));
   },
 });

@@ -2,9 +2,10 @@ import { Icon } from '@/components/icon';
 import { EventMarker } from '@/features/map/components/event-marker';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { pointsToGeoJSON } from '@/features/map/utils/h3';
+import { useGuest } from '@/integrations/session/provider';
 import { api } from '@fomo/backend/convex/_generated/api';
 import MapboxGL from '@rnmapbox/maps';
-import { useQuery } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -25,7 +26,17 @@ const EVENT_IMAGES = [
 
 export default function MapScreen() {
   const { push } = useRouter();
-  const events = useQuery(api.data_ml.events.getEvents) ?? [];
+  const { isAuthenticated } = useConvexAuth();
+  const { isGuestMode, isGuestLoading } = useGuest();
+  const signedInEvents = useQuery(
+    api.data_ml.events.getEventsForCurrentUser,
+    isAuthenticated ? {} : 'skip'
+  );
+  const guestEvents = useQuery(
+    api.data_ml.events.getEventsForGuestUser,
+    !isAuthenticated && isGuestMode && !isGuestLoading ? {} : 'skip'
+  );
+  const events = isAuthenticated ? (signedInEvents ?? []) : (guestEvents ?? []);
   const insets = useSafeAreaInsets();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
@@ -64,6 +75,8 @@ export default function MapScreen() {
       animationDuration: 1200,
     });
   }, [centerCoordinate, hasResolvedLocation]);
+
+  // TODO: Add a map toggle to size icons by recommendation score or popularity.
 
   return (
     <View className="absolute inset-0">
