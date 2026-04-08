@@ -1,10 +1,12 @@
 import { Button, ButtonText } from '@/components/ui/button';
-import { useAuth } from '@clerk/expo';
+import { signOutClerkExpo } from '@/lib/clerk-sign-out';
+import { useClerk } from '@clerk/expo';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 export default function SettingsScreen() {
-  const { signOut } = useAuth();
+  const clerk = useClerk();
   const [isSigningOut, setIsSigningOut] = useState(false);
   async function handleLogout() {
     if (isSigningOut) return;
@@ -12,7 +14,8 @@ export default function SettingsScreen() {
     setIsSigningOut(true);
 
     try {
-      await signOut();
+      await signOutClerkExpo(clerk);
+      router.replace('/(auth)/welcome');
     } finally {
       setIsSigningOut(false);
     }

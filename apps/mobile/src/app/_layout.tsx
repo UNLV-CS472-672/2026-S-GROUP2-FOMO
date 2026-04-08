@@ -17,9 +17,7 @@ import ConvexProvider from '@/integrations/convex/provider';
 import GuestProvider, { useGuest } from '@/integrations/session/provider';
 
 function RootNavigator() {
-  const { isLoaded: isClerkLoaded, isSignedIn } = useAuth({
-    treatPendingAsSignedOut: false,
-  });
+  const { isLoaded: isClerkLoaded, isSignedIn } = useAuth();
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { isGuestMode, isGuestLoading } = useGuest();
   const segments = useSegments();
