@@ -1,3 +1,4 @@
+import { useOnSignInComplete } from '@/features/auth/hooks/use-on-sign-in-complete';
 import { buildClerkErrorState, clearAuthErrors, SignUpErrors } from '@/features/auth/utils/errors';
 import {
   buildIncompleteSignUpMessage,
@@ -57,6 +58,7 @@ function getNextIncompleteStep(
 export function useSignup() {
   const { isSignedIn } = useAuth();
   const { isLoaded, signUp, setActive } = useSignUp();
+  const onSignInComplete = useOnSignInComplete();
 
   // state
   const [step, setStep] = useState<SignUpStep>('identifier');
@@ -171,7 +173,7 @@ export function useSignup() {
 
       if (attempt.status === 'complete') {
         setCodeValue('');
-        await setActive({ session: attempt.createdSessionId });
+        await onSignInComplete({ sessionId: attempt.createdSessionId, setActive });
         return;
       }
 
@@ -253,7 +255,7 @@ export function useSignup() {
       setActiveSignUp(attempt);
 
       if (getClerkStatus(attemptMeta) === 'complete' && attemptMeta.createdSessionId) {
-        await setActive({ session: attemptMeta.createdSessionId });
+        await onSignInComplete({ sessionId: attemptMeta.createdSessionId, setActive });
         return;
       }
 
@@ -296,7 +298,7 @@ export function useSignup() {
       setActiveSignUp(attempt);
 
       if (getClerkStatus(attemptMeta) === 'complete' && attemptMeta.createdSessionId) {
-        await setActive({ session: attemptMeta.createdSessionId });
+        await onSignInComplete({ sessionId: attemptMeta.createdSessionId, setActive });
         return;
       }
 

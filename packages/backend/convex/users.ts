@@ -1,7 +1,43 @@
 import { v } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
-import { query, QueryCtx } from './_generated/server';
+import { mutation, query, QueryCtx } from './_generated/server';
+
+function displayNameFromClerk(identity: {
+  name?: string;
+  username?: string;
+  nickname?: string;
+  preferredUsername?: string;
+  preferred_username?: string;
+  givenName?: string;
+  familyName?: string;
+  email?: string;
+}): string {
+  const preferredHandle = [
+    identity.username,
+    identity.preferredUsername,
+    identity.preferred_username,
+    identity.nickname,
+  ]
+    .find((value) => Boolean(value?.trim()))
+    ?.trim();
+  const jwtCombined = [identity.givenName, identity.familyName].filter(Boolean).join(' ').trim();
+  const emailLocal = identity.email?.split('@')[0]?.trim() || '';
+
+  return preferredHandle || identity.name?.trim() || jwtCombined || emailLocal || 'User';
+}
+
+async function getClerkTokenIdentifier(ctx: QueryCtx): Promise<string | null> {
+  const identity = await ctx.auth.getUserIdentity();
+  return identity?.tokenIdentifier ?? null;
+}
+
+async function tokenIdentifierToConvexUser(ctx: QueryCtx, tokenIdentifier: string) {
+  return await ctx.db
+    .query('users')
+    .withIndex('by_token', (q) => q.eq('tokenIdentifier', tokenIdentifier))
+    .first();
+}
 
 async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
   const [posts, comments, userEventLinks, friendRecs] = await Promise.all([
@@ -67,19 +103,47 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
   };
 }
 
-export const getCurrentProfile = query({
+// Called from the client after sign-in so `getCurrentProfile` can resolve without manual DB fixes.
+export const ensureCurrentUser = mutation({
   args: {},
   handler: async (ctx) => {
+    const tokenIdentifier = await getClerkTokenIdentifier(ctx);
+
+    if (!tokenIdentifier) {
+      return null;
+    }
+
+    const user = await tokenIdentifierToConvexUser(ctx, tokenIdentifier);
+
+    if (user) {
+      return user._id;
+    }
+
+    //normally this is not needed, but when trying to resolve the name, we will use it
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
       return null;
     }
 
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_token', (q) => q.eq('tokenIdentifier', identity.tokenIdentifier))
-      .first();
+    // New Clerk user: row must use the same `tokenIdentifier` Convex puts on `ctx.auth`.
+    return await ctx.db.insert('users', {
+      name: displayNameFromClerk(identity),
+      tokenIdentifier: identity.tokenIdentifier,
+    });
+  },
+});
+
+export const getCurrentProfile = query({
+  args: {},
+  handler: async (ctx) => {
+    const tokenIdentifier = await getClerkTokenIdentifier(ctx);
+
+    if (!tokenIdentifier) {
+      return null;
+    }
+
+    const user = await tokenIdentifierToConvexUser(ctx, tokenIdentifier);
 
     if (!user) {
       return null;
