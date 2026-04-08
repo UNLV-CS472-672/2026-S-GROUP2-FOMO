@@ -19,6 +19,7 @@ export function latLngToH3Index(lat: number, lng: number, resolution: number = 9
 export const getEventsForGuestUser = query({
   args: {},
   handler: async (ctx) => {
+    //TODO fetch these from database instead of mock eventSeed data
     const mock_events = eventSeeds;
     return mock_events.map((event, i) => ({
       ...event,
