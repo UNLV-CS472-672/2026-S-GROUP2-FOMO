@@ -1,10 +1,7 @@
 import PostGrid from '@/components/ui/post-grid';
 import { Screen } from '@/components/ui/screen';
-import { useGuest } from '@/integrations/session/provider';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
-import { api } from '@fomo/backend/convex/_generated/api';
-import { useConvexAuth, useQuery } from 'convex/react';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
@@ -20,6 +17,14 @@ interface Event {
   description: string;
   posts: GridPost[];
 }
+
+type EventRouteData = {
+  name: string;
+  organization: string;
+  description: string;
+  attendeeCount: number;
+  imageIndex: number;
+};
 
 const EVENT_IMAGES = [
   require('@/assets/images/rigrig.jpg'),
@@ -37,40 +42,30 @@ const SAMPLE_POSTS: GridPost[] = [
 
 export default function EventDetails() {
   const theme = useAppTheme();
-  const { isAuthenticated } = useConvexAuth();
-  const { isGuestMode, isGuestLoading } = useGuest();
-  const signedInEvents = useQuery(
-    api.data_ml.events.getEventsForCurrentUser,
-    isAuthenticated ? {} : 'skip'
-  );
-  const guestEvents = useQuery(
-    api.data_ml.events.getEventsForGuestUser,
-    !isAuthenticated && isGuestMode && !isGuestLoading ? {} : 'skip'
-  );
-  const events = useMemo(
-    () => (isAuthenticated ? (signedInEvents ?? []) : (guestEvents ?? [])),
-    [guestEvents, isAuthenticated, signedInEvents]
-  );
-  const { h3Id } = useLocalSearchParams<{ h3Id?: string | string[] }>();
+  const { h3Id, eventData } = useLocalSearchParams<{
+    h3Id?: string | string[];
+    eventData?: string | string[];
+  }>();
   const resolvedH3Id = Array.isArray(h3Id) ? h3Id[0] : h3Id;
+  const resolvedEventData = Array.isArray(eventData) ? eventData[0] : eventData;
 
   const event = useMemo(() => {
-    if (!resolvedH3Id) return null;
+    if (!resolvedH3Id || !resolvedEventData) return null;
 
-    const eventIndex = events.findIndex((event) => event.location.h3Index === resolvedH3Id);
-
-    if (eventIndex === -1) return null;
-
-    const event = events[eventIndex];
-    const attendeeCount = event?.attendeeCount ?? 0;
+    let parsedEvent: EventRouteData;
+    try {
+      parsedEvent = JSON.parse(resolvedEventData) as EventRouteData;
+    } catch {
+      return null;
+    }
 
     return {
       id: resolvedH3Id,
-      image: EVENT_IMAGES[eventIndex % EVENT_IMAGES.length],
-      description: `${event.name}\n${event.organization}\n${attendeeCount} attending\n\n${event.description}`,
+      image: EVENT_IMAGES[parsedEvent.imageIndex % EVENT_IMAGES.length],
+      description: `${parsedEvent.name}\n${parsedEvent.organization}\n${parsedEvent.attendeeCount} attending\n\n${parsedEvent.description}`,
       posts: SAMPLE_POSTS,
     } satisfies Event;
-  }, [events, resolvedH3Id]);
+  }, [resolvedEventData, resolvedH3Id]);
 
   if (!event) {
     return (

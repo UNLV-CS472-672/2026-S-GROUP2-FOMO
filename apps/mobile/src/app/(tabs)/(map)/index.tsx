@@ -117,7 +117,21 @@ export default function MapScreen() {
               weight={event.attendeeCount}
               minWeight={minWeight}
               maxWeight={maxWeight}
-              onPress={() => push(`/feed/event/${event.location.h3Index}`)}
+              onPress={() =>
+                push({
+                  pathname: '/feed/event/[h3Id]',
+                  params: {
+                    h3Id: event.location.h3Index,
+                    eventData: JSON.stringify({
+                      name: event.name,
+                      organization: event.organization,
+                      description: event.description,
+                      attendeeCount: event.attendeeCount,
+                      imageIndex: i % EVENT_IMAGES.length,
+                    }),
+                  },
+                })
+              }
             />
           );
         })}
