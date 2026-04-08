@@ -557,7 +557,7 @@ export const seed = mutation({
       { requesterId: u7, recipientId: u3, status: 'ignored' },
 
       { requesterId: u8, recipientId: u1, status: 'pending' },
-    ];
+    ] as const;
     for (const pair of friendPairs) {
       const existing = await ctx.db
         .query('friends')
@@ -565,6 +565,7 @@ export const seed = mutation({
           q.eq('recipientId', pair.recipientId).eq('requesterId', pair.requesterId)
         )
         .first();
+      if (!existing) await ctx.db.insert('friends', pair);
     }
 
     return {
