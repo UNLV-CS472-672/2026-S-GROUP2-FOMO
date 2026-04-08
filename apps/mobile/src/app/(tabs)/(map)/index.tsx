@@ -90,18 +90,21 @@ export default function MapScreen() {
           />
         )}
 
-        {events.map((event, i) => (
-          <EventMarker
-            key={event._id}
-            id={`event-${event._id}`}
-            coordinate={[event.location.longitude, event.location.latitude]}
-            image={EVENT_IMAGES[i % EVENT_IMAGES.length]}
-            weight={event.attendeeCount}
-            minWeight={minWeight}
-            maxWeight={maxWeight}
-            onPress={() => push(`/feed/event/${event.location.h3Index}`)}
-          />
-        ))}
+        {events.map((event, i) => {
+          const eventId = `event-${event.location.h3Index}-${i}`;
+          return (
+            <EventMarker
+              key={eventId}
+              id={eventId}
+              coordinate={[event.location.longitude, event.location.latitude]}
+              image={EVENT_IMAGES[i % EVENT_IMAGES.length]}
+              weight={event.attendeeCount}
+              minWeight={minWeight}
+              maxWeight={maxWeight}
+              onPress={() => push(`/feed/event/${event.location.h3Index}`)}
+            />
+          );
+        })}
 
         <MapboxGL.ShapeSource id="activity" shape={heatmapGeoJSON}>
           <MapboxGL.HeatmapLayer
