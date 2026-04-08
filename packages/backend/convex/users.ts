@@ -55,7 +55,7 @@ async function getClerkTokenIdentifier(ctx: QueryCtx): Promise<string> {
  *
  * This should not throw; it's safe to use in queries that must gracefully return `null`.
  */
-async function getCurrentConvexUserAllowNull(ctx: QueryCtx | MutationCtx) {
+async function getAndAuthenticateCurrentConvexUserAllowNull(ctx: QueryCtx | MutationCtx) {
   const tokenIdentifier = await getClerkTokenIdentifier(ctx);
   return await ctx.db
     .query('users')
@@ -70,7 +70,7 @@ async function getCurrentConvexUserAllowNull(ctx: QueryCtx | MutationCtx) {
 export async function __backend_only_getAndAuthenticateCurrentConvexUser(
   ctx: QueryCtx
 ): Promise<Doc<'users'>> {
-  const user = await getCurrentConvexUserAllowNull(ctx);
+  const user = await getAndAuthenticateCurrentConvexUserAllowNull(ctx);
   if (!user) {
     throw new Error('No Convex user found for the current Clerk token');
   }
@@ -146,7 +146,7 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
 export const ensureCurrentUser = mutation({
   args: {},
   handler: async (ctx) => {
-    const existing = await getCurrentConvexUserAllowNull(ctx);
+    const existing = await getAndAuthenticateCurrentConvexUserAllowNull(ctx);
     if (existing) {
       return existing._id;
     }

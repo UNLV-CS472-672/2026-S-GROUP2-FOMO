@@ -14,7 +14,6 @@ import { allPosts, recentPosts, taggedPosts } from '@/features/posts/post-data';
 import { useGuest } from '@/integrations/session/provider';
 import { useUser } from '@clerk/expo';
 import { useState } from 'react';
-import { FriendsScreenContent } from './friends';
 
 //import for icons
 import { MaterialIcons } from '@expo/vector-icons';
@@ -116,10 +115,6 @@ export default function ProfileScreen() {
           {activeTab === 'all' && <PostGrid posts={allPosts} />}
           {activeTab === 'recent' && <PostGrid posts={recentPosts} />}
           {activeTab === 'tagged' && <PostGrid posts={taggedPosts} />}
-
-          <View className="mt-6 border-t border-primary-soft-border pt-2">
-            <FriendsScreenContent />
-          </View>
         </ScrollView>
       )}
     </Screen>
