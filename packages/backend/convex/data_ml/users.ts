@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 
-import { Doc, Id } from './_generated/dataModel';
-import { mutation, MutationCtx, query, QueryCtx } from './_generated/server';
+import { Doc, Id } from '../_generated/dataModel';
+import { mutation, MutationCtx, query, QueryCtx } from '../_generated/server';
 
 type ClerkIdentity = {
   tokenIdentifier: string;
