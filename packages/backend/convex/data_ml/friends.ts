@@ -5,7 +5,8 @@
 import { v } from 'convex/values';
 
 import { query } from '../_generated/server';
-import { getClerkTokenIdentifier, tokenIdentifierToConvexUserIdentifier } from '../users';
+
+import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../users';
 
 // Checks if a user exists in "friends" via userId.
 // Given input "userA", checks and returns "userB" if exists, null otherwise.
@@ -33,9 +34,8 @@ export const friendExists = query({
 export const getFriendRecs = query({
   args: {},
   handler: async (ctx) => {
-    const tokenIdentifier = await getClerkTokenIdentifier(ctx);
-
-    const userId = await tokenIdentifierToConvexUserIdentifier(ctx, tokenIdentifier);
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    const userId = user._id;
 
     const rec = await ctx.db
       .query('friendRecs')
