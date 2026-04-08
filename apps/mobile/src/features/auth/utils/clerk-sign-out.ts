@@ -14,12 +14,27 @@ type ClerkWithSignOut = {
  * sign-in (matches the sequence in @clerk/expo's UserButton).
  */
 export async function signOutClerkExpo(clerk: ClerkWithSignOut) {
+  if (__DEV__) {
+    console.log('[clerk-sign-out] start', { platform: Platform.OS });
+  }
+
   if (Platform.OS === 'ios' || Platform.OS === 'android') {
     const native = TurboModuleRegistry.get('ClerkExpo') as ClerkExpoNative | null;
+
+    if (__DEV__) {
+      console.log('[clerk-sign-out] native module', { available: Boolean(native?.signOut) });
+    }
+
     if (native?.signOut) {
       try {
         await native.signOut();
-      } catch {
+        if (__DEV__) {
+          console.log('[clerk-sign-out] native sign out complete');
+        }
+      } catch (error) {
+        if (__DEV__) {
+          console.log('[clerk-sign-out] native sign out skipped', { error });
+        }
         // May already be signed out at the native layer
       }
     }
@@ -27,17 +42,36 @@ export async function signOutClerkExpo(clerk: ClerkWithSignOut) {
 
   try {
     await clerk.signOut();
-    console.log('Signed out');
-  } catch {
+    if (__DEV__) {
+      console.log('[clerk-sign-out] clerk sign out complete');
+    }
+  } catch (error) {
+    if (__DEV__) {
+      console.log('[clerk-sign-out] clerk sign out failed, trying reload fallback', { error });
+    }
+
     const withReload = clerk as ClerkWithSignOut & {
       __internal_reloadInitialResources?: () => Promise<void>;
     };
+
     if (typeof withReload.__internal_reloadInitialResources === 'function') {
       try {
         await withReload.__internal_reloadInitialResources();
-      } catch {
+        if (__DEV__) {
+          console.log('[clerk-sign-out] clerk resource reload complete');
+        }
+      } catch (reloadError) {
+        if (__DEV__) {
+          console.log('[clerk-sign-out] clerk resource reload failed', { error: reloadError });
+        }
         // Best-effort recovery; same idea as @clerk/expo UserButton
       }
+    } else if (__DEV__) {
+      console.log('[clerk-sign-out] no clerk reload fallback available');
     }
+  }
+
+  if (__DEV__) {
+    console.log('[clerk-sign-out] end');
   }
 }

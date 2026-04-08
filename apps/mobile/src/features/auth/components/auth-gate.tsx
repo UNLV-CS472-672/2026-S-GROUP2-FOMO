@@ -1,17 +1,9 @@
-import { useConvexAuth } from 'convex/react';
 import type { ReactNode } from 'react';
 
-import { useGuest } from '@/integrations/session/provider';
+import { useAppAuthState } from '../hooks/use-auth-state';
 
 type AuthGateProps = {
   children: ReactNode;
-};
-
-type AuthState = {
-  isAuthenticated: boolean;
-  isGuestMode: boolean;
-  isLoading: boolean;
-  isUnauthenticated: boolean;
 };
 
 function AuthGate({ children, when }: AuthGateProps & { when: boolean }) {
@@ -20,19 +12,6 @@ function AuthGate({ children, when }: AuthGateProps & { when: boolean }) {
   }
 
   return <>{children}</>;
-}
-
-export function useAppAuthState(): AuthState {
-  const { isAuthenticated, isLoading } = useConvexAuth();
-  const { isGuestLoading, isGuestMode } = useGuest();
-  const isAuthLoading = isLoading || isGuestLoading;
-
-  return {
-    isAuthenticated,
-    isGuestMode,
-    isLoading: isAuthLoading,
-    isUnauthenticated: !isAuthLoading && !isAuthenticated && !isGuestMode,
-  };
 }
 
 export function Authenticated({ children }: AuthGateProps) {

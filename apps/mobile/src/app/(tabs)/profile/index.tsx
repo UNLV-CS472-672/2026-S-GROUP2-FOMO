@@ -1,10 +1,10 @@
 //imports for navigation and UI components
-import { AppAuthenticated, AppGuestOnly } from '@/components/auth/auth-state';
 import ProfilePicture from '@/components/profile/profile-picture';
 import { Button, ButtonText } from '@/components/ui/button';
 import PostGrid from '@/components/ui/post-grid';
 import { Screen } from '@/components/ui/screen';
 import StatLabel from '@/components/ui/stat-label';
+import { AppAuthenticated, AppGuestOnly } from '@/features/auth/components/auth-gate';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { useRouter } from 'expo-router';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';

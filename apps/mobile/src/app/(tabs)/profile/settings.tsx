@@ -15,7 +15,6 @@ export default function SettingsScreen() {
     try {
       await signOutClerkExpo(clerk);
     } finally {
-      console.log('Signed out');
       setIsSigningOut(false);
     }
   }

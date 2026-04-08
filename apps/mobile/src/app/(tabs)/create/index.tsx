@@ -1,10 +1,10 @@
 import { useRouter } from 'expo-router';
 import { ScrollView, Text } from 'react-native';
 
-import { AppAuthenticated, AppGuestOnly } from '@/components/auth/auth-state';
 import { GuestMode } from '@/components/profile/guest-mode';
 import { Button, ButtonText } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
+import { AppAuthenticated, AppGuestOnly } from '@/features/auth/components/auth-gate';
 
 export default function CreateScreen() {
   const { push } = useRouter();
