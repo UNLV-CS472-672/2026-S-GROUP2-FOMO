@@ -1,4 +1,5 @@
 import { latLngToCell } from 'h3-js';
+import { query } from '../_generated/server';
 
 export function latLngToH3Index(lat: number, lng: number, resolution: number = 9): string {
   if (lat < -90 || lat > 90) {
@@ -12,3 +13,26 @@ export function latLngToH3Index(lat: number, lng: number, resolution: number = 9
   }
   return latLngToCell(lat, lng, resolution);
 }
+
+export const getEvents = query({
+  args: {},
+  handler: async (ctx) => {
+    const events = await ctx.db.query('events').withIndex('by_startDate').collect();
+
+    const eventsWithAttendance = await Promise.all(
+      events.map(async (event) => {
+        const attendees = await ctx.db
+          .query('usersToEvents')
+          .withIndex('by_event', (q) => q.eq('eventId', event._id))
+          .collect();
+
+        return {
+          ...event,
+          attendeeCount: attendees.length,
+        };
+      })
+    );
+
+    return eventsWithAttendance;
+  },
+});

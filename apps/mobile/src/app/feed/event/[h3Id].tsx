@@ -1,9 +1,9 @@
 import PostGrid from '@/components/ui/post-grid';
 import { Screen } from '@/components/ui/screen';
-import { coordsToH3Cell } from '@/features/map/utils/h3';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
-import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
+import { api } from '@fomo/backend/convex/_generated/api';
+import { useQuery } from 'convex/react';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
@@ -36,20 +36,19 @@ const SAMPLE_POSTS: GridPost[] = [
 
 export default function EventDetails() {
   const theme = useAppTheme();
+  const events = useQuery(api.data_ml.events.getEvents) ?? [];
   const { h3Id } = useLocalSearchParams<{ h3Id?: string | string[] }>();
   const resolvedH3Id = Array.isArray(h3Id) ? h3Id[0] : h3Id;
 
   const event = useMemo(() => {
     if (!resolvedH3Id) return null;
 
-    const eventIndex = eventSeeds.findIndex(
-      (seed) => coordsToH3Cell(seed.location.longitude, seed.location.latitude) === resolvedH3Id
-    );
+    const eventIndex = events.findIndex((event) => event.location.h3Index === resolvedH3Id);
 
     if (eventIndex === -1) return null;
 
-    const event = eventSeeds[eventIndex];
-    const attendeeCount = eventSeedAttendees[eventIndex] ?? 0;
+    const event = events[eventIndex];
+    const attendeeCount = event?.attendeeCount ?? 0;
 
     return {
       id: resolvedH3Id,
@@ -57,7 +56,7 @@ export default function EventDetails() {
       description: `${event.name}\n${event.organization}\n${attendeeCount} attending\n\n${event.description}`,
       posts: SAMPLE_POSTS,
     } satisfies Event;
-  }, [resolvedH3Id]);
+  }, [events, resolvedH3Id]);
 
   if (!event) {
     return (

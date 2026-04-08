@@ -1,9 +1,10 @@
 import { Icon } from '@/components/icon';
 import { EventMarker } from '@/features/map/components/event-marker';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
-import { coordsToH3Cell, pointsToGeoJSON } from '@/features/map/utils/h3';
-import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
+import { pointsToGeoJSON } from '@/features/map/utils/h3';
+import { api } from '@fomo/backend/convex/_generated/api';
 import MapboxGL from '@rnmapbox/maps';
+import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -12,8 +13,6 @@ import { useUniwind } from 'uniwind';
 
 MapboxGL.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
 
-const MIN_WEIGHT = Math.min(...eventSeedAttendees);
-const MAX_WEIGHT = Math.max(...eventSeedAttendees);
 const DEFAULT_ZOOM_LEVEL = 13;
 
 // hardcoded from feed
@@ -26,6 +25,7 @@ const EVENT_IMAGES = [
 
 export default function MapScreen() {
   const { push } = useRouter();
+  const events = useQuery(api.data_ml.events.getEvents) ?? [];
   const insets = useSafeAreaInsets();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
@@ -35,13 +35,22 @@ export default function MapScreen() {
   const heatmapGeoJSON = useMemo(
     () =>
       pointsToGeoJSON(
-        eventSeeds.map((e, i) => ({
-          latitude: e.location.latitude,
-          longitude: e.location.longitude,
-          weight: eventSeedAttendees[i] ?? 1,
+        events.map((event) => ({
+          latitude: event.location.latitude,
+          longitude: event.location.longitude,
+          weight: event.attendeeCount,
         }))
       ),
-    []
+    [events]
+  );
+
+  const minWeight = useMemo(
+    () => (events.length === 0 ? 0 : Math.min(...events.map((event) => event.attendeeCount))),
+    [events]
+  );
+  const maxWeight = useMemo(
+    () => (events.length === 0 ? 1 : Math.max(...events.map((event) => event.attendeeCount))),
+    [events]
   );
 
   useEffect(() => {
@@ -81,20 +90,16 @@ export default function MapScreen() {
           />
         )}
 
-        {eventSeeds.map((event, i) => (
+        {events.map((event, i) => (
           <EventMarker
-            key={event.name}
-            id={`event-${i}`}
+            key={event._id}
+            id={`event-${event._id}`}
             coordinate={[event.location.longitude, event.location.latitude]}
             image={EVENT_IMAGES[i % EVENT_IMAGES.length]}
-            weight={eventSeedAttendees[i] ?? 1}
-            minWeight={MIN_WEIGHT}
-            maxWeight={MAX_WEIGHT}
-            onPress={() =>
-              push(
-                `/feed/event/${coordsToH3Cell(event.location.longitude, event.location.latitude)}`
-              )
-            }
+            weight={event.attendeeCount}
+            minWeight={minWeight}
+            maxWeight={maxWeight}
+            onPress={() => push(`/feed/event/${event.location.h3Index}`)}
           />
         ))}
 
