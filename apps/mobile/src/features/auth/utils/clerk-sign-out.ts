@@ -27,6 +27,7 @@ export async function signOutClerkExpo(clerk: ClerkWithSignOut) {
 
   try {
     await clerk.signOut();
+    console.log('Signed out');
   } catch {
     const withReload = clerk as ClerkWithSignOut & {
       __internal_reloadInitialResources?: () => Promise<void>;

@@ -1,4 +1,5 @@
 //imports for navigation and UI components
+import { AppAuthenticated, AppGuestOnly } from '@/components/auth/auth-state';
 import ProfilePicture from '@/components/profile/profile-picture';
 import { Button, ButtonText } from '@/components/ui/button';
 import PostGrid from '@/components/ui/post-grid';
@@ -11,7 +12,6 @@ import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 // imports for authentication and guest mode
 import { GuestMode } from '@/components/profile/guest-mode';
 import { allPosts, recentPosts, taggedPosts } from '@/features/posts/post-data';
-import { useGuest } from '@/integrations/session/provider';
 import { useUser } from '@clerk/expo';
 import { useState } from 'react';
 
@@ -24,7 +24,6 @@ export default function ProfileScreen() {
 
   const { user } = useUser();
   const username = user?.username ?? 'Guest';
-  const { isGuestMode } = useGuest();
 
   //In app profile information/states
   const [activeTab, setActiveTab] = useState<'all' | 'recent' | 'tagged'>('all');
@@ -33,9 +32,10 @@ export default function ProfileScreen() {
 
   return (
     <Screen className="flex-1">
-      {isGuestMode ? (
+      <AppGuestOnly>
         <GuestMode />
-      ) : (
+      </AppGuestOnly>
+      <AppAuthenticated>
         <ScrollView className="flex-1 bg-background pt-20">
           <View className="flex-row items-start p-4">
             <ProfilePicture imageSource={require('@/assets/images/icon.png')} />
@@ -116,7 +116,7 @@ export default function ProfileScreen() {
           {activeTab === 'recent' && <PostGrid posts={recentPosts} />}
           {activeTab === 'tagged' && <PostGrid posts={taggedPosts} />}
         </ScrollView>
-      )}
+      </AppAuthenticated>
     </Screen>
   );
 }

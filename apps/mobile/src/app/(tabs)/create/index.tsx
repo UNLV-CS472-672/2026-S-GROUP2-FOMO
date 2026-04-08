@@ -1,14 +1,13 @@
 import { useRouter } from 'expo-router';
 import { ScrollView, Text } from 'react-native';
 
+import { AppAuthenticated, AppGuestOnly } from '@/components/auth/auth-state';
 import { GuestMode } from '@/components/profile/guest-mode';
 import { Button, ButtonText } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
-import { useGuest } from '@/integrations/session/provider';
 
 export default function CreateScreen() {
   const { push } = useRouter();
-  const { isGuestMode } = useGuest();
 
   return (
     <Screen>
@@ -28,9 +27,10 @@ export default function CreateScreen() {
           Choose what you want to publish.
         </Text>
 
-        {isGuestMode ? (
+        <AppGuestOnly>
           <GuestMode />
-        ) : (
+        </AppGuestOnly>
+        <AppAuthenticated>
           <>
             <Button
               variant="secondary"
@@ -60,7 +60,7 @@ export default function CreateScreen() {
               </ButtonText>
             </Button>
           </>
-        )}
+        </AppAuthenticated>
       </ScrollView>
     </Screen>
   );
