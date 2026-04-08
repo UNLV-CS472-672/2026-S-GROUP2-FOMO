@@ -1,9 +1,10 @@
 import { v } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
-import { mutation, query, QueryCtx } from './_generated/server';
+import { mutation, MutationCtx, query, QueryCtx } from './_generated/server';
 
-function displayNameFromClerk(identity: {
+type ClerkIdentity = {
+  tokenIdentifier: string;
   name?: string;
   username?: string;
   nickname?: string;
@@ -12,7 +13,9 @@ function displayNameFromClerk(identity: {
   givenName?: string;
   familyName?: string;
   email?: string;
-}): string {
+};
+
+function displayNameFromClerk(identity: ClerkIdentity): string {
   const preferredHandle = [
     identity.username,
     identity.preferredUsername,
@@ -27,20 +30,33 @@ function displayNameFromClerk(identity: {
   return preferredHandle || identity.name?.trim() || jwtCombined || emailLocal || 'User';
 }
 
-/**
- * Returns the Clerk JWT `tokenIdentifier` for the current request, or throws if the client is not authenticated.
- * Callers that need optional auth (e.g. return null when logged out) should read `ctx.auth.getUserIdentity()` instead.
- */
-export async function getClerkTokenIdentifier(ctx: QueryCtx): Promise<string> {
+async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
   const identity = await ctx.auth.getUserIdentity();
-  const tokenIdentifier = identity?.tokenIdentifier ?? null;
-  if (!tokenIdentifier) {
-    throw new Error('Not authenticated: missing Clerk token identifier');
+  if (!identity) {
+    throw new Error('No Clerk identity found');
   }
+
+  return identity as ClerkIdentity;
+}
+
+/**
+ * Returns the Clerk JWT `tokenIdentifier` or throws if the client is not authenticated.
+ */
+async function getClerkTokenIdentifier(ctx: QueryCtx): Promise<string> {
+  const identity = await getClerkIdentity(ctx);
+  const tokenIdentifier = identity.tokenIdentifier;
+
   return tokenIdentifier;
 }
 
-async function tokenIdentifierToConvexUser(ctx: QueryCtx, tokenIdentifier: string) {
+/**
+ * Best-effort lookup of the current Convex user row for this request.
+ * Returns null when logged out or when the user row hasn't been created yet.
+ *
+ * This should not throw; it's safe to use in queries that must gracefully return `null`.
+ */
+async function getCurrentConvexUserAllowNull(ctx: QueryCtx | MutationCtx) {
+  const tokenIdentifier = await getClerkTokenIdentifier(ctx);
   return await ctx.db
     .query('users')
     .withIndex('by_token', (q) => q.eq('tokenIdentifier', tokenIdentifier))
@@ -48,19 +64,16 @@ async function tokenIdentifierToConvexUser(ctx: QueryCtx, tokenIdentifier: strin
 }
 
 /**
- * Resolves a Clerk `tokenIdentifier` to the Convex `users` document id, or throws if no row exists.
- * Use this when the operation requires a persisted Convex user (e.g. after `ensureCurrentUser`).
- * For optional lookups (logged-in but not yet synced), query `users` by token and handle a missing row without calling this.
+ * Resolves the current Clerk identity to a Convex user document.
+ * This helper is strict: it throws when auth is missing or the user row does not exist.
  */
-export async function tokenIdentifierToConvexUserIdentifier(
-  ctx: QueryCtx,
-  tokenIdentifier: string
-): Promise<Id<'users'>> {
-  const user = await tokenIdentifierToConvexUser(ctx, tokenIdentifier);
+async function getCurrentConvexUser(ctx: QueryCtx): Promise<Doc<'users'>> {
+  const user = await getCurrentConvexUserAllowNull(ctx);
   if (!user) {
     throw new Error('No Convex user found for the current Clerk token');
   }
-  return user._id;
+
+  return user;
 }
 
 async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
@@ -131,22 +144,12 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
 export const ensureCurrentUser = mutation({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    const tokenIdentifier = identity?.tokenIdentifier ?? null;
-
-    if (!tokenIdentifier) {
-      return null;
+    const existing = await getCurrentConvexUserAllowNull(ctx);
+    if (existing) {
+      return existing._id;
     }
 
-    const user = await tokenIdentifierToConvexUser(ctx, tokenIdentifier);
-
-    if (user) {
-      return user._id;
-    }
-
-    if (!identity) {
-      return null;
-    }
+    const identity = await getClerkIdentity(ctx);
 
     // New Clerk user: row must use the same `tokenIdentifier` Convex puts on `ctx.auth`.
     return await ctx.db.insert('users', {
@@ -159,18 +162,7 @@ export const ensureCurrentUser = mutation({
 export const getCurrentProfile = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    const tokenIdentifier = identity?.tokenIdentifier ?? null;
-    if (!tokenIdentifier) {
-      return null;
-    }
-
-    const user = await tokenIdentifierToConvexUser(ctx, tokenIdentifier);
-
-    if (!user) {
-      return null;
-    }
-
+    const user = await getCurrentConvexUser(ctx);
     return await buildProfile(ctx, user);
   },
 });
