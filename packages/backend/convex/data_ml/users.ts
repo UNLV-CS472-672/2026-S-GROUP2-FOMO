@@ -1,40 +1,203 @@
-// ----------------------------------------------------
-//  Convex helper functions for 'users' data table.
-// -----------------------------------------------------
-
 import { v } from 'convex/values';
-import { query } from '../_generated/server';
 
-// Checks if a user exists in "users" via tokenIdentifier.
-export const queryByToken = query({
-  args: { name: v.string() },
-  handler: async (ctx, { name }) => {
-    return await ctx.db
-      .query('users')
-      .withIndex('by_token', (q) => q.eq('tokenIdentifier', name))
-      .first();
-  },
-});
+import { Doc, Id } from '../_generated/dataModel';
+import { mutation, MutationCtx, query, QueryCtx } from '../_generated/server';
 
-// Checks if a user exists in "users" via id.
-export const userExists = query({
-  args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
-    return await ctx.db.get(userId);
-  },
-});
+type ClerkIdentity = {
+  tokenIdentifier: string;
+  name?: string;
+  username?: string;
+  nickname?: string;
+  preferredUsername?: string;
+  preferred_username?: string;
+  givenName?: string;
+  familyName?: string;
+  email?: string;
+};
 
-// Unique user ids that have at least one row in `usersToEvents` (i.e. attended an event).
-// Ensures that getting all user ids doesn't break later recommendation steps, mainly for the
-// similarity score logic as it would raise a KeyError. Can also be changed to get all user Ids in the future.
-export const getUserIdsWithEventAttendance = query({
+function displayNameFromClerk(identity: ClerkIdentity): string {
+  const preferredHandle = [
+    identity.username,
+    identity.preferredUsername,
+    identity.preferred_username,
+    identity.nickname,
+  ]
+    .find((value) => Boolean(value?.trim()))
+    ?.trim();
+  const jwtCombined = [identity.givenName, identity.familyName].filter(Boolean).join(' ').trim();
+  const emailLocal = identity.email?.split('@')[0]?.trim() || '';
+
+  return preferredHandle || identity.name?.trim() || jwtCombined || emailLocal || 'User';
+}
+
+async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    throw new Error('No Clerk identity found');
+  }
+
+  return identity as ClerkIdentity;
+}
+
+/**
+ * Returns the Clerk JWT `tokenIdentifier` or throws if the client is not authenticated.
+ */
+async function getClerkTokenIdentifier(ctx: QueryCtx): Promise<string> {
+  const identity = await getClerkIdentity(ctx);
+  const tokenIdentifier = identity.tokenIdentifier;
+
+  return tokenIdentifier;
+}
+
+/**
+ * Best-effort lookup of the current Convex user row for this request.
+ * Returns null when logged out or when the user row hasn't been created yet.
+ *
+ * This should not throw; it's safe to use in queries that must gracefully return `null`.
+ */
+async function getAndAuthenticateCurrentConvexUserAllowNull(ctx: QueryCtx | MutationCtx) {
+  const tokenIdentifier = await getClerkTokenIdentifier(ctx);
+  return await ctx.db
+    .query('users')
+    .withIndex('by_token', (q) => q.eq('tokenIdentifier', tokenIdentifier))
+    .first();
+}
+
+/**
+ * Resolves the current Clerk identity to a Convex user document.
+ * This helper is strict: it throws when auth is missing or the user row does not exist.
+ */
+export async function __backend_only_getAndAuthenticateCurrentConvexUser(
+  ctx: QueryCtx
+): Promise<Doc<'users'>> {
+  const user = await getAndAuthenticateCurrentConvexUserAllowNull(ctx);
+  if (!user) {
+    throw new Error('No Convex user found for the current Clerk token');
+  }
+
+  return user;
+}
+
+async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
+  const [posts, comments, userEventLinks, friendRecs] = await Promise.all([
+    ctx.db
+      .query('posts')
+      .withIndex('by_author', (q) => q.eq('authorId', user._id))
+      .collect(),
+    ctx.db
+      .query('comments')
+      .withIndex('by_author', (q) => q.eq('authorId', user._id))
+      .collect(),
+    ctx.db
+      .query('usersToEvents')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .collect(),
+    ctx.db
+      .query('friendRecs')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .first(),
+  ]);
+
+  const events = (
+    await Promise.all(userEventLinks.map((link: Doc<'usersToEvents'>) => ctx.db.get(link.eventId)))
+  ).filter((event: Doc<'events'> | null): event is Doc<'events'> => event !== null);
+
+  const recommendedUsers = friendRecs
+    ? (
+        await Promise.all(
+          friendRecs.recs.map(async (rec: { userId: string; score: number }) => {
+            const recommendedUser = await ctx.db.get(rec.userId as Id<'users'>);
+
+            if (!recommendedUser) {
+              return null;
+            }
+
+            return {
+              user: recommendedUser,
+              score: rec.score,
+            };
+          })
+        )
+      ).filter(
+        (
+          recommendation: { user: Doc<'users'>; score: number } | null
+        ): recommendation is { user: Doc<'users'>; score: number } => recommendation !== null
+      )
+    : [];
+
+  return {
+    user,
+    posts: posts.sort((a: Doc<'posts'>, b: Doc<'posts'>) => b._creationTime - a._creationTime),
+    comments: comments.sort(
+      (a: Doc<'comments'>, b: Doc<'comments'>) => b._creationTime - a._creationTime
+    ),
+    events: events.sort((a: Doc<'events'>, b: Doc<'events'>) => a.startDate - b.startDate),
+    stats: {
+      postCount: posts.length,
+      commentCount: comments.length,
+      eventCount: events.length,
+      recommendationCount: recommendedUsers.length,
+    },
+    recommendations: recommendedUsers,
+  };
+}
+
+// Called from the client after sign-in so `getCurrentProfile` can resolve without manual DB fixes.
+export const ensureCurrentUser = mutation({
   args: {},
   handler: async (ctx) => {
-    const rows = await ctx.db.query('usersToEvents').collect();
-    const uniqueUserIds = new Set<string>();
-    for (const row of rows) {
-      uniqueUserIds.add(row.userId);
+    const existing = await getAndAuthenticateCurrentConvexUserAllowNull(ctx);
+    if (existing) {
+      return existing._id;
     }
-    return Array.from(uniqueUserIds);
+
+    const identity = await getClerkIdentity(ctx);
+
+    // New Clerk user: row must use the same `tokenIdentifier` Convex puts on `ctx.auth`.
+    return await ctx.db.insert('users', {
+      name: displayNameFromClerk(identity),
+      tokenIdentifier: identity.tokenIdentifier,
+    });
+  },
+});
+
+export const getCurrentProfile = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    return await buildProfile(ctx, user);
+  },
+});
+
+export const getProfileById = query({
+  args: {
+    userId: v.id('users'),
+  },
+  handler: async (ctx, { userId }) => {
+    const user = await ctx.db.get(userId);
+
+    if (!user) {
+      return null;
+    }
+
+    return await buildProfile(ctx, user);
+  },
+});
+
+export const getProfileByName = query({
+  args: {
+    name: v.string(),
+  },
+  handler: async (ctx, { name }) => {
+    const user = await ctx.db
+      .query('users')
+      .withIndex('by_name', (q) => q.eq('name', name))
+      .first();
+
+    if (!user) {
+      return null;
+    }
+
+    return await buildProfile(ctx, user);
   },
 });
