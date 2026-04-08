@@ -1,9 +1,10 @@
 import PostGrid from '@/components/ui/post-grid';
 import { Screen } from '@/components/ui/screen';
+import { useGuest } from '@/integrations/session/provider';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
-import { useQuery } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
@@ -36,7 +37,20 @@ const SAMPLE_POSTS: GridPost[] = [
 
 export default function EventDetails() {
   const theme = useAppTheme();
-  const events = useQuery(api.data_ml.events.getEvents) ?? [];
+  const { isAuthenticated } = useConvexAuth();
+  const { isGuestMode, isGuestLoading } = useGuest();
+  const signedInEvents = useQuery(
+    api.data_ml.events.getEventsForCurrentUser,
+    isAuthenticated ? {} : 'skip'
+  );
+  const guestEvents = useQuery(
+    api.data_ml.events.getEventsForGuestUser,
+    !isAuthenticated && isGuestMode && !isGuestLoading ? {} : 'skip'
+  );
+  const events = useMemo(
+    () => (isAuthenticated ? (signedInEvents ?? []) : (guestEvents ?? [])),
+    [guestEvents, isAuthenticated, signedInEvents]
+  );
   const { h3Id } = useLocalSearchParams<{ h3Id?: string | string[] }>();
   const resolvedH3Id = Array.isArray(h3Id) ? h3Id[0] : h3Id;
 

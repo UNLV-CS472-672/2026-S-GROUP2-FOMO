@@ -36,7 +36,10 @@ export default function MapScreen() {
     api.data_ml.events.getEventsForGuestUser,
     !isAuthenticated && isGuestMode && !isGuestLoading ? {} : 'skip'
   );
-  const events = isAuthenticated ? (signedInEvents ?? []) : (guestEvents ?? []);
+  const events = useMemo(
+    () => (isAuthenticated ? (signedInEvents ?? []) : (guestEvents ?? [])),
+    [guestEvents, isAuthenticated, signedInEvents]
+  );
   const insets = useSafeAreaInsets();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
