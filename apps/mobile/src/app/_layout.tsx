@@ -57,11 +57,11 @@ function RootNavigator() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
-          name="feed/[h3Id]"
+          name="feed/event/[h3Id]"
           options={{
             presentation: 'modal',
             headerShown: true,
-            title: 'Feed',
+            title: 'Event Details',
             headerLeft: () => <AppHeaderBackButton />,
           }}
         />
