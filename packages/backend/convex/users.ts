@@ -27,9 +27,17 @@ function displayNameFromClerk(identity: {
   return preferredHandle || identity.name?.trim() || jwtCombined || emailLocal || 'User';
 }
 
-async function getClerkTokenIdentifier(ctx: QueryCtx): Promise<string | null> {
+/**
+ * Returns the Clerk JWT `tokenIdentifier` for the current request, or throws if the client is not authenticated.
+ * Callers that need optional auth (e.g. return null when logged out) should read `ctx.auth.getUserIdentity()` instead.
+ */
+export async function getClerkTokenIdentifier(ctx: QueryCtx): Promise<string> {
   const identity = await ctx.auth.getUserIdentity();
-  return identity?.tokenIdentifier ?? null;
+  const tokenIdentifier = identity?.tokenIdentifier ?? null;
+  if (!tokenIdentifier) {
+    throw new Error('Not authenticated: missing Clerk token identifier');
+  }
+  return tokenIdentifier;
 }
 
 async function tokenIdentifierToConvexUser(ctx: QueryCtx, tokenIdentifier: string) {
@@ -37,6 +45,22 @@ async function tokenIdentifierToConvexUser(ctx: QueryCtx, tokenIdentifier: strin
     .query('users')
     .withIndex('by_token', (q) => q.eq('tokenIdentifier', tokenIdentifier))
     .first();
+}
+
+/**
+ * Resolves a Clerk `tokenIdentifier` to the Convex `users` document id, or throws if no row exists.
+ * Use this when the operation requires a persisted Convex user (e.g. after `ensureCurrentUser`).
+ * For optional lookups (logged-in but not yet synced), query `users` by token and handle a missing row without calling this.
+ */
+export async function tokenIdentifierToConvexUserIdentifier(
+  ctx: QueryCtx,
+  tokenIdentifier: string
+): Promise<Id<'users'>> {
+  const user = await tokenIdentifierToConvexUser(ctx, tokenIdentifier);
+  if (!user) {
+    throw new Error('No Convex user found for the current Clerk token');
+  }
+  return user._id;
 }
 
 async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
@@ -107,7 +131,8 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
 export const ensureCurrentUser = mutation({
   args: {},
   handler: async (ctx) => {
-    const tokenIdentifier = await getClerkTokenIdentifier(ctx);
+    const identity = await ctx.auth.getUserIdentity();
+    const tokenIdentifier = identity?.tokenIdentifier ?? null;
 
     if (!tokenIdentifier) {
       return null;
@@ -118,9 +143,6 @@ export const ensureCurrentUser = mutation({
     if (user) {
       return user._id;
     }
-
-    //normally this is not needed, but when trying to resolve the name, we will use it
-    const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
       return null;
@@ -137,8 +159,8 @@ export const ensureCurrentUser = mutation({
 export const getCurrentProfile = query({
   args: {},
   handler: async (ctx) => {
-    const tokenIdentifier = await getClerkTokenIdentifier(ctx);
-
+    const identity = await ctx.auth.getUserIdentity();
+    const tokenIdentifier = identity?.tokenIdentifier ?? null;
     if (!tokenIdentifier) {
       return null;
     }

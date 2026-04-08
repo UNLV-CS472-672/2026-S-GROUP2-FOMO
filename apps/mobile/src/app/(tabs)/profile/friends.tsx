@@ -14,20 +14,8 @@ export function FriendsScreenContent() {
   const theme = useAppTheme();
   const [searchText, setSearchText] = useState('');
   const [isRecommendedCollapsed, setIsRecommendedCollapsed] = useState(false);
-  const identity = useQuery(api.auth.getIdentity);
 
-  //get current user
-  const currentUser = useQuery(
-    api.data_ml.users.queryByToken,
-    identity?.tokenIdentifier ? { name: identity.tokenIdentifier } : 'skip'
-  );
-
-  console.log('current user: ', currentUser);
-  //get friend rects for that user
-  const friendRecResult = useQuery(
-    api.data_ml.friends.getFriendRecs,
-    currentUser?._id ? { userId: currentUser._id } : 'skip'
-  );
+  const friendRecResult = useQuery(api.data_ml.friends.getFriendRecs);
 
   const recommendedFriends = useMemo<Friend[]>(
     () =>
