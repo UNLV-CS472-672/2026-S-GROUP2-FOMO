@@ -89,7 +89,7 @@ export default defineSchema({
   friends: defineTable({
     requesterId: v.id('users'),
     recipientId: v.id('users'),
-    status: v.union(v.literal('pending'), v.literal('accepted'), v.literal('rejected')),
+    status: v.union(v.literal('pending'), v.literal('accepted'), v.literal('ignored')),
   })
     .index('by_requesterId', ['requesterId'])
     .index('by_recipientId', ['recipientId'])
