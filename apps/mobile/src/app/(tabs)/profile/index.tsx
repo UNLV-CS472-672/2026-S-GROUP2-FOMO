@@ -4,7 +4,6 @@ import { Button, ButtonText } from '@/components/ui/button';
 import PostGrid from '@/components/ui/post-grid';
 import { Screen } from '@/components/ui/screen';
 import StatLabel from '@/components/ui/stat-label';
-import { Authenticated, GuestOnly } from '@/features/auth/components/auth-gate';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { useRouter } from 'expo-router';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -12,6 +11,7 @@ import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 // imports for authentication and guest mode
 import { GuestMode } from '@/components/profile/guest-mode';
 import { allPosts, recentPosts, taggedPosts } from '@/features/posts/post-data';
+import { useGuest } from '@/integrations/session/provider';
 import { useUser } from '@clerk/expo';
 import { useState } from 'react';
 
@@ -24,6 +24,7 @@ export default function ProfileScreen() {
 
   const { user } = useUser();
   const username = user?.username ?? 'Guest';
+  const { isGuestMode } = useGuest();
 
   //In app profile information/states
   const [activeTab, setActiveTab] = useState<'all' | 'recent' | 'tagged'>('all');
@@ -32,10 +33,9 @@ export default function ProfileScreen() {
 
   return (
     <Screen className="flex-1">
-      <GuestOnly>
+      {isGuestMode ? (
         <GuestMode />
-      </GuestOnly>
-      <Authenticated>
+      ) : (
         <ScrollView className="flex-1 bg-background pt-20">
           <View className="flex-row items-start p-4">
             <ProfilePicture imageSource={require('@/assets/images/icon.png')} />
@@ -65,7 +65,7 @@ export default function ProfileScreen() {
               <View className="flex-1 items-center">
                 <StatLabel
                   value={24}
-                  label="Followers"
+                  label="Friends"
                   onPress={() => router.push('/profile/friends')}
                 />
               </View>
@@ -116,7 +116,7 @@ export default function ProfileScreen() {
           {activeTab === 'recent' && <PostGrid posts={recentPosts} />}
           {activeTab === 'tagged' && <PostGrid posts={taggedPosts} />}
         </ScrollView>
-      </Authenticated>
+      )}
     </Screen>
   );
 }
