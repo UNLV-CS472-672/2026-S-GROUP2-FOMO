@@ -119,10 +119,10 @@ export const seed = mutation({
     for (const u of userSeeds) {
       const existing = await ctx.db
         .query('users')
-        .withIndex('by_token', (q) => q.eq('tokenIdentifier', u.token))
+        .withIndex('by_clerkId', (q) => q.eq('clerkId', u.token))
         .unique();
       userIds.push(
-        existing?._id ?? (await ctx.db.insert('users', { name: u.name, tokenIdentifier: u.token }))
+        existing?._id ?? (await ctx.db.insert('users', { name: u.name, clerkId: u.token }))
       );
     }
     const [u1, u2, u3, u4, u5, u6, u7, u8, u9] = userIds;
