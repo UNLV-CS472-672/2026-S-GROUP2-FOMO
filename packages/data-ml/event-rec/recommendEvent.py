@@ -78,7 +78,7 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
     user_tower = UserTower(tag_count).to(DEVICE)
     event_tower = EventTower(tag_count).to(DEVICE)
 
-    model_weights = torch.load("models/model.pt", map_location=DEVICE)
+    model_weights = torch.load("models/model10.pt", map_location=DEVICE)
 
     user_tower.load_state_dict(model_weights['user_tower'])
     event_tower.load_state_dict(model_weights['event_tower'])

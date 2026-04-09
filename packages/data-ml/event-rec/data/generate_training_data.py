@@ -181,8 +181,8 @@ USER_PERSONAS = [
 
 # ── 4. Weight formula (mirrors updateUserPreferences.py exactly) ───────────────
 
-BETA = 0.15
-TAU  = 1.25
+BETA = 0.4
+TAU  = 1.0
 
 
 def build_user_weight_from_matrix(mat: np.ndarray, prior: np.ndarray | None = None) -> np.ndarray:
@@ -269,7 +269,7 @@ def generate_users():
 
 # ── 7. Generate events ─────────────────────────────────────────────────────────
 
-NUM_EVENTS = 6000
+NUM_EVENTS = 4000
 
 
 def generate_events() -> np.ndarray:
@@ -282,7 +282,7 @@ def generate_events() -> np.ndarray:
 
 # ── 8. Mine BPR triplets ───────────────────────────────────────────────────────
 
-TRIPLETS_PER_USER = 40   # 800 × 15 = up to 12,000 triplets
+TRIPLETS_PER_USER = 20   # 800 × 15 = up to 12,000 triplets
 
 
 def cosine_sim_matrix(user_weights: np.ndarray, event_tags: np.ndarray) -> np.ndarray:

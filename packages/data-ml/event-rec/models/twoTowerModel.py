@@ -9,6 +9,10 @@ class UserTower(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
             nn.Linear(hidden_dim, embed_dim),
         )
 
@@ -23,6 +27,8 @@ class EventTower(nn.Module):
 
         self.mlp = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, embed_dim),
         )

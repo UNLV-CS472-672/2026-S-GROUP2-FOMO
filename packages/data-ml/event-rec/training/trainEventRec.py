@@ -19,9 +19,26 @@ def main(epochs: int = 100, model_path: str | None = None) -> None:
 
     if model_path is not None:
         checkpoint = torch.load(model_path, map_location=DEVICE)
-        user_tower.load_state_dict(checkpoint['user_tower'])
-        event_tower.load_state_dict(checkpoint['event_tower'])
-        print(f"Loaded model from {model_path}")
+        try:
+            user_tower.load_state_dict(checkpoint['user_tower'])
+            event_tower.load_state_dict(checkpoint['event_tower'])
+            print(f"Loaded model from {model_path}")
+        except RuntimeError as e:
+            print(f"Full load failed ({e}), attempting partial load...")
+            def partial_load(model, saved_state):
+                model_state = model.state_dict()
+                compatible = {
+                    k: v for k, v in saved_state.items()
+                    if k in model_state and v.shape == model_state[k].shape
+                }
+                model_state.update(compatible)
+                model.load_state_dict(model_state)
+                skipped = set(saved_state) - set(compatible)
+                if skipped:
+                    print(f"  Skipped incompatible keys: {skipped}")
+            partial_load(user_tower, checkpoint['user_tower'])
+            partial_load(event_tower, checkpoint['event_tower'])
+            print(f"Partial load from {model_path} complete")
     else:
         print("Training from scratch")
 
@@ -56,6 +73,7 @@ def main(epochs: int = 100, model_path: str | None = None) -> None:
             # --- evaluation ---
             eval_loss = 0.0
             with torch.no_grad():
+                user_tower.eval()
                 for user_tags, pos_event_tags, neg_event_tags in test_loader:
                     user_tags = user_tags.to(DEVICE)
                     pos_event_tags = pos_event_tags.to(DEVICE)
@@ -65,6 +83,7 @@ def main(epochs: int = 100, model_path: str | None = None) -> None:
                     pos_vec = event_tower(pos_event_tags)
                     neg_vec = event_tower(neg_event_tags)
                     eval_loss += trainer.bpr_loss(user_vec, pos_vec, neg_vec).item()
+                user_tower.train()
 
             avg_eval = eval_loss / len(test_loader)
             print(f"Epoch {epoch + 1}/{epochs} | train loss: {avg_loss:.4f} | test loss: {avg_eval:.4f}")
@@ -76,4 +95,4 @@ def main(epochs: int = 100, model_path: str | None = None) -> None:
         save_model(epoch + 1)
 
 if __name__ == "__main__":
-    main(model_path="models/model.pt")
+    main(model_path="models/model10.pt")
