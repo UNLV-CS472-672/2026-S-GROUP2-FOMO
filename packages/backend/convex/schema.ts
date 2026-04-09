@@ -20,9 +20,6 @@ export default defineSchema({
       longitude: v.number(),
       h3Index: v.string(),
     }),
-
-    // latitude: v.number(),
-    // longitude: v.number(),
   })
     .index('by_startDate', ['startDate'])
     .index('by_endDate', ['endDate'])
@@ -90,12 +87,13 @@ export default defineSchema({
   }).index('by_userId', ['userId']),
 
   friends: defineTable({
-    userAId: v.id('users'),
-    userBId: v.id('users'),
+    requesterId: v.id('users'),
+    recipientId: v.id('users'),
+    status: v.union(v.literal('pending'), v.literal('accepted'), v.literal('rejected')),
   })
-    .index('by_userAId', ['userAId'])
-    .index('by_userBId', ['userBId'])
-    .index('by_userA_userB', ['userAId', 'userBId']),
+    .index('by_requesterId', ['requesterId'])
+    .index('by_recipientId', ['recipientId'])
+    .index('by_recipientId_requesterId', ['recipientId', 'requesterId']),
 
   userTagWeights: defineTable({
     userId: v.id('users'),

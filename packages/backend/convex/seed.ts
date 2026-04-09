@@ -536,47 +536,33 @@ export const seed = mutation({
     }
 
     const friendPairs = [
-      { userAId: u1, userBId: u2 },
-      { userAId: u1, userBId: u4 },
-      { userAId: u1, userBId: u5 },
-      { userAId: u1, userBId: u7 },
-      { userAId: u1, userBId: u8 },
+      { requesterId: u1, recipientId: u2, status: 'accepted' },
+      { requesterId: u1, recipientId: u4, status: 'pending' },
+      { requesterId: u1, recipientId: u5, status: 'accepted' },
 
-      { userAId: u2, userBId: u1 },
-      { userAId: u2, userBId: u3 },
+      { requesterId: u2, recipientId: u3, status: 'accepted' },
 
-      { userAId: u3, userBId: u2 },
-      { userAId: u3, userBId: u4 },
-      { userAId: u3, userBId: u5 },
-      { userAId: u3, userBId: u6 },
-      { userAId: u3, userBId: u7 },
+      { requesterId: u3, recipientId: u4, status: 'accepted' },
+      { requesterId: u3, recipientId: u5, status: 'accepted' },
+      { requesterId: u3, recipientId: u6, status: 'accepted' },
 
-      { userAId: u4, userBId: u1 },
-      { userAId: u4, userBId: u3 },
-      { userAId: u4, userBId: u5 },
-      { userAId: u4, userBId: u8 },
+      { requesterId: u4, recipientId: u5, status: 'accepted' },
+      { requesterId: u4, recipientId: u8, status: 'rejected' },
 
-      { userAId: u5, userBId: u1 },
-      { userAId: u5, userBId: u3 },
-      { userAId: u5, userBId: u4 },
-      { userAId: u5, userBId: u6 },
+      { requesterId: u5, recipientId: u6, status: 'accepted' },
 
-      { userAId: u6, userBId: u3 },
-      { userAId: u6, userBId: u5 },
-      { userAId: u6, userBId: u8 },
+      { requesterId: u6, recipientId: u8, status: 'accepted' },
 
-      { userAId: u7, userBId: u1 },
-      { userAId: u7, userBId: u3 },
+      { requesterId: u7, recipientId: u1, status: 'pending' },
+      { requesterId: u7, recipientId: u3, status: 'rejected' },
 
-      { userAId: u8, userBId: u1 },
-      { userAId: u8, userBId: u4 },
-      { userAId: u8, userBId: u6 },
-    ];
+      { requesterId: u8, recipientId: u1, status: 'pending' },
+    ] as const;
     for (const pair of friendPairs) {
       const existing = await ctx.db
         .query('friends')
-        .withIndex('by_userA_userB', (q) =>
-          q.eq('userAId', pair.userAId).eq('userBId', pair.userBId)
+        .withIndex('by_recipientId_requesterId', (q) =>
+          q.eq('recipientId', pair.recipientId).eq('requesterId', pair.requesterId)
         )
         .first();
       if (!existing) await ctx.db.insert('friends', pair);

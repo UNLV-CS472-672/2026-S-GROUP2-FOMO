@@ -347,13 +347,49 @@ def test_upsert_friend_recs_correct_rec_count(mock_client: MagicMock, sample_sco
     call_kwargs = mock_client.mutation.call_args[0][1]
     assert len(call_kwargs["recs"]) == 2
     
-# Ensure that if friends exists, they are correctly filtered out.
+# General case; ensure that if friends exists, they are correctly filtered out.
 def test_upsert_friend_recs_friend_filtering(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
     mock_client.query.side_effect = [{"_id": "u2"}, None]
     upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
     recs = call_kwargs["recs"]
     assert recs[0]["userId"] == "u1"
+
+# Specific case; ensure that if a "requester" is a friend, filter out.
+def test_upsert_friend_recs_requester_filtering(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
+    mock_client.query.return_value = {"_id": "friendship_id"}
+    upsert_friend_recs(sample_score_df, "u1", 2)
+    call_kwargs = mock_client.mutation.call_args[0][1]
+    recs = call_kwargs["recs"]
+    rec_ids = [r["userId"] for r in recs]
+    assert "u2" not in rec_ids
+    assert "u1" not in rec_ids  
+
+# Specific case; ensure that if a "recipient" is a friend, filter out.
+def test_upsert_friend_recs_recipient_filtering(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
+    mock_client.query.return_value = {"_id": "friendship_id"}
+    upsert_friend_recs(sample_score_df, "u2", 2)
+    call_kwargs = mock_client.mutation.call_args[0][1]
+    recs = call_kwargs["recs"]
+    rec_ids = [r["userId"] for r in recs]
+    assert "u1" not in rec_ids
+
+# Pending friendships should NOT be filtered out.
+def test_upsert_friend_recs_pending_not_filtered(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
+    mock_client.query.return_value = None
+    upsert_friend_recs(sample_score_df, "u1", 2)
+    call_kwargs = mock_client.mutation.call_args[0][1]
+    recs = call_kwargs["recs"]
+    assert len(recs) == 2  
+
+# Rejected friendship should NOT be filtered out. 
+# NOTE: We can adjust this logic, especially is we want this leaning more toward a "blocked" behavior.
+def test_upsert_friend_recs_rejected_not_filtered(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
+    mock_client.query.return_value = None
+    upsert_friend_recs(sample_score_df, "u1", 2)
+    call_kwargs = mock_client.mutation.call_args[0][1]
+    recs = call_kwargs["recs"]
+    assert len(recs) == 2
     
 # Ensure that the final df is sorted by top-first.
 def test_upsert_friend_recs_top_scores_selected(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:

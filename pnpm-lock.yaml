@@ -65,6 +65,9 @@ importers:
       '@fomo/backend':
         specifier: workspace:*
         version: link:../../packages/backend
+      '@fomo/env':
+        specifier: workspace:*
+        version: link:../../packages/env
       '@fomo/theme':
         specifier: workspace:*
         version: link:../../packages/theme
