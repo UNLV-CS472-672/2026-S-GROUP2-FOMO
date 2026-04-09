@@ -14,11 +14,17 @@ The Ticketmaster ingestion action is:
 
 - `eventsIngest:syncTicketmasterLasVegas`
 
-### 1. Set required Convex env vars
+### 1. Set backend env vars
 
-From `packages/backend`, set the Ticketmaster API key in Convex deployment env vars:
+Create `packages/backend/.env.local` from `packages/backend/.env.example` and set:
+
+- `CLERK_JWT_ISSUER_DOMAIN` (required for auth config)
+- `TICKETMASTER_API_KEY` (required only for Ticketmaster ingestion)
+
+Then set Convex deployment env vars from `packages/backend` (or in the Convex dashboard UI):
 
 ```bash
+pnpm exec convex env set CLERK_JWT_ISSUER_DOMAIN https://your-app.clerk.accounts.dev
 pnpm exec convex env set TICKETMASTER_API_KEY <your_ticketmaster_api_key>
 ```
 
