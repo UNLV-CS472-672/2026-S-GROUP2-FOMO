@@ -100,4 +100,9 @@ export default defineSchema({
     weights: v.array(v.number()),
     updatedAt: v.number(),
   }).index('by_userId', ['userId']),
+
+  userPreferredTags: defineTable({
+    userId: v.id('users'),
+    tagIds: v.array(v.id('tags')),
+  }).index('by_userId', ['userId']),
 });
