@@ -1,7 +1,7 @@
 import { latLngToCell } from 'h3-js';
 import { query } from '../_generated/server';
 import { eventSeeds } from '../seed';
-import { __backend_only_getAndAuthenticateCurrentConvexUser } from './users';
+import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../users';
 
 export function latLngToH3Index(lat: number, lng: number, resolution: number = 9): string {
   if (lat < -90 || lat > 90) {
