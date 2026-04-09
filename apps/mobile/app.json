@@ -82,6 +82,14 @@
         }
       ],
       [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "FOMO uses your microphone so you can search with your voice.",
+          "speechRecognitionPermission": "FOMO uses speech recognition so you can search events with your voice.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "FOMO needs access to your photos so you can choose media for posts.",
