@@ -285,10 +285,36 @@ def generate_events() -> np.ndarray:
 TRIPLETS_PER_USER = 20   # 800 × 15 = up to 12,000 triplets
 
 
+# How much non-event tags contribute to the similarity score.
+# 0.0 = fully ignore tags outside the event (pure masked cosine)
+# 1.0 = treat all tags equally (standard cosine similarity)
+NON_EVENT_TAG_WEIGHT = 0.1
+
+
 def cosine_sim_matrix(user_weights: np.ndarray, event_tags: np.ndarray) -> np.ndarray:
-    u_norm = user_weights / (np.linalg.norm(user_weights, axis=1, keepdims=True) + 1e-8)
-    e_norm = event_tags   / (np.linalg.norm(event_tags,   axis=1, keepdims=True) + 1e-8)
-    return u_norm @ e_norm.T
+    # Dampened cosine similarity: non-event tags are scaled down by
+    # NON_EVENT_TAG_WEIGHT so a user's extra interests don't dilute their score
+    # for an event they'd genuinely enjoy.
+    #
+    # adjusted[u, e, t] = user_weights[u, t]                      if event has tag t
+    #                    = NON_EVENT_TAG_WEIGHT * user_weights[u, t]  otherwise
+    #
+    # Since event_tags are binary, the adjusted norm is vectorizable:
+    #   ||adjusted[u,e]||² = alpha² * ||user_weights[u]||²
+    #                       + (1 - alpha²) * sum(user_weights[u,t]² for t in event)
+    #
+    # alpha=0 → fully masked, alpha=1 → standard cosine similarity
+
+    alpha = NON_EVENT_TAG_WEIGHT
+    u_sq  = user_weights ** 2                                          # (U, T)
+
+    dot          = user_weights @ event_tags.T                         # (U, E)
+    A            = u_sq @ event_tags.T                                 # (U, E) — sq norm over event tags only
+    B            = u_sq.sum(axis=1, keepdims=True)                     # (U, 1) — total sq norm
+    adjusted_norms = np.sqrt(alpha**2 * B + (1 - alpha**2) * A + 1e-8)  # (U, E)
+    e_norms      = np.sqrt(event_tags.sum(axis=1) + 1e-8)             # (E,)
+
+    return dot / (adjusted_norms * e_norms[np.newaxis, :])
 
 
 def mine_triplets(user_weights: np.ndarray, event_tags: np.ndarray) -> np.ndarray:

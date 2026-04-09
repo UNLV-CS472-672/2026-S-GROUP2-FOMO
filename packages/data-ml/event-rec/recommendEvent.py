@@ -78,7 +78,7 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
     user_tower = UserTower(tag_count).to(DEVICE)
     event_tower = EventTower(tag_count).to(DEVICE)
 
-    model_weights = torch.load("models/model10.pt", map_location=DEVICE)
+    model_weights = torch.load("models/model14.pt", map_location=DEVICE)
 
     user_tower.load_state_dict(model_weights['user_tower'])
     event_tower.load_state_dict(model_weights['event_tower'])
@@ -88,10 +88,24 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
     event_tower.eval()
 
     # ── Inference
-    user_logits = user_tower(user_weights)
-    event_logits = event_tower(event_tensor)
+    # Dampened cosine similarity on raw tag weights: non-event tags are scaled
+    # by NON_EVENT_TAG_WEIGHT so extra user interests don't dilute the score.
+    NON_EVENT_TAG_WEIGHT = 0.1
 
-    scores = (user_logits @ event_logits.T + 1) / 2
+    uw   = user_weights.cpu().numpy().astype(np.float32)  # (U, T)
+    ev   = event_matrix_multihot.astype(np.float32)       # (E, T)
+    u_sq = uw ** 2
+
+    alpha          = NON_EVENT_TAG_WEIGHT
+    dot            = uw @ ev.T                                           # (U, E)
+    A              = u_sq @ ev.T                                         # (U, E)
+    B              = u_sq.sum(axis=1, keepdims=True)                     # (U, 1)
+    adjusted_norms = np.sqrt(alpha**2 * B + (1 - alpha**2) * A + 1e-8)  # (U, E)
+    e_norms        = np.sqrt(ev.sum(axis=1) + 1e-8)                      # (E,)
+
+    scores = torch.from_numpy(dot / (adjusted_norms * e_norms[np.newaxis, :])).to(DEVICE)
+
+
 
     k = min(k, scores.shape[1])
     top_scores, top_indices = torch.topk(scores, k=k, dim=1)
