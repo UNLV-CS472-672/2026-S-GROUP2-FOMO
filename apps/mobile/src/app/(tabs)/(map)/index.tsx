@@ -1,14 +1,16 @@
-import { Icon } from '@/components/icon';
 import { EventMarker } from '@/features/map/components/event-marker';
+import { RecenterButton } from '@/features/map/components/recenter-button';
+import { SearchDrawer } from '@/features/map/components/search';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { coordsToH3Cell, pointsToGeoJSON } from '@/features/map/utils/h3';
 import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
 import { env } from '@fomo/env/mobile';
+import { useIsFocused } from '@react-navigation/native';
 import MapboxGL from '@rnmapbox/maps';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
 
 MapboxGL.setAccessToken(env.EXPO_PUBLIC_MAPBOX_TOKEN);
@@ -27,11 +29,13 @@ const EVENT_IMAGES = [
 
 export default function MapScreen() {
   const { push } = useRouter();
-  const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
   const { theme } = useUniwind();
   const isDark = theme === 'dark';
+  const drawerAnimatedIndex = useSharedValue(0);
+  const drawerAnimatedPosition = useSharedValue(0);
 
   const heatmapGeoJSON = useMemo(
     () =>
@@ -127,29 +131,17 @@ export default function MapScreen() {
         </MapboxGL.ShapeSource>
       </MapboxGL.MapView>
 
-      {/* Search bar overlay */}
-      <View className="absolute left-4 right-4" style={{ top: insets.top + 12 }}>
-        <Pressable
-          className="rounded-xl border border-border/80 bg-card/95 px-4 py-3"
-          onPress={() => push('/(tabs)/(map)/search')}
-        >
-          <Text className="text-[15px] text-muted-foreground">Search places...</Text>
-        </Pressable>
-      </View>
+      <SearchDrawer
+        onSelectEvent={(h3Id) => push(`/feed/event/${h3Id}`)}
+        animatedIndex={drawerAnimatedIndex}
+        animatedPosition={drawerAnimatedPosition}
+        isFocused={isFocused}
+      />
 
-      {/* Recenter button */}
-      <Pressable
-        accessibilityLabel="Recenter map on your location"
-        accessibilityRole="button"
-        android_ripple={{ color: 'rgba(0,0,0,0.08)', radius: 24 }}
-        className="absolute right-4 size-12 items-center justify-center rounded-full bg-card shadow-sm"
+      <RecenterButton
         disabled={!hasResolvedLocation}
-        hitSlop={10}
-        style={({ pressed }) => [
-          { bottom: insets.bottom + 88 },
-          pressed && { opacity: 0.9, transform: [{ scale: 0.96 }] },
-          !hasResolvedLocation && { opacity: 0.55 },
-        ]}
+        animatedIndex={drawerAnimatedIndex}
+        animatedPosition={drawerAnimatedPosition}
         onPress={() =>
           cameraRef.current?.setCamera({
             centerCoordinate,
@@ -159,9 +151,7 @@ export default function MapScreen() {
             animationDuration: 800,
           })
         }
-      >
-        <Icon name="near-me" size={20} className="text-primary" />
-      </Pressable>
+      />
     </View>
   );
 }

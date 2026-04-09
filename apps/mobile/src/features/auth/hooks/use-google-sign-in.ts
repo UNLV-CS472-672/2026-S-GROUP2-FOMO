@@ -144,7 +144,7 @@ export function useGoogleSignIn({
       const result = await startGoogleAuthenticationFlow();
 
       if (__DEV__) {
-        console.log('Google auth flow completed', {
+        console.log('[google auth] completed', {
           createdSessionId: result.createdSessionId,
           hasSetActive: Boolean(result.setActive),
           signInStatus: getClerkStatus(result.signIn as SignInMeta | undefined),
@@ -216,7 +216,7 @@ export function useGoogleSignIn({
       }
 
       if (__DEV__) {
-        console.warn('Unhandled Google auth result', {
+        console.warn('[google auth] unhandled result', {
           createdSessionId: result.createdSessionId,
           signInStatus: getClerkStatus(signIn),
           signInFirstFactorStatus: signIn?.firstFactorVerification?.status ?? null,
