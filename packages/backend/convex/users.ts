@@ -15,7 +15,7 @@ type ClerkIdentity = {
   email?: string;
 };
 
-function displayNameFromClerk(identity: ClerkIdentity): string {
+function userNameFromClerk(identity: ClerkIdentity): string {
   const preferredHandle = [
     identity.username,
     identity.preferredUsername,
@@ -154,7 +154,7 @@ export const ensureCurrentUser = mutation({
 
     // New Clerk user: row must use the same `tokenIdentifier` Convex puts on `ctx.auth`.
     return await ctx.db.insert('users', {
-      name: displayNameFromClerk(identity),
+      name: userNameFromClerk(identity),
       clerkId: identity.tokenIdentifier,
     });
   },
