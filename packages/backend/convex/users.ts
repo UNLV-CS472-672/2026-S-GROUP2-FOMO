@@ -15,21 +15,6 @@ type ClerkIdentity = {
   email?: string;
 };
 
-function userNameFromClerk(identity: ClerkIdentity): string {
-  const preferredHandle = [
-    identity.username,
-    identity.preferredUsername,
-    identity.preferred_username,
-    identity.nickname,
-  ]
-    .find((value) => Boolean(value?.trim()))
-    ?.trim();
-  const jwtCombined = [identity.givenName, identity.familyName].filter(Boolean).join(' ').trim();
-  const emailLocal = identity.email?.split('@')[0]?.trim() || '';
-
-  return preferredHandle || identity.name?.trim() || jwtCombined || emailLocal || 'User';
-}
-
 async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
@@ -154,7 +139,7 @@ export const ensureCurrentUser = mutation({
 
     // New Clerk user: row must use the same `tokenIdentifier` Convex puts on `ctx.auth`.
     return await ctx.db.insert('users', {
-      name: userNameFromClerk(identity),
+      name: identity.username!,
       clerkId: identity.tokenIdentifier,
     });
   },
