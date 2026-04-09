@@ -92,6 +92,10 @@ export function useLogin() {
       setResendAvailableAt(Date.now() + 60_000);
       return true;
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to send login code', error);
+      }
+
       handleClerkError(error);
       return false;
     } finally {
@@ -179,6 +183,10 @@ export function useLogin() {
         await onSignInComplete({ sessionId: result.createdSessionId, setActive });
       }
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to verify login code', error);
+      }
+
       handleClerkError(error);
     } finally {
       setStatus('idle');
@@ -200,6 +208,10 @@ export function useLogin() {
         await onSignInComplete({ sessionId: result.createdSessionId, setActive });
       }
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to sign in with password', error);
+      }
+
       handleClerkError(error);
     } finally {
       setStatus('idle');

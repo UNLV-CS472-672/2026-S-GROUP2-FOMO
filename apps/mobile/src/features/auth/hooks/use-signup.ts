@@ -149,6 +149,10 @@ export function useSignup() {
       setResendAvailableAt(Date.now() + 60_000);
       setUsernameEntryStep('password');
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to start email sign up', error);
+      }
+
       handleClerkError(error);
     } finally {
       setStatus('idle');
@@ -200,6 +204,10 @@ export function useSignup() {
 
       handleClerkError(new Error(buildIncompleteSignUpMessage(getClerkStatus(attemptMeta))));
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to verify sign up email code', error);
+      }
+
       if (isAlreadyVerifiedError(error)) {
         const currentSignUp = getCurrentSignUpResource();
         const currentSignUpMeta = currentSignUp as SignUpMeta;
@@ -234,6 +242,10 @@ export function useSignup() {
       await currentSignUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setResendAvailableAt(Date.now() + 60_000);
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to resend sign up email code', error);
+      }
+
       handleClerkError(error);
     } finally {
       setStatus('idle');
@@ -275,6 +287,10 @@ export function useSignup() {
 
       handleClerkError(new Error(buildIncompleteSignUpMessage(getClerkStatus(attemptMeta))));
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to submit sign up password', error);
+      }
+
       handleClerkError(error, 'password');
     } finally {
       setStatus('idle');
@@ -313,6 +329,10 @@ export function useSignup() {
 
       handleClerkError(new Error(buildIncompleteSignUpMessage(getClerkStatus(attemptMeta))));
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to submit sign up username', error);
+      }
+
       handleClerkError(error, 'username');
     } finally {
       setStatus('idle');

@@ -15,21 +15,6 @@ type ClerkIdentity = {
   email?: string;
 };
 
-function displayNameFromClerk(identity: ClerkIdentity): string {
-  const preferredHandle = [
-    identity.username,
-    identity.preferredUsername,
-    identity.preferred_username,
-    identity.nickname,
-  ]
-    .find((value) => Boolean(value?.trim()))
-    ?.trim();
-  const jwtCombined = [identity.givenName, identity.familyName].filter(Boolean).join(' ').trim();
-  const emailLocal = identity.email?.split('@')[0]?.trim() || '';
-
-  return preferredHandle || identity.name?.trim() || jwtCombined || emailLocal || 'User';
-}
-
 async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
@@ -40,13 +25,12 @@ async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
 }
 
 /**
- * Returns the Clerk JWT `tokenIdentifier` or throws if the client is not authenticated.
+ * Returns the current user's Clerk ID (Clerk JWT `tokenIdentifier`)
+ * or throws if the client is not authenticated.
  */
-async function getClerkTokenIdentifier(ctx: QueryCtx): Promise<string> {
+async function getClerkId(ctx: QueryCtx): Promise<string> {
   const identity = await getClerkIdentity(ctx);
-  const tokenIdentifier = identity.tokenIdentifier;
-
-  return tokenIdentifier;
+  return identity.tokenIdentifier;
 }
 
 /**
@@ -56,10 +40,10 @@ async function getClerkTokenIdentifier(ctx: QueryCtx): Promise<string> {
  * This should not throw; it's safe to use in queries that must gracefully return `null`.
  */
 async function getAndAuthenticateCurrentConvexUserAllowNull(ctx: QueryCtx | MutationCtx) {
-  const tokenIdentifier = await getClerkTokenIdentifier(ctx);
+  const clerkId = await getClerkId(ctx);
   return await ctx.db
     .query('users')
-    .withIndex('by_token', (q) => q.eq('tokenIdentifier', tokenIdentifier))
+    .withIndex('by_clerkId', (q) => q.eq('clerkId', clerkId))
     .first();
 }
 
@@ -155,8 +139,8 @@ export const ensureCurrentUser = mutation({
 
     // New Clerk user: row must use the same `tokenIdentifier` Convex puts on `ctx.auth`.
     return await ctx.db.insert('users', {
-      name: displayNameFromClerk(identity),
-      tokenIdentifier: identity.tokenIdentifier,
+      name: identity.username!,
+      clerkId: identity.tokenIdentifier,
     });
   },
 });
