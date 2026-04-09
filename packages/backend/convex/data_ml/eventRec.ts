@@ -64,3 +64,12 @@ export const getUserTagWeights = query({
     return results;
   },
 });
+export const getPreferredTagsByUserId = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    return await ctx.db
+      .query('userPreferredTags')
+      .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .unique();
+  },
+});

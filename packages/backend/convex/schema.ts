@@ -4,9 +4,9 @@ import { v } from 'convex/values';
 export default defineSchema({
   users: defineTable({
     name: v.string(),
-    tokenIdentifier: v.string(), // For Clerk integration
+    clerkId: v.string(), // Clerk `tokenIdentifier`
   })
-    .index('by_token', ['tokenIdentifier'])
+    .index('by_clerkId', ['clerkId'])
     .index('by_name', ['name']),
 
   events: defineTable({
@@ -99,5 +99,10 @@ export default defineSchema({
     userId: v.id('users'),
     weights: v.array(v.number()),
     updatedAt: v.number(),
+  }).index('by_userId', ['userId']),
+
+  userPreferredTags: defineTable({
+    userId: v.id('users'),
+    tagIds: v.array(v.id('tags')),
   }).index('by_userId', ['userId']),
 });

@@ -119,10 +119,10 @@ export const seed = mutation({
     for (const u of userSeeds) {
       const existing = await ctx.db
         .query('users')
-        .withIndex('by_token', (q) => q.eq('tokenIdentifier', u.token))
+        .withIndex('by_clerkId', (q) => q.eq('clerkId', u.token))
         .unique();
       userIds.push(
-        existing?._id ?? (await ctx.db.insert('users', { name: u.name, tokenIdentifier: u.token }))
+        existing?._id ?? (await ctx.db.insert('users', { name: u.name, clerkId: u.token }))
       );
     }
     const [u1, u2, u3, u4, u5, u6, u7, u8, u9] = userIds;
@@ -187,41 +187,55 @@ export const seed = mutation({
     //  Users/Events Join Table (Convex: usersToEvents)
     const userEventPairs = [
       { userId: u1, eventId: e1 },
-      { userId: u1, eventId: e3 },
       { userId: u1, eventId: e5 },
+      { userId: u1, eventId: e4 },
+      { userId: u1, eventId: e3 },
       { userId: u1, eventId: e9 },
-      { userId: u2, eventId: e1 },
+
+      { userId: u2, eventId: e2 },
       { userId: u2, eventId: e7 },
+      { userId: u2, eventId: e1 },
       { userId: u2, eventId: e9 },
+
       { userId: u3, eventId: e2 },
       { userId: u3, eventId: e4 },
+      { userId: u3, eventId: e8 },
       { userId: u3, eventId: e5 },
       { userId: u3, eventId: e6 },
-      { userId: u4, eventId: e2 },
+
       { userId: u4, eventId: e3 },
-      { userId: u4, eventId: e4 },
-      { userId: u4, eventId: e5 },
       { userId: u4, eventId: e8 },
+      { userId: u4, eventId: e7 },
+      { userId: u4, eventId: e2 },
+      { userId: u4, eventId: e5 },
       { userId: u4, eventId: e9 },
+
       { userId: u5, eventId: e6 },
       { userId: u5, eventId: e9 },
+
       { userId: u6, eventId: e2 },
+      { userId: u6, eventId: e7 },
+      { userId: u6, eventId: e8 },
       { userId: u6, eventId: e3 },
       { userId: u6, eventId: e6 },
-      { userId: u6, eventId: e8 },
-      { userId: u7, eventId: e3 },
-      { userId: u7, eventId: e8 },
+
       { userId: u7, eventId: e9 },
-      { userId: u8, eventId: e1 },
+      { userId: u7, eventId: e8 },
+      { userId: u7, eventId: e4 },
+      { userId: u7, eventId: e3 },
+
       { userId: u8, eventId: e2 },
       { userId: u8, eventId: e4 },
-      { userId: u8, eventId: e6 },
       { userId: u8, eventId: e7 },
       { userId: u8, eventId: e8 },
+      { userId: u8, eventId: e1 },
+      { userId: u8, eventId: e6 },
       { userId: u8, eventId: e9 },
-      { userId: u9, eventId: e2 },
+
       { userId: u9, eventId: e4 },
       { userId: u9, eventId: e6 },
+      { userId: u9, eventId: e2 },
+      { userId: u9, eventId: e8 },
     ];
     for (const pair of userEventPairs) {
       const existing = await ctx.db
@@ -566,6 +580,88 @@ export const seed = mutation({
         )
         .first();
       if (!existing) await ctx.db.insert('friends', pair);
+    }
+
+    const userPreferredTagSeeds: { userId: any; tagIds: any[] }[] = [
+      {
+        userId: u1,
+        tagIds: [
+          tagIds['study'],
+          tagIds['food'],
+          tagIds['culture'],
+          tagIds['college'],
+          tagIds['insightful'],
+        ],
+      },
+      {
+        userId: u2,
+        tagIds: [tagIds['music'], tagIds['concert'], tagIds['rap'], tagIds['r&b'], tagIds['chill']],
+      },
+      {
+        userId: u3,
+        tagIds: [
+          tagIds['music'],
+          tagIds['art'],
+          tagIds['culture'],
+          tagIds['concert'],
+          tagIds['food'],
+        ],
+      },
+      {
+        userId: u4,
+        tagIds: [
+          tagIds['party'],
+          tagIds['college'],
+          tagIds['chill'],
+          tagIds['drink'],
+          tagIds['wild'],
+        ],
+      },
+      {
+        userId: u5,
+        tagIds: [
+          tagIds['anime'],
+          tagIds['games'],
+          tagIds['comics'],
+          tagIds['convention'],
+          tagIds['vendors'],
+        ],
+      },
+      {
+        userId: u6,
+        tagIds: [tagIds['music'], tagIds['concert'], tagIds['rap'], tagIds['r&b'], tagIds['wild']],
+      },
+      {
+        userId: u7,
+        tagIds: [
+          tagIds['thrift'],
+          tagIds['fits'],
+          tagIds['clothes'],
+          tagIds['chill'],
+          tagIds['culture'],
+        ],
+      },
+      {
+        userId: u8,
+        tagIds: [
+          tagIds['music'],
+          tagIds['concert'],
+          tagIds['art'],
+          tagIds['food'],
+          tagIds['culture'],
+        ],
+      },
+      {
+        userId: u9,
+        tagIds: [tagIds['art'], tagIds['music'], tagIds['anime'], tagIds['comics'], tagIds['food']],
+      },
+    ];
+    for (const entry of userPreferredTagSeeds) {
+      const existing = await ctx.db
+        .query('userPreferredTags')
+        .withIndex('by_userId', (q) => q.eq('userId', entry.userId))
+        .unique();
+      if (!existing) await ctx.db.insert('userPreferredTags', entry);
     }
 
     return {

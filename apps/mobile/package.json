@@ -21,6 +21,7 @@
     "@clerk/expo": "^3.1.4",
     "@expo/vector-icons": "^15.0.3",
     "@fomo/backend": "workspace:*",
+    "@fomo/env": "workspace:*",
     "@fomo/theme": "workspace:*",
     "@gorhom/bottom-sheet": "^5.2.8",
     "@react-navigation/bottom-tabs": "^7.4.0",
