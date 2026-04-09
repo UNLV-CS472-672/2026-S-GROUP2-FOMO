@@ -11,11 +11,8 @@ if (!convexUrl) {
 const convex = new ConvexReactClient(convexUrl);
 
 export default function AppConvexProvider({ children }: { children: React.ReactNode }) {
-  const auth = useAuth();
-  const getAuth = () => auth;
-
   return (
-    <ConvexProviderWithClerk client={convex} useAuth={getAuth}>
+    <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
       {children}
     </ConvexProviderWithClerk>
   );
