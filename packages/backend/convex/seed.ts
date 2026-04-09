@@ -105,24 +105,24 @@ export const seed = mutation({
   handler: async (ctx) => {
     //  Users (Convex Table Name: users)
     const userSeeds = [
-      { name: 'Alice', token: 'seed|alice' },
-      { name: 'Bob', token: 'seed|bob' },
-      { name: 'Reece', token: 'seed|reece' },
-      { name: 'Nathan', token: 'seed|nathan' },
-      { name: 'Manjot', token: 'seed|manjot' },
-      { name: 'Daniel', token: 'seed|daniel' },
-      { name: 'Jonah', token: 'seed|jonah' },
-      { name: 'Jimmy', token: 'seed|jimmy' },
-      { name: 'Evan', token: 'seed|evan' },
+      { name: 'Alice', clerkId: 'seed|alice' },
+      { name: 'Bob', clerkId: 'seed|bob' },
+      { name: 'Reece', clerkId: 'seed|reece' },
+      { name: 'Nathan', clerkId: 'seed|nathan' },
+      { name: 'Manjot', clerkId: 'seed|manjot' },
+      { name: 'Daniel', clerkId: 'seed|daniel' },
+      { name: 'Jonah', clerkId: 'seed|jonah' },
+      { name: 'Jimmy', clerkId: 'seed|jimmy' },
+      { name: 'Evan', clerkId: 'seed|evan' },
     ];
     const userIds: any[] = [];
     for (const u of userSeeds) {
       const existing = await ctx.db
         .query('users')
-        .withIndex('by_clerkId', (q) => q.eq('clerkId', u.token))
+        .withIndex('by_clerkId', (q) => q.eq('clerkId', u.clerkId))
         .unique();
       userIds.push(
-        existing?._id ?? (await ctx.db.insert('users', { name: u.name, clerkId: u.token }))
+        existing?._id ?? (await ctx.db.insert('users', { name: u.name, clerkId: u.clerkId }))
       );
     }
     const [u1, u2, u3, u4, u5, u6, u7, u8, u9] = userIds;

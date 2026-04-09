@@ -1,19 +1,18 @@
+import type { UserIdentity } from 'convex/server';
 import { v } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
 import { mutation, MutationCtx, query, QueryCtx } from './_generated/server';
 
-type ClerkIdentity = {
-  tokenIdentifier: string;
-  name?: string;
-  username?: string;
-  nickname?: string;
-  preferredUsername?: string;
-  preferred_username?: string;
-  givenName?: string;
-  familyName?: string;
-  email?: string;
-};
+type ClerkIdentity = UserIdentity & { username?: string };
+
+function clerkIdFromIdentity(identity: UserIdentity): string {
+  const clerkId = identity.clerkId;
+  if (typeof clerkId === 'string' && clerkId.length > 0) {
+    return clerkId;
+  }
+  return identity.tokenIdentifier;
+}
 
 async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
   const identity = await ctx.auth.getUserIdentity();
@@ -25,12 +24,12 @@ async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
 }
 
 /**
- * Returns the current user's Clerk ID (Clerk JWT `tokenIdentifier`)
+ * Returns the current user's Clerk id (`identity.clerkId`, or Convex `tokenIdentifier` if absent)
  * or throws if the client is not authenticated.
  */
 async function getClerkId(ctx: QueryCtx): Promise<string> {
   const identity = await getClerkIdentity(ctx);
-  return identity.tokenIdentifier;
+  return clerkIdFromIdentity(identity);
 }
 
 /**
@@ -137,10 +136,10 @@ export const ensureCurrentUser = mutation({
 
     const identity = await getClerkIdentity(ctx);
 
-    // New Clerk user: row must use the same `tokenIdentifier` Convex puts on `ctx.auth`.
+    // New Clerk user: `clerkId` must match the stable id on `ctx.auth` (Clerk `clerkId` claim).
     return await ctx.db.insert('users', {
       name: identity.username!,
-      clerkId: identity.tokenIdentifier,
+      clerkId: clerkIdFromIdentity(identity),
     });
   },
 });
