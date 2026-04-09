@@ -3,6 +3,7 @@ import type { ImageSourcePropType } from 'react-native';
 type FriendPost = {
   id: string;
   image: ImageSourcePropType;
+  comments?: string[];
 };
 
 export type FriendProfile = {
@@ -43,11 +44,13 @@ export const recommendedFriends: FriendProfile[] = [
     },
     posts: {
       all: [
-        { id: 'barfspoon-1', image: imageIcon },
-        { id: 'barfspoon-2', image: imageReactLogo },
+        { id: 'barfspoon-1', image: imageIcon, comments: ['This food run was worth it.'] },
+        { id: 'barfspoon-2', image: imageReactLogo, comments: ['Bad idea, strong execution.'] },
       ],
-      recent: [{ id: 'barfspoon-1', image: imageIcon }],
-      tagged: [{ id: 'barfspoon-2', image: imageReactLogo }],
+      recent: [{ id: 'barfspoon-1', image: imageIcon, comments: ['This food run was worth it.'] }],
+      tagged: [
+        { id: 'barfspoon-2', image: imageReactLogo, comments: ['Bad idea, strong execution.'] },
+      ],
     },
   },
   {
@@ -61,11 +64,17 @@ export const recommendedFriends: FriendProfile[] = [
     },
     posts: {
       all: [
-        { id: 'spongoi-1', image: imageReactLogo },
-        { id: 'spongoi-2', image: imagePartialReact },
+        { id: 'spongoi-1', image: imageReactLogo, comments: ['Still posting through it.'] },
+        { id: 'spongoi-2', image: imagePartialReact, comments: ['The meme survived another day.'] },
       ],
-      recent: [{ id: 'spongoi-1', image: imageReactLogo }],
-      tagged: [{ id: 'spongoi-2', image: imagePartialReact }],
+      recent: [{ id: 'spongoi-1', image: imageReactLogo, comments: ['Still posting through it.'] }],
+      tagged: [
+        {
+          id: 'spongoi-2',
+          image: imagePartialReact,
+          comments: ['The meme survived another day.'],
+        },
+      ],
     },
   },
   {
@@ -80,11 +89,23 @@ export const recommendedFriends: FriendProfile[] = [
     },
     posts: {
       all: [
-        { id: 'failure-1', image: imageReactLogo },
-        { id: 'failure-2', image: imageAndroidForeground },
+        { id: 'failure-1', image: imageReactLogo, comments: ['Low battery, still made it out.'] },
+        {
+          id: 'failure-2',
+          image: imageAndroidForeground,
+          comments: ['Commitment level remains unreasonable.'],
+        },
       ],
-      recent: [{ id: 'failure-1', image: imageReactLogo }],
-      tagged: [{ id: 'failure-2', image: imageAndroidForeground }],
+      recent: [
+        { id: 'failure-1', image: imageReactLogo, comments: ['Low battery, still made it out.'] },
+      ],
+      tagged: [
+        {
+          id: 'failure-2',
+          image: imageAndroidForeground,
+          comments: ['Commitment level remains unreasonable.'],
+        },
+      ],
     },
   },
   {
@@ -99,11 +120,11 @@ export const recommendedFriends: FriendProfile[] = [
     },
     posts: {
       all: [
-        { id: 'cars-1', image: imageReactLogo },
-        { id: 'cars-2', image: imageSplash },
+        { id: 'cars-1', image: imageReactLogo, comments: ['Already halfway across town.'] },
+        { id: 'cars-2', image: imageSplash, comments: ['Called it, he drove again.'] },
       ],
-      recent: [{ id: 'cars-1', image: imageReactLogo }],
-      tagged: [{ id: 'cars-2', image: imageSplash }],
+      recent: [{ id: 'cars-1', image: imageReactLogo, comments: ['Already halfway across town.'] }],
+      tagged: [{ id: 'cars-2', image: imageSplash, comments: ['Called it, he drove again.'] }],
     },
   },
 ];
@@ -121,12 +142,14 @@ export const friends: FriendProfile[] = [
     },
     posts: {
       all: [
-        { id: 'pma-1', image: imageIcon },
-        { id: 'pma-2', image: imageAndroidForeground },
-        { id: 'pma-3', image: imagePartialReact },
+        { id: 'pma-1', image: imageIcon, comments: ['Schedule secured.'] },
+        { id: 'pma-2', image: imageAndroidForeground, comments: ['Somehow still on time.'] },
+        { id: 'pma-3', image: imagePartialReact, comments: ['Group chat approved this one.'] },
       ],
-      recent: [{ id: 'pma-1', image: imageIcon }],
-      tagged: [{ id: 'pma-3', image: imagePartialReact }],
+      recent: [{ id: 'pma-1', image: imageIcon, comments: ['Schedule secured.'] }],
+      tagged: [
+        { id: 'pma-3', image: imagePartialReact, comments: ['Group chat approved this one.'] },
+      ],
     },
   },
   {
@@ -140,11 +163,23 @@ export const friends: FriendProfile[] = [
     },
     posts: {
       all: [
-        { id: 'heptahedron-1', image: imageAndroidForeground },
-        { id: 'heptahedron-2', image: imageReactLogo },
+        {
+          id: 'heptahedron-1',
+          image: imageAndroidForeground,
+          comments: ['Quiet until it is time to make it happen.'],
+        },
+        { id: 'heptahedron-2', image: imageReactLogo, comments: ['This plan actually happened.'] },
       ],
-      recent: [{ id: 'heptahedron-1', image: imageAndroidForeground }],
-      tagged: [{ id: 'heptahedron-2', image: imageReactLogo }],
+      recent: [
+        {
+          id: 'heptahedron-1',
+          image: imageAndroidForeground,
+          comments: ['Quiet until it is time to make it happen.'],
+        },
+      ],
+      tagged: [
+        { id: 'heptahedron-2', image: imageReactLogo, comments: ['This plan actually happened.'] },
+      ],
     },
   },
   {
@@ -159,11 +194,13 @@ export const friends: FriendProfile[] = [
     },
     posts: {
       all: [
-        { id: 'ndp-1', image: imageAndroidMonochrome },
-        { id: 'ndp-2', image: imageIcon },
+        { id: 'ndp-1', image: imageAndroidMonochrome, comments: ['Planner mode stayed active.'] },
+        { id: 'ndp-2', image: imageIcon, comments: ['Mild menace energy in this one.'] },
       ],
-      recent: [{ id: 'ndp-1', image: imageAndroidMonochrome }],
-      tagged: [{ id: 'ndp-2', image: imageIcon }],
+      recent: [
+        { id: 'ndp-1', image: imageAndroidMonochrome, comments: ['Planner mode stayed active.'] },
+      ],
+      tagged: [{ id: 'ndp-2', image: imageIcon, comments: ['Mild menace energy in this one.'] }],
     },
   },
   {
@@ -178,11 +215,21 @@ export const friends: FriendProfile[] = [
     },
     posts: {
       all: [
-        { id: 'akeegaii-1', image: imageSplash },
-        { id: 'akeegaii-2', image: imageFavicon },
+        { id: 'akeegaii-1', image: imageSplash, comments: ['Found the good spot again.'] },
+        {
+          id: 'akeegaii-2',
+          image: imageFavicon,
+          comments: ['Everybody asked for the location after.'],
+        },
       ],
-      recent: [{ id: 'akeegaii-1', image: imageSplash }],
-      tagged: [{ id: 'akeegaii-2', image: imageFavicon }],
+      recent: [{ id: 'akeegaii-1', image: imageSplash, comments: ['Found the good spot again.'] }],
+      tagged: [
+        {
+          id: 'akeegaii-2',
+          image: imageFavicon,
+          comments: ['Everybody asked for the location after.'],
+        },
+      ],
     },
   },
   {
@@ -197,11 +244,15 @@ export const friends: FriendProfile[] = [
     },
     posts: {
       all: [
-        { id: 'stjimmy-1', image: imageFavicon },
-        { id: 'stjimmy-2', image: imageIcon },
+        { id: 'stjimmy-1', image: imageFavicon, comments: ['The camera roll carried the night.'] },
+        { id: 'stjimmy-2', image: imageIcon, comments: ['Opinions were definitely shared here.'] },
       ],
-      recent: [{ id: 'stjimmy-1', image: imageFavicon }],
-      tagged: [{ id: 'stjimmy-2', image: imageIcon }],
+      recent: [
+        { id: 'stjimmy-1', image: imageFavicon, comments: ['The camera roll carried the night.'] },
+      ],
+      tagged: [
+        { id: 'stjimmy-2', image: imageIcon, comments: ['Opinions were definitely shared here.'] },
+      ],
     },
   },
   {
@@ -216,11 +267,31 @@ export const friends: FriendProfile[] = [
     },
     posts: {
       all: [
-        { id: 'maymuzud-1', image: imagePartialReact },
-        { id: 'maymuzud-2', image: imageReactLogo },
+        {
+          id: 'maymuzud-1',
+          image: imagePartialReact,
+          comments: ['Found this place before anyone else.'],
+        },
+        {
+          id: 'maymuzud-2',
+          image: imageReactLogo,
+          comments: ['This one made everyone want to go.'],
+        },
       ],
-      recent: [{ id: 'maymuzud-1', image: imagePartialReact }],
-      tagged: [{ id: 'maymuzud-2', image: imageReactLogo }],
+      recent: [
+        {
+          id: 'maymuzud-1',
+          image: imagePartialReact,
+          comments: ['Found this place before anyone else.'],
+        },
+      ],
+      tagged: [
+        {
+          id: 'maymuzud-2',
+          image: imageReactLogo,
+          comments: ['This one made everyone want to go.'],
+        },
+      ],
     },
   },
 ];

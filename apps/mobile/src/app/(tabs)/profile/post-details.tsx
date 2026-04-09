@@ -4,13 +4,30 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { Image, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { allFriendProfiles } from './friend-data';
+
+function getFriendPostById(postId: string) {
+  for (const profile of allFriendProfiles) {
+    const post = [...profile.posts.all, ...profile.posts.recent, ...profile.posts.tagged].find(
+      (item) => item.id === postId
+    );
+
+    if (post) {
+      return post;
+    }
+  }
+
+  return undefined;
+}
 
 export default function PostDetailsScreen() {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const { postId } = useLocalSearchParams<{ postId?: string | string[] }>();
   const normalizedPostId = Array.isArray(postId) ? postId[0] : postId;
-  const post = normalizedPostId ? getPostById(normalizedPostId) : undefined;
+  const post = normalizedPostId
+    ? (getPostById(normalizedPostId) ?? getFriendPostById(normalizedPostId))
+    : undefined;
 
   if (!post) {
     return (

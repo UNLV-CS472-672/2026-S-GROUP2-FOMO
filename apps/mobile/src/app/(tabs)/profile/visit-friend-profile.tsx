@@ -49,33 +49,27 @@ export default function VisitFriendProfileScreen() {
   return (
     <Screen className="flex-1">
       <ScrollView className="flex-1 bg-background pt-20">
-        {/* Header with Back Button */}
-        <View className="flex-row items-center justify-between px-4 pb-4">
-          <TouchableOpacity
+        <View className="px-4 pb-2">
+          <Button
+            variant="ghost"
+            size="sm"
             onPress={() => router.back()}
-            accessibilityRole="button"
+            className="-ml-3 self-start rounded-full"
             accessibilityLabel="Go back"
           >
-            <MaterialIcons name="arrow-back" size={28} color={theme.text} />
-          </TouchableOpacity>
-          <Text className="text-lg font-bold text-foreground">Profile</Text>
-          <View style={{ width: 28 }} />
+            <MaterialIcons name="arrow-back" size={22} color={theme.mutedText} />
+          </Button>
         </View>
 
-        {/* Profile Header Section */}
         <View className="flex-row items-start p-4">
           <ProfilePicture imageSource={friendProfile.imageSource} />
 
           <View className="ml-3 flex-1 pr-0">
             <Text className="text-lg font-bold text-foreground">{friendProfile.username}</Text>
-            {friendProfile.realName ? (
-              <Text className="text-sm text-muted-foreground">{friendProfile.realName}</Text>
-            ) : null}
             <Text className="mt-1 text-sm leading-5 text-foreground">{friendProfile.bio}</Text>
           </View>
         </View>
 
-        {/* Stats Section */}
         <View className="px-4 pb-4">
           <View className="flex-row w-full">
             <View className="flex-1 items-center">
@@ -88,13 +82,22 @@ export default function VisitFriendProfileScreen() {
                 onPress={() => {}}
               />
             </View>
-            <View className="flex-1 items-center">
-              <StatLabel value={friendProfile.stats.eventCount} label="Events" onPress={() => {}} />
-            </View>
           </View>
         </View>
 
-        {/* Tabs Section */}
+        <View className="mb-4 flex-row px-4">
+          <Button variant="tertiary" className="h-[82px] flex-1 rounded-none">
+            <ButtonText variant="tertiary">Recent Activity</ButtonText>
+          </Button>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mb-4"
+          contentContainerClassName="px-4"
+        />
+
         <View className="flex-row border-y border-primary-soft-border">
           <TouchableOpacity
             className={`flex-1 items-center py-3 ${
@@ -149,16 +152,13 @@ export default function VisitFriendProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Posts Grid */}
-        <View className="flex-1 px-4 py-6">
-          {displayPosts.length > 0 ? (
-            <PostGrid posts={displayPosts} />
-          ) : (
-            <View className="items-center justify-center py-8">
-              <Text className="text-muted-foreground">No posts in this category</Text>
-            </View>
-          )}
-        </View>
+        {displayPosts.length > 0 ? (
+          <PostGrid posts={displayPosts} />
+        ) : (
+          <View className="items-center justify-center py-8">
+            <Text className="text-muted-foreground">No posts in this category</Text>
+          </View>
+        )}
       </ScrollView>
     </Screen>
   );
