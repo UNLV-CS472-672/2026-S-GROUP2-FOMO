@@ -547,14 +547,14 @@ export const seed = mutation({
       { requesterId: u3, recipientId: u6, status: 'accepted' },
 
       { requesterId: u4, recipientId: u5, status: 'accepted' },
-      { requesterId: u4, recipientId: u8, status: 'ignored' },
+      { requesterId: u4, recipientId: u8, status: 'rejected' },
 
       { requesterId: u5, recipientId: u6, status: 'accepted' },
 
       { requesterId: u6, recipientId: u8, status: 'accepted' },
 
       { requesterId: u7, recipientId: u1, status: 'pending' },
-      { requesterId: u7, recipientId: u3, status: 'ignored' },
+      { requesterId: u7, recipientId: u3, status: 'rejected' },
 
       { requesterId: u8, recipientId: u1, status: 'pending' },
     ] as const;

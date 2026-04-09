@@ -382,9 +382,9 @@ def test_upsert_friend_recs_pending_not_filtered(mock_client: MagicMock, sample_
     recs = call_kwargs["recs"]
     assert len(recs) == 2  
 
-# Ignored friendship should NOT be filtered out. (
+# Rejected friendship should NOT be filtered out. 
 # NOTE: We can adjust this logic, especially is we want this leaning more toward a "blocked" behavior.
-def test_upsert_friend_recs_ignored_not_filtered(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
+def test_upsert_friend_recs_rejected_not_filtered(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
     mock_client.query.return_value = None
     upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
