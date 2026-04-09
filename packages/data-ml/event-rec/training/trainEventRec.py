@@ -95,4 +95,4 @@ def main(epochs: int = 100, model_path: str | None = None) -> None:
         save_model(epoch + 1)
 
 if __name__ == "__main__":
-    main(model_path="models/model15.pt")
+    main(model_path="models/model16.pt")
