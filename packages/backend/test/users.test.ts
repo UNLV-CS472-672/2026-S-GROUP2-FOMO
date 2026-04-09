@@ -33,7 +33,7 @@ describe('api.users', () => {
       const missingUserId = await t.run(async (ctx) => {
         const id = await ctx.db.insert('users', {
           name: 'ghost',
-          tokenIdentifier: 'token_ghost',
+          clerkId: 'token_ghost',
         });
         await ctx.db.delete(id);
         return id;
@@ -51,7 +51,7 @@ describe('api.users', () => {
       const userId = await t.run(async (ctx) => {
         return await ctx.db.insert('users', {
           name: 'solo',
-          tokenIdentifier: 'token_solo',
+          clerkId: 'token_solo',
         });
       });
 
@@ -78,7 +78,7 @@ describe('api.users', () => {
       const userId = await t.run(async (ctx) => {
         const uid = await ctx.db.insert('users', {
           name: 'author',
-          tokenIdentifier: 'token_author',
+          clerkId: 'token_author',
         });
         await ctx.db.insert('posts', {
           title: 'older',
@@ -104,7 +104,7 @@ describe('api.users', () => {
       const userId = await t.run(async (ctx) => {
         const uid = await ctx.db.insert('users', {
           name: 'commenter',
-          tokenIdentifier: 'token_commenter',
+          clerkId: 'token_commenter',
         });
         const pid = await ctx.db.insert('posts', {
           title: 'p',
@@ -128,7 +128,7 @@ describe('api.users', () => {
       const userId = await t.run(async (ctx) => {
         const uid = await ctx.db.insert('users', {
           name: 'attendee',
-          tokenIdentifier: 'token_attendee',
+          clerkId: 'token_attendee',
         });
         const later = await ctx.db.insert('events', {
           name: 'later',
@@ -163,7 +163,7 @@ describe('api.users', () => {
       const userId = await t.run(async (ctx) => {
         const uid = await ctx.db.insert('users', {
           name: 'orphan-link',
-          tokenIdentifier: 'token_orphan',
+          clerkId: 'token_orphan',
         });
         const eid = await ctx.db.insert('events', {
           name: 'gone',
@@ -190,15 +190,15 @@ describe('api.users', () => {
       const userId = await t.run(async (ctx) => {
         const uid = await ctx.db.insert('users', {
           name: 'main',
-          tokenIdentifier: 'token_main',
+          clerkId: 'token_main',
         });
         const kept = await ctx.db.insert('users', {
           name: 'kept',
-          tokenIdentifier: 'token_kept',
+          clerkId: 'token_kept',
         });
         const removed = await ctx.db.insert('users', {
           name: 'removed',
-          tokenIdentifier: 'token_removed',
+          clerkId: 'token_removed',
         });
 
         await ctx.db.insert('friendRecs', {
@@ -229,7 +229,7 @@ describe('api.users', () => {
       const userId = await t.run(async (ctx) => {
         return await ctx.db.insert('users', {
           name: 'no-recs',
-          tokenIdentifier: 'token_no_recs',
+          clerkId: 'token_no_recs',
         });
       });
 
@@ -245,11 +245,11 @@ describe('api.users', () => {
       const userId = await t.run(async (ctx) => {
         const uid = await ctx.db.insert('users', {
           name: 'full',
-          tokenIdentifier: 'token_full',
+          clerkId: 'token_full',
         });
         const other = await ctx.db.insert('users', {
           name: 'friend',
-          tokenIdentifier: 'token_friend',
+          clerkId: 'token_friend',
         });
         const pid = await ctx.db.insert('posts', {
           title: 'only',
