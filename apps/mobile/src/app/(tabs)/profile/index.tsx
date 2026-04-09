@@ -36,7 +36,7 @@ export default function ProfileScreen() {
         <GuestMode />
       </GuestOnly>
       <Authenticated>
-        <ScrollView className="flex-1 bg-background pt-20">
+        <ScrollView className="flex-1 bg-background pt-20" contentContainerClassName="pb-8">
           <View className="flex-row items-start p-4">
             <ProfilePicture imageSource={require('@/assets/images/icon.png')} />
 
@@ -65,7 +65,7 @@ export default function ProfileScreen() {
               <View className="flex-1 items-center">
                 <StatLabel
                   value={24}
-                  label="Followers"
+                  label="Friends"
                   onPress={() => router.push('/profile/friends')}
                 />
               </View>

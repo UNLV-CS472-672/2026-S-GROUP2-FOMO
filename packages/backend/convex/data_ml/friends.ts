@@ -3,7 +3,10 @@
 // --------------------------------------------------
 
 import { v } from 'convex/values';
+
 import { query } from '../_generated/server';
+
+import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../users';
 
 // Checks if a user exists in "friends" via userId.
 // Given input "userA", checks for a matching "userB" if 'status' is accepted.
@@ -42,8 +45,11 @@ export const friendExists = query({
 // Also determines whether the recommendations are "fresh"
 // based on a 24-hour time window.
 export const getFriendRecs = query({
-  args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
+  args: {},
+  handler: async (ctx) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    const userId = user._id;
+
     const rec = await ctx.db
       .query('friendRecs')
       .withIndex('by_userId', (q) => q.eq('userId', userId))
