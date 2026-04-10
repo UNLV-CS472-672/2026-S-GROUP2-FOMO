@@ -9,11 +9,11 @@ import type { ImageSourcePropType } from 'react-native';
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { friends, recommendedFriends } from './friend-data';
 
-const router = useRouter();
 type Friend = { username: string; realName?: string; imageSource: ImageSourcePropType };
 
 /** Friends UI from this screen; embed in profile or use via {@link FriendsScreen}. */
 export function FriendsScreenContent() {
+  const router = useRouter();
   const theme = useAppTheme();
   const [searchText, setSearchText] = useState('');
   const [isRecommendedCollapsed, setIsRecommendedCollapsed] = useState(false);
