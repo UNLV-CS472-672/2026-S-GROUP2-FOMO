@@ -114,6 +114,7 @@ export const seed = mutation({
       { name: 'Jonah', clerkId: 'seed|jonah' },
       { name: 'Jimmy', clerkId: 'seed|jimmy' },
       { name: 'Evan', clerkId: 'seed|evan' },
+      { name: 'Claude', clerkId: 'seed|claude' },
     ];
     const userIds: any[] = [];
     for (const u of userSeeds) {
@@ -125,7 +126,7 @@ export const seed = mutation({
         existing?._id ?? (await ctx.db.insert('users', { name: u.name, clerkId: u.clerkId }))
       );
     }
-    const [u1, u2, u3, u4, u5, u6, u7, u8, u9] = userIds;
+    const [u1, u2, u3, u4, u5, u6, u7, u8, u9, u10] = userIds;
 
     //  Tags (Convex: tags)
     const tagNames = [
