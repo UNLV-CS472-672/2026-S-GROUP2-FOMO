@@ -3,7 +3,7 @@
 import { useSidebar } from '@/components/ui/sidebar';
 import { MapSearchOverlay } from '@/features/map/components/map-search-overlay';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
-import { activityToGeoJSON, coordsToH3Cell } from '@/features/map/utils/h3';
+import { pointsToGeoJSON } from '@/features/map/utils/h3';
 import {
   FALLBACK_COORDS,
   loadMapboxAssets,
@@ -17,23 +17,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const MAPBOX_TOKEN = env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
 
-// Aggregate seed events into H3 cells with attendee counts
-function buildSeedActivity(): { h3Index: string; count: number }[] {
-  const map = new Map<string, number>();
-  eventSeeds.forEach((event, i) => {
-    const h3Index = coordsToH3Cell(event.location.longitude, event.location.latitude);
-    map.set(h3Index, (map.get(h3Index) ?? 0) + (eventSeedAttendees[i] ?? 1));
-  });
-  return Array.from(map.entries()).map(([h3Index, count]) => ({ h3Index, count }));
-}
-
-const SEED_ACTIVITY = buildSeedActivity();
-
-const H3_FILL_SOURCE = 'h3-activity-source';
-const H3_FILL_LAYER = 'h3-activity-fill';
-const H3_OUTLINE_LAYER = 'h3-activity-outline';
-const H3_CLICK_SOURCE = 'h3-click-source';
-const H3_CLICK_LAYER = 'h3-click-layer';
+const HEATMAP_SOURCE = 'activity';
+const HEATMAP_LAYER = 'activity-heat';
 
 export default function MapPage() {
   const { open, isMobile } = useSidebar();
@@ -45,7 +30,6 @@ export default function MapPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [mapReady, setMapReady] = useState(false);
-  const [clickedCell, setClickedCell] = useState<string | null>(null);
 
   const staticMapSrc = useMemo(() => {
     if (!MAPBOX_TOKEN) {
@@ -56,75 +40,55 @@ export default function MapPage() {
     return `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
   }, [centerCoordinate]);
 
-  const addH3Layers = useCallback((map: MapboxMap) => {
-    const activityGeoJSON = activityToGeoJSON(SEED_ACTIVITY);
-    const maxCount = Math.max(...SEED_ACTIVITY.map((c) => c.count), 1);
+  const heatmapGeoJSON = useMemo(
+    () =>
+      pointsToGeoJSON(
+        eventSeeds.map((e, i) => ({
+          longitude: e.location.longitude,
+          latitude: e.location.latitude,
+          weight: eventSeedAttendees[i] ?? 1,
+        }))
+      ),
+    []
+  );
 
-    map.addSource(H3_FILL_SOURCE, { type: 'geojson', data: activityGeoJSON });
-
-    map.addLayer({
-      id: H3_FILL_LAYER,
-      type: 'fill',
-      source: H3_FILL_SOURCE,
-      paint: {
-        'fill-color': [
-          'interpolate',
-          ['linear'],
-          ['get', 'count'],
-          0,
-          'rgba(74,144,217,0.1)',
-          Math.round(maxCount / 2),
-          'rgba(74,144,217,0.45)',
-          maxCount,
-          'rgba(74,144,217,0.8)',
-        ],
-        'fill-opacity': 0.85,
-      },
-    });
-
-    map.addLayer({
-      id: H3_OUTLINE_LAYER,
-      type: 'line',
-      source: H3_FILL_SOURCE,
-      paint: {
-        'line-color': 'rgba(74,144,217,0.5)',
-        'line-width': 1,
-      },
-    });
-
-    // Source/layer for the clicked cell highlight
-    map.addSource(H3_CLICK_SOURCE, {
-      type: 'geojson',
-      data: { type: 'FeatureCollection', features: [] },
-    });
-
-    map.addLayer({
-      id: H3_CLICK_LAYER,
-      type: 'line',
-      source: H3_CLICK_SOURCE,
-      paint: {
-        'line-color': '#ffffff',
-        'line-width': 2,
-      },
-    });
-  }, []);
+  const addHeatmapLayer = useCallback(
+    (map: MapboxMap) => {
+      map.addSource(HEATMAP_SOURCE, { type: 'geojson', data: heatmapGeoJSON });
+      map.addLayer({
+        id: HEATMAP_LAYER,
+        type: 'heatmap',
+        source: HEATMAP_SOURCE,
+        paint: {
+          'heatmap-weight': ['interpolate', ['linear'], ['get', 'weight'], 0, 0, 6, 1],
+          'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 10, 1, 15, 3],
+          'heatmap-color': [
+            'interpolate',
+            ['linear'],
+            ['heatmap-density'],
+            0,
+            'rgba(0,0,0,0)',
+            0.2,
+            'rgba(245,158,11,0.3)',
+            0.5,
+            'rgba(245,158,11,0.6)',
+            0.8,
+            'rgba(245,158,11,0.85)',
+            1,
+            'rgba(255,255,255,0.95)',
+          ],
+          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 10, 30, 15, 60],
+          'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 10, 1, 16, 0.6],
+        },
+      });
+    },
+    [heatmapGeoJSON]
+  );
 
   useEffect(() => {
     let cancelled = false;
     let loadTimeout: ReturnType<typeof setTimeout> | null = null;
     let didLoad = false;
-
-    function handleMapClick(e: Record<string, unknown>) {
-      if (cancelled) return;
-      const lngLat = e.lngLat as { lng: number; lat: number };
-      const h3Index = coordsToH3Cell(lngLat.lng, lngLat.lat);
-      setClickedCell(h3Index);
-
-      const source = mapRef.current?.getSource(H3_CLICK_SOURCE);
-      if (source) {
-        source.setData(activityToGeoJSON([{ h3Index, count: 0 }]));
-      }
-    }
 
     async function initMap() {
       if (!MAPBOX_TOKEN || !mapContainerRef.current || mapRef.current) {
@@ -151,7 +115,7 @@ export default function MapPage() {
         mapRef.current.on('load', () => {
           if (!cancelled && mapRef.current) {
             didLoad = true;
-            addH3Layers(mapRef.current);
+            addHeatmapLayer(mapRef.current);
             setMapReady(true);
             setLoadError(null);
             if (loadTimeout) {
@@ -159,8 +123,6 @@ export default function MapPage() {
             }
           }
         });
-
-        mapRef.current.on('click', handleMapClick);
 
         requestAnimationFrame(() => {
           mapRef.current?.resize();
@@ -191,7 +153,7 @@ export default function MapPage() {
       mapRef.current = null;
       mapboxRef.current = null;
     };
-  }, [addH3Layers]);
+  }, [addHeatmapLayer]);
 
   useEffect(() => {
     if (!mapRef.current) {
@@ -279,12 +241,6 @@ export default function MapPage() {
       />
 
       <MapSearchOverlay isOpen={isSearchOpen} onToggle={() => setIsSearchOpen((open) => !open)} />
-
-      {clickedCell ? (
-        <div className="absolute bottom-4 left-4 z-10 rounded-xl border border-white/20 bg-black/70 px-4 py-2 font-mono text-xs text-white backdrop-blur">
-          H3: {clickedCell}
-        </div>
-      ) : null}
 
       {loadError ? (
         <div className="absolute inset-x-4 bottom-4 z-10 rounded-xl border border-red-400/30 bg-black/70 px-4 py-3 text-sm text-red-100 backdrop-blur">

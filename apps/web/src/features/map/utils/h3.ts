@@ -1,5 +1,19 @@
-import type { FeatureCollection, Polygon } from 'geojson';
+import type { FeatureCollection, Point, Polygon } from 'geojson';
 import { cellToBoundary, latLngToCell } from 'h3-js';
+
+// Convert array of longitude, latitude, weight points to a GeoJSON FeatureCollection for heatmap
+export function pointsToGeoJSON(
+  points: { longitude: number; latitude: number; weight: number }[]
+): FeatureCollection<Point, { weight: number }> {
+  return {
+    type: 'FeatureCollection',
+    features: points.map(({ longitude, latitude, weight }) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [longitude, latitude] },
+      properties: { weight },
+    })),
+  };
+}
 
 // Hexagon resolution size, best utilized for city sizing
 export const H3_RESOLUTION = 9;
