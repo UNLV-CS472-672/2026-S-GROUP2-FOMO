@@ -4,6 +4,8 @@ import { v } from 'convex/values';
 import { Doc, Id } from './_generated/dataModel';
 import { mutation, MutationCtx, query, QueryCtx } from './_generated/server';
 
+type AuthCtx = QueryCtx | MutationCtx;
+
 type ClerkIdentity = UserIdentity & { username?: string };
 
 function clerkIdFromIdentity(identity: UserIdentity): string {
@@ -12,6 +14,17 @@ function clerkIdFromIdentity(identity: UserIdentity): string {
     return clerkId;
   }
   return identity.tokenIdentifier;
+}
+
+async function getConvexUserRowForIdentity(
+  ctx: AuthCtx,
+  identity: UserIdentity
+): Promise<Doc<'users'> | null> {
+  const clerkId = clerkIdFromIdentity(identity);
+  return await ctx.db
+    .query('users')
+    .withIndex('by_clerkId', (q) => q.eq('clerkId', clerkId))
+    .first();
 }
 
 async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
@@ -24,26 +37,17 @@ async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
 }
 
 /**
- * Returns the current user's Clerk id (`identity.clerkId`, or Convex `tokenIdentifier` if absent)
- * or throws if the client is not authenticated.
- */
-async function getClerkId(ctx: QueryCtx): Promise<string> {
-  const identity = await getClerkIdentity(ctx);
-  return clerkIdFromIdentity(identity);
-}
-
-/**
  * Best-effort lookup of the current Convex user row for this request.
  * Returns null when logged out or when the user row hasn't been created yet.
  *
  * This should not throw; it's safe to use in queries that must gracefully return `null`.
  */
-async function getAndAuthenticateCurrentConvexUserAllowNull(ctx: QueryCtx | MutationCtx) {
-  const clerkId = await getClerkId(ctx);
-  return await ctx.db
-    .query('users')
-    .withIndex('by_clerkId', (q) => q.eq('clerkId', clerkId))
-    .first();
+async function getAndAuthenticateCurrentConvexUserAllowNull(ctx: AuthCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    return null;
+  }
+  return await getConvexUserRowForIdentity(ctx, identity);
 }
 
 /**
@@ -51,7 +55,7 @@ async function getAndAuthenticateCurrentConvexUserAllowNull(ctx: QueryCtx | Muta
  * This helper is strict: it throws when auth is missing or the user row does not exist.
  */
 export async function __backend_only_getAndAuthenticateCurrentConvexUser(
-  ctx: QueryCtx
+  ctx: AuthCtx
 ): Promise<Doc<'users'>> {
   const user = await getAndAuthenticateCurrentConvexUserAllowNull(ctx);
   if (!user) {
@@ -59,6 +63,27 @@ export async function __backend_only_getAndAuthenticateCurrentConvexUser(
   }
 
   return user;
+}
+
+type GuestOrAuthenticatedUserTuple =
+  | readonly [user: Doc<'users'>, guestMode: false]
+  | readonly [user: null, guestMode: true];
+
+/**
+ * `[user, guestMode]` from Convex auth only: no JWT ⇒ guest browse; signed in ⇒ user row + not guest.
+ */
+export async function __backend_only_guestOrAuthenticatedUser(
+  ctx: AuthCtx
+): Promise<GuestOrAuthenticatedUserTuple> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (identity === null) {
+    return [null, true];
+  }
+  const user = await getConvexUserRowForIdentity(ctx, identity);
+  if (!user) {
+    throw new Error('No Convex user found for the current Clerk token');
+  }
+  return [user, false];
 }
 
 async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {

@@ -3,12 +3,11 @@ import { RecenterButton } from '@/features/map/components/recenter-button';
 import { SearchDrawer } from '@/features/map/components/search';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { pointsToGeoJSON } from '@/features/map/utils/h3';
-import { useGuest } from '@/integrations/session/provider';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { env } from '@fomo/env/mobile';
 import { useIsFocused } from '@react-navigation/native';
 import MapboxGL from '@rnmapbox/maps';
-import { useConvexAuth, useQuery } from 'convex/react';
+import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -30,20 +29,7 @@ const EVENT_IMAGES = [
 
 export default function MapScreen() {
   const { push } = useRouter();
-  const { isAuthenticated } = useConvexAuth();
-  const { isGuestMode, isGuestLoading } = useGuest();
-  const signedInEvents = useQuery(
-    api.data_ml.events.getEventsForCurrentUser,
-    isAuthenticated ? {} : 'skip'
-  );
-  const guestEvents = useQuery(
-    api.data_ml.events.getEventsForGuestUser,
-    !isAuthenticated && isGuestMode && !isGuestLoading ? {} : 'skip'
-  );
-  const events = useMemo(
-    () => (isAuthenticated ? (signedInEvents ?? []) : (guestEvents ?? [])),
-    [guestEvents, isAuthenticated, signedInEvents]
-  );
+  const events = useQuery(api.data_ml.events.getEvents) ?? [];
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);

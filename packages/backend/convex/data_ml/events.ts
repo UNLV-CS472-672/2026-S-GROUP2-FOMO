@@ -1,7 +1,9 @@
 import { latLngToCell } from 'h3-js';
+
+import type { Doc } from '../_generated/dataModel';
 import { query } from '../_generated/server';
 import { eventSeeds } from '../seed';
-import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../users';
+import { __backend_only_guestOrAuthenticatedUser } from '../users';
 
 export function latLngToH3Index(lat: number, lng: number, resolution: number = 9): string {
   if (lat < -90 || lat > 90) {
@@ -16,29 +18,32 @@ export function latLngToH3Index(lat: number, lng: number, resolution: number = 9
   return latLngToCell(lat, lng, resolution);
 }
 
-export const getEventsForGuestUser = query({
+function eventsWithPopularityOnly() {
+  const mock_events = eventSeeds;
+  return mock_events.map((event, i) => ({
+    ...event,
+    attendeeCount: 1.0 / i,
+  }));
+}
+
+function eventsWithRecScoresForUser(_user: Doc<'users'>) {
+  const mock_events = eventSeeds;
+  return mock_events.map((event, i) => ({
+    ...event,
+    attendeeCount: i * 100,
+    recommendationScore: 1.0 / i,
+  }));
+}
+
+export const getEvents = query({
   args: {},
   handler: async (ctx) => {
-    //TODO fetch these from database instead of mock eventSeed data
-    const mock_events = eventSeeds;
-    return mock_events.map((event, i) => ({
-      ...event,
-      attendeeCount: 1.0 / i,
-    }));
-  },
-});
-
-export const getEventsForCurrentUser = query({
-  args: {},
-  handler: async (ctx) => {
-    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
-
-    //TODO get events with recommendation score based on current user id
-    const mock_events = eventSeeds;
-    return mock_events.map((event, i) => ({
-      ...event,
-      attendeeCount: i * 100,
-      recommendationScore: 1.0 / i,
-    }));
+    const [user, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
+    if (guestMode) {
+      // TODO: fetch from database; popularity-only for guest browse
+      return eventsWithPopularityOnly();
+    }
+    // TODO: recommendation scores from data model using user._id
+    return eventsWithRecScoresForUser(user);
   },
 });
