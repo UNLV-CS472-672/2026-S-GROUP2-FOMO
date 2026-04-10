@@ -21,7 +21,7 @@ const MAPBOX_TOKEN = env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
 function buildSeedActivity(): { h3Index: string; count: number }[] {
   const map = new Map<string, number>();
   eventSeeds.forEach((event, i) => {
-    const h3Index = coordsToH3Cell(event.longitude, event.latitude);
+    const h3Index = coordsToH3Cell(event.location.longitude, event.location.latitude);
     map.set(h3Index, (map.get(h3Index) ?? 0) + (eventSeedAttendees[i] ?? 1));
   });
   return Array.from(map.entries()).map(([h3Index, count]) => ({ h3Index, count }));
