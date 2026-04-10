@@ -5,6 +5,7 @@ import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { pointsToGeoJSON } from '@/features/map/utils/h3';
 import { useGuest } from '@/integrations/session/provider';
 import { api } from '@fomo/backend/convex/_generated/api';
+import { env } from '@fomo/env/mobile';
 import { useIsFocused } from '@react-navigation/native';
 import MapboxGL from '@rnmapbox/maps';
 import { useConvexAuth, useQuery } from 'convex/react';
@@ -15,7 +16,7 @@ import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
-MapboxGL.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
+MapboxGL.setAccessToken(env.EXPO_PUBLIC_MAPBOX_TOKEN);
 
 const DEFAULT_ZOOM_LEVEL = 13;
 

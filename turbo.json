@@ -19,6 +19,10 @@
       "cache": false,
       "persistent": true
     },
+    "test": {},
+    "test:coverage": {
+      "outputs": ["coverage/**"]
+    },
     "lint": {},
     "typecheck": {},
     "format": {},

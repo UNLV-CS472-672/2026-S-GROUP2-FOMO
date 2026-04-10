@@ -42,27 +42,26 @@ Example:
 ```env
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 NEXT_PUBLIC_CONVEX_URL=http://127.0.0.1:3210
+NEXT_PUBLIC_MAPBOX_TOKEN=pk.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.XXXXXXXXXXXXXXXX
 
 CLERK_SECRET_KEY=sk_test_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 ---
 
-## 4. Configure backend environment variables
+## 4. Configure backend deployment environment variables
 
-Create a `.env.local` file inside:
+Set backend environment variables in the Convex deployment environment store,
+either in the Convex dashboard UI or via CLI.
 
-`/packages/backend`
+From `packages/backend`, run:
 
-Example:
-
-```env
-CONVEX_DEPLOYMENT=anonymous:anonymous-fomo
-CONVEX_URL=http://127.0.0.1:3210/
-CONVEX_SITE_URL=http://127.0.0.1:3211/
+```bash
+pnpm exec convex env set CLERK_JWT_ISSUER_DOMAIN https://your-app.clerk.accounts.dev
+pnpm exec convex env set TICKETMASTER_API_KEY your_ticketmaster_api_key
 ```
 
-These URLs should match the ones used in your web environment.
+`TICKETMASTER_API_KEY` is only required if you run Ticketmaster ingestion actions.
 
 ---
 
@@ -78,15 +77,14 @@ When prompted in the backend task, create a new Convex project.
 
 ---
 
-## 6. Configure Clerk JWT issuer
+## 6. Verify deployment environment variables
 
-Add the following environment variable in your Convex environment:
+You can verify the currently linked deployment environment variables with:
 
-```env
-CLERK_JWT_ISSUER_DOMAIN=<your convex site url>
+```bash
+cd packages/backend
+pnpm exec convex env list
 ```
-
-Use the same value as `CONVEX_SITE_URL`.
 
 ---
 

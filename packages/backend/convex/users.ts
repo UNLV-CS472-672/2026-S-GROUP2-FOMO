@@ -1,33 +1,17 @@
+import type { UserIdentity } from 'convex/server';
 import { v } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
 import { mutation, MutationCtx, query, QueryCtx } from './_generated/server';
 
-type ClerkIdentity = {
-  tokenIdentifier: string;
-  name?: string;
-  username?: string;
-  nickname?: string;
-  preferredUsername?: string;
-  preferred_username?: string;
-  givenName?: string;
-  familyName?: string;
-  email?: string;
-};
+type ClerkIdentity = UserIdentity & { username?: string };
 
-function displayNameFromClerk(identity: ClerkIdentity): string {
-  const preferredHandle = [
-    identity.username,
-    identity.preferredUsername,
-    identity.preferred_username,
-    identity.nickname,
-  ]
-    .find((value) => Boolean(value?.trim()))
-    ?.trim();
-  const jwtCombined = [identity.givenName, identity.familyName].filter(Boolean).join(' ').trim();
-  const emailLocal = identity.email?.split('@')[0]?.trim() || '';
-
-  return preferredHandle || identity.name?.trim() || jwtCombined || emailLocal || 'User';
+function clerkIdFromIdentity(identity: UserIdentity): string {
+  const clerkId = identity.clerkId;
+  if (typeof clerkId === 'string' && clerkId.length > 0) {
+    return clerkId;
+  }
+  return identity.tokenIdentifier;
 }
 
 async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
@@ -40,13 +24,12 @@ async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
 }
 
 /**
- * Returns the Clerk JWT `tokenIdentifier` or throws if the client is not authenticated.
+ * Returns the current user's Clerk id (`identity.clerkId`, or Convex `tokenIdentifier` if absent)
+ * or throws if the client is not authenticated.
  */
-async function getClerkTokenIdentifier(ctx: QueryCtx): Promise<string> {
+async function getClerkId(ctx: QueryCtx): Promise<string> {
   const identity = await getClerkIdentity(ctx);
-  const tokenIdentifier = identity.tokenIdentifier;
-
-  return tokenIdentifier;
+  return clerkIdFromIdentity(identity);
 }
 
 /**
@@ -56,10 +39,10 @@ async function getClerkTokenIdentifier(ctx: QueryCtx): Promise<string> {
  * This should not throw; it's safe to use in queries that must gracefully return `null`.
  */
 async function getAndAuthenticateCurrentConvexUserAllowNull(ctx: QueryCtx | MutationCtx) {
-  const tokenIdentifier = await getClerkTokenIdentifier(ctx);
+  const clerkId = await getClerkId(ctx);
   return await ctx.db
     .query('users')
-    .withIndex('by_token', (q) => q.eq('tokenIdentifier', tokenIdentifier))
+    .withIndex('by_clerkId', (q) => q.eq('clerkId', clerkId))
     .first();
 }
 
@@ -153,10 +136,10 @@ export const ensureCurrentUser = mutation({
 
     const identity = await getClerkIdentity(ctx);
 
-    // New Clerk user: row must use the same `tokenIdentifier` Convex puts on `ctx.auth`.
+    // New Clerk user: `clerkId` must match the stable id on `ctx.auth` (Clerk `clerkId` claim).
     return await ctx.db.insert('users', {
-      name: displayNameFromClerk(identity),
-      tokenIdentifier: identity.tokenIdentifier,
+      name: identity.username!,
+      clerkId: clerkIdFromIdentity(identity),
     });
   },
 });

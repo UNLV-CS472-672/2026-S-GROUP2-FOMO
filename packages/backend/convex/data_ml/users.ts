@@ -5,13 +5,13 @@
 import { v } from 'convex/values';
 import { query } from '../_generated/server';
 
-// Checks if a user exists in "users" via tokenIdentifier.
-export const queryByToken = query({
+// Checks if a user exists in "users" via Clerk ID.
+export const queryByClerkId = query({
   args: { name: v.string() },
   handler: async (ctx, { name }) => {
     return await ctx.db
       .query('users')
-      .withIndex('by_token', (q) => q.eq('tokenIdentifier', name))
+      .withIndex('by_clerkId', (q) => q.eq('clerkId', name))
       .first();
   },
 });
