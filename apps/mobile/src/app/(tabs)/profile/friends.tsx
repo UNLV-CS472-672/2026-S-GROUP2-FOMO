@@ -11,6 +11,7 @@ import { friends, recommendedFriends } from './friend-data';
 
 type Friend = { username: string; realName?: string; imageSource: ImageSourcePropType };
 
+
 /** Friends UI from this screen; embed in profile or use via {@link FriendsScreen}. */
 export function FriendsScreenContent() {
   const router = useRouter();
