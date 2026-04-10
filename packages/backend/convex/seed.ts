@@ -105,6 +105,14 @@ export const seed = mutation({
   handler: async (ctx) => {
     //  Users (Convex Table Name: users)
     const userSeeds = [
+      {
+        name: 'superdynamitesnorkelboing',
+        token: 'https://enough-walleye-4.clerk.accounts.dev|user_3C3gijmE4gWhUl7lj7OJTLJMkdT',
+      },
+      {
+        name: 'eviljonah',
+        token: 'https://enough-walleye-4.clerk.accounts.dev|user_3AIBlKxCpz6x7UnSfgAH9NTN6jw',
+      },
       { name: 'Alice', token: 'seed|alice' },
       { name: 'Bob', token: 'seed|bob' },
       { name: 'Reece', token: 'seed|reece' },

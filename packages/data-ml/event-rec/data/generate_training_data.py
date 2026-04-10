@@ -181,7 +181,7 @@ USER_PERSONAS = [
 
 # ── 4. Weight formula (mirrors updateUserPreferences.py exactly) ───────────────
 
-BETA = 0.4
+BETA = 0.15
 TAU  = 1.0
 
 

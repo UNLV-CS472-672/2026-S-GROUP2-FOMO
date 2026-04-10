@@ -90,7 +90,7 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
     # ── Inference
     # Dampened cosine similarity on raw tag weights: non-event tags are scaled
     # by NON_EVENT_TAG_WEIGHT so extra user interests don't dilute the score.
-    NON_EVENT_TAG_WEIGHT = 0.1
+    NON_EVENT_TAG_WEIGHT = 0.3
 
     uw   = user_weights.cpu().numpy().astype(np.float32)  # (U, T)
     ev   = event_matrix_multihot.astype(np.float32)       # (E, T)

@@ -64,6 +64,7 @@ export const getUserTagWeights = query({
     return results;
   },
 });
+
 export const getPreferredTagsByUserId = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
