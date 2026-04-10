@@ -12,11 +12,20 @@
     "dev:mobile": "pnpm dev",
     "dev:web": "pnpm dev",
     "logs": "convex logs",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
     "typecheck": "tsc -p convex/tsconfig.json --noEmit"
   },
   "dependencies": {
     "@fomo/env": "workspace:*",
-    "convex": "^1.31.7",
+    "convex": "^1.32.0",
     "h3-js": "^4.4.0"
+  },
+  "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
+    "@vitest/coverage-v8": "^4.1.3",
+    "convex-test": "^0.0.47",
+    "vitest": "^4.1.3"
   }
 }

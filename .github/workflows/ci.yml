@@ -32,6 +32,9 @@ jobs:
       - name: Type check
         run: pnpm typecheck
 
+      - name: Test (TypeScript coverage)
+        run: pnpm test:coverage
+
       - name: Format check
         run: pnpm format:check
 
@@ -75,7 +78,7 @@ jobs:
 
       - name: Run pytest
         working-directory: packages/data-ml
-        run: uv run pytest --cov=. --cov-report=term-missing --cov-fail-under=80
+        run: uv run pytest --cov=. --cov-report=term-missing --cov-fail-under=97
 
       - name: Run mypy (data-ml)
         working-directory: packages/data-ml

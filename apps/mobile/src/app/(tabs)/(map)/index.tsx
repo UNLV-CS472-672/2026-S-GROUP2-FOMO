@@ -4,6 +4,7 @@ import { SearchDrawer } from '@/features/map/components/search';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { coordsToH3Cell, pointsToGeoJSON } from '@/features/map/utils/h3';
 import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
+import { env } from '@fomo/env/mobile';
 import { useIsFocused } from '@react-navigation/native';
 import MapboxGL from '@rnmapbox/maps';
 import { useRouter } from 'expo-router';
@@ -12,7 +13,7 @@ import { StyleSheet, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
 
-MapboxGL.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
+MapboxGL.setAccessToken(env.EXPO_PUBLIC_MAPBOX_TOKEN);
 
 const MIN_WEIGHT = Math.min(...eventSeedAttendees);
 const MAX_WEIGHT = Math.max(...eventSeedAttendees);
