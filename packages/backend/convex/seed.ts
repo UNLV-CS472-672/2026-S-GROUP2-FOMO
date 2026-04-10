@@ -1,71 +1,99 @@
 import { mutation } from './_generated/server';
+import { latLngToH3Index } from './data_ml/events';
 
 export const eventSeeds = [
   {
     name: 'Coffee + Homework',
     organization: 'Pop Cafe',
     description: 'Chill study session.',
-    latitude: 36.12730186736902,
-    longitude: -115.19299595922035,
+    location: {
+      latitude: 36.12730186736902,
+      longitude: -115.19299595922035,
+      h3Index: latLngToH3Index(36.12730186736902, -115.19299595922035),
+    },
   },
   {
     name: 'ASAP Rocky Concert',
     organization: 'ASAP Rocky',
     description: 'Dont be dumb, pull up.',
-    latitude: 36.10470771447518,
-    longitude: -115.16859227452814,
+    location: {
+      latitude: 36.10470771447518,
+      longitude: -115.16859227452814,
+      h3Index: latLngToH3Index(36.10470771447518, -115.16859227452814),
+    },
   },
   {
     name: 'Psi Rho house party',
     organization: 'UNLV - Alpha Psi Rho',
     description: 'no hazing, just good vibes. $10 entry for dudes.',
-    latitude: 36.10790291877858,
-    longitude: -115.14269190902489,
+    location: {
+      latitude: 36.10790291877858,
+      longitude: -115.14269190902489,
+      h3Index: latLngToH3Index(36.10790291877858, -115.14269190902489),
+    },
   },
   {
     name: 'Las Vegas - First Friday',
     organization: 'Downtown Las Vegas',
     description:
       'Free-admission monthly event featuring live music, art exhibits, food trucks, and vendors.',
-    latitude: 36.15958759998514,
-    longitude: -115.15239854806732,
+    location: {
+      latitude: 36.15958759998514,
+      longitude: -115.15239854806732,
+      h3Index: latLngToH3Index(36.15958759998514, -115.15239854806732),
+    },
   },
   {
     name: 'St. Jimmy Panel & Conference',
     organization: 'st. jimmy',
     description:
       'okay jeez, i been going thru a rough patch. going left, right thru the catacombs.',
-    latitude: 36.09086216508982,
-    longitude: -115.18328464909499,
+    location: {
+      latitude: 36.09086216508982,
+      longitude: -115.18328464909499,
+      h3Index: latLngToH3Index(36.09086216508982, -115.18328464909499),
+    },
   },
   {
     name: 'LVL UP EXPO 2026',
     organization: 'LVL UP LLC',
     description:
       'LVL UP EXPO is a three-day immersive gaming and pop culture convention in Las Vegas celebrating fans through esports tournaments, cosplay, art, and entertainment.',
-    latitude: 36.12871445143533,
-    longitude: -115.15149229313623,
+    location: {
+      latitude: 36.12871445143533,
+      longitude: -115.15149229313623,
+      h3Index: latLngToH3Index(36.12871445143533, -115.15149229313623),
+    },
   },
   {
     name: 'Baby Keem Concert',
     organization: 'The Cosmopolitan',
     description: 'half past twelve i was all alone.',
-    latitude: 36.10987909759377,
-    longitude: -115.17538973403965,
+    location: {
+      latitude: 36.10987909759377,
+      longitude: -115.17538973403965,
+      h3Index: latLngToH3Index(36.10987909759377, -115.17538973403965),
+    },
   },
   {
     name: 'Water Lantern Festival',
     organization: 'SWCTA Key Club',
     description: 'Join us at Sunset Park to litter the pond.',
-    latitude: 36.03809903957797,
-    longitude: -115.24699453074136,
+    location: {
+      latitude: 36.03809903957797,
+      longitude: -115.24699453074136,
+      h3Index: latLngToH3Index(36.03809903957797, -115.24699453074136),
+    },
   },
   {
     name: 'Thrift Valley pop up shop',
     organization: 'Thrift Valley',
     description: 'we outta stussy dont even ask',
-    latitude: 36.15909747099756,
-    longitude: -115.15269829421878,
+    location: {
+      latitude: 36.15909747099756,
+      longitude: -115.15269829421878,
+      h3Index: latLngToH3Index(36.15909747099756, -115.15269829421878),
+    },
   },
 ];
 
@@ -77,24 +105,24 @@ export const seed = mutation({
   handler: async (ctx) => {
     //  Users (Convex Table Name: users)
     const userSeeds = [
-      { name: 'Alice', token: 'seed|alice' },
-      { name: 'Bob', token: 'seed|bob' },
-      { name: 'Reece', token: 'seed|reece' },
-      { name: 'Nathan', token: 'seed|nathan' },
-      { name: 'Manjot', token: 'seed|manjot' },
-      { name: 'Daniel', token: 'seed|daniel' },
-      { name: 'Jonah', token: 'seed|jonah' },
-      { name: 'Jimmy', token: 'seed|jimmy' },
-      { name: 'Evan', token: 'seed|evan' },
+      { name: 'Alice', clerkId: 'seed|alice' },
+      { name: 'Bob', clerkId: 'seed|bob' },
+      { name: 'Reece', clerkId: 'seed|reece' },
+      { name: 'Nathan', clerkId: 'seed|nathan' },
+      { name: 'Manjot', clerkId: 'seed|manjot' },
+      { name: 'Daniel', clerkId: 'seed|daniel' },
+      { name: 'Jonah', clerkId: 'seed|jonah' },
+      { name: 'Jimmy', clerkId: 'seed|jimmy' },
+      { name: 'Evan', clerkId: 'seed|evan' },
     ];
     const userIds: any[] = [];
     for (const u of userSeeds) {
       const existing = await ctx.db
         .query('users')
-        .withIndex('by_token', (q) => q.eq('tokenIdentifier', u.token))
+        .withIndex('by_clerkId', (q) => q.eq('clerkId', u.clerkId))
         .unique();
       userIds.push(
-        existing?._id ?? (await ctx.db.insert('users', { name: u.name, tokenIdentifier: u.token }))
+        existing?._id ?? (await ctx.db.insert('users', { name: u.name, clerkId: u.clerkId }))
       );
     }
     const [u1, u2, u3, u4, u5, u6, u7, u8, u9] = userIds;
@@ -159,41 +187,55 @@ export const seed = mutation({
     //  Users/Events Join Table (Convex: usersToEvents)
     const userEventPairs = [
       { userId: u1, eventId: e1 },
-      { userId: u1, eventId: e3 },
       { userId: u1, eventId: e5 },
+      { userId: u1, eventId: e4 },
+      { userId: u1, eventId: e3 },
       { userId: u1, eventId: e9 },
-      { userId: u2, eventId: e1 },
+
+      { userId: u2, eventId: e2 },
       { userId: u2, eventId: e7 },
+      { userId: u2, eventId: e1 },
       { userId: u2, eventId: e9 },
+
       { userId: u3, eventId: e2 },
       { userId: u3, eventId: e4 },
+      { userId: u3, eventId: e8 },
       { userId: u3, eventId: e5 },
       { userId: u3, eventId: e6 },
-      { userId: u4, eventId: e2 },
+
       { userId: u4, eventId: e3 },
-      { userId: u4, eventId: e4 },
-      { userId: u4, eventId: e5 },
       { userId: u4, eventId: e8 },
+      { userId: u4, eventId: e7 },
+      { userId: u4, eventId: e2 },
+      { userId: u4, eventId: e5 },
       { userId: u4, eventId: e9 },
+
       { userId: u5, eventId: e6 },
       { userId: u5, eventId: e9 },
+
       { userId: u6, eventId: e2 },
+      { userId: u6, eventId: e7 },
+      { userId: u6, eventId: e8 },
       { userId: u6, eventId: e3 },
       { userId: u6, eventId: e6 },
-      { userId: u6, eventId: e8 },
-      { userId: u7, eventId: e3 },
-      { userId: u7, eventId: e8 },
+
       { userId: u7, eventId: e9 },
-      { userId: u8, eventId: e1 },
+      { userId: u7, eventId: e8 },
+      { userId: u7, eventId: e4 },
+      { userId: u7, eventId: e3 },
+
       { userId: u8, eventId: e2 },
       { userId: u8, eventId: e4 },
-      { userId: u8, eventId: e6 },
       { userId: u8, eventId: e7 },
       { userId: u8, eventId: e8 },
+      { userId: u8, eventId: e1 },
+      { userId: u8, eventId: e6 },
       { userId: u8, eventId: e9 },
-      { userId: u9, eventId: e2 },
+
       { userId: u9, eventId: e4 },
       { userId: u9, eventId: e6 },
+      { userId: u9, eventId: e2 },
+      { userId: u9, eventId: e8 },
     ];
     for (const pair of userEventPairs) {
       const existing = await ctx.db
@@ -508,50 +550,118 @@ export const seed = mutation({
     }
 
     const friendPairs = [
-      { userAId: u1, userBId: u2 },
-      { userAId: u1, userBId: u4 },
-      { userAId: u1, userBId: u5 },
-      { userAId: u1, userBId: u7 },
-      { userAId: u1, userBId: u8 },
+      { requesterId: u1, recipientId: u2, status: 'accepted' },
+      { requesterId: u1, recipientId: u4, status: 'pending' },
+      { requesterId: u1, recipientId: u5, status: 'accepted' },
 
-      { userAId: u2, userBId: u1 },
-      { userAId: u2, userBId: u3 },
+      { requesterId: u2, recipientId: u3, status: 'accepted' },
 
-      { userAId: u3, userBId: u2 },
-      { userAId: u3, userBId: u4 },
-      { userAId: u3, userBId: u5 },
-      { userAId: u3, userBId: u6 },
-      { userAId: u3, userBId: u7 },
+      { requesterId: u3, recipientId: u4, status: 'accepted' },
+      { requesterId: u3, recipientId: u5, status: 'accepted' },
+      { requesterId: u3, recipientId: u6, status: 'accepted' },
 
-      { userAId: u4, userBId: u1 },
-      { userAId: u4, userBId: u3 },
-      { userAId: u4, userBId: u5 },
-      { userAId: u4, userBId: u8 },
+      { requesterId: u4, recipientId: u5, status: 'accepted' },
+      { requesterId: u4, recipientId: u8, status: 'rejected' },
 
-      { userAId: u5, userBId: u1 },
-      { userAId: u5, userBId: u3 },
-      { userAId: u5, userBId: u4 },
-      { userAId: u5, userBId: u6 },
+      { requesterId: u5, recipientId: u6, status: 'accepted' },
 
-      { userAId: u6, userBId: u3 },
-      { userAId: u6, userBId: u5 },
-      { userAId: u6, userBId: u8 },
+      { requesterId: u6, recipientId: u8, status: 'accepted' },
 
-      { userAId: u7, userBId: u1 },
-      { userAId: u7, userBId: u3 },
+      { requesterId: u7, recipientId: u1, status: 'pending' },
+      { requesterId: u7, recipientId: u3, status: 'rejected' },
 
-      { userAId: u8, userBId: u1 },
-      { userAId: u8, userBId: u4 },
-      { userAId: u8, userBId: u6 },
-    ];
+      { requesterId: u8, recipientId: u1, status: 'pending' },
+    ] as const;
     for (const pair of friendPairs) {
       const existing = await ctx.db
         .query('friends')
-        .withIndex('by_userA_userB', (q) =>
-          q.eq('userAId', pair.userAId).eq('userBId', pair.userBId)
+        .withIndex('by_recipientId_requesterId', (q) =>
+          q.eq('recipientId', pair.recipientId).eq('requesterId', pair.requesterId)
         )
         .first();
       if (!existing) await ctx.db.insert('friends', pair);
+    }
+
+    const userPreferredTagSeeds: { userId: any; tagIds: any[] }[] = [
+      {
+        userId: u1,
+        tagIds: [
+          tagIds['study'],
+          tagIds['food'],
+          tagIds['culture'],
+          tagIds['college'],
+          tagIds['insightful'],
+        ],
+      },
+      {
+        userId: u2,
+        tagIds: [tagIds['music'], tagIds['concert'], tagIds['rap'], tagIds['r&b'], tagIds['chill']],
+      },
+      {
+        userId: u3,
+        tagIds: [
+          tagIds['music'],
+          tagIds['art'],
+          tagIds['culture'],
+          tagIds['concert'],
+          tagIds['food'],
+        ],
+      },
+      {
+        userId: u4,
+        tagIds: [
+          tagIds['party'],
+          tagIds['college'],
+          tagIds['chill'],
+          tagIds['drink'],
+          tagIds['wild'],
+        ],
+      },
+      {
+        userId: u5,
+        tagIds: [
+          tagIds['anime'],
+          tagIds['games'],
+          tagIds['comics'],
+          tagIds['convention'],
+          tagIds['vendors'],
+        ],
+      },
+      {
+        userId: u6,
+        tagIds: [tagIds['music'], tagIds['concert'], tagIds['rap'], tagIds['r&b'], tagIds['wild']],
+      },
+      {
+        userId: u7,
+        tagIds: [
+          tagIds['thrift'],
+          tagIds['fits'],
+          tagIds['clothes'],
+          tagIds['chill'],
+          tagIds['culture'],
+        ],
+      },
+      {
+        userId: u8,
+        tagIds: [
+          tagIds['music'],
+          tagIds['concert'],
+          tagIds['art'],
+          tagIds['food'],
+          tagIds['culture'],
+        ],
+      },
+      {
+        userId: u9,
+        tagIds: [tagIds['art'], tagIds['music'], tagIds['anime'], tagIds['comics'], tagIds['food']],
+      },
+    ];
+    for (const entry of userPreferredTagSeeds) {
+      const existing = await ctx.db
+        .query('userPreferredTags')
+        .withIndex('by_userId', (q) => q.eq('userId', entry.userId))
+        .unique();
+      if (!existing) await ctx.db.insert('userPreferredTags', entry);
     }
 
     return {

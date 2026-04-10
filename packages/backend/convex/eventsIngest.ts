@@ -1,6 +1,8 @@
+import { env } from '@fomo/env/backend';
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
 import { action, internalMutation } from './_generated/server';
+import { latLngToH3Index } from './data_ml/events';
 
 const normalizedEventValidator = v.object({
   name: v.string(),
@@ -8,8 +10,11 @@ const normalizedEventValidator = v.object({
   description: v.string(),
   startDate: v.number(),
   endDate: v.number(),
-  latitude: v.number(),
-  longitude: v.number(),
+  location: v.object({
+    latitude: v.number(),
+    longitude: v.number(),
+    h3Index: v.string(),
+  }),
 });
 
 type NormalizedEvent = {
@@ -18,8 +23,11 @@ type NormalizedEvent = {
   description: string;
   startDate: number;
   endDate: number;
-  latitude: number;
-  longitude: number;
+  location: {
+    latitude: number;
+    longitude: number;
+    h3Index: string;
+  };
 };
 
 type TicketmasterEvent = {
@@ -250,6 +258,7 @@ function normalizeTicketmasterEvent(
   const latitude = parseCoordinate(event._embedded?.venues?.[0]?.location?.latitude);
   const longitude = parseCoordinate(event._embedded?.venues?.[0]?.location?.longitude);
   if (latitude === null || longitude === null) return null;
+
   const description = attractionAbout?.trim();
   if (!description) return null;
 
@@ -259,8 +268,11 @@ function normalizeTicketmasterEvent(
     description: description.slice(0, 4000),
     startDate,
     endDate,
-    latitude,
-    longitude,
+    location: {
+      latitude,
+      longitude,
+      h3Index: latLngToH3Index(latitude, longitude),
+    },
   };
 }
 
@@ -340,15 +352,15 @@ export const upsertNormalizedEvents = internalMutation({
         existing.organization !== event.organization ||
         existing.description !== event.description ||
         existing.endDate !== event.endDate ||
-        existing.latitude !== event.latitude ||
-        existing.longitude !== event.longitude
+        existing.location?.latitude !== event.location.latitude ||
+        existing.location?.longitude !== event.location.longitude ||
+        existing.location?.h3Index !== event.location.h3Index
       ) {
         await ctx.db.patch(existing._id, {
           organization: event.organization,
           description: event.description,
           endDate: event.endDate,
-          latitude: event.latitude,
-          longitude: event.longitude,
+          location: event.location,
         });
         updated += 1;
       } else {
@@ -368,10 +380,7 @@ export const syncTicketmasterLasVegas = action({
     category: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<SyncTicketmasterResult> => {
-    const apiKey = process.env.TICKETMASTER_API_KEY;
-    if (!apiKey) {
-      throw new Error('Missing TICKETMASTER_API_KEY. Set it in Convex environment variables.');
-    }
+    const apiKey = env.TICKETMASTER_API_KEY;
 
     const city = 'Las Vegas';
     const stateCode = 'NV';

@@ -14,7 +14,11 @@
       "bundleIdentifier": "com.fomo.mobile",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationWhenInUseUsageDescription": "FOMO uses your location to show events near you on the map."
+        "NSLocationWhenInUseUsageDescription": "FOMO uses your location to show events near you on the map.",
+        "NSCameraUsageDescription": "FOMO uses your camera so you can capture photos and videos for posts.",
+        "NSPhotoLibraryUsageDescription": "FOMO needs access to your photos so you can choose media for posts.",
+        "NSPhotoLibraryAddUsageDescription": "FOMO needs permission to save photos and videos to your library.",
+        "NSMicrophoneUsageDescription": "FOMO uses your microphone when recording videos."
       }
     },
     "android": {
@@ -68,6 +72,29 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "FOMO uses your location to show events near you on the map."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "FOMO uses your camera so you can capture photos and videos for posts.",
+          "microphonePermission": "FOMO uses your microphone when recording videos."
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "FOMO uses your microphone so you can search with your voice.",
+          "speechRecognitionPermission": "FOMO uses speech recognition so you can search events with your voice.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "FOMO needs access to your photos so you can choose media for posts.",
+          "cameraPermission": "FOMO uses your camera so you can take photos for posts.",
+          "microphonePermission": "FOMO uses your microphone when recording videos."
         }
       ],
       "expo-secure-store",
