@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 from typing import Optional
-
 from convex import ConvexClient
 from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
@@ -198,8 +197,9 @@ def main_one_user(user: str, rec_amt: int, seed: bool) -> None:
         raise Exception(f"\"{user}\" cannot be found in users.")
 
     raw_events_df          = raw_matrix_events()
+    print(raw_events_df)
     simscores_events_df    = similarity_score(raw_events_df, user)
-    # print(f"\nRecs based on Attended Events for {user}: {simscores_events_df}")
+    print(f"\nRaw Matrix Attended Events for {user}: {simscores_events_df}")
 
     raw_eventTags_df       = raw_matrix_eventTags()
     simscores_eventTags_df = similarity_score(raw_eventTags_df, user)
@@ -210,6 +210,7 @@ def main_one_user(user: str, rec_amt: int, seed: bool) -> None:
     # print(f"\nRecs based on Post Tags for {user}: {simscores_postTags_df}")
 
     simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
+    print(simscores_weighted)
     upsert_friend_recs(simscores_weighted, user, rec_amt)
 
 # For all users with event attendance. We can change this to all users
@@ -244,5 +245,6 @@ REC_AMT  = 5         # friendRecs schema only currently supports 5.
 SEED     = False     # Dictates if fake data needs to be populated into Convex.
 
 if __name__ == "__main__":
-    main_all_attendees(REC_AMT, SEED)
+    # main_all_attendees(REC_AMT, SEED)
+    main_one_user(USER, REC_AMT, SEED)
 
