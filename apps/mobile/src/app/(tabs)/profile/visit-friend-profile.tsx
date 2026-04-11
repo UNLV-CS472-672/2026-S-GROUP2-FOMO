@@ -92,7 +92,11 @@ export default function VisitFriendProfileScreen() {
               <StatLabel value={profileStats.postCount} label="Posts" onPress={() => {}} />
             </View>
             <View className="flex-1 items-center">
-              <StatLabel value={profileStats.friendCount} label="Friends" onPress={() => {}} />
+              <StatLabel
+                value={profileStats.friendCount}
+                label="Friends"
+                onPress={() => router.push('/profile/friends?source=visit-friend-profile')}
+              />
             </View>
           </View>
         </View>

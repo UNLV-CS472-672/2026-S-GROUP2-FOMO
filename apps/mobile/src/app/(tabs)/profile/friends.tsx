@@ -4,7 +4,7 @@ import { Screen } from '@/components/ui/screen';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { useQuery } from 'convex/react';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -13,9 +13,12 @@ type FriendRec = { userId: string; score: number };
 /** Friends UI from this screen; embed in profile or use via {@link FriendsScreen}. */
 export function FriendsScreenContent() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ source?: string | string[] }>();
   const theme = useAppTheme();
   const [searchText, setSearchText] = useState('');
   const [isRecommendedCollapsed, setIsRecommendedCollapsed] = useState(false);
+  const source = Array.isArray(params.source) ? params.source[0] : params.source;
+  const showRecommendedFriends = source !== 'visit-friend-profile';
 
   const friendRecResult = useQuery(api.data_ml.friends.getFriendRecs);
 
@@ -68,37 +71,41 @@ export function FriendsScreenContent() {
       </View>
 
       {/* Recommended Friends */}
-      <View className="mb-4 border-y border-border">
-        <TouchableOpacity
-          onPress={() => setIsRecommendedCollapsed((current) => !current)}
-          className="flex-row items-center justify-between px-4 py-3"
-          accessibilityRole="button"
-          accessibilityLabel="Toggle recommended friends"
-        >
-          <Text className="text-lg font-bold text-foreground">Recommended Friends</Text>
-          <Text className="text-sm text-muted-foreground">
-            {isRecommendedCollapsed ? 'Show' : 'Hide'}
-          </Text>
-        </TouchableOpacity>
+      {showRecommendedFriends ? (
+        <View className="mb-4 border-y border-border">
+          <TouchableOpacity
+            onPress={() => setIsRecommendedCollapsed((current) => !current)}
+            className="flex-row items-center justify-between px-4 py-3"
+            accessibilityRole="button"
+            accessibilityLabel="Toggle recommended friends"
+          >
+            <Text className="text-lg font-bold text-foreground">Recommended Friends</Text>
+            <Text className="text-sm text-muted-foreground">
+              {isRecommendedCollapsed ? 'Show' : 'Hide'}
+            </Text>
+          </TouchableOpacity>
 
-        {!isRecommendedCollapsed && (
-          <View className="px-4 pb-1">
-            {filteredRecommended.length > 0 ? (
-              filteredRecommended.map((f) => (
-                <FriendCell
-                  key={f.id}
-                  username={f.username}
-                  realName={f.realName}
-                  imageSource={f.imageSource}
-                  onPress={() => handleFriendPress(f.id)}
-                />
-              ))
-            ) : (
-              <Text className="py-2 text-sm text-muted-foreground">No recommendations found.</Text>
-            )}
-          </View>
-        )}
-      </View>
+          {!isRecommendedCollapsed && (
+            <View className="px-4 pb-1">
+              {filteredRecommended.length > 0 ? (
+                filteredRecommended.map((f) => (
+                  <FriendCell
+                    key={f.id}
+                    username={f.username}
+                    realName={f.realName}
+                    imageSource={f.imageSource}
+                    onPress={() => handleFriendPress(f.id)}
+                  />
+                ))
+              ) : (
+                <Text className="py-2 text-sm text-muted-foreground">
+                  No recommendations found.
+                </Text>
+              )}
+            </View>
+          )}
+        </View>
+      ) : null}
 
       {/* Friends List */}
       <View className="border-y border-border">
