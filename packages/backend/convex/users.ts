@@ -1,12 +1,10 @@
-import type { UserIdentity } from 'convex/server';
+import type { UserIdentity as ClerkIdentity } from 'convex/server';
 import { v } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
 import { mutation, MutationCtx, query, QueryCtx } from './_generated/server';
 
-type ClerkIdentity = UserIdentity;
-
-function clerkIdFromIdentity(identity: UserIdentity): string {
+function clerkIdFromIdentity(identity: ClerkIdentity): string {
   const clerkId = identity.clerkId;
   if (typeof clerkId === 'string' && clerkId.length > 0) {
     return clerkId;
