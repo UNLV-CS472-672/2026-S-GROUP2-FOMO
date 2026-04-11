@@ -1,12 +1,10 @@
-import type { UserIdentity } from 'convex/server';
+import type { UserIdentity as ClerkIdentity } from 'convex/server';
 import { v } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
 import { mutation, MutationCtx, query, QueryCtx } from './_generated/server';
 
-type ClerkIdentity = UserIdentity & { username?: string };
-
-function clerkIdFromIdentity(identity: UserIdentity): string {
+function clerkIdFromIdentity(identity: ClerkIdentity): string {
   const clerkId = identity.clerkId;
   if (typeof clerkId === 'string' && clerkId.length > 0) {
     return clerkId;
@@ -138,7 +136,7 @@ export const ensureCurrentUser = mutation({
 
     // New Clerk user: `clerkId` must match the stable id on `ctx.auth` (Clerk `clerkId` claim).
     return await ctx.db.insert('users', {
-      name: identity.username!,
+      name: identity.nickname!,
       clerkId: clerkIdFromIdentity(identity),
     });
   },
