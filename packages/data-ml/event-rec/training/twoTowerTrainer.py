@@ -11,6 +11,13 @@ class TwoTowerTrainer():
         self.optimizer = optim.Adam(list(self.user_tower.parameters()) +
                                     list(self.event_tower.parameters())
                                     , lr=lr)
+        #
+        # self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        #     self.optimizer, T_max=150, eta_min=1e-5
+        # )
+
+    def step_scheduler(self):
+        self.scheduler.step()
 
     def bpr_loss(self, user_vec: torch.Tensor, pos_vec: torch.Tensor, neg_vec: torch.Tensor) -> torch.Tensor:
         pos_score = (user_vec * pos_vec).sum(dim=-1)

@@ -8,7 +8,7 @@ from data.eventRecDataset import get_data_loader
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def main(epochs: int = 100, model_path: str | None = None) -> None:
+def main(epochs: int = 300, model_path: str | None = None) -> None:
     train_loader, test_loader = get_data_loader()
 
     user_tags, _, _ = next(iter(train_loader))
@@ -70,10 +70,13 @@ def main(epochs: int = 100, model_path: str | None = None) -> None:
 
             avg_loss = total_loss / len(train_loader)
 
+            # trainer.scheduler.step()
+
             # --- evaluation ---
             eval_loss = 0.0
             with torch.no_grad():
                 user_tower.eval()
+                event_tower.eval()
                 for user_tags, pos_event_tags, neg_event_tags in test_loader:
                     user_tags = user_tags.to(DEVICE)
                     pos_event_tags = pos_event_tags.to(DEVICE)
@@ -84,6 +87,7 @@ def main(epochs: int = 100, model_path: str | None = None) -> None:
                     neg_vec = event_tower(neg_event_tags)
                     eval_loss += trainer.bpr_loss(user_vec, pos_vec, neg_vec).item()
                 user_tower.train()
+                event_tower.train()
 
             avg_eval = eval_loss / len(test_loader)
             print(f"Epoch {epoch + 1}/{epochs} | train loss: {avg_loss:.4f} | test loss: {avg_eval:.4f}")
@@ -95,4 +99,5 @@ def main(epochs: int = 100, model_path: str | None = None) -> None:
         save_model(epoch + 1)
 
 if __name__ == "__main__":
-    main(model_path="models/model16.pt")
+    main(model_path=None)
+    # "models/model17.pt"

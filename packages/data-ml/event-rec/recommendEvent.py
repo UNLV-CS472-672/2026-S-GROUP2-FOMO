@@ -55,7 +55,7 @@ def get_events(client: ConvexClient, num_tags: int, tag_id_to_idx: dict[str, int
     return result
 
 
-def main(users: list[str], update_db: bool, k: int = 10) -> None:
+def main(users: list[str], update_db: bool, model_path: str, k: int = 10) -> None:
     client = get_client()
 
     # ── Preprocessing
@@ -78,7 +78,7 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
     user_tower = UserTower(tag_count).to(DEVICE)
     event_tower = EventTower(tag_count).to(DEVICE)
 
-    model_weights = torch.load("models/model17.pt", map_location=DEVICE)
+    model_weights = torch.load(model_path, map_location=DEVICE)
 
     user_tower.load_state_dict(model_weights['user_tower'])
     event_tower.load_state_dict(model_weights['event_tower'])
@@ -140,4 +140,4 @@ USERS = ["ALL"]
 UPDATE_DB = False
 
 if __name__ == "__main__":
-    main(USERS, UPDATE_DB)
+    main(USERS, UPDATE_DB, "models/model21.pt")

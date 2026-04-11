@@ -181,8 +181,8 @@ USER_PERSONAS = [
 
 # ── 4. Weight formula (mirrors updateUserPreferences.py exactly) ───────────────
 
-BETA = 0.15
-TAU  = 1.0
+BETA = 0.10
+TAU  = 1.25
 
 
 def build_user_weight_from_matrix(mat: np.ndarray, prior: np.ndarray | None = None) -> np.ndarray:
@@ -288,7 +288,7 @@ TRIPLETS_PER_USER = 20   # 800 × 15 = up to 12,000 triplets
 # How much non-event tags contribute to the similarity score.
 # 0.0 = fully ignore tags outside the event (pure masked cosine)
 # 1.0 = treat all tags equally (standard cosine similarity)
-NON_EVENT_TAG_WEIGHT = 0.1
+NON_EVENT_TAG_WEIGHT = 0.3
 
 
 def cosine_sim_matrix(user_weights: np.ndarray, event_tags: np.ndarray) -> np.ndarray:

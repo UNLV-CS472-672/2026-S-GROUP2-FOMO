@@ -19,8 +19,8 @@ def get_client() -> ConvexClient:
     return client
 
 # Baseline count for every tag
-BETA = 0.15
-TAU = 1.0
+BETA = 0.1
+TAU = 1.25
 
 NUM_TAGS = 0
 TAG_ID_TO_IDX = {}
