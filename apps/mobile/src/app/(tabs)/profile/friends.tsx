@@ -2,6 +2,8 @@ import { friends, type Friend } from '@/app/(tabs)/profile/friends-data';
 import FriendCell from '@/components/profile/friend-cell';
 import { Screen } from '@/components/ui/screen';
 import { useAppTheme } from '@/lib/use-app-theme';
+import { api } from '@fomo/backend/convex/_generated/api';
+import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -15,8 +17,7 @@ export function FriendsScreenContent() {
   const [searchText, setSearchText] = useState('');
   const [isRecommendedCollapsed, setIsRecommendedCollapsed] = useState(false);
 
-  //comment this out for the sake testing frontend without errors
-  const friendRecResult = { recs: [] as FriendRec[] }; // useQuery(api.data_ml.friends.getFriendRecs);
+  const friendRecResult = useQuery(api.data_ml.friends.getFriendRecs);
 
   const recommendedFriends = useMemo<Friend[]>(
     () =>
