@@ -1,3 +1,4 @@
+import { useOnSignInComplete } from '@/features/auth/hooks/use-on-sign-in-complete';
 import { buildClerkErrorState, clearAuthErrors, SignUpErrors } from '@/features/auth/utils/errors';
 import {
   buildIncompleteSignUpMessage,
@@ -57,6 +58,7 @@ function getNextIncompleteStep(
 export function useSignup() {
   const { isSignedIn } = useAuth();
   const { isLoaded, signUp, setActive } = useSignUp();
+  const onSignInComplete = useOnSignInComplete();
 
   // state
   const [step, setStep] = useState<SignUpStep>('identifier');
@@ -147,6 +149,10 @@ export function useSignup() {
       setResendAvailableAt(Date.now() + 60_000);
       setUsernameEntryStep('password');
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to start email sign up', error);
+      }
+
       handleClerkError(error);
     } finally {
       setStatus('idle');
@@ -171,7 +177,7 @@ export function useSignup() {
 
       if (attempt.status === 'complete') {
         setCodeValue('');
-        await setActive({ session: attempt.createdSessionId });
+        await onSignInComplete({ sessionId: attempt.createdSessionId, setActive });
         return;
       }
 
@@ -198,6 +204,10 @@ export function useSignup() {
 
       handleClerkError(new Error(buildIncompleteSignUpMessage(getClerkStatus(attemptMeta))));
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to verify sign up email code', error);
+      }
+
       if (isAlreadyVerifiedError(error)) {
         const currentSignUp = getCurrentSignUpResource();
         const currentSignUpMeta = currentSignUp as SignUpMeta;
@@ -232,6 +242,10 @@ export function useSignup() {
       await currentSignUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setResendAvailableAt(Date.now() + 60_000);
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to resend sign up email code', error);
+      }
+
       handleClerkError(error);
     } finally {
       setStatus('idle');
@@ -253,7 +267,7 @@ export function useSignup() {
       setActiveSignUp(attempt);
 
       if (getClerkStatus(attemptMeta) === 'complete' && attemptMeta.createdSessionId) {
-        await setActive({ session: attemptMeta.createdSessionId });
+        await onSignInComplete({ sessionId: attemptMeta.createdSessionId, setActive });
         return;
       }
 
@@ -273,6 +287,10 @@ export function useSignup() {
 
       handleClerkError(new Error(buildIncompleteSignUpMessage(getClerkStatus(attemptMeta))));
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to submit sign up password', error);
+      }
+
       handleClerkError(error, 'password');
     } finally {
       setStatus('idle');
@@ -296,7 +314,7 @@ export function useSignup() {
       setActiveSignUp(attempt);
 
       if (getClerkStatus(attemptMeta) === 'complete' && attemptMeta.createdSessionId) {
-        await setActive({ session: attemptMeta.createdSessionId });
+        await onSignInComplete({ sessionId: attemptMeta.createdSessionId, setActive });
         return;
       }
 
@@ -311,6 +329,10 @@ export function useSignup() {
 
       handleClerkError(new Error(buildIncompleteSignUpMessage(getClerkStatus(attemptMeta))));
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to submit sign up username', error);
+      }
+
       handleClerkError(error, 'username');
     } finally {
       setStatus('idle');

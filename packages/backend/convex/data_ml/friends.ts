@@ -3,24 +3,40 @@
 // --------------------------------------------------
 
 import { v } from 'convex/values';
+
 import { query } from '../_generated/server';
 
+import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../users';
+
 // Checks if a user exists in "friends" via userId.
-// Given input "userA", checks and returns "userB" if exists, null otherwise.
+// Given input "userA", checks for a matching "userB" if 'status' is accepted.
+// Considers both directions, since database is unidirectional.
 export const friendExists = query({
   args: {
     userAId: v.id('users'),
     userBId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    // requesterId -> recipientId
     const friendship = await ctx.db
       .query('friends')
-      .withIndex('by_userA_userB', (q) => q.eq('userAId', args.userAId).eq('userBId', args.userBId))
+      .withIndex('by_recipientId_requesterId', (q) =>
+        q.eq('recipientId', args.userBId).eq('requesterId', args.userAId)
+      )
+      .filter((q) => q.eq(q.field('status'), 'accepted'))
       .unique();
+    if (friendship) return args.userBId;
 
-    if (friendship) {
-      return friendship.userBId;
-    }
+    // recipientId -> requesterId
+    const reverseFriendship = await ctx.db
+      .query('friends')
+      .withIndex('by_recipientId_requesterId', (q) =>
+        q.eq('recipientId', args.userAId).eq('requesterId', args.userBId)
+      )
+      .filter((q) => q.eq(q.field('status'), 'accepted'))
+      .unique();
+    if (reverseFriendship) return args.userBId;
+
     return null;
   },
 });
@@ -29,8 +45,11 @@ export const friendExists = query({
 // Also determines whether the recommendations are "fresh"
 // based on a 24-hour time window.
 export const getFriendRecs = query({
-  args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
+  args: {},
+  handler: async (ctx) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    const userId = user._id;
+
     const rec = await ctx.db
       .query('friendRecs')
       .withIndex('by_userId', (q) => q.eq('userId', userId))

@@ -1,3 +1,4 @@
+import { useOnSignInComplete } from '@/features/auth/hooks/use-on-sign-in-complete';
 import { buildClerkErrorState, clearAuthErrors, LoginErrors } from '@/features/auth/utils/errors';
 import { useAuth } from '@clerk/expo';
 import { useSignIn } from '@clerk/expo/legacy';
@@ -15,6 +16,7 @@ type LoginStatus =
 export function useLogin() {
   const { isSignedIn } = useAuth();
   const { isLoaded, signIn, setActive } = useSignIn();
+  const onSignInComplete = useOnSignInComplete();
 
   // state
   const [step, setStep] = useState<LoginStep>('identifier');
@@ -90,6 +92,10 @@ export function useLogin() {
       setResendAvailableAt(Date.now() + 60_000);
       return true;
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to send login code', error);
+      }
+
       handleClerkError(error);
       return false;
     } finally {
@@ -174,9 +180,13 @@ export function useLogin() {
       });
 
       if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
+        await onSignInComplete({ sessionId: result.createdSessionId, setActive });
       }
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to verify login code', error);
+      }
+
       handleClerkError(error);
     } finally {
       setStatus('idle');
@@ -195,9 +205,13 @@ export function useLogin() {
     try {
       const result = await signIn.create({ identifier: trimmedIdentifier, password });
       if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
+        await onSignInComplete({ sessionId: result.createdSessionId, setActive });
       }
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to sign in with password', error);
+      }
+
       handleClerkError(error);
     } finally {
       setStatus('idle');

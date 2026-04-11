@@ -4,9 +4,9 @@ import { v } from 'convex/values';
 export default defineSchema({
   users: defineTable({
     name: v.string(),
-    tokenIdentifier: v.string(), // For Clerk integration
+    clerkId: v.string(), // Clerk user id (`clerkId` JWT claim; Convex may still expose legacy `tokenIdentifier`)
   })
-    .index('by_token', ['tokenIdentifier'])
+    .index('by_clerkId', ['clerkId'])
     .index('by_name', ['name']),
 
   events: defineTable({
@@ -20,9 +20,6 @@ export default defineSchema({
       longitude: v.number(),
       h3Index: v.string(),
     }),
-
-    // latitude: v.number(),
-    // longitude: v.number(),
   })
     .index('by_startDate', ['startDate'])
     .index('by_endDate', ['endDate'])
@@ -90,16 +87,22 @@ export default defineSchema({
   }).index('by_userId', ['userId']),
 
   friends: defineTable({
-    userAId: v.id('users'),
-    userBId: v.id('users'),
+    requesterId: v.id('users'),
+    recipientId: v.id('users'),
+    status: v.union(v.literal('pending'), v.literal('accepted'), v.literal('rejected')),
   })
-    .index('by_userAId', ['userAId'])
-    .index('by_userBId', ['userBId'])
-    .index('by_userA_userB', ['userAId', 'userBId']),
+    .index('by_requesterId', ['requesterId'])
+    .index('by_recipientId', ['recipientId'])
+    .index('by_recipientId_requesterId', ['recipientId', 'requesterId']),
 
   userTagWeights: defineTable({
     userId: v.id('users'),
     weights: v.array(v.number()),
     updatedAt: v.number(),
+  }).index('by_userId', ['userId']),
+
+  userPreferredTags: defineTable({
+    userId: v.id('users'),
+    tagIds: v.array(v.id('tags')),
   }).index('by_userId', ['userId']),
 });
