@@ -9,10 +9,6 @@ type AuthCtx = QueryCtx | MutationCtx;
 type ClerkIdentity = UserIdentity & { username?: string };
 
 function clerkIdFromIdentity(identity: UserIdentity): string {
-  const clerkId = identity.clerkId;
-  if (typeof clerkId === 'string' && clerkId.length > 0) {
-    return clerkId;
-  }
   return identity.tokenIdentifier;
 }
 
