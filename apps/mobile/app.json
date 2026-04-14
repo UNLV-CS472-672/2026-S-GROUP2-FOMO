@@ -98,6 +98,14 @@
         }
       ],
       [
+        "react-native-vision-camera",
+        {
+          "enableMicrophonePermission": true,
+          "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera.",
+          "microphonePermissionText": "$(PRODUCT_NAME) needs access to your Microphone."
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "FOMO needs access to your photos so you can choose media for posts.",
@@ -106,8 +114,7 @@
         }
       ],
       "expo-secure-store",
-      "expo-web-browser",
-      "react-native-vision-camera"
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
