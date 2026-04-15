@@ -12,7 +12,6 @@ import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
 MapboxGL.setAccessToken(env.EXPO_PUBLIC_MAPBOX_TOKEN);
@@ -30,7 +29,6 @@ const EVENT_IMAGES = [
 export default function MapScreen() {
   const { push } = useRouter();
   const events = useQuery(api.data_ml.events.getEvents) ?? [];
-  const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
