@@ -126,6 +126,9 @@ def raw_matrix_postTags() -> pd.DataFrame:
 
 # Convert raw matrices into similarity matrices via cosine similarity.
 def similarity_score(df: pd.DataFrame, target_user_id: str) -> pd.DataFrame:
+    
+    if df.empty:
+        return pd.DataFrame(columns=["similarity_score"])
 
     try:
         user_similarity_np = cosine_similarity(df)
@@ -240,11 +243,11 @@ def main_all_attendees(rec_amt: int, seed: bool) -> None:
         upsert_friend_recs(simscores_weighted, user_id, rec_amt)
 
 
-USER     = "n170a6cc33hgr22xbxsmnh1txd82713v"  # By user_id.
+USER     = "n177y9j8x9tyyd5bg9rf8b67n584javt"  # By user_id.
 REC_AMT  = 5         # friendRecs schema only currently supports 5. 
-SEED     = False     # Dictates if fake data needs to be populated into Convex.
+SEED     = True     # Dictates if fake data needs to be populated into Convex.
 
 if __name__ == "__main__":
-    # main_all_attendees(REC_AMT, SEED)
-    main_one_user(USER, REC_AMT, SEED)
+    main_all_attendees(REC_AMT, SEED)
+    # main_one_user(USER, REC_AMT, SEED)
 

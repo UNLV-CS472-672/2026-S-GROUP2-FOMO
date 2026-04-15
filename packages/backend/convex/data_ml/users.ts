@@ -38,3 +38,12 @@ export const getUserIdsWithEventAttendance = query({
     return Array.from(uniqueUserIds);
   },
 });
+
+// Extracts all userIds from the `users` table.
+export const getAllUserIds = query({
+  args: {},
+  handler: async (ctx) => {
+    const users = await ctx.db.query('users').collect();
+    return users.map((user) => user._id);
+  },
+});
