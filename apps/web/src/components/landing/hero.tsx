@@ -26,35 +26,35 @@ export function Hero() {
         viewport={{ once: true, amount: 0.2 }}
         variants={{
           hidden: {},
-          visible: { transition: { staggerChildren: 0.12, delayChildren: 1.2 } },
+          visible: { transition: { staggerChildren: 0.18, delayChildren: 1.5 } },
         }}
-        className="text-5xl  text-center tracking-tight leading-snug font-grotesk font-extrabold"
+        className="text-5xl text-center tracking-tight leading-snug font-grotesk font-extrabold"
       >
-        {['Never', 'miss', "what's"].map((word, i) => (
+        {['Never', 'miss', "what's"].map((word, i, arr) => (
           <motion.span
             key={i}
             variants={{
               hidden: { opacity: 0, y: 20 },
               visible: { opacity: 1, y: 0 },
             }}
-            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="inline-block mr-[0.3em]"
+            transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
             {word}
+            {i < arr.length - 1 ? ' ' : ''}
           </motion.span>
         ))}
         <br />
-        {['happening', 'around', 'you.'].map((word, i) => (
+        {['happening', 'around', 'you.'].map((word, i, arr) => (
           <motion.span
             key={i + 3}
             variants={{
               hidden: { opacity: 0, y: 20 },
               visible: { opacity: 1, y: 0 },
             }}
-            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="inline-block mr-[0.3em]"
+            transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
             {word}
+            {i < arr.length - 1 ? ' ' : ''}
           </motion.span>
         ))}
       </motion.h1>

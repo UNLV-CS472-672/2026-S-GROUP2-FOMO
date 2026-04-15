@@ -37,6 +37,16 @@ body {
   font-family: var(--font-sans), sans-serif;
 }
 
+::selection {
+  background: var(--brand-coral-200);
+  color: var(--brand-coral-950);
+}
+
+.dark ::selection {
+  background: var(--brand-coral-700);
+  color: var(--brand-coral-50);
+}
+
 .dark .cl-modalBackdrop {
   background-color: rgba(0, 0, 0, 0.65);
 }
