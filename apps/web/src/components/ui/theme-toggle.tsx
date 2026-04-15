@@ -22,11 +22,6 @@ export function ThemeToggle({ className, iconClassName }: ThemeToggleProps) {
     return (theme as keyof typeof cycle) ?? 'system';
   }, [theme]);
 
-  const iconMode = useMemo(() => {
-    if (theme === 'system') return (resolvedTheme as 'light' | 'dark' | undefined) ?? 'system';
-    return (theme as 'light' | 'dark' | 'system') ?? 'system';
-  }, [resolvedTheme, theme]);
-
   const resolvedIconClassName = iconClassName ?? 'h-10 w-10';
 
   return (
@@ -38,10 +33,9 @@ export function ThemeToggle({ className, iconClassName }: ThemeToggleProps) {
       size="icon"
       className={cn('rounded-full transition-all duration-200 h-auto w-auto block p-3', className)}
     >
-      {/* Avoid SSR/client mismatch: render a stable icon until mounted */}
-      {iconMode === 'system' && <Monitor className={resolvedIconClassName} aria-hidden="true" />}
-      {iconMode === 'light' && <Sun className={resolvedIconClassName} aria-hidden="true" />}
-      {iconMode === 'dark' && <Moon className={resolvedIconClassName} aria-hidden="true" />}
+      {theme === 'system' && <Monitor className={resolvedIconClassName} aria-hidden="true" />}
+      {theme === 'light' && <Sun className={resolvedIconClassName} aria-hidden="true" />}
+      {theme === 'dark' && <Moon className={resolvedIconClassName} aria-hidden="true" />}
     </Button>
   );
 }
