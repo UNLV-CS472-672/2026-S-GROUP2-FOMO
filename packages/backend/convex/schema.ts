@@ -29,12 +29,14 @@ export default defineSchema({
     title: v.string(),
     description: v.string(),
     authorId: v.id('users'),
+    likeCount: v.optional(v.number()),
   }).index('by_author', ['authorId']),
 
   comments: defineTable({
     postId: v.id('posts'),
     authorId: v.id('users'),
     text: v.string(),
+    likeCount: v.optional(v.number()),
   })
     .index('by_post', ['postId'])
     .index('by_author', ['authorId'])

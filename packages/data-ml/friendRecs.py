@@ -24,7 +24,7 @@ def user_exists(user_id: str) -> bool:
 # Get all unique userIds that have at least one row in "usersToEvents"
 def get_user_ids_with_event_attendance() -> list[str]:
     # Cast to a list[str] to satisfy myPy since Convex returns Any.
-    user_ids: list[str] = get_client().query("data_ml/users:getUserIdsWithEventAttendance",{})
+    user_ids: list[str] = get_client().query("data_ml/usersToEvents:getUserIdsWithEventAttendance",{})
     return user_ids
 
 # Get all userIds that exist in "users"
@@ -244,6 +244,7 @@ def main_all_attendees(rec_amt: int, seed: bool) -> None:
         simscores_postTags_df = similarity_score(raw_postTags_df, user_id)
 
         simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
+        print(f"Similarity Scores for {user_id}:\n {simscores_weighted}")
         upsert_friend_recs(simscores_weighted, user_id, rec_amt)
 
 
