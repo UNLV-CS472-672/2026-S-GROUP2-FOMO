@@ -1,8 +1,9 @@
+import { Button, ButtonText } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { useGuest } from '@/integrations/session/provider';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Image } from 'expo-image';
-import { Redirect, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, Text, TextInput, View } from 'react-native';
 
@@ -95,6 +96,18 @@ export default function CreatePostScreen() {
           />
         </View>
       </ScrollView>
+
+      <Button
+        onPress={() => router.replace('/(tabs)/create')}
+        style={{
+          position: 'absolute',
+          bottom: tabBarHeight + 20,
+          right: 16,
+        }}
+        className="rounded-full"
+      >
+        <ButtonText>Post</ButtonText>
+      </Button>
     </Screen>
   );
 }
