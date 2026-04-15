@@ -1,24 +1,13 @@
 import type { UserIdentity as ClerkIdentity } from 'convex/server';
 
 import { Doc } from './_generated/dataModel';
-import { mutation, query, QueryCtx } from './_generated/server';
+import { mutation, QueryCtx } from './_generated/server';
 
-/**
- * Returns the current user's identity from the Convex JWT, or null if not signed in.
- * Used by the frontend to show auth status (e.g. green check vs red X).
- */
-export const getIdentity = query({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.auth.getUserIdentity();
-  },
-});
-
-export function clerkIdFromIdentity(identity: ClerkIdentity): string {
+function clerkIdFromIdentity(identity: ClerkIdentity): string {
   return identity.tokenIdentifier;
 }
 
-export async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
+async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     throw new Error('No Clerk identity found');
@@ -44,7 +33,7 @@ async function getConvexUserRowForIdentity(
  *
  * This should not throw; it's safe to use in queries that must gracefully return `null`.
  */
-export async function getAndAuthenticateCurrentConvexUserAllowNull(ctx: QueryCtx) {
+async function getAndAuthenticateCurrentConvexUserAllowNull(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     return null;
