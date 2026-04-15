@@ -63,16 +63,24 @@ export function useLogin() {
   };
 
   // ------- actions -------
-  type SendCodeResult = 'success' | 'rate_limited' | 'error';
+  type SendCodeResult = 'success' | 'email_unavailable' | 'error';
 
-  const isRateLimitError = (error: unknown): boolean =>
+  const isEmailUnavailableError = (error: unknown): boolean =>
     isClerkAPIResponseError(error) &&
-    error.errors?.some(
-      (e) =>
+    error.errors?.some((e) => {
+      const normalizedMessage = e.message?.toLowerCase() ?? '';
+      const normalizedCode = e.code?.toLowerCase() ?? '';
+
+      return (
         e.code === 'sending_sms_rate_limited' ||
-        e.code?.includes('rate_limit') ||
-        e.message?.toLowerCase().includes('monthly limit')
-    );
+        normalizedCode.includes('rate_limit') ||
+        normalizedCode.includes('email') ||
+        normalizedCode.includes('message') ||
+        normalizedMessage.includes('monthly limit') ||
+        normalizedMessage.includes('email') ||
+        normalizedMessage.includes('message')
+      );
+    });
 
   const sendCode = async (
     nextStatus: 'sending_code' | 'resending_code'
@@ -91,6 +99,12 @@ export function useLogin() {
       if (__DEV__) {
         console.error('Failed to create sign-in', error);
       }
+
+      if (isEmailUnavailableError(error)) {
+        setStatus('idle');
+        return 'email_unavailable';
+      }
+
       handleClerkError(error);
       setStatus('idle');
       return 'error';
@@ -122,11 +136,11 @@ export function useLogin() {
       }
 
       setStatus('idle');
-      if (isRateLimitError(error)) {
+      if (isEmailUnavailableError(error)) {
         if (__DEV__) {
           console.error('Email code rate limited, falling back to password', error);
         }
-        return 'rate_limited';
+        return 'email_unavailable';
       }
 
       handleClerkError(error);
@@ -149,7 +163,7 @@ export function useLogin() {
     const result = await sendCode('sending_code');
     if (result === 'success') {
       setStep('challenge');
-    } else if (result === 'rate_limited') {
+    } else if (result === 'email_unavailable') {
       setStep('challenge');
       setChallengeMethod('password');
       setEmailCodeUnavailable(true);
