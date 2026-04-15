@@ -1,7 +1,7 @@
 'use client';
 import { MapSearchOverlay } from '@/features/map/components/map-search-overlay';
 import { Show, SignInButton, SignUpButton } from '@clerk/nextjs';
-import { CompassIcon, MenuIcon } from 'lucide-react';
+import { MapIcon, MenuIcon } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
 import { FomoLogo } from '../logo';
@@ -28,9 +28,9 @@ export function Header() {
 
         <div className="flex items-center gap-3">
           <Show when="signed-in">
-            <Button asChild className="hidden sm:inline-flex">
+            <Button asChild className="hidden sm:inline-flex  px-6 py-5 rounded-3xl">
               <Link href="/map">
-                <CompassIcon />
+                <MapIcon />
                 Map
               </Link>
             </Button>
