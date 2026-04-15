@@ -1,6 +1,6 @@
 import { useOnSignInComplete } from '@/features/auth/hooks/use-on-sign-in-complete';
 import { buildClerkErrorState, clearAuthErrors, LoginErrors } from '@/features/auth/utils/errors';
-import { useAuth } from '@clerk/expo';
+import { isClerkAPIResponseError, useAuth } from '@clerk/expo';
 import { useSignIn } from '@clerk/expo/legacy';
 import { useState } from 'react';
 
@@ -28,6 +28,7 @@ export function useLogin() {
   const [errors, setErrors] = useState<LoginErrors | null>(null);
   const [resendAvailableAt, setResendAvailableAt] = useState<number | null>(null);
   const [hasPreparedEmailCodeChallenge, setHasPreparedEmailCodeChallenge] = useState(false);
+  const [emailCodeUnavailable, setEmailCodeUnavailable] = useState(false);
 
   // derived state
   const isBusy = status !== 'idle';
@@ -62,11 +63,24 @@ export function useLogin() {
   };
 
   // ------- actions -------
-  const sendCode = async (nextStatus: 'sending_code' | 'resending_code') => {
-    if (!isLoaded || isSignedIn || status !== 'idle') return false;
+  type SendCodeResult = 'success' | 'rate_limited' | 'error';
+
+  const isRateLimitError = (error: unknown): boolean =>
+    isClerkAPIResponseError(error) &&
+    error.errors?.some(
+      (e) =>
+        e.code === 'sending_sms_rate_limited' ||
+        e.code?.includes('rate_limit') ||
+        e.message?.toLowerCase().includes('monthly limit')
+    );
+
+  const sendCode = async (
+    nextStatus: 'sending_code' | 'resending_code'
+  ): Promise<SendCodeResult> => {
+    if (!isLoaded || isSignedIn || status !== 'idle') return 'error';
 
     const trimmedIdentifier = identifier.trim();
-    if (!trimmedIdentifier) return false;
+    if (!trimmedIdentifier) return 'error';
 
     setErrors(null);
     setStatus(nextStatus);
@@ -80,7 +94,7 @@ export function useLogin() {
 
       if (!emailFactor || !('emailAddressId' in emailFactor) || !emailFactor.emailAddressId) {
         setErrors({ global: 'Email code sign-in is not available for this account.' });
-        return false;
+        return 'error';
       }
 
       await signIn.prepareFirstFactor({
@@ -90,14 +104,16 @@ export function useLogin() {
 
       setHasPreparedEmailCodeChallenge(true);
       setResendAvailableAt(Date.now() + 60_000);
-      return true;
+      return 'success';
     } catch (error) {
       if (__DEV__) {
         console.error('Failed to send login code', error);
       }
 
+      if (isRateLimitError(error)) return 'rate_limited';
+
       handleClerkError(error);
-      return false;
+      return 'error';
     } finally {
       setStatus('idle');
     }
@@ -113,16 +129,22 @@ export function useLogin() {
     setPasswordValue('');
     setResendAvailableAt(null);
     setHasPreparedEmailCodeChallenge(false);
+    setEmailCodeUnavailable(false);
 
-    const didSendCode = await sendCode('sending_code');
-    if (didSendCode) {
+    const result = await sendCode('sending_code');
+    if (result === 'success') {
       setStep('challenge');
+    } else if (result === 'rate_limited') {
+      setStep('challenge');
+      setChallengeMethod('password');
+      setEmailCodeUnavailable(true);
     }
   };
 
   const switchChallengeMethod = async (value: ChallengeMethod) => {
     if (challengeMethod === value) return;
 
+    const previousMethod = challengeMethod;
     setChallengeMethod(value);
     setErrors((current) => clearAuthErrors(current, ['code', 'password', 'global']));
 
@@ -135,7 +157,11 @@ export function useLogin() {
 
     const canSendCode = !resendAvailableAt || resendAvailableAt <= Date.now();
     if (step === 'challenge' && canSendCode) {
-      await sendCode('sending_code');
+      const result = await sendCode('sending_code');
+
+      if (result !== 'success') {
+        setChallengeMethod(previousMethod);
+      }
     }
   };
 
@@ -226,6 +252,8 @@ export function useLogin() {
       password,
       code,
       resendAvailableAt,
+      hasPreparedEmailCodeChallenge,
+      emailCodeUnavailable,
       errors,
       isBusy,
       isSendingCode: status === 'sending_code',
