@@ -1,6 +1,6 @@
 import { Icon } from '@/components/icon';
-import { coordsToH3Cell } from '@/features/map/utils/h3';
 import { useAppTheme } from '@/lib/use-app-theme';
+import { mockEventIdForSeedIndex } from '@fomo/backend/convex/data_ml/events';
 import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useMemo } from 'react';
@@ -22,6 +22,7 @@ type MapSeedEvent = {
 
 type SearchResult = {
   event: MapSeedEvent;
+  seedIndex: number;
   attendeeCount: number;
 };
 
@@ -29,7 +30,7 @@ type SearchContentProps = {
   query: string;
   onChangeQuery: (value: string) => void;
   onExpand: () => void;
-  onSelectEvent: (h3Id: string) => void;
+  onSelectEvent: (eventId: string) => void;
 };
 
 export function SearchContent({
@@ -42,9 +43,10 @@ export function SearchContent({
 
   const filteredEvents = useMemo<SearchResult[]>(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    const indexedEvents = eventSeeds.map((event, index) => ({
+    const indexedEvents = eventSeeds.map((event, seedIndex) => ({
       event,
-      attendeeCount: eventSeedAttendees[index] ?? 0,
+      seedIndex,
+      attendeeCount: eventSeedAttendees[seedIndex] ?? 0,
     }));
 
     if (!normalizedQuery) {
@@ -94,14 +96,12 @@ export function SearchContent({
         <Text className="text-[18px] font-semibold text-foreground">Suggested spots</Text>
 
         {filteredEvents.length > 0 ? (
-          filteredEvents.slice(0, 6).map(({ event, attendeeCount }, index) => (
+          filteredEvents.slice(0, 6).map(({ event, seedIndex, attendeeCount }, index) => (
             <Pressable
               key={`${event.name}-${event.location.latitude}`}
               accessibilityRole="button"
               className="flex-row items-center gap-3 rounded-[24px] border border-border/70 bg-background/90 px-3 py-3"
-              onPress={() =>
-                onSelectEvent(coordsToH3Cell(event.location.longitude, event.location.latitude))
-              }
+              onPress={() => onSelectEvent(mockEventIdForSeedIndex(seedIndex))}
             >
               <View className="size-12 items-center justify-center rounded-2xl bg-primary/10">
                 <Icon

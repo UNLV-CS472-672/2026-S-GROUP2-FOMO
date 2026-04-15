@@ -88,35 +88,23 @@ export default function MapScreen() {
           />
         )}
 
-        {events.map((event, i) => {
-          const eventId = `event-${event.location.h3Index}-${i}`;
-          return (
-            <EventMarker
-              key={eventId}
-              id={eventId}
-              coordinate={[event.location.longitude, event.location.latitude]}
-              image={EVENT_IMAGES[i % EVENT_IMAGES.length]}
-              weight={event.attendeeCount}
-              minWeight={minWeight}
-              maxWeight={maxWeight}
-              onPress={() =>
-                push({
-                  pathname: '/feed/event/[h3Id]',
-                  params: {
-                    h3Id: event.location.h3Index,
-                    eventData: JSON.stringify({
-                      name: event.name,
-                      organization: event.organization,
-                      description: event.description,
-                      attendeeCount: event.attendeeCount,
-                      imageIndex: i % EVENT_IMAGES.length,
-                    }),
-                  },
-                })
-              }
-            />
-          );
-        })}
+        {events.map((event, i) => (
+          <EventMarker
+            key={event.id}
+            id={event.id}
+            coordinate={[event.location.longitude, event.location.latitude]}
+            image={EVENT_IMAGES[i % EVENT_IMAGES.length]}
+            weight={event.attendeeCount}
+            minWeight={minWeight}
+            maxWeight={maxWeight}
+            onPress={() =>
+              push({
+                pathname: '/feed/event/[eventId]',
+                params: { eventId: event.id },
+              })
+            }
+          />
+        ))}
 
         <MapboxGL.ShapeSource id="activity" shape={heatmapGeoJSON}>
           <MapboxGL.HeatmapLayer
@@ -147,7 +135,7 @@ export default function MapScreen() {
       </MapboxGL.MapView>
 
       <SearchDrawer
-        onSelectEvent={(h3Id) => push(`/feed/event/${h3Id}`)}
+        onSelectEvent={(eventId) => push(`/feed/event/${eventId}`)}
         animatedIndex={drawerAnimatedIndex}
         animatedPosition={drawerAnimatedPosition}
         isFocused={isFocused}

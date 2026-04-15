@@ -17,7 +17,7 @@ import type * as data_ml_universal from "../data_ml/universal.js";
 import type * as data_ml_users from "../data_ml/users.js";
 import type * as eventsIngest from "../eventsIngest.js";
 import type * as seed from "../seed.js";
-import type * as userAuth from "../userAuth.js";
+import type * as userAuth from "../auth.js";
 import type * as users from "../users.js";
 
 import type {

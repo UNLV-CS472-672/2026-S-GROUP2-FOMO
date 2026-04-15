@@ -2,6 +2,8 @@ import PostGrid from '@/components/ui/post-grid';
 import { Screen } from '@/components/ui/screen';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
+import { api } from '@fomo/backend/convex/_generated/api';
+import { useQuery } from 'convex/react';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
@@ -17,14 +19,6 @@ interface Event {
   description: string;
   posts: GridPost[];
 }
-
-type EventRouteData = {
-  name: string;
-  organization: string;
-  description: string;
-  attendeeCount: number;
-  imageIndex: number;
-};
 
 const EVENT_IMAGES = [
   require('@/assets/images/rigrig.jpg'),
@@ -42,30 +36,33 @@ const SAMPLE_POSTS: GridPost[] = [
 
 export default function EventDetails() {
   const theme = useAppTheme();
-  const { h3Id, eventData } = useLocalSearchParams<{
-    h3Id?: string | string[];
-    eventData?: string | string[];
-  }>();
-  const resolvedH3Id = Array.isArray(h3Id) ? h3Id[0] : h3Id;
-  const resolvedEventData = Array.isArray(eventData) ? eventData[0] : eventData;
+  const { eventId } = useLocalSearchParams<{ eventId?: string | string[] }>();
+  const resolvedEventId = Array.isArray(eventId) ? eventId[0] : eventId;
 
-  const event = useMemo(() => {
-    if (!resolvedH3Id || !resolvedEventData) return null;
+  const eventDetail = useQuery(
+    api.data_ml.events.getEventById,
+    resolvedEventId ? { eventId: resolvedEventId } : 'skip'
+  );
 
-    let parsedEvent: EventRouteData;
-    try {
-      parsedEvent = JSON.parse(resolvedEventData) as EventRouteData;
-    } catch {
-      return null;
-    }
+  const event = useMemo((): Event | null => {
+    if (!eventDetail) return null;
 
     return {
-      id: resolvedH3Id,
-      image: EVENT_IMAGES[parsedEvent.imageIndex % EVENT_IMAGES.length],
-      description: `${parsedEvent.name}\n${parsedEvent.organization}\n${parsedEvent.attendeeCount} attending\n\n${parsedEvent.description}`,
+      id: eventDetail.id,
+      image: EVENT_IMAGES[eventDetail.imageIndex % EVENT_IMAGES.length],
+      description: `${eventDetail.name}\n${eventDetail.organization}\n${eventDetail.attendeeCount} attending\n\n${eventDetail.description}`,
       posts: SAMPLE_POSTS,
-    } satisfies Event;
-  }, [resolvedEventData, resolvedH3Id]);
+    };
+  }, [eventDetail]);
+
+  if (eventDetail === undefined) {
+    return (
+      <Screen className="items-center justify-center">
+        <Stack.Screen options={{ title: 'Event Details' }} />
+        <Text className="text-foreground">Loading…</Text>
+      </Screen>
+    );
+  }
 
   if (!event) {
     return (
