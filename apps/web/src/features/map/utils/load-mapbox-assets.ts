@@ -1,9 +1,14 @@
 export type Coordinates = [number, number];
 
+export const MAPBOX_STYLE_DARK = 'mapbox://styles/mapbox/dark-v11';
+export const MAPBOX_STYLE_LIGHT = 'mapbox://styles/mapbox/streets-v12';
+
 export type MapboxMap = {
   on: (event: string, handler: () => void) => void;
   flyTo: (options: Record<string, unknown>) => void;
   jumpTo: (options: Record<string, unknown>) => void;
+  setStyle: (style: string) => void;
+  getStyle: () => { name?: string };
   resize: () => void;
   remove: () => void;
 };
