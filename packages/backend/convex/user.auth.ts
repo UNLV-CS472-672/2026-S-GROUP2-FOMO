@@ -14,11 +14,11 @@ export const getIdentity = query({
   },
 });
 
-function clerkIdFromIdentity(identity: ClerkIdentity): string {
+export function clerkIdFromIdentity(identity: ClerkIdentity): string {
   return identity.tokenIdentifier;
 }
 
-async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
+export async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     throw new Error('No Clerk identity found');
@@ -44,7 +44,7 @@ async function getConvexUserRowForIdentity(
  *
  * This should not throw; it's safe to use in queries that must gracefully return `null`.
  */
-export async function __backend_only_getAndAuthenticateCurrentConvexUserAllowNull(ctx: QueryCtx) {
+export async function getAndAuthenticateCurrentConvexUserAllowNull(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     return null;
@@ -59,7 +59,7 @@ export async function __backend_only_getAndAuthenticateCurrentConvexUserAllowNul
 export async function __backend_only_getAndAuthenticateCurrentConvexUser(
   ctx: QueryCtx
 ): Promise<Doc<'users'>> {
-  const user = await __backend_only_getAndAuthenticateCurrentConvexUserAllowNull(ctx);
+  const user = await getAndAuthenticateCurrentConvexUserAllowNull(ctx);
   if (!user) {
     throw new Error('No Convex user found for the current Clerk token');
   }
@@ -92,7 +92,7 @@ export async function __backend_only_guestOrAuthenticatedUser(
 export const ensureCurrentUser = mutation({
   args: {},
   handler: async (ctx) => {
-    const existing = await __backend_only_getAndAuthenticateCurrentConvexUserAllowNull(ctx);
+    const existing = await getAndAuthenticateCurrentConvexUserAllowNull(ctx);
     if (existing) {
       return existing._id;
     }
