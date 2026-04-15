@@ -3,7 +3,14 @@ import { ConvexClientProvider } from '@/providers/convex-client-provider';
 import type { Metadata } from 'next';
 import { ThemeProvider } from 'next-themes';
 import { Geist, Geist_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import './global.css';
+
+const cabinetGrotesk = localFont({
+  src: '../../public/fonts/CabinetGrotesk-Variable.ttf',
+  variable: '--font-cabinet-grotesk',
+  display: 'swap',
+});
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -28,7 +35,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${cabinetGrotesk.variable} antialiased`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
