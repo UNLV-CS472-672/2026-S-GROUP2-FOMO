@@ -35,7 +35,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ClerkProvider afterSignOutUrl={'/'}>
+          <ClerkProvider>
             <ConvexClientProvider>{children}</ConvexClientProvider>
           </ClerkProvider>
         </ThemeProvider>

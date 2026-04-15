@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @custom-variant dark (&:is(.dark *));
 @import '@fomo/theme/global.css';
+@import '@clerk/ui/themes/shadcn.css';
 
 :root {
   --background-accent: rgba(239, 44, 7, 0.08);
@@ -18,8 +19,12 @@
 }
 
 html {
-  color-scheme: light dark;
+  color-scheme: light;
   background: var(--background);
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 body {
