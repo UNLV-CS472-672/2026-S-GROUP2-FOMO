@@ -1,7 +1,7 @@
 import { useIsFocused } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 
@@ -126,13 +126,16 @@ export default function CameraScreen() {
 
   if (!hasPermission) {
     return (
-      <SafeAreaView style={styles.permissionRoot}>
-        <Text style={styles.permissionTitle}>Camera access needed</Text>
-        <Text style={styles.permissionBody}>
+      <SafeAreaView className="flex-1 items-center justify-center gap-3 bg-[#0b0b0b] px-6">
+        <Text className="text-center text-[28px] font-bold text-white">Camera access needed</Text>
+        <Text className="text-center text-base leading-[22px] text-zinc-300">
           Enable camera permission to capture photos and videos.
         </Text>
-        <Pressable style={styles.primaryButton} onPress={requestPermission}>
-          <Text style={styles.primaryButtonText}>Allow Camera Access</Text>
+        <Pressable
+          className="mt-2 rounded-full border border-white bg-zinc-800 px-[18px] py-[10px]"
+          onPress={requestPermission}
+        >
+          <Text className="font-semibold text-white">Allow Camera Access</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -140,17 +143,17 @@ export default function CameraScreen() {
 
   if (!device) {
     return (
-      <SafeAreaView style={styles.loadingRoot}>
+      <SafeAreaView className="flex-1 items-center justify-center bg-black">
         <ActivityIndicator color="#fff" />
       </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.root}>
+    <View className="flex-1 bg-black">
       <Camera
         ref={cameraRef}
-        style={StyleSheet.absoluteFill}
+        style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
         device={device}
         isActive={isFocused}
         photo
@@ -159,75 +162,74 @@ export default function CameraScreen() {
         torch={torch}
       />
 
-      <SafeAreaView style={StyleSheet.absoluteFill}>
-        <View style={styles.topRow}>
-          <Pressable style={styles.chipButton} onPress={() => router.back()}>
-            <Text style={styles.chipButtonText}>Close</Text>
+      <SafeAreaView style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}>
+        <View className="flex-row items-start justify-between gap-3 px-[14px] pt-[14px]">
+          <Pressable
+            className="rounded-full border border-white/40 bg-black/40 px-3 py-2"
+            onPress={() => router.back()}
+          >
+            <Text className="text-[13px] font-semibold text-white">Close</Text>
           </Pressable>
 
-          <View style={styles.rightTopControls}>
+          <View className="flex-row flex-wrap justify-end gap-2">
             <Pressable
-              style={styles.chipButton}
+              className="rounded-full border border-white/40 bg-black/40 px-3 py-2"
               onPress={() => setFlash((v) => (v === 'off' ? 'on' : 'off'))}
             >
-              <Text style={styles.chipButtonText}>{flash === 'on' ? 'Flash On' : 'Flash Off'}</Text>
+              <Text className="text-[13px] font-semibold text-white">
+                {flash === 'on' ? 'Flash On' : 'Flash Off'}
+              </Text>
             </Pressable>
             <Pressable
-              style={styles.chipButton}
+              className="rounded-full border border-white/40 bg-black/40 px-3 py-2"
               onPress={() => setTorch((v) => (v === 'off' ? 'on' : 'off'))}
             >
-              <Text style={styles.chipButtonText}>{torch === 'on' ? 'Torch On' : 'Torch Off'}</Text>
+              <Text className="text-[13px] font-semibold text-white">
+                {torch === 'on' ? 'Torch On' : 'Torch Off'}
+              </Text>
             </Pressable>
             <Pressable
-              style={styles.chipButton}
+              className="rounded-full border border-white/40 bg-black/40 px-3 py-2"
               onPress={() => setCameraFacing((v) => (v === 'back' ? 'front' : 'back'))}
             >
-              <Text style={styles.chipButtonText}>Flip</Text>
+              <Text className="text-[13px] font-semibold text-white">Flip</Text>
             </Pressable>
           </View>
         </View>
 
-        <View style={[styles.bottomControls, { bottom: insets.bottom + 28 }]}>
-          <View style={styles.modeToggle}>
+        <View className="absolute left-0 right-0 gap-[18px]" style={{ bottom: insets.bottom + 28 }}>
+          <View className="self-center rounded-full border border-white/30 bg-black/50 p-[3px]">
             <Pressable
-              style={[
-                styles.modeToggleButton,
-                captureType === 'photo' && styles.modeToggleButtonActive,
-              ]}
+              className={`rounded-full px-4 py-2 ${captureType === 'photo' ? 'bg-white' : ''}`}
               onPress={() => {
                 if (!isRecording) setCaptureType('photo');
               }}
             >
               <Text
-                style={[
-                  styles.modeToggleText,
-                  captureType === 'photo' && styles.modeToggleTextActive,
-                ]}
+                className={
+                  captureType === 'photo' ? 'font-semibold text-black' : 'font-semibold text-white'
+                }
               >
                 Photo
               </Text>
             </Pressable>
             <Pressable
-              style={[
-                styles.modeToggleButton,
-                captureType === 'video' && styles.modeToggleButtonActive,
-              ]}
+              className={`rounded-full px-4 py-2 ${captureType === 'video' ? 'bg-white' : ''}`}
               onPress={() => {
                 if (!isRecording) setCaptureType('video');
               }}
             >
               <Text
-                style={[
-                  styles.modeToggleText,
-                  captureType === 'video' && styles.modeToggleTextActive,
-                ]}
+                className={
+                  captureType === 'video' ? 'font-semibold text-black' : 'font-semibold text-white'
+                }
               >
                 Video
               </Text>
             </Pressable>
           </View>
 
-          <View style={styles.captureWrap}>
+          <View className="items-center">
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={
@@ -239,14 +241,10 @@ export default function CameraScreen() {
               }
               onPress={handleCapture}
               disabled={isBusy && !isRecording}
-              style={styles.captureButtonOuter}
+              className="h-[84px] w-[84px] items-center justify-center rounded-full border-4 border-white bg-white/15"
             >
               <View
-                style={[
-                  styles.captureButtonInner,
-                  captureType === 'video' && styles.captureButtonInnerVideo,
-                  isRecording && styles.captureButtonInnerRecording,
-                ]}
+                className={`${captureType === 'video' ? 'bg-red-500' : 'bg-white'} ${isRecording ? 'h-[34px] w-[34px] rounded-lg' : captureType === 'video' ? 'h-[54px] w-[54px] rounded-[13px]' : 'h-[54px] w-[54px] rounded-full'}`}
               />
             </Pressable>
           </View>
@@ -255,135 +253,3 @@ export default function CameraScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  loadingRoot: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#000',
-  },
-  permissionRoot: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#0b0b0b',
-    paddingHorizontal: 24,
-    gap: 12,
-  },
-  permissionTitle: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 28,
-    textAlign: 'center',
-  },
-  permissionBody: {
-    color: '#d4d4d4',
-    fontSize: 16,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-  primaryButton: {
-    marginTop: 10,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#fff',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    backgroundColor: '#1f1f1f',
-  },
-  primaryButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: 14,
-    paddingTop: 14,
-    gap: 12,
-  },
-  rightTopControls: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    justifyContent: 'flex-end',
-    flexShrink: 1,
-  },
-  chipButton: {
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#ffffff66',
-    backgroundColor: '#00000066',
-  },
-  chipButtonText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  bottomControls: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    gap: 18,
-  },
-  modeToggle: {
-    alignSelf: 'center',
-    flexDirection: 'row',
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#ffffff4d',
-    backgroundColor: '#00000080',
-    padding: 3,
-  },
-  modeToggleButton: {
-    borderRadius: 999,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  modeToggleButtonActive: {
-    backgroundColor: '#fff',
-  },
-  modeToggleText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  modeToggleTextActive: {
-    color: '#000',
-  },
-  captureWrap: {
-    alignItems: 'center',
-  },
-  captureButtonOuter: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    borderWidth: 4,
-    borderColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ffffff22',
-  },
-  captureButtonInner: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#fff',
-  },
-  captureButtonInnerVideo: {
-    backgroundColor: '#ef4444',
-    borderRadius: 13,
-  },
-  captureButtonInnerRecording: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-  },
-});
