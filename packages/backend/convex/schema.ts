@@ -29,14 +29,14 @@ export default defineSchema({
     title: v.string(),
     description: v.string(),
     authorId: v.id('users'),
-    likeCount: v.optional(v.number()),
+    likeCount: v.optional(v.number()), // REMOVE THIS ONCE EVANS LIKE PR IS PUSHED.
   }).index('by_author', ['authorId']),
 
   comments: defineTable({
     postId: v.id('posts'),
     authorId: v.id('users'),
     text: v.string(),
-    likeCount: v.optional(v.number()),
+    likeCount: v.optional(v.number()), // REMOVE THIS ONCE EVANS LIKE PR IS PUSHED.
   })
     .index('by_post', ['postId'])
     .index('by_author', ['authorId'])
