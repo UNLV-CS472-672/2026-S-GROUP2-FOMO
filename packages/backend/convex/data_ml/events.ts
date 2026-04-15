@@ -4,15 +4,12 @@ import { latLngToCell } from 'h3-js';
 import type { Doc } from '../_generated/dataModel';
 import { query } from '../_generated/server';
 import { __backend_only_guestOrAuthenticatedUser } from '../auth';
-import { eventSeeds } from '../seed';
+import { eventSeeds, mockEventIdForSeedIndex } from '../eventSeedsStatic';
 
 // TODO: Remove mock-event helpers and seed-based implementations once events are loaded from
 // `ctx.db` (and external sources). `mockEventIdForSeedIndex` / `mock:event:*` ids are temporary.
 
-/** Stable id for mock / seeded list events until we load real `events` documents. */
-export function mockEventIdForSeedIndex(index: number): string {
-  return `mock:event:${index}`;
-}
+export { mockEventIdForSeedIndex };
 
 export function latLngToH3Index(lat: number, lng: number, resolution: number = 9): string {
   if (lat < -90 || lat > 90) {

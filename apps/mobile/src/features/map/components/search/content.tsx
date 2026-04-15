@@ -1,7 +1,10 @@
 import { Icon } from '@/components/icon';
 import { useAppTheme } from '@/lib/use-app-theme';
-import { mockEventIdForSeedIndex } from '@fomo/backend/convex/data_ml/events';
-import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
+import {
+  eventSeedAttendees,
+  eventSeeds,
+  mockEventIdForSeedIndex,
+} from '@fomo/backend/convex/eventSeedsStatic';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
