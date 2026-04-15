@@ -17,7 +17,6 @@ def get_client() -> ConvexClient:
         raise RuntimeError("ConvexClient not initialized")
     return client
 
-
 # Checks if a userid exists in the "users" table.
 def user_exists(user_id: str) -> bool:
     return get_client().query("data_ml/users:userExists", {"userId": user_id}) is not None
@@ -26,6 +25,11 @@ def user_exists(user_id: str) -> bool:
 def get_user_ids_with_event_attendance() -> list[str]:
     # Cast to a list[str] to satisfy myPy since Convex returns Any.
     user_ids: list[str] = get_client().query("data_ml/users:getUserIdsWithEventAttendance",{})
+    return user_ids
+
+# Get all userIds that exist in "users"
+def get_all_user_ids() -> list[str]:
+    user_ids: list[str] = get_client().query("data_ml/users:getAllUserIds", {})
     return user_ids
 
 # Combines "usersToEvents" and "events" into a single dataframe.
