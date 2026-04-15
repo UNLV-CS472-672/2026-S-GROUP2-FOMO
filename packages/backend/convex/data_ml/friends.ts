@@ -6,7 +6,7 @@ import { v } from 'convex/values';
 
 import { query } from '../_generated/server';
 
-import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../auth';
+import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../userAuth';
 
 // Checks if a user exists in "friends" via userId.
 // Given input "userA", checks for a matching "userB" if 'status' is accepted.

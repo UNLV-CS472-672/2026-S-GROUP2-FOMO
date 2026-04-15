@@ -12,7 +12,7 @@ function formatName(name: string | null | undefined): string {
 
 export function SignedInStatus() {
   //TODO Eventually replace this with profile query when that is implemented
-  const identity = useQuery(api.auth.getIdentity);
+  const identity = useQuery(api.userAuth.getIdentity);
   if (identity === undefined) {
     return (
       <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">Loading...</p>

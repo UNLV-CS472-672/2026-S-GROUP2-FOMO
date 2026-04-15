@@ -2,7 +2,7 @@ import { v } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
 import { query, QueryCtx } from './_generated/server';
-import { __backend_only_getAndAuthenticateCurrentConvexUser } from './auth';
+import { __backend_only_getAndAuthenticateCurrentConvexUser } from './userAuth';
 
 async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
   const [posts, comments, userEventLinks, friendRecs] = await Promise.all([
