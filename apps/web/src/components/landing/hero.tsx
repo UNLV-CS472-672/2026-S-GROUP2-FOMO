@@ -1,7 +1,7 @@
 'use client';
 
 import { FomoAnimate } from '@/components/logo/animate';
-import { Show, SignInButton, SignUpButton } from '@clerk/nextjs';
+import { Show, SignUpButton } from '@clerk/nextjs';
 import { motion } from 'motion/react';
 import { Button } from '../ui/button';
 
@@ -16,7 +16,7 @@ export function Hero() {
         transition={{ duration: 0.5, delay: 1.0 }}
         className="relative z-10"
       >
-        <FomoAnimate className="h-48 w-auto" animationDelayMs={1200} scalePinHeat />
+        <FomoAnimate className="h-48 md:w-auto w-full" animationDelayMs={1200} scalePinHeat />
       </motion.div>
 
       {/* subtitle */}
@@ -28,7 +28,7 @@ export function Hero() {
           hidden: {},
           visible: { transition: { staggerChildren: 0.18, delayChildren: 1.5 } },
         }}
-        className="text-5xl text-center tracking-tight leading-snug font-grotesk font-extrabold"
+        className="md:text-5xl text-4xl text-center tracking-tight leading-snug font-grotesk font-extrabold"
       >
         {['Never', 'miss', "what's"].map((word, i, arr) => (
           <motion.span
@@ -72,11 +72,9 @@ export function Hero() {
         className="flex items-center gap-3"
       >
         <Show when="signed-out">
-          <SignInButton mode="modal">
-            <Button size="lg" className="text-xl px-4 py-6" asChild>
-              <a href="/map">Try it out</a>
-            </Button>
-          </SignInButton>
+          <Button size="lg" className="text-xl px-4 py-6" asChild>
+            <a href="/map">Try it out</a>
+          </Button>
           <SignUpButton mode="modal">
             <Button size="lg" variant="outline" className="text-xl px-4 py-6">
               Get started

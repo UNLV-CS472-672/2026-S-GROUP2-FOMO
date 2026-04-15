@@ -28,7 +28,10 @@ export default function LandingNoise() {
 
   return (
     <motion.div
-      className="pointer-events-none fixed w-full h-full bottom-0 right-0 left-0 opacity-90 mask-[radial-gradient(ellipse_35%_45%_at_50%_100%,white_0%,white_20%,transparent_90%)]"
+      className={`pointer-events-none fixed w-full h-full bottom-0 right-0 left-0 opacity-90 inset-0
+        lg:mask-[radial-gradient(ellipse_35%_45%_at_50%_100%,white_0%,white_20%,transparent_90%)] 
+        mask-[radial-gradient(ellipse_65%_25%_at_50%_90%,white_0%,white_20%,transparent_90%)] 
+      `}
       aria-hidden="true"
       initial={shouldReduceMotion ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
