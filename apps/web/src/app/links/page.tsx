@@ -32,8 +32,8 @@ function StoreBadge({
 }
 
 export default function LinksPage() {
-  const appStoreUrl = env.NEXT_PUBLIC_APPSTORE_URL ?? 'hi';
-  const playStoreUrl = env.NEXT_PUBLIC_PLAYSTORE_URL ?? 'hi';
+  const appStoreUrl = env.NEXT_PUBLIC_APPSTORE_URL;
+  const playStoreUrl = env.NEXT_PUBLIC_PLAYSTORE_URL;
 
   return (
     <>
