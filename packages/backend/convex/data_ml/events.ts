@@ -22,7 +22,7 @@ function eventsWithPopularityOnly() {
   const mock_events = eventSeeds;
   return mock_events.map((event, i) => ({
     ...event,
-    attendeeCount: 1.0 / i,
+    attendeeCount: i * 100,
   }));
 }
 
