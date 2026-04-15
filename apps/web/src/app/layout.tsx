@@ -1,5 +1,5 @@
+import { ClerkProvider } from '@/providers/clerk-provider';
 import { ConvexClientProvider } from '@/providers/convex-client-provider';
-import { ClerkProvider } from '@clerk/nextjs';
 import type { Metadata } from 'next';
 import { ThemeProvider } from 'next-themes';
 import localFont from 'next/font/local';
