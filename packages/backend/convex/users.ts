@@ -1,20 +1,16 @@
-import type { UserIdentity } from 'convex/server';
+import type { UserIdentity as ClerkIdentity } from 'convex/server';
 import { v } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
-import { mutation, MutationCtx, query, QueryCtx } from './_generated/server';
+import { mutation, query, QueryCtx } from './_generated/server';
 
-type AuthCtx = QueryCtx | MutationCtx;
-
-type ClerkIdentity = UserIdentity & { username?: string };
-
-function clerkIdFromIdentity(identity: UserIdentity): string {
+function clerkIdFromIdentity(identity: ClerkIdentity): string {
   return identity.tokenIdentifier;
 }
 
 async function getConvexUserRowForIdentity(
-  ctx: AuthCtx,
-  identity: UserIdentity
+  ctx: QueryCtx,
+  identity: ClerkIdentity
 ): Promise<Doc<'users'> | null> {
   const clerkId = clerkIdFromIdentity(identity);
   return await ctx.db
@@ -38,7 +34,7 @@ async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
  *
  * This should not throw; it's safe to use in queries that must gracefully return `null`.
  */
-async function getAndAuthenticateCurrentConvexUserAllowNull(ctx: AuthCtx) {
+async function getAndAuthenticateCurrentConvexUserAllowNull(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     return null;
@@ -51,7 +47,7 @@ async function getAndAuthenticateCurrentConvexUserAllowNull(ctx: AuthCtx) {
  * This helper is strict: it throws when auth is missing or the user row does not exist.
  */
 export async function __backend_only_getAndAuthenticateCurrentConvexUser(
-  ctx: AuthCtx
+  ctx: QueryCtx
 ): Promise<Doc<'users'>> {
   const user = await getAndAuthenticateCurrentConvexUserAllowNull(ctx);
   if (!user) {
@@ -69,7 +65,7 @@ type GuestOrAuthenticatedUserTuple =
  * `[user, guestMode]` from Convex auth only: no JWT ⇒ guest browse; signed in ⇒ user row + not guest.
  */
 export async function __backend_only_guestOrAuthenticatedUser(
-  ctx: AuthCtx
+  ctx: QueryCtx
 ): Promise<GuestOrAuthenticatedUserTuple> {
   const identity = await ctx.auth.getUserIdentity();
   if (identity === null) {
@@ -159,7 +155,7 @@ export const ensureCurrentUser = mutation({
 
     // New Clerk user: `clerkId` must match the stable id on `ctx.auth` (Clerk `clerkId` claim).
     return await ctx.db.insert('users', {
-      name: identity.username!,
+      name: identity.nickname!,
       clerkId: clerkIdFromIdentity(identity),
     });
   },
