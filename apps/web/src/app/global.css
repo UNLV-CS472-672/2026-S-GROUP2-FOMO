@@ -34,3 +34,7 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), sans-serif;
 }
+
+.dark .cl-modalBackdrop {
+  background-color: rgba(0, 0, 0, 0.65);
+}

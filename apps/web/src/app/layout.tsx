@@ -2,23 +2,18 @@ import { ConvexClientProvider } from '@/providers/convex-client-provider';
 import { ClerkProvider } from '@clerk/nextjs';
 import type { Metadata } from 'next';
 import { ThemeProvider } from 'next-themes';
-import { Geist, Geist_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import './global.css';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
+const cabinetGrotesk = localFont({
+  src: '../../public/fonts/CabinetGrotesk-Variable.ttf',
+  variable: '--font-cabinet-grotesk',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
-  //TODO decide with team on uppercase letters or not
-  title: 'FOMO',
-  description: 'FOMO web app',
+  title: 'Fomo',
+  description: 'fill this out', // TODO :: fill this out
 };
 
 export default function RootLayout({
@@ -28,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${cabinetGrotesk.variable} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
