@@ -73,7 +73,7 @@ export function AppHeader() {
         </Link>
       </div>
 
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md px-4">
+      <div className="hidden md:inline-flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md px-4">
         <MapSearchOverlay />
       </div>
 
