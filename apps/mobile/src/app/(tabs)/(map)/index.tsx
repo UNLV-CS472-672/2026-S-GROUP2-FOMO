@@ -9,7 +9,7 @@ import { useIsFocused } from '@react-navigation/native';
 import MapboxGL from '@rnmapbox/maps';
 import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
@@ -37,26 +37,17 @@ export default function MapScreen() {
   const drawerAnimatedIndex = useSharedValue(0);
   const drawerAnimatedPosition = useSharedValue(0);
 
-  const heatmapGeoJSON = useMemo(
-    () =>
-      pointsToGeoJSON(
-        events.map((event) => ({
-          latitude: event.location.latitude,
-          longitude: event.location.longitude,
-          weight: event.attendeeCount,
-        }))
-      ),
-    [events]
+  const heatmapGeoJSON = pointsToGeoJSON(
+    events.map((event) => ({
+      latitude: event.location.latitude,
+      longitude: event.location.longitude,
+      weight: event.attendeeCount,
+    }))
   );
-
-  const minWeight = useMemo(
-    () => (events.length === 0 ? 0 : Math.min(...events.map((event) => event.attendeeCount))),
-    [events]
-  );
-  const maxWeight = useMemo(
-    () => (events.length === 0 ? 1 : Math.max(...events.map((event) => event.attendeeCount))),
-    [events]
-  );
+  const minWeight =
+    events.length === 0 ? 0 : Math.min(...events.map((event) => event.attendeeCount));
+  const maxWeight =
+    events.length === 0 ? 1 : Math.max(...events.map((event) => event.attendeeCount));
 
   useEffect(() => {
     if (!hasResolvedLocation) return;
