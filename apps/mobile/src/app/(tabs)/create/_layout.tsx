@@ -32,6 +32,13 @@ export default function CreateLayout() {
           title: 'Camera',
         }}
       />
+      <Stack.Screen
+        name="post-preview"
+        options={{
+          presentation: 'fullScreenModal',
+          title: 'Preview',
+        }}
+      />
     </Stack>
   );
 }
