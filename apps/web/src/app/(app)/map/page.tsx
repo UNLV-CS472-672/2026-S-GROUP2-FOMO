@@ -27,21 +27,18 @@ export default function MapPage() {
   const { state: sidebarState } = useSidebar();
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
 
   const isDark = resolvedTheme === 'dark';
 
   const staticMapSrc = useMemo(() => {
-    if (!mounted || !MAPBOX_TOKEN) {
+    if (!MAPBOX_TOKEN) {
       return '';
     }
 
     const styleId = isDark ? 'dark-v11' : 'streets-v12';
     const [lng, lat] = centerCoordinate;
     return `https://api.mapbox.com/styles/v1/mapbox/${styleId}/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
-  }, [centerCoordinate, isDark, mounted]);
+  }, [centerCoordinate, isDark]);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,7 +61,7 @@ export default function MapPage() {
 
         mapRef.current = new mapboxgl.Map({
           container: mapContainerRef.current,
-          style: isDark ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT,
+          style: MAPBOX_STYLE_LIGHT,
           center: FALLBACK_COORDS,
           zoom: 13,
           attributionControl: false,
