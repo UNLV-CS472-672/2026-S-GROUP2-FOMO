@@ -161,14 +161,20 @@ def sim_scores_weighted(events: pd.DataFrame, event_tags: pd.DataFrame, post_tag
 
 # Send recommended friends to Convex server.
 def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> None:
-
-    # Technically doesn't break if rec_amt exceeds, but being extra safe.
-    if rec_amt > len(sim_scores):
-        raise Exception(f"rec_amt ({rec_amt}) exceeds available users ({len(sim_scores)}).")
-    
+ 
     # For user, sort similarity scores by highest.
     sim_scores = sim_scores.dropna(subset = ["similarity_score"])
     top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False)  
+    
+    # Shuffle users with equal scores in place.
+    # (Allows random friend requests for users with no events/posts).
+    top_sim_scores = (
+        top_sim_scores
+        .assign(rank=lambda df: df['similarity_score'].rank(method='dense', ascending=False))
+        .sample(frac=1) 
+        .sort_values(by='rank') 
+        .drop(columns='rank')
+    )
 
     # Parse out any userIds that are already friends.
     top_sim_scores = [
@@ -200,18 +206,15 @@ def main_one_user(user: str, rec_amt: int, seed: bool) -> None:
         raise Exception(f"\"{user}\" cannot be found in users.")
 
     raw_events_df          = raw_matrix_events()
-    simscores_events_df    = similarity_score(raw_events_df, user)
-    # print(f"\nRaw Matrix Attended Events for {user}: {simscores_events_df}")
-
     raw_eventTags_df       = raw_matrix_eventTags()
-    simscores_eventTags_df = similarity_score(raw_eventTags_df, user)
-    # print(f"\nRecs based on Event Tags for {user}: {simscores_eventTags_df}")
-
     raw_postTags_df        = raw_matrix_postTags()
+    
+    simscores_events_df    = similarity_score(raw_events_df, user)
+    simscores_eventTags_df = similarity_score(raw_eventTags_df, user)
     simscores_postTags_df  = similarity_score(raw_postTags_df, user)
-    # print(f"\nRecs based on Post Tags for {user}: {simscores_postTags_df}")
-
+    
     simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
+    
     upsert_friend_recs(simscores_weighted, user, rec_amt)
 
 
@@ -225,14 +228,14 @@ def main_all_attendees(rec_amt: int, seed: bool) -> None:
     if not user_ids:
         raise Exception("No users with event attendance found in `usersToEvents`.")
 
-    # Build all raw matrices once and only generate similarity scores for each user
+    # Build all raw matrices once and only generate similarity scores for each user.
     raw_events_df = raw_matrix_events()
     raw_eventTags_df = raw_matrix_eventTags()
     raw_postTags_df = raw_matrix_postTags()
 
     for user_id in user_ids:
         if not user_exists(user_id):
-            raise Exception(f"\"{user_id}\" cannot be found in usersoEvents.")
+            raise Exception(f"\"{user_id}\" cannot be found in `usersToEvents`.")
 
         simscores_events_df = similarity_score(raw_events_df, user_id)
         simscores_eventTags_df = similarity_score(raw_eventTags_df, user_id)
@@ -250,11 +253,6 @@ def main_all_users(rec_amt: int, seed: bool) -> None:
         get_client().mutation("seed:seed")
 
     user_ids = get_all_user_ids()
-    for user_id in user_ids:
-        print(get_client().query("data_ml/users:getNameById", {"userId": user_id}))
-    
-    if not user_ids:
-        raise Exception("No users with event attendance found in `users`.")
 
     # Build all raw matrices once and only generate similarity scores for each user
     raw_events_df = raw_matrix_events()
