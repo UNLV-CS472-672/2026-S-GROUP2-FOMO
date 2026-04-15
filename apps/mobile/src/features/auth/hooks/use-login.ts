@@ -87,13 +87,23 @@ export function useLogin() {
 
     try {
       await signIn.create({ identifier: trimmedIdentifier });
+    } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to create sign-in', error);
+      }
+      handleClerkError(error);
+      setStatus('idle');
+      return 'error';
+    }
 
+    try {
       const emailFactor = signIn.supportedFirstFactors?.find(
         (factor) => factor.strategy === 'email_code'
       );
 
       if (!emailFactor || !('emailAddressId' in emailFactor) || !emailFactor.emailAddressId) {
         setErrors({ global: 'Email code sign-in is not available for this account.' });
+        setStatus('idle');
         return 'error';
       }
 
@@ -104,18 +114,23 @@ export function useLogin() {
 
       setHasPreparedEmailCodeChallenge(true);
       setResendAvailableAt(Date.now() + 60_000);
+      setStatus('idle');
       return 'success';
     } catch (error) {
       if (__DEV__) {
         console.error('Failed to send login code', error);
       }
 
-      if (isRateLimitError(error)) return 'rate_limited';
+      setStatus('idle');
+      if (isRateLimitError(error)) {
+        if (__DEV__) {
+          console.error('Email code rate limited, falling back to password', error);
+        }
+        return 'rate_limited';
+      }
 
       handleClerkError(error);
       return 'error';
-    } finally {
-      setStatus('idle');
     }
   };
 
