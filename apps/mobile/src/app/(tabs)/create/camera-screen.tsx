@@ -210,9 +210,13 @@ export default function CameraScreen() {
 
         <View className="absolute left-0 right-0 gap-[18px]" style={{ bottom: insets.bottom + 28 }}>
           {!isEventCaptureFlow && (
-            <View className="self-center rounded-full border border-white/30 bg-black/50 p-[3px]">
+            <View
+              className="self-center rounded-full border border-white/30 bg-black/50 p-[3px]"
+              style={{ flexDirection: 'row', alignItems: 'center' }}
+            >
               <Pressable
                 className={`rounded-full px-4 py-2 ${captureType === 'photo' ? 'bg-white' : ''}`}
+                style={{ marginRight: 4 }}
                 onPress={() => {
                   if (!isRecording) setCaptureType('photo');
                 }}
