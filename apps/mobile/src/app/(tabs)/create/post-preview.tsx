@@ -1,7 +1,6 @@
 import { Image } from 'expo-image';
-import { saveToLibraryAsync } from 'expo-media-library';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 type PostPreviewParams = {
   mediaUri?: string | string[];
@@ -38,17 +37,6 @@ export default function PostPreviewScreen() {
         returnTo,
       } as never,
     });
-  };
-
-  const handleSaveToGallery = async () => {
-    if (!mediaUri) return;
-
-    try {
-      await saveToLibraryAsync(mediaUri);
-      Alert.alert('Saved', 'Media was saved to your gallery.');
-    } catch {
-      Alert.alert('Save failed', 'Unable to save media to gallery.');
-    }
   };
 
   const handleUseMedia = () => {
@@ -99,13 +87,6 @@ export default function PostPreviewScreen() {
           onPress={handleRetake}
         >
           <Text className="text-[15px] font-semibold text-white">Retake</Text>
-        </Pressable>
-
-        <Pressable
-          className="items-center rounded-xl border border-white/25 bg-zinc-900 py-[13px]"
-          onPress={handleSaveToGallery}
-        >
-          <Text className="text-[15px] font-semibold text-white">Save to gallery</Text>
         </Pressable>
 
         <Pressable className="items-center rounded-xl bg-white py-3.5" onPress={handleUseMedia}>

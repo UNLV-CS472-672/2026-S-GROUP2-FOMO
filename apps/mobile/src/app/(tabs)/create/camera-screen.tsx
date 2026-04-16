@@ -1,4 +1,6 @@
+import { LatestGalleryImage } from '@/components/create/latest-gallery-image';
 import { useIsFocused } from '@react-navigation/native';
+import * as MediaLibrary from 'expo-media-library';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
@@ -61,6 +63,25 @@ export default function CameraScreen() {
     });
   };
 
+  const autoSaveCapturedMedia = async (mediaPath: string) => {
+    const mediaUri = mediaPath.startsWith('file://') ? mediaPath : `file://${mediaPath}`;
+
+    try {
+      const currentPermission = await MediaLibrary.getPermissionsAsync();
+      const permission = currentPermission.granted
+        ? currentPermission
+        : await MediaLibrary.requestPermissionsAsync();
+
+      if (!permission.granted) {
+        return;
+      }
+
+      await MediaLibrary.saveToLibraryAsync(mediaUri);
+    } catch {
+      // Ignore save errors to avoid interrupting capture flow.
+    }
+  };
+
   const handleTakePhoto = async () => {
     if (!cameraRef.current || isBusy || !device) return;
 
@@ -71,6 +92,7 @@ export default function CameraScreen() {
         enableShutterSound: false,
       });
       if (photo?.path) {
+        void autoSaveCapturedMedia(photo.path);
         openPreview(photo.path, 'photo');
       }
     } catch {
@@ -105,6 +127,7 @@ export default function CameraScreen() {
         setIsRecording(false);
         setIsBusy(false);
         if (video.path) {
+          void autoSaveCapturedMedia(video.path);
           openPreview(video.path, 'video');
         }
       },
@@ -251,6 +274,19 @@ export default function CameraScreen() {
           )}
 
           <View className="items-center">
+            <View className="absolute right-7 top-[16px]">
+              <LatestGalleryImage
+                onPress={() => {
+                  router.push({
+                    pathname: '/create/gallery' as never,
+                    params: {
+                      returnTo,
+                    } as never,
+                  });
+                }}
+              />
+            </View>
+
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={

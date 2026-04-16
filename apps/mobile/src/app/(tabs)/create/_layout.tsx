@@ -33,6 +33,13 @@ export default function CreateLayout() {
         }}
       />
       <Stack.Screen
+        name="gallery"
+        options={{
+          presentation: 'fullScreenModal',
+          title: 'Gallery',
+        }}
+      />
+      <Stack.Screen
         name="post-preview"
         options={{
           presentation: 'fullScreenModal',
