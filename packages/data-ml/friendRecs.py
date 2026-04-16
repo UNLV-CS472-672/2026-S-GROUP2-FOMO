@@ -241,8 +241,6 @@ def main_all_users(rec_amt: int, seed: bool) -> None:
 
         simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
         upsert_friend_recs(simscores_weighted, user_id, rec_amt)
-        # print(f"Friend Recs for {get_client().query("data_ml/users:getNameById", {"userId": user_id})} upserted!")
-
 
 
 
