@@ -16,7 +16,7 @@ import { api } from '@fomo/backend/convex/_generated/api';
 import { env } from '@fomo/env/web';
 import { useQuery } from 'convex/react';
 import { useTheme } from 'next-themes';
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 const MAPBOX_TOKEN = env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
 const emptySubscribe = () => () => {};
@@ -65,39 +65,6 @@ export default function MapPage() {
     [events]
   );
 
-  const addHeatmapLayer = useCallback(
-    (map: MapboxMap) => {
-      map.addSource(HEATMAP_SOURCE, { type: 'geojson', data: heatmapGeoJSON });
-      map.addLayer({
-        id: HEATMAP_LAYER,
-        type: 'heatmap',
-        source: HEATMAP_SOURCE,
-        paint: {
-          'heatmap-weight': ['interpolate', ['linear'], ['get', 'weight'], 0, 0, 6, 1],
-          'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 10, 1, 15, 3],
-          'heatmap-color': [
-            'interpolate',
-            ['linear'],
-            ['heatmap-density'],
-            0,
-            'rgba(0,0,0,0)',
-            0.2,
-            'rgba(245,158,11,0.3)',
-            0.5,
-            'rgba(245,158,11,0.6)',
-            0.8,
-            'rgba(245,158,11,0.85)',
-            1,
-            'rgba(255,255,255,0.95)',
-          ],
-          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 10, 30, 15, 60],
-          'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 10, 1, 16, 0.6],
-        },
-      });
-    },
-    [heatmapGeoJSON]
-  );
-
   useEffect(() => {
     let cancelled = false;
     let loadTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -128,8 +95,7 @@ export default function MapPage() {
         mapRef.current.on('load', () => {
           if (!cancelled && mapRef.current) {
             didLoad = true;
-            addHeatmapLayer(mapRef.current);
-            mapRef.current?.resize();
+            mapRef.current.resize();
             setMapReady(true);
             setLoadError(null);
             if (loadTimeout) {
@@ -167,7 +133,53 @@ export default function MapPage() {
       mapRef.current = null;
       mapboxRef.current = null;
     };
-  }, [addHeatmapLayer]);
+  }, []);
+
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    const map = mapRef.current;
+
+    function applyHeatmap() {
+      const source = map.getSource(HEATMAP_SOURCE);
+      if (source) {
+        source.setData(heatmapGeoJSON);
+      } else {
+        map.addSource(HEATMAP_SOURCE, { type: 'geojson', data: heatmapGeoJSON });
+        map.addLayer({
+          id: HEATMAP_LAYER,
+          type: 'heatmap',
+          source: HEATMAP_SOURCE,
+          paint: {
+            'heatmap-weight': ['interpolate', ['linear'], ['get', 'weight'], 0, 0, 6, 1],
+            'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 10, 1, 15, 3],
+            'heatmap-color': [
+              'interpolate',
+              ['linear'],
+              ['heatmap-density'],
+              0,
+              'rgba(0,0,0,0)',
+              0.2,
+              'rgba(245,158,11,0.3)',
+              0.5,
+              'rgba(245,158,11,0.6)',
+              0.8,
+              'rgba(245,158,11,0.85)',
+              1,
+              'rgba(255,255,255,0.95)',
+            ],
+            'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 10, 30, 15, 60],
+            'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 10, 1, 16, 0.6],
+          },
+        });
+      }
+    }
+
+    applyHeatmap();
+    map.on('styledata', applyHeatmap);
+    return () => {
+      map.off('styledata', applyHeatmap);
+    };
+  }, [mapReady, heatmapGeoJSON]);
 
   useEffect(() => {
     if (!mapRef.current || !mapReady) return;
