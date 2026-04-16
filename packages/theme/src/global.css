@@ -1,4 +1,16 @@
 @theme inline {
+  --color-coral-50: var(--brand-coral-50);
+  --color-coral-100: var(--brand-coral-100);
+  --color-coral-200: var(--brand-coral-200);
+  --color-coral-300: var(--brand-coral-300);
+  --color-coral-400: var(--brand-coral-400);
+  --color-coral-500: var(--brand-coral-500);
+  --color-coral-600: var(--brand-coral-600);
+  --color-coral-700: var(--brand-coral-700);
+  --color-coral-800: var(--brand-coral-800);
+  --color-coral-900: var(--brand-coral-900);
+  --color-coral-950: var(--brand-coral-950);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

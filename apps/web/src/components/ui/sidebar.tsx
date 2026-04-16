@@ -5,12 +5,12 @@ import { Slot } from '@radix-ui/react-slot';
 import { PanelLeft } from 'lucide-react';
 import * as React from 'react';
 
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 const SIDEBAR_WIDTH = '16rem';
 const SIDEBAR_WIDTH_ICON = '4.5rem';
 const SIDEBAR_WIDTH_MOBILE = '18rem';
-const MOBILE_BREAKPOINT = 768;
 
 type SidebarContextValue = {
   isMobile: boolean;
@@ -51,17 +51,7 @@ export function SidebarProvider({
 }: SidebarProviderProps) {
   const [internalOpen, setInternalOpen] = React.useState(defaultOpen);
   const [openMobile, setOpenMobile] = React.useState(false);
-  const [isMobile, setIsMobile] = React.useState(false);
-
-  React.useEffect(() => {
-    const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
-    const updateIsMobile = () => setIsMobile(mediaQuery.matches);
-
-    updateIsMobile();
-    mediaQuery.addEventListener('change', updateIsMobile);
-
-    return () => mediaQuery.removeEventListener('change', updateIsMobile);
-  }, []);
+  const isMobile = useIsMobile();
 
   const open = openProp ?? internalOpen;
   const setOpen = React.useCallback(
