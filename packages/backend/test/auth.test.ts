@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-describe('api.auth', () => {
+describe('api.userAuth', () => {
   describe('getIdentity', () => {
     it('TODO', () => {
       // TODO

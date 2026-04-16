@@ -1,9 +1,9 @@
 import PostGrid from '@/components/ui/post-grid';
 import { Screen } from '@/components/ui/screen';
-import { coordsToH3Cell } from '@/features/map/utils/h3';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
-import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
+import { api } from '@fomo/backend/convex/_generated/api';
+import { useQuery } from 'convex/react';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
@@ -36,28 +36,33 @@ const SAMPLE_POSTS: GridPost[] = [
 
 export default function EventDetails() {
   const theme = useAppTheme();
-  const { h3Id } = useLocalSearchParams<{ h3Id?: string | string[] }>();
-  const resolvedH3Id = Array.isArray(h3Id) ? h3Id[0] : h3Id;
+  const { eventId } = useLocalSearchParams<{ eventId?: string | string[] }>();
+  const resolvedEventId = Array.isArray(eventId) ? eventId[0] : eventId;
 
-  const event = useMemo(() => {
-    if (!resolvedH3Id) return null;
+  const eventDetail = useQuery(
+    api.data_ml.events.getEventById,
+    resolvedEventId ? { eventId: resolvedEventId } : 'skip'
+  );
 
-    const eventIndex = eventSeeds.findIndex(
-      (seed) => coordsToH3Cell(seed.location.longitude, seed.location.latitude) === resolvedH3Id
-    );
-
-    if (eventIndex === -1) return null;
-
-    const event = eventSeeds[eventIndex];
-    const attendeeCount = eventSeedAttendees[eventIndex] ?? 0;
+  const event = useMemo((): Event | null => {
+    if (!eventDetail) return null;
 
     return {
-      id: resolvedH3Id,
-      image: EVENT_IMAGES[eventIndex % EVENT_IMAGES.length],
-      description: `${event.name}\n${event.organization}\n${attendeeCount} attending\n\n${event.description}`,
+      id: eventDetail.id,
+      image: EVENT_IMAGES[eventDetail.imageIndex % EVENT_IMAGES.length],
+      description: `${eventDetail.name}\n${eventDetail.organization}\n${eventDetail.attendeeCount} attending\n\n${eventDetail.description}`,
       posts: SAMPLE_POSTS,
-    } satisfies Event;
-  }, [resolvedH3Id]);
+    };
+  }, [eventDetail]);
+
+  if (eventDetail === undefined) {
+    return (
+      <Screen className="items-center justify-center">
+        <Stack.Screen options={{ title: 'Event Details' }} />
+        <Text className="text-foreground">Loading…</Text>
+      </Screen>
+    );
+  }
 
   if (!event) {
     return (

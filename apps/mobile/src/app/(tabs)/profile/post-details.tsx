@@ -1,3 +1,4 @@
+import { friends } from '@/app/(tabs)/profile/friends-data';
 import { getPostById } from '@/features/posts/post-data';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -10,7 +11,10 @@ export default function PostDetailsScreen() {
   const insets = useSafeAreaInsets();
   const { postId } = useLocalSearchParams<{ postId?: string | string[] }>();
   const normalizedPostId = Array.isArray(postId) ? postId[0] : postId;
-  const post = normalizedPostId ? getPostById(normalizedPostId) : undefined;
+  const friendPost = normalizedPostId
+    ? friends.flatMap((friend) => friend.posts.all).find((entry) => entry.id === normalizedPostId)
+    : undefined;
+  const post = friendPost ?? (normalizedPostId ? getPostById(normalizedPostId) : undefined);
 
   if (!post) {
     return (

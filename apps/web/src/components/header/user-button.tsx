@@ -26,7 +26,7 @@ export function UserButton() {
   const displayHandle = handle ? `@${handle}` : null;
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
