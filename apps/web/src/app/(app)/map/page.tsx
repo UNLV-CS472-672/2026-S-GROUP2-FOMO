@@ -12,8 +12,9 @@ import {
   type MapboxMap,
   type MapboxMarker,
 } from '@/features/map/utils/load-mapbox-assets';
-import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
+import { api } from '@fomo/backend/convex/_generated/api';
 import { env } from '@fomo/env/web';
+import { useQuery } from 'convex/react';
 import { useTheme } from 'next-themes';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
@@ -31,6 +32,7 @@ export default function MapPage() {
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
   const { resolvedTheme } = useTheme();
   const { state: sidebarState } = useSidebar();
+  const events = useQuery(api.data_ml.events.getEvents) ?? [];
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const mounted = useSyncExternalStore(
@@ -54,13 +56,13 @@ export default function MapPage() {
   const heatmapGeoJSON = useMemo(
     () =>
       pointsToGeoJSON(
-        eventSeeds.map((e, i) => ({
+        events.map((e) => ({
           longitude: e.location.longitude,
           latitude: e.location.latitude,
-          weight: eventSeedAttendees[i] ?? 1,
+          weight: e.attendeeCount,
         }))
       ),
-    []
+    [events]
   );
 
   const addHeatmapLayer = useCallback(
