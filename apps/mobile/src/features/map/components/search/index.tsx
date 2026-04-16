@@ -12,7 +12,7 @@ import type { TextInput } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
 
 type SearchDrawerProps = {
-  onSelectEvent: (h3Id: string) => void;
+  onSelectEvent: (eventId: string) => void;
   animatedIndex?: SharedValue<number>;
   animatedPosition?: SharedValue<number>;
   isFocused?: boolean;

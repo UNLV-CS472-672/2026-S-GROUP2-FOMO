@@ -66,7 +66,7 @@ export default function ProfileScreen() {
                 <StatLabel
                   value={24}
                   label="Friends"
-                  onPress={() => router.push('/profile/friends')}
+                  onPress={() => router.push('/profile/friends?source=profile')}
                 />
               </View>
             </View>

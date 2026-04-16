@@ -1,63 +1,8 @@
-import type { UserIdentity as ClerkIdentity } from 'convex/server';
 import { v } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
-import { mutation, MutationCtx, query, QueryCtx } from './_generated/server';
-
-function clerkIdFromIdentity(identity: ClerkIdentity): string {
-  const clerkId = identity.clerkId;
-  if (typeof clerkId === 'string' && clerkId.length > 0) {
-    return clerkId;
-  }
-  return identity.tokenIdentifier;
-}
-
-async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) {
-    throw new Error('No Clerk identity found');
-  }
-
-  return identity as ClerkIdentity;
-}
-
-/**
- * Returns the current user's Clerk id (`identity.clerkId`, or Convex `tokenIdentifier` if absent)
- * or throws if the client is not authenticated.
- */
-async function getClerkId(ctx: QueryCtx): Promise<string> {
-  const identity = await getClerkIdentity(ctx);
-  return clerkIdFromIdentity(identity);
-}
-
-/**
- * Best-effort lookup of the current Convex user row for this request.
- * Returns null when logged out or when the user row hasn't been created yet.
- *
- * This should not throw; it's safe to use in queries that must gracefully return `null`.
- */
-async function getAndAuthenticateCurrentConvexUserAllowNull(ctx: QueryCtx | MutationCtx) {
-  const clerkId = await getClerkId(ctx);
-  return await ctx.db
-    .query('users')
-    .withIndex('by_clerkId', (q) => q.eq('clerkId', clerkId))
-    .first();
-}
-
-/**
- * Resolves the current Clerk identity to a Convex user document.
- * This helper is strict: it throws when auth is missing or the user row does not exist.
- */
-export async function __backend_only_getAndAuthenticateCurrentConvexUser(
-  ctx: QueryCtx
-): Promise<Doc<'users'>> {
-  const user = await getAndAuthenticateCurrentConvexUserAllowNull(ctx);
-  if (!user) {
-    throw new Error('No Convex user found for the current Clerk token');
-  }
-
-  return user;
-}
+import { query, QueryCtx } from './_generated/server';
+import { __backend_only_getAndAuthenticateCurrentConvexUser } from './auth';
 
 async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
   const [posts, comments, userEventLinks, friendRecs] = await Promise.all([
@@ -122,25 +67,6 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
     recommendations: recommendedUsers,
   };
 }
-
-// Called from the client after sign-in so `getCurrentProfile` can resolve without manual DB fixes.
-export const ensureCurrentUser = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const existing = await getAndAuthenticateCurrentConvexUserAllowNull(ctx);
-    if (existing) {
-      return existing._id;
-    }
-
-    const identity = await getClerkIdentity(ctx);
-
-    // New Clerk user: `clerkId` must match the stable id on `ctx.auth` (Clerk `clerkId` claim).
-    return await ctx.db.insert('users', {
-      name: identity.nickname!,
-      clerkId: clerkIdFromIdentity(identity),
-    });
-  },
-});
 
 export const getCurrentProfile = query({
   args: {},
