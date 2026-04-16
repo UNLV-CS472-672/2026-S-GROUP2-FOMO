@@ -41,7 +41,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="create"
         options={{
-          unmountOnBlur: true,
+          popToTopOnBlur: true,
           tabBarIcon: ({ color, focused, size }) => (
             <MaterialCommunityIcons
               name={focused ? 'plus-circle' : 'plus-circle-outline'}
