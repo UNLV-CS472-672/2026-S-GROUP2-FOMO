@@ -13,9 +13,10 @@ import {
 } from '@/features/map/utils/load-mapbox-assets';
 import { env } from '@fomo/env/web';
 import { useTheme } from 'next-themes';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 const MAPBOX_TOKEN = env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
+const emptySubscribe = () => () => {};
 
 export default function MapPage() {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -27,18 +28,23 @@ export default function MapPage() {
   const { state: sidebarState } = useSidebar();
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
 
-  const isDark = resolvedTheme === 'dark';
+  const isDark = mounted && resolvedTheme === 'dark';
 
   const staticMapSrc = useMemo(() => {
-    if (!MAPBOX_TOKEN) {
+    if (!mounted || !MAPBOX_TOKEN) {
       return '';
     }
 
     const styleId = isDark ? 'dark-v11' : 'streets-v12';
     const [lng, lat] = centerCoordinate;
     return `https://api.mapbox.com/styles/v1/mapbox/${styleId}/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
-  }, [centerCoordinate, isDark]);
+  }, [centerCoordinate, isDark, mounted]);
 
   useEffect(() => {
     let cancelled = false;
