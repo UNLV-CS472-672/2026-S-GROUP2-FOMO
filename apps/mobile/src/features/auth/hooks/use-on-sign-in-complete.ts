@@ -9,7 +9,7 @@ type OnSignInCompleteArgs = {
 };
 
 export function useOnSignInComplete() {
-  const ensureUser = useMutation(api.users.ensureCurrentUser);
+  const ensureUser = useMutation(api.auth.ensureCurrentUser);
 
   return async function onSignInComplete({ sessionId, setActive }: OnSignInCompleteArgs) {
     if (!sessionId) {

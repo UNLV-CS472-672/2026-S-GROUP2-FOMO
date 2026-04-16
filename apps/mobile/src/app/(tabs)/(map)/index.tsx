@@ -2,21 +2,20 @@ import { EventMarker } from '@/features/map/components/event-marker';
 import { RecenterButton } from '@/features/map/components/recenter-button';
 import { SearchDrawer } from '@/features/map/components/search';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
-import { coordsToH3Cell, pointsToGeoJSON } from '@/features/map/utils/h3';
-import { eventSeedAttendees, eventSeeds } from '@fomo/backend/convex/seed';
+import { pointsToGeoJSON } from '@/features/map/utils/h3';
+import { api } from '@fomo/backend/convex/_generated/api';
 import { env } from '@fomo/env/mobile';
 import { useIsFocused } from '@react-navigation/native';
 import MapboxGL from '@rnmapbox/maps';
+import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
 
 MapboxGL.setAccessToken(env.EXPO_PUBLIC_MAPBOX_TOKEN);
 
-const MIN_WEIGHT = Math.min(...eventSeedAttendees);
-const MAX_WEIGHT = Math.max(...eventSeedAttendees);
 const DEFAULT_ZOOM_LEVEL = 13;
 
 // hardcoded from feed
@@ -29,6 +28,7 @@ const EVENT_IMAGES = [
 
 export default function MapScreen() {
   const { push } = useRouter();
+  const events = useQuery(api.data_ml.events.getEvents) ?? [];
   const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
@@ -37,17 +37,17 @@ export default function MapScreen() {
   const drawerAnimatedIndex = useSharedValue(0);
   const drawerAnimatedPosition = useSharedValue(0);
 
-  const heatmapGeoJSON = useMemo(
-    () =>
-      pointsToGeoJSON(
-        eventSeeds.map((e, i) => ({
-          latitude: e.location.latitude,
-          longitude: e.location.longitude,
-          weight: eventSeedAttendees[i] ?? 1,
-        }))
-      ),
-    []
+  const heatmapGeoJSON = pointsToGeoJSON(
+    events.map((event) => ({
+      latitude: event.location.latitude,
+      longitude: event.location.longitude,
+      weight: event.attendeeCount,
+    }))
   );
+  const minWeight =
+    events.length === 0 ? 0 : Math.min(...events.map((event) => event.attendeeCount));
+  const maxWeight =
+    events.length === 0 ? 1 : Math.max(...events.map((event) => event.attendeeCount));
 
   useEffect(() => {
     if (!hasResolvedLocation) return;
@@ -60,6 +60,8 @@ export default function MapScreen() {
       animationDuration: 1200,
     });
   }, [centerCoordinate, hasResolvedLocation]);
+
+  // TODO: Add a map toggle to size icons by recommendation score or popularity.
 
   return (
     <View className="absolute inset-0">
@@ -86,19 +88,20 @@ export default function MapScreen() {
           />
         )}
 
-        {eventSeeds.map((event, i) => (
+        {events.map((event, i) => (
           <EventMarker
-            key={event.name}
-            id={`event-${i}`}
+            key={event.id}
+            id={event.id}
             coordinate={[event.location.longitude, event.location.latitude]}
             image={EVENT_IMAGES[i % EVENT_IMAGES.length]}
-            weight={eventSeedAttendees[i] ?? 1}
-            minWeight={MIN_WEIGHT}
-            maxWeight={MAX_WEIGHT}
+            weight={event.attendeeCount}
+            minWeight={minWeight}
+            maxWeight={maxWeight}
             onPress={() =>
-              push(
-                `/feed/event/${coordsToH3Cell(event.location.longitude, event.location.latitude)}`
-              )
+              push({
+                pathname: '/feed/event/[eventId]',
+                params: { eventId: event.id },
+              })
             }
           />
         ))}
@@ -132,7 +135,7 @@ export default function MapScreen() {
       </MapboxGL.MapView>
 
       <SearchDrawer
-        onSelectEvent={(h3Id) => push(`/feed/event/${h3Id}`)}
+        onSelectEvent={(eventId) => push(`/feed/event/${eventId}`)}
         animatedIndex={drawerAnimatedIndex}
         animatedPosition={drawerAnimatedPosition}
         isFocused={isFocused}

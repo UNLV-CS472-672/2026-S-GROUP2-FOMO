@@ -51,7 +51,7 @@ function RootNavigator() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen
-        name="feed/event/[h3Id]"
+        name="feed/event/[eventId]"
         options={{
           presentation: 'modal',
           headerShown: true,

@@ -2,6 +2,9 @@ export type Coordinates = [number, number];
 
 export type MapboxMapEventHandler<T = Record<string, unknown>> = (e: T) => void;
 
+export const MAPBOX_STYLE_DARK = 'mapbox://styles/mapbox/dark-v11';
+export const MAPBOX_STYLE_LIGHT = 'mapbox://styles/mapbox/streets-v12';
+
 export type MapboxMap = {
   on: (
     event: string,
@@ -15,6 +18,8 @@ export type MapboxMap = {
   ) => void;
   flyTo: (options: Record<string, unknown>) => void;
   jumpTo: (options: Record<string, unknown>) => void;
+  setStyle: (style: string) => void;
+  getStyle: () => { name?: string };
   resize: () => void;
   remove: () => void;
   addSource: (id: string, source: Record<string, unknown>) => void;
