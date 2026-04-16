@@ -38,6 +38,13 @@ export default function CameraScreen() {
   const device = useCameraDevice(cameraFacing);
   const returnTo =
     getStringParam(params.returnTo) === '/create/event' ? '/create/event' : '/create/post';
+  const isEventCaptureFlow = returnTo === '/create/event';
+
+  useEffect(() => {
+    if (isEventCaptureFlow) {
+      setCaptureType('photo');
+    }
+  }, [isEventCaptureFlow]);
 
   useEffect(() => {
     setMicrophonePermission(Camera.getMicrophonePermissionStatus());
@@ -74,6 +81,10 @@ export default function CameraScreen() {
   };
 
   const startRecording = async () => {
+    if (isEventCaptureFlow) {
+      return;
+    }
+
     if (!cameraRef.current || isBusy || !device) return;
 
     if (microphonePermission !== 'granted') {
@@ -111,7 +122,7 @@ export default function CameraScreen() {
   };
 
   const handleCapture = async () => {
-    if (captureType === 'photo') {
+    if (isEventCaptureFlow || captureType === 'photo') {
       await handleTakePhoto();
       return;
     }
@@ -198,42 +209,48 @@ export default function CameraScreen() {
         </View>
 
         <View className="absolute left-0 right-0 gap-[18px]" style={{ bottom: insets.bottom + 28 }}>
-          <View className="self-center rounded-full border border-white/30 bg-black/50 p-[3px]">
-            <Pressable
-              className={`rounded-full px-4 py-2 ${captureType === 'photo' ? 'bg-white' : ''}`}
-              onPress={() => {
-                if (!isRecording) setCaptureType('photo');
-              }}
-            >
-              <Text
-                className={
-                  captureType === 'photo' ? 'font-semibold text-black' : 'font-semibold text-white'
-                }
+          {!isEventCaptureFlow && (
+            <View className="self-center rounded-full border border-white/30 bg-black/50 p-[3px]">
+              <Pressable
+                className={`rounded-full px-4 py-2 ${captureType === 'photo' ? 'bg-white' : ''}`}
+                onPress={() => {
+                  if (!isRecording) setCaptureType('photo');
+                }}
               >
-                Photo
-              </Text>
-            </Pressable>
-            <Pressable
-              className={`rounded-full px-4 py-2 ${captureType === 'video' ? 'bg-white' : ''}`}
-              onPress={() => {
-                if (!isRecording) setCaptureType('video');
-              }}
-            >
-              <Text
-                className={
-                  captureType === 'video' ? 'font-semibold text-black' : 'font-semibold text-white'
-                }
+                <Text
+                  className={
+                    captureType === 'photo'
+                      ? 'font-semibold text-black'
+                      : 'font-semibold text-white'
+                  }
+                >
+                  Photo
+                </Text>
+              </Pressable>
+              <Pressable
+                className={`rounded-full px-4 py-2 ${captureType === 'video' ? 'bg-white' : ''}`}
+                onPress={() => {
+                  if (!isRecording) setCaptureType('video');
+                }}
               >
-                Video
-              </Text>
-            </Pressable>
-          </View>
+                <Text
+                  className={
+                    captureType === 'video'
+                      ? 'font-semibold text-black'
+                      : 'font-semibold text-white'
+                  }
+                >
+                  Video
+                </Text>
+              </Pressable>
+            </View>
+          )}
 
           <View className="items-center">
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={
-                captureType === 'photo'
+                isEventCaptureFlow || captureType === 'photo'
                   ? 'Capture photo'
                   : isRecording
                     ? 'Stop recording'

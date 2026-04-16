@@ -5,7 +5,7 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Image } from 'expo-image';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, ScrollView, Text, TextInput, View } from 'react-native';
 
 type PostParams = {
   mediaUri?: string | string[];
@@ -27,11 +27,29 @@ export default function CreatePostScreen() {
   const { isGuestMode } = useGuest();
   const tabBarHeight = useBottomTabBarHeight();
   const [imageAspectRatio, setImageAspectRatio] = useState(4 / 3);
+  const [description, setDescription] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
 
   const mediaUriParam = getStringParam(params.mediaUri);
   const mediaTypeParam = getStringParam(params.mediaType);
   const mediaUri = mediaUriParam ? toFileUri(mediaUriParam) : '';
   const hasPhoto = !!mediaUri && mediaTypeParam !== 'video';
+
+  const onPostPress = () => {
+    const normalizedDescription = description.trim();
+    const normalizedTags = tagsInput.trim();
+
+    Alert.alert(
+      'Post Data',
+      `Description: ${normalizedDescription || '(none)'}\nTags: ${normalizedTags || '(none)'}`,
+      [
+        {
+          text: 'OK',
+          onPress: () => router.replace('/(tabs)/create'),
+        },
+      ]
+    );
+  };
 
   if (isGuestMode) {
     return <Redirect href="/create" />;
@@ -85,6 +103,8 @@ export default function CreatePostScreen() {
             multiline
             textAlignVertical="top"
             className="min-h-28 text-base text-foreground"
+            value={description}
+            onChangeText={setDescription}
           />
         </View>
 
@@ -93,12 +113,14 @@ export default function CreatePostScreen() {
             placeholder="Add tags"
             placeholderTextColor="#8B8B8B"
             className="text-base text-foreground"
+            value={tagsInput}
+            onChangeText={setTagsInput}
           />
         </View>
       </ScrollView>
 
       <Button
-        onPress={() => router.replace('/(tabs)/create')}
+        onPress={onPostPress}
         style={{
           position: 'absolute',
           bottom: tabBarHeight + 20,
