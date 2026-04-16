@@ -21,8 +21,20 @@ interface Event {
 }
 
 const EVENT_IMAGES = [
+  require('@/assets/images/Battle Blast.png'),
+  require('@/assets/images/Board Game Night.png'),
+  require('@/assets/images/Boxing Match Ad.jpg'),
+  require('@/assets/images/EDC.png'),
   require('@/assets/images/rigrig.jpg'),
+  require('@/assets/images/Grinch Rave.png'),
+  require('@/assets/images/Jimmy Ad.png'),
   require('@/assets/images/jonah-mog.png'),
+  require('@/assets/images/Matchaaa.png'),
+  require('@/assets/images/Odds.png'),
+  require('@/assets/images/Paper Lantern Event.jpg'),
+  require('@/assets/images/Reecius.png'),
+  require('@/assets/images/Sema Ad.png'),
+  require('@/assets/images/UNLV football.png'),
   require('@/assets/images/git-learning-class.png'),
   require('@/assets/images/rate-my-date.jpg'),
 ];
@@ -53,7 +65,7 @@ export default function EventDetails() {
 
     return {
       id: resolvedH3Id,
-      image: EVENT_IMAGES[eventIndex % EVENT_IMAGES.length],
+      image: EVENT_IMAGES[eventIndex] ?? EVENT_IMAGES[EVENT_IMAGES.length - 1],
       description: `${event.name}\n${event.organization}\n${attendeeCount} attending\n\n${event.description}`,
       posts: SAMPLE_POSTS,
     } satisfies Event;

@@ -21,8 +21,20 @@ const DEFAULT_ZOOM_LEVEL = 13;
 
 // hardcoded from feed
 const EVENT_IMAGES = [
+  require('@/assets/images/Battle Blast.png'),
+  require('@/assets/images/Board Game Night.png'),
+  require('@/assets/images/Boxing Match Ad.jpg'),
+  require('@/assets/images/EDC.png'),
   require('@/assets/images/rigrig.jpg'),
+  require('@/assets/images/Grinch Rave.png'),
+  require('@/assets/images/Jimmy Ad.png'),
   require('@/assets/images/jonah-mog.png'),
+  require('@/assets/images/Matchaaa.png'),
+  require('@/assets/images/Odds.png'),
+  require('@/assets/images/Paper Lantern Event.jpg'),
+  require('@/assets/images/Reecius.png'),
+  require('@/assets/images/Sema Ad.png'),
+  require('@/assets/images/UNLV football.png'),
   require('@/assets/images/git-learning-class.png'),
   require('@/assets/images/rate-my-date.jpg'),
 ];
@@ -91,7 +103,7 @@ export default function MapScreen() {
             key={event.name}
             id={`event-${i}`}
             coordinate={[event.location.longitude, event.location.latitude]}
-            image={EVENT_IMAGES[i % EVENT_IMAGES.length]}
+            image={EVENT_IMAGES[i] ?? EVENT_IMAGES[EVENT_IMAGES.length - 1]}
             weight={eventSeedAttendees[i] ?? 1}
             minWeight={MIN_WEIGHT}
             maxWeight={MAX_WEIGHT}

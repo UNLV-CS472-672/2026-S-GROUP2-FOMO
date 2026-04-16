@@ -3,6 +3,46 @@ import { latLngToH3Index } from './data_ml/events';
 
 export const eventSeeds = [
   {
+    name: 'Battle Blast Tournament',
+    organization: 'HyperX Arena Las Vegas',
+    description: 'Bracket night with fighting games, setups, and a loud crowd.',
+    location: {
+      latitude: 36.10252193859371,
+      longitude: -115.17184689969089,
+      h3Index: latLngToH3Index(36.10252193859371, -115.17184689969089),
+    },
+  },
+  {
+    name: 'Board Game Night',
+    organization: 'Meepleville Board Game Cafe',
+    description: 'Open tables, party games, and a low-stakes Catan grudge match.',
+    location: {
+      latitude: 36.12652073632842,
+      longitude: -115.20863467746869,
+      h3Index: latLngToH3Index(36.12652073632842, -115.20863467746869),
+    },
+  },
+  {
+    name: 'Friday Night Fight Card',
+    organization: 'Downtown Event Center',
+    description: 'Local boxing bouts, walkout music, and front-row energy.',
+    location: {
+      latitude: 36.17024417792041,
+      longitude: -115.14011753147761,
+      h3Index: latLngToH3Index(36.17024417792041, -115.14011753147761),
+    },
+  },
+  {
+    name: 'EDC Pre-Party Meetup',
+    organization: 'Las Vegas Motor Speedway Crew',
+    description: 'Trade kandi, link with friends, and plan the weekend before gates open.',
+    location: {
+      latitude: 36.27283797138973,
+      longitude: -115.01041298490068,
+      h3Index: latLngToH3Index(36.27283797138973, -115.01041298490068),
+    },
+  },
+  {
     name: 'Coffee + Homework',
     organization: 'Pop Cafe',
     description: 'Chill study session.',
@@ -10,6 +50,26 @@ export const eventSeeds = [
       latitude: 36.12730186736902,
       longitude: -115.19299595922035,
       h3Index: latLngToH3Index(36.12730186736902, -115.19299595922035),
+    },
+  },
+  {
+    name: 'Grinch Rave',
+    organization: 'Area15',
+    description: 'Holiday chaos, lasers, and dance floor nonsense in the best way.',
+    location: {
+      latitude: 36.14374205914038,
+      longitude: -115.1623650648974,
+      h3Index: latLngToH3Index(36.14374205914038, -115.1623650648974),
+    },
+  },
+  {
+    name: 'St. Jimmy Listening Party',
+    organization: 'Jimmy Collective',
+    description: 'New tracks, loud speakers, and a room full of opinions.',
+    location: {
+      latitude: 36.15158526048236,
+      longitude: -115.13461749463833,
+      h3Index: latLngToH3Index(36.15158526048236, -115.13461749463833),
     },
   },
   {
@@ -23,6 +83,26 @@ export const eventSeeds = [
     },
   },
   {
+    name: 'Late Night Matcha Run',
+    organization: 'Chinatown Tea Crawl',
+    description: 'Matcha flights, dessert stops, and judging every spot on presentation alone.',
+    location: {
+      latitude: 36.12501673051543,
+      longitude: -115.19757139842375,
+      h3Index: latLngToH3Index(36.12501673051543, -115.19757139842375),
+    },
+  },
+  {
+    name: 'Odds Watch Party',
+    organization: 'Sportsbook Social',
+    description: 'Big screens, live bets, and too much confidence in terrible parlays.',
+    location: {
+      latitude: 36.114214364489955,
+      longitude: -115.17236223175575,
+      h3Index: latLngToH3Index(36.114214364489955, -115.17236223175575),
+    },
+  },
+  {
     name: 'Psi Rho house party',
     organization: 'UNLV - Alpha Psi Rho',
     description: 'no hazing, just good vibes. $10 entry for dudes.',
@@ -30,6 +110,46 @@ export const eventSeeds = [
       latitude: 36.10790291877858,
       longitude: -115.14269190902489,
       h3Index: latLngToH3Index(36.10790291877858, -115.14269190902489),
+    },
+  },
+  {
+    name: 'Paper Lantern Event',
+    organization: 'Sunset Park Community',
+    description: 'Lanterns, food stalls, and a quiet night at the water.',
+    location: {
+      latitude: 36.07185639393043,
+      longitude: -115.11852162189955,
+      h3Index: latLngToH3Index(36.07185639393043, -115.11852162189955),
+    },
+  },
+  {
+    name: 'Reecius Birthday Bash',
+    organization: 'Reecius & Friends',
+    description: 'Birthday link-up with music, photos, and way too many people in one section.',
+    location: {
+      latitude: 36.11590381244383,
+      longitude: -115.15606666383157,
+      h3Index: latLngToH3Index(36.11590381244383, -115.15606666383157),
+    },
+  },
+  {
+    name: 'Sema Showcase Night',
+    organization: 'Las Vegas Convention Center',
+    description: 'Modified builds, brand booths, and a parking lot full of cameras.',
+    location: {
+      latitude: 36.13242166773177,
+      longitude: -115.15382095489035,
+      h3Index: latLngToH3Index(36.13242166773177, -115.15382095489035),
+    },
+  },
+  {
+    name: 'UNLV Football Tailgate',
+    organization: 'UNLV Rebels',
+    description: 'Tailgate food, student section energy, and a full afternoon outside Allegiant.',
+    location: {
+      latitude: 36.09098371237013,
+      longitude: -115.1837843973819,
+      h3Index: latLngToH3Index(36.09098371237013, -115.1837843973819),
     },
   },
   {
@@ -98,7 +218,7 @@ export const eventSeeds = [
 ];
 
 // Attendee counts per event, parallel to eventSeeds — derived from userEventPairs in seed handler
-export const eventSeedAttendees = [3, 5, 4, 4, 3, 5, 2, 4, 6];
+export const eventSeedAttendees = [3, 4, 5, 6, 3, 5, 4, 5, 3, 4, 4, 4, 5, 6, 4, 5];
 
 export const seed = mutation({
   args: {},
