@@ -1,17 +1,19 @@
 import { getPostById } from '@/features/posts/post-data';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
-import { Image, ScrollView, Text, View } from 'react-native';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function PostDetailsScreen() {
+export default function FeedPostDetailsScreen() {
   const theme = useAppTheme();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { postId, imageSourceId } = useLocalSearchParams<{
     postId?: string | string[];
     imageSourceId?: string | string[];
   }>();
+
   const normalizedPostId = Array.isArray(postId) ? postId[0] : postId;
   const normalizedImageSourceId = Array.isArray(imageSourceId) ? imageSourceId[0] : imageSourceId;
 
@@ -30,7 +32,8 @@ export default function PostDetailsScreen() {
 
   if (!post) {
     return (
-      <View className="flex-1 items-center justify-center">
+      <View className="flex-1 items-center justify-center bg-background">
+        <Stack.Screen options={{ headerShown: false }} />
         <Text className="text-lg text-foreground">No post found.</Text>
       </View>
     );
@@ -38,6 +41,19 @@ export default function PostDetailsScreen() {
 
   return (
     <View className="flex-1 bg-background pt-10">
+      <Stack.Screen options={{ headerShown: false }} />
+
+      <TouchableOpacity
+        className="mb-2 ml-4 mt-3 flex-row items-center gap-1 self-start"
+        activeOpacity={0.7}
+        onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+      >
+        <MaterialIcons name="arrow-back" size={22} color={theme.tint} />
+        <Text className="text-sm font-medium text-primary">Back</Text>
+      </TouchableOpacity>
+
       <View className="aspect-square w-full bg-surface-muted">
         <Image source={post.image} className="h-full w-full" />
       </View>

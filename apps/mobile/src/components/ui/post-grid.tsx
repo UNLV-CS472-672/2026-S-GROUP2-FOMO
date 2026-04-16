@@ -11,16 +11,18 @@ interface Post {
 
 interface PostGridProps {
   posts: Post[];
+  detailPathname?: '/(tabs)/profile/post-details' | '/feed/post-details';
 }
 
-const PostGrid = ({ posts }: PostGridProps) => {
+const PostGrid = ({ posts, detailPathname = '/(tabs)/profile/post-details' }: PostGridProps) => {
   const router = useRouter();
 
   const handlePostPress = (post: Post) => {
     router.push({
-      pathname: '../profile/post-details',
+      pathname: detailPathname,
       params: {
         postId: String(post.id),
+        imageSourceId: String(post.image),
       },
     });
   };

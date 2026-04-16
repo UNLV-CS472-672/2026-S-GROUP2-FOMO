@@ -218,7 +218,9 @@ export const eventSeeds = [
 ];
 
 // Attendee counts per event, parallel to eventSeeds — derived from userEventPairs in seed handler
-export const eventSeedAttendees = [3, 4, 5, 6, 3, 5, 4, 5, 3, 4, 4, 4, 5, 6, 4, 5];
+export const eventSeedAttendees = [
+  1200, 340, 870, 5000, 180, 2300, 5000, 4100, 260, 980, 750, 620, 3400, 5000, 290, 510,
+];
 
 export const seed = mutation({
   args: {},
