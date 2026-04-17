@@ -4,17 +4,27 @@ import numpy as np
 from models.twoTowerModel import UserTower, EventTower
 
 from convex import ConvexClient
-from dotenv import load_dotenv
 from utils.utils import get_client
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+BETA = 0.10
+TAU  = 1.25
+
+def dampen(weights: torch.Tensor) -> torch.Tensor:
+    """
+    Apply the same bounded formula used in updateUserPreferences.py.
+    bounded = 1 - exp(-(w + BETA) / TAU)
+    Matches build_user_weight_from_matrix in the data generator exactly.
+    """
+    return 1.0 - torch.exp(-(weights + BETA) / TAU)
+
+
 def get_tag_count(client: ConvexClient) -> tuple[int, dict[str, int]]:
     tags = client.query("data_ml/universal:queryAll", {"table_name": "tags"})
-
     tag_id_to_idx = {tag["_id"]: i for i, tag in enumerate(tags)}
-
     return len(tags), tag_id_to_idx
+
 
 def get_user_weights(client: ConvexClient, users: list[str], tag_count: int) -> torch.Tensor:
     user_weights = client.query("data_ml/eventRec:getUserTagWeights", {"userIDs": users})
@@ -33,29 +43,27 @@ def get_user_weights(client: ConvexClient, users: list[str], tag_count: int) -> 
 
     return torch.from_numpy(np.stack(fixed))
 
+
 # Needs to be updated to only provide recs for events not already ended
-def get_events(client: ConvexClient, num_tags: int, tag_id_to_idx: dict[str, int]) -> dict[str, np.ndarry]:
+def get_events(client: ConvexClient, num_tags: int, tag_id_to_idx: dict[str, int]) -> dict[str, np.ndarray]:
     all_events = client.query("data_ml/universal:queryAll", {"table_name": "events"})
 
     event_ids = [event["_id"] for event in all_events]
 
     result: dict[str, np.ndarray] = {}
-    # Get tags associated with the events and create a onehot of the tags for the event
     for event_id in event_ids:
         vec = np.zeros(num_tags, dtype=np.float32)
         event_tags = client.query("data_ml/eventRec:getByEventId", {"eventId": event_id})
         for row in event_tags:
             tag_id = row["tagId"]
-
             if tag_id in tag_id_to_idx:
                 vec[tag_id_to_idx[tag_id]] = 1.0
-
         result[event_id] = vec
 
     return result
 
 
-def main(users: list[str], update_db: bool, k: int = 10) -> None:
+def main(users: list[str], update_db: bool, model_path: str, k: int = 10) -> None:
     client = get_client()
 
     # ── Preprocessing
@@ -65,31 +73,41 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
         all_users = client.query("data_ml/universal:queryAll", {"table_name": "users"})
         users = [row["_id"] for row in all_users]
 
-    # user_weights returns a tensor of the user weights (users, num_tags)
+    # user_weights: raw tag weights from Convex — (U, T)
     user_weights = get_user_weights(client, users, tag_count).to(DEVICE)
     events = get_events(client, tag_count, tag_id_to_idx)
 
     event_ids = list(events.keys())
 
+    # Events stay as raw binary one-hots — matches training data generator exactly
     event_matrix_multihot = np.stack([events[event_id] for event_id in event_ids])
+    event_tensor = torch.from_numpy(event_matrix_multihot).to(DEVICE)
 
-    # # ── Inference
-    # # Dampened cosine similarity on raw tag weights: non-event tags are scaled
-    # # by NON_EVENT_TAG_WEIGHT so extra user interests don't dilute the score.
-    NON_EVENT_TAG_WEIGHT = 0.3
+    # ── Load model
+    user_tower  = UserTower(tag_count).to(DEVICE)
+    event_tower = EventTower(tag_count).to(DEVICE)
 
-    uw   = user_weights.cpu().numpy().astype(np.float32)  # (U, T)
-    ev   = event_matrix_multihot.astype(np.float32)       # (E, T)
-    u_sq = uw ** 2
+    model_weights = torch.load(model_path, map_location=DEVICE)
+    user_tower.load_state_dict(model_weights['user_tower'])
+    event_tower.load_state_dict(model_weights['event_tower'])
 
-    alpha          = NON_EVENT_TAG_WEIGHT
-    dot            = uw @ ev.T                                           # (U, E)
-    A              = u_sq @ ev.T                                         # (U, E)
-    B              = u_sq.sum(axis=1, keepdims=True)                     # (U, 1)
-    adjusted_norms = np.sqrt(alpha**2 * B + (1 - alpha**2) * A + 1e-8)  # (U, E)
-    e_norms        = np.sqrt(ev.sum(axis=1) + 1e-8)                      # (E,)
+    user_tower.eval()
+    event_tower.eval()
 
-    scores = torch.from_numpy(dot / (adjusted_norms * e_norms[np.newaxis, :])).to(DEVICE)
+    # ── Dampen user weights before passing through tower
+    # Events are kept as binary one-hots to match training conditions.
+    # User weights are dampened to match build_user_weight_from_matrix
+    # in the data generator (1 - exp(-(w + BETA) / TAU)).
+    user_weights_dampened = dampen(user_weights)  # (U, T)
+
+    # ── Inference
+    with torch.no_grad():
+        user_embeddings  = user_tower(user_weights_dampened)  # (U, embed_dim)
+        event_embeddings = event_tower(event_tensor)          # (E, embed_dim)
+
+    # Towers F.normalize their output so dot product = cosine similarity
+    scores = user_embeddings @ event_embeddings.T  # (U, E)
+    scores = (scores + 1) / 2
 
     k = min(k, scores.shape[1])
     top_scores, top_indices = torch.topk(scores, k=k, dim=1)
@@ -98,7 +116,8 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
     recommendations = {}
     for i, user_id in enumerate(users):
         recommendations[user_id] = [
-            {event_ids[event_idx] : top_scores[i][score_idx]} for score_idx, event_idx in enumerate(top_indices[i].tolist())
+            {event_ids[event_idx]: top_scores[i][score_idx].item()}
+            for score_idx, event_idx in enumerate(top_indices[i].tolist())
         ]
 
     # ── Write to Convex / Print
@@ -124,4 +143,4 @@ USERS = ["ALL"]
 UPDATE_DB = False
 
 if __name__ == "__main__":
-    main(USERS, UPDATE_DB)
+    main(USERS, UPDATE_DB, "models/model21.pt")
