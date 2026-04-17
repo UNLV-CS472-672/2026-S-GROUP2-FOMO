@@ -193,57 +193,103 @@ export const seed = mutation({
     const [e1, e2, e3, e4, e5, e6, e7, e8, e9] = eventIds;
 
     //  Users/Events Join Table (Convex: usersToEvents)
-    const userEventPairs = [
-      { userId: u1, eventId: e1 },
-      { userId: u1, eventId: e5 },
-      { userId: u1, eventId: e4 },
-      { userId: u1, eventId: e3 },
-      { userId: u1, eventId: e9 },
+    const userEventPairs: {
+      userId: any;
+      eventId: any;
+      interactionType: 'attended' | 'interested' | 'blocked';
+    }[] = [
+      { userId: u1, eventId: e1, interactionType: 'attended' },
+      { userId: u1, eventId: e5, interactionType: 'attended' },
+      { userId: u1, eventId: e4, interactionType: 'attended' },
+      { userId: u1, eventId: e3, interactionType: 'attended' },
+      { userId: u1, eventId: e9, interactionType: 'attended' },
 
-      { userId: u2, eventId: e2 },
-      { userId: u2, eventId: e7 },
-      { userId: u2, eventId: e1 },
-      { userId: u2, eventId: e9 },
+      { userId: u2, eventId: e2, interactionType: 'attended' },
+      { userId: u2, eventId: e7, interactionType: 'attended' },
+      { userId: u2, eventId: e1, interactionType: 'attended' },
+      { userId: u2, eventId: e9, interactionType: 'attended' },
 
-      { userId: u3, eventId: e2 },
-      { userId: u3, eventId: e4 },
-      { userId: u3, eventId: e8 },
-      { userId: u3, eventId: e5 },
-      { userId: u3, eventId: e6 },
+      { userId: u3, eventId: e2, interactionType: 'attended' },
+      { userId: u3, eventId: e4, interactionType: 'attended' },
+      { userId: u3, eventId: e8, interactionType: 'attended' },
+      { userId: u3, eventId: e5, interactionType: 'attended' },
+      { userId: u3, eventId: e6, interactionType: 'attended' },
 
-      { userId: u4, eventId: e3 },
-      { userId: u4, eventId: e8 },
-      { userId: u4, eventId: e7 },
-      { userId: u4, eventId: e2 },
-      { userId: u4, eventId: e5 },
-      { userId: u4, eventId: e9 },
+      { userId: u4, eventId: e3, interactionType: 'attended' },
+      { userId: u4, eventId: e8, interactionType: 'attended' },
+      { userId: u4, eventId: e7, interactionType: 'attended' },
+      { userId: u4, eventId: e2, interactionType: 'attended' },
+      { userId: u4, eventId: e5, interactionType: 'attended' },
+      { userId: u4, eventId: e9, interactionType: 'attended' },
 
-      { userId: u5, eventId: e6 },
-      { userId: u5, eventId: e9 },
+      { userId: u5, eventId: e6, interactionType: 'attended' },
+      { userId: u5, eventId: e9, interactionType: 'attended' },
 
-      { userId: u6, eventId: e2 },
-      { userId: u6, eventId: e7 },
-      { userId: u6, eventId: e8 },
-      { userId: u6, eventId: e3 },
-      { userId: u6, eventId: e6 },
+      { userId: u6, eventId: e2, interactionType: 'attended' },
+      { userId: u6, eventId: e7, interactionType: 'attended' },
+      { userId: u6, eventId: e8, interactionType: 'attended' },
+      { userId: u6, eventId: e3, interactionType: 'attended' },
+      { userId: u6, eventId: e6, interactionType: 'attended' },
 
-      { userId: u7, eventId: e9 },
-      { userId: u7, eventId: e8 },
-      { userId: u7, eventId: e4 },
-      { userId: u7, eventId: e3 },
+      { userId: u7, eventId: e9, interactionType: 'attended' },
+      { userId: u7, eventId: e8, interactionType: 'attended' },
+      { userId: u7, eventId: e4, interactionType: 'attended' },
+      { userId: u7, eventId: e3, interactionType: 'attended' },
 
-      { userId: u8, eventId: e2 },
-      { userId: u8, eventId: e4 },
-      { userId: u8, eventId: e7 },
-      { userId: u8, eventId: e8 },
-      { userId: u8, eventId: e1 },
-      { userId: u8, eventId: e6 },
-      { userId: u8, eventId: e9 },
+      { userId: u8, eventId: e2, interactionType: 'attended' },
+      { userId: u8, eventId: e4, interactionType: 'attended' },
+      { userId: u8, eventId: e7, interactionType: 'attended' },
+      { userId: u8, eventId: e8, interactionType: 'attended' },
+      { userId: u8, eventId: e1, interactionType: 'attended' },
+      { userId: u8, eventId: e6, interactionType: 'attended' },
+      { userId: u8, eventId: e9, interactionType: 'attended' },
 
-      { userId: u9, eventId: e4 },
-      { userId: u9, eventId: e6 },
-      { userId: u9, eventId: e2 },
-      { userId: u9, eventId: e8 },
+      { userId: u9, eventId: e4, interactionType: 'attended' },
+      { userId: u9, eventId: e6, interactionType: 'attended' },
+      { userId: u9, eventId: e2, interactionType: 'attended' },
+      { userId: u9, eventId: e8, interactionType: 'attended' },
+
+      // ── NEW: 'interested' interactions — user expressed interest but didn't attend
+      //    Chosen to reflect each user's preferred tags (weak positive signal)
+      { userId: u1, eventId: e8, interactionType: 'interested' }, // u1 likes chill/food — Water Lantern fits
+      { userId: u1, eventId: e6, interactionType: 'interested' }, // curious about LVL UP
+      { userId: u2, eventId: e4, interactionType: 'interested' }, // u2 likes music — First Friday fits
+      { userId: u2, eventId: e3, interactionType: 'interested' }, // interested in party scene
+      { userId: u3, eventId: e7, interactionType: 'interested' }, // u3 likes concerts
+      { userId: u3, eventId: e9, interactionType: 'interested' }, // likes culture/art
+      { userId: u4, eventId: e4, interactionType: 'interested' }, // u4 likes music/party
+      { userId: u4, eventId: e6, interactionType: 'interested' }, // curious about convention
+      { userId: u5, eventId: e2, interactionType: 'interested' }, // u5 likes music alongside anime
+      { userId: u5, eventId: e4, interactionType: 'interested' }, // First Friday has vendors
+      { userId: u6, eventId: e4, interactionType: 'interested' }, // u6 likes music/art
+      { userId: u6, eventId: e9, interactionType: 'interested' }, // interested in thrift/culture
+      { userId: u7, eventId: e6, interactionType: 'interested' }, // u7 likes vendors/culture — LVL UP has both
+      { userId: u7, eventId: e2, interactionType: 'interested' }, // interested in rap scene
+      { userId: u8, eventId: e5, interactionType: 'interested' }, // u8 likes culture/insightful — panel fits
+      { userId: u8, eventId: e3, interactionType: 'interested' }, // interested in college scene
+      { userId: u9, eventId: e7, interactionType: 'interested' }, // u9 likes music/concerts
+      { userId: u9, eventId: e3, interactionType: 'interested' }, // curious about party
+
+      // ── NEW: 'blocked' interactions — events the user explicitly doesn't want to see
+      //    Chosen to be off-persona relative to each user's preferred tags
+      { userId: u1, eventId: e2, interactionType: 'blocked' }, // u1 (study/culture) blocks rap concert
+      { userId: u1, eventId: e7, interactionType: 'blocked' }, // blocks Baby Keem concert
+      { userId: u2, eventId: e6, interactionType: 'blocked' }, // u2 (music/rap) blocks gaming convention
+      { userId: u2, eventId: e5, interactionType: 'blocked' }, // blocks conference/panel
+      { userId: u3, eventId: e3, interactionType: 'blocked' }, // u3 (art/culture) blocks frat party
+      { userId: u3, eventId: e6, interactionType: 'blocked' }, // blocks gaming convention
+      { userId: u4, eventId: e1, interactionType: 'blocked' }, // u4 (party/wild) blocks study session
+      { userId: u4, eventId: e5, interactionType: 'blocked' }, // blocks conference
+      { userId: u5, eventId: e3, interactionType: 'blocked' }, // u5 (anime/games) blocks frat party
+      { userId: u5, eventId: e1, interactionType: 'blocked' }, // blocks study session
+      { userId: u6, eventId: e1, interactionType: 'blocked' }, // u6 (music/wild) blocks study session
+      { userId: u6, eventId: e5, interactionType: 'blocked' }, // blocks panel/conference
+      { userId: u7, eventId: e2, interactionType: 'blocked' }, // u7 (thrift/fits) blocks rap concert
+      { userId: u7, eventId: e7, interactionType: 'blocked' }, // blocks Baby Keem
+      { userId: u8, eventId: e3, interactionType: 'blocked' }, // u8 (music/art) blocks frat party
+      { userId: u8, eventId: e6, interactionType: 'blocked' }, // blocks gaming convention
+      { userId: u9, eventId: e1, interactionType: 'blocked' }, // u9 (art/anime) blocks study session
+      { userId: u9, eventId: e5, interactionType: 'blocked' }, // blocks panel/conference
     ];
     for (const pair of userEventPairs) {
       const existing = await ctx.db

@@ -7,6 +7,7 @@ export const getByUserId = query({
     return await ctx.db
       .query('usersToEvents')
       .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .filter((q) => q.eq(q.field('interactionType'), 'attended'))
       .collect();
   },
 });
@@ -72,5 +73,17 @@ export const getPreferredTagsByUserId = query({
       .query('userPreferredTags')
       .withIndex('by_userId', (q) => q.eq('userId', userId))
       .unique();
+  },
+});
+
+export const getInteractionsByUserId = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    return await ctx.db
+      .query('usersToEvents')
+      .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .collect();
+    // Returns: { userId, eventId, interactionType }[]
+    // updateUserPreferences.py splits these by interactionType on the Python side
   },
 });
