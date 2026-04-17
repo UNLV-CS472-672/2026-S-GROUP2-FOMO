@@ -1,7 +1,6 @@
 'use client';
 
-import { api } from '@fomo/backend/convex/_generated/api';
-import { useQuery } from 'convex/react';
+import { useUser } from '@clerk/nextjs';
 
 function formatName(name: string | null | undefined): string {
   return (name ?? 'there')
@@ -11,15 +10,15 @@ function formatName(name: string | null | undefined): string {
 }
 
 export function SignedInStatus() {
-  //TODO Eventually replace this with profile query when that is implemented
-  const identity = useQuery(api.auth.getIdentity);
-  if (identity === undefined) {
+  const { isLoaded, isSignedIn, user } = useUser();
+
+  if (!isLoaded) {
     return (
       <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">Loading...</p>
     );
   }
 
-  if (identity === null) {
+  if (!isSignedIn || !user) {
     return (
       <>
         <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
@@ -32,7 +31,9 @@ export function SignedInStatus() {
     );
   }
 
-  const displayName = formatName(identity.name ?? identity.email ?? undefined);
+  const displayName = formatName(
+    user.fullName ?? user.firstName ?? user.primaryEmailAddress?.emailAddress ?? undefined
+  );
 
   return (
     <>
