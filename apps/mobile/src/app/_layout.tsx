@@ -2,6 +2,7 @@ import '@/global.css';
 
 import { useAuth as useClerkAuth } from '@clerk/expo';
 import { navigationThemeColors } from '@fomo/theme/native';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useConvexAuth } from 'convex/react';
 import { Redirect, Stack, useSegments } from 'expo-router';
@@ -69,16 +70,18 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={navigationTheme}>
-        <ClerkProvider>
-          <ConvexProvider>
-            <GuestProvider>
-              <RootNavigator />
-              <StatusBar style={isDark ? 'light' : 'dark'} />
-            </GuestProvider>
-          </ConvexProvider>
-        </ClerkProvider>
-      </ThemeProvider>
+      <BottomSheetModalProvider>
+        <ThemeProvider value={navigationTheme}>
+          <ClerkProvider>
+            <ConvexProvider>
+              <GuestProvider>
+                <RootNavigator />
+                <StatusBar style={isDark ? 'light' : 'dark'} />
+              </GuestProvider>
+            </ConvexProvider>
+          </ClerkProvider>
+        </ThemeProvider>
+      </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );
 }
