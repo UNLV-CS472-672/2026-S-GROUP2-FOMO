@@ -544,7 +544,7 @@ def test_main_all_users_upserts_for_each_user(mock_main_all_users_dependencies: 
     called_user_ids = [call_args[0][1] for call_args in mock_main_all_users_dependencies["upsert_friend_recs"].call_args_list]
     assert called_user_ids == user_ids
     
-    # ------------------------------
+# ------------------------------
 #  get_client()
 # ------------------------------
 
