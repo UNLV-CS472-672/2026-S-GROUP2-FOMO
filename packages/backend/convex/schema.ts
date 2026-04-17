@@ -11,8 +11,9 @@ export default defineSchema({
 
   events: defineTable({
     name: v.string(),
-    organization: v.string(),
-    description: v.string(),
+    caption: v.string(),
+    mediaId: v.id('_storage'),
+    hostIds: v.array(v.id('users')),
     startDate: v.number(), // ms since epoch
     endDate: v.number(), // ms since epoch
     location: v.object({
