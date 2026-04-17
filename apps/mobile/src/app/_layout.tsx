@@ -11,7 +11,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
 
-import { AppHeaderBackButton } from '@/components/navigation/header-back-button';
 import { AuthLoadingScreen } from '@/features/auth/components/auth-loading-screen';
 import ClerkProvider from '@/integrations/clerk/provider';
 import ConvexProvider from '@/integrations/convex/provider';
@@ -36,7 +35,7 @@ function RootNavigator() {
     );
   }
 
-  const isAuthenticatedRouteAllowed = segments[0] === '(tabs)' || segments[0] === 'feed';
+  const isAuthenticatedRouteAllowed = segments[0] === '(tabs)';
   if (isAuthenticated && !isAuthenticatedRouteAllowed) {
     return <Redirect href="/(tabs)/(map)" />;
   }
@@ -50,15 +49,6 @@ function RootNavigator() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen
-        name="feed/event/[eventId]"
-        options={{
-          presentation: 'modal',
-          headerShown: true,
-          title: 'Event Details',
-          headerLeft: () => <AppHeaderBackButton />,
-        }}
-      />
     </Stack>
   );
 }

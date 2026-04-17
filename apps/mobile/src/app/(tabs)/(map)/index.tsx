@@ -99,7 +99,7 @@ export default function MapScreen() {
             maxWeight={maxWeight}
             onPress={() =>
               push({
-                pathname: '/feed/event/[eventId]',
+                pathname: '/(tabs)/(map)/event/[eventId]',
                 params: { eventId: event.id },
               })
             }
@@ -135,7 +135,7 @@ export default function MapScreen() {
       </MapboxGL.MapView>
 
       <SearchDrawer
-        onSelectEvent={(eventId) => push(`/feed/event/${eventId}`)}
+        onSelectEvent={(eventId) => push(`/(tabs)/(map)/event/${eventId}`)}
         animatedIndex={drawerAnimatedIndex}
         animatedPosition={drawerAnimatedPosition}
         isFocused={isFocused}
