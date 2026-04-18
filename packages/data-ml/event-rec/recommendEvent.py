@@ -75,7 +75,7 @@ def get_event_features(
     return event_ids, np.array(event_rows, dtype=np.float32)
 
 
-def main(users: list[str], update_db: bool, k: int = 10) -> None:
+def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> None:
     client = get_client()
 
     # ── Preprocessing
@@ -93,7 +93,7 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
     user_tower  = UserTower(num_tags=num_tags).to(DEVICE)
     event_tower = EventTower(num_tags=num_tags).to(DEVICE)
 
-    model_weights = torch.load("models/model8_interrupted.pt", map_location=DEVICE)
+    model_weights = torch.load(model_path, map_location=DEVICE)
     user_tower.load_state_dict(model_weights['user_tower'])
     event_tower.load_state_dict(model_weights['event_tower'])
 
@@ -142,6 +142,13 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
         user_name = {row["_id"]: row["name"] for row in all_users_rows}
         event_name = {row["_id"]: row["name"] for row in all_events_rows}
 
+        for user_id, user_n in user_name.items():
+            print(f'{user_n} : {user_id}')
+
+        for event_id, event_n in event_name.items():
+            print(f'{event_n} : {event_id}')
+
+
         for user_id in users:
             print(f"\n{user_name.get(user_id, user_id)}:")
             for rank, rec in enumerate(recommendations[user_id], start=1):
@@ -153,4 +160,4 @@ USERS     = ["ALL"]
 UPDATE_DB = False
 
 if __name__ == "__main__":
-    main(USERS, UPDATE_DB)
+    main(USERS, UPDATE_DB, 'models/model9.pt')

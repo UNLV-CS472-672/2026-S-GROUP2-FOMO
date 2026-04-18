@@ -95,6 +95,94 @@ export const eventSeeds = [
       h3Index: latLngToH3Index(36.15909747099756, -115.15269829421878),
     },
   },
+
+  // ── NEW EVENTS (unattended — added to expand recommendation diversity) ──
+  {
+    name: 'Chinatown Night Market',
+    organization: 'Las Vegas Chinatown Plaza',
+    description:
+      'Street food, vendors, live music, and cultural performances in the heart of Chinatown.',
+    location: {
+      latitude: 36.12201837345691,
+      longitude: -115.19872034567823,
+      h3Index: latLngToH3Index(36.12201837345691, -115.19872034567823),
+    },
+  },
+  {
+    name: 'UNLV Career & Culture Fair',
+    organization: 'UNLV Student Affairs',
+    description:
+      'Network with employers, student orgs, and campus resources. Free food and giveaways.',
+    location: {
+      latitude: 36.10812345678901,
+      longitude: -115.14123456789012,
+      h3Index: latLngToH3Index(36.10812345678901, -115.14123456789012),
+    },
+  },
+  {
+    name: 'Vegas Streetwear Market',
+    organization: 'Desert Drip Collective',
+    description:
+      'Local and independent streetwear brands, vintage fits, and live customization booths.',
+    location: {
+      latitude: 36.16234567890123,
+      longitude: -115.14567890123456,
+      h3Index: latLngToH3Index(36.16234567890123, -115.14567890123456),
+    },
+  },
+  {
+    name: 'Desert Rap Cypher',
+    organization: 'Vegas Underground',
+    description: 'Open mic rap cypher. Bring your bars or just pull up and vibe. No gatekeeping.',
+    location: {
+      latitude: 36.15123456789012,
+      longitude: -115.16234567890123,
+      h3Index: latLngToH3Index(36.15123456789012, -115.16234567890123),
+    },
+  },
+  {
+    name: 'Downtown Art Walk',
+    organization: '18b Arts District',
+    description:
+      'Self-guided tour of galleries, murals, and pop-up installations across the 18b Arts District.',
+    location: {
+      latitude: 36.17234567890123,
+      longitude: -115.14890123456789,
+      h3Index: latLngToH3Index(36.17234567890123, -115.14890123456789),
+    },
+  },
+  {
+    name: 'Sunset Chill Fest',
+    organization: 'Sunset Park Events',
+    description:
+      'Laid-back outdoor hangout with food trucks, r&b sets, and lawn games at Sunset Park.',
+    location: {
+      latitude: 36.03912345678901,
+      longitude: -115.14678901234567,
+      h3Index: latLngToH3Index(36.03912345678901, -115.14678901234567),
+    },
+  },
+  {
+    name: 'Neon Birthday Bash',
+    organization: 'Private Event',
+    description: 'Annual neon-themed birthday party. BYOF (bring your own fits). Open bar for 21+.',
+    location: {
+      latitude: 36.11456789012345,
+      longitude: -115.17123456789012,
+      h3Index: latLngToH3Index(36.11456789012345, -115.17123456789012),
+    },
+  },
+  {
+    name: 'UNLV Anime Club Screening',
+    organization: 'UNLV Anime Club',
+    description:
+      'Monthly screening night. This month: Frieren. Snacks provided, cosplay encouraged.',
+    location: {
+      latitude: 36.10678901234567,
+      longitude: -115.14234567890123,
+      h3Index: latLngToH3Index(36.10678901234567, -115.14234567890123),
+    },
+  },
 ];
 
 // Attendee counts per event, parallel to eventSeeds — derived from userEventPairs in seed handler
@@ -190,7 +278,7 @@ export const seed = mutation({
           }))
       );
     }
-    const [e1, e2, e3, e4, e5, e6, e7, e8, e9] = eventIds;
+    const [e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16, e17] = eventIds;
 
     //  Users/Events Join Table (Convex: usersToEvents)
     const userEventPairs: {
@@ -213,7 +301,6 @@ export const seed = mutation({
       { userId: u3, eventId: e4, interactionType: 'attended' },
       { userId: u3, eventId: e8, interactionType: 'attended' },
       { userId: u3, eventId: e5, interactionType: 'attended' },
-      { userId: u3, eventId: e6, interactionType: 'attended' },
 
       { userId: u4, eventId: e3, interactionType: 'attended' },
       { userId: u4, eventId: e8, interactionType: 'attended' },
@@ -332,6 +419,54 @@ export const seed = mutation({
       { eventId: e9, tagId: tagIds['culture'] },
       { eventId: e9, tagId: tagIds['fits'] },
       { eventId: e9, tagId: tagIds['thrift'] },
+
+      // ── NEW EVENT TAGS ──
+      // e10: Chinatown Night Market — culture/food/vendors/chinatown/music
+      { eventId: e10, tagId: tagIds['chinatown'] },
+      { eventId: e10, tagId: tagIds['culture'] },
+      { eventId: e10, tagId: tagIds['food'] },
+      { eventId: e10, tagId: tagIds['vendors'] },
+      { eventId: e10, tagId: tagIds['music'] },
+      // e11: UNLV Career & Culture Fair — college/fair/insightful/study/vendors
+      { eventId: e11, tagId: tagIds['college'] },
+      { eventId: e11, tagId: tagIds['fair'] },
+      { eventId: e11, tagId: tagIds['insightful'] },
+      { eventId: e11, tagId: tagIds['study'] },
+      { eventId: e11, tagId: tagIds['vendors'] },
+      // e12: Vegas Streetwear Market — fits/clothes/thrift/vendors/culture
+      { eventId: e12, tagId: tagIds['fits'] },
+      { eventId: e12, tagId: tagIds['clothes'] },
+      { eventId: e12, tagId: tagIds['thrift'] },
+      { eventId: e12, tagId: tagIds['vendors'] },
+      { eventId: e12, tagId: tagIds['culture'] },
+      // e13: Desert Rap Cypher — rap/wild/music/party/college
+      { eventId: e13, tagId: tagIds['rap'] },
+      { eventId: e13, tagId: tagIds['wild'] },
+      { eventId: e13, tagId: tagIds['music'] },
+      { eventId: e13, tagId: tagIds['party'] },
+      { eventId: e13, tagId: tagIds['college'] },
+      // e14: Downtown Art Walk — art/culture/insightful/fair
+      { eventId: e14, tagId: tagIds['art'] },
+      { eventId: e14, tagId: tagIds['culture'] },
+      { eventId: e14, tagId: tagIds['insightful'] },
+      { eventId: e14, tagId: tagIds['fair'] },
+      // e15: Sunset Chill Fest — chill/r&b/food/music/drink
+      { eventId: e15, tagId: tagIds['chill'] },
+      { eventId: e15, tagId: tagIds['r&b'] },
+      { eventId: e15, tagId: tagIds['food'] },
+      { eventId: e15, tagId: tagIds['music'] },
+      { eventId: e15, tagId: tagIds['drink'] },
+      // e16: Neon Birthday Bash — birthday/party/wild/drink/music
+      { eventId: e16, tagId: tagIds['birthday'] },
+      { eventId: e16, tagId: tagIds['party'] },
+      { eventId: e16, tagId: tagIds['wild'] },
+      { eventId: e16, tagId: tagIds['drink'] },
+      { eventId: e16, tagId: tagIds['music'] },
+      // e17: UNLV Anime Club Screening — anime/comics/college/chill
+      { eventId: e17, tagId: tagIds['anime'] },
+      { eventId: e17, tagId: tagIds['comics'] },
+      { eventId: e17, tagId: tagIds['college'] },
+      { eventId: e17, tagId: tagIds['chill'] },
     ];
     for (const pair of eventTagPairs) {
       const existing = await ctx.db

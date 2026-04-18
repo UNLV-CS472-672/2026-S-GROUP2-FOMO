@@ -128,7 +128,9 @@ def build_user_feature_vector(user_id: str) -> np.ndarray:
 
     att_weights = build_weights(att_mat,  row_weight=1.0)
     int_weights = build_weights(int_mat,  row_weight=0.5)
-    blk_weights = build_weights(blk_mat,  row_weight=1.0)
+    blk_weights = build_weights(blk_mat,  row_weight=2.0)
+
+    blk_weights = blk_weights
 
     # Also incorporate initial tag preferences from account creation
     # (adds a soft prior for users with little interaction history)
@@ -182,7 +184,7 @@ def main(users: list[str], update_db: bool) -> None:
 
 
 USERS = ["ALL"]
-UPDATE_DB = False
+UPDATE_DB = True
 
 if __name__ == "__main__":
     main(USERS, UPDATE_DB)

@@ -78,27 +78,46 @@ MAX_TAGS = 8   # rough upper bound on tags per event, used for normalization
 # dow: 0=Mon … 6=Sun
 
 EVENT_ARCHETYPES = [
-    ("rap_concert",      ["concert", "rap", "music"],           ["wild", "drink", "party"],             0.6, [4,5,6], [20,21,22], False),
-    ("rb_concert",       ["concert", "r&b", "music"],           ["chill", "drink", "party"],            0.6, [4,5,6], [19,20,21], False),
-    ("anime_convention", ["convention", "anime", "comics"],     ["vendors", "art", "games"],            0.7, [5,6],   [10,11,12], False),
-    ("gaming_meetup",    ["games"],                             ["anime", "comics", "wild"],            0.5, [5,6],   [14,15,16], True),
-    ("art_fair",         ["art", "fair", "vendors"],            ["culture", "food", "insightful"],      0.6, [5,6],   [11,12,13], True),
-    ("thrift_market",    ["thrift", "vendors", "clothes"],      ["fair", "food", "fits"],               0.7, [5,6],   [10,11,12], True),
-    ("college_party",    ["party", "college"],                  ["drink", "wild", "music"],             0.8, [4,5],   [21,22,23], True),
-    ("birthday_party",   ["birthday", "party"],                 ["drink", "food", "music", "wild"],     0.7, [5,6],   [18,19,20], True),
-    ("food_festival",    ["food", "fair", "vendors"],           ["drink", "culture", "music"],          0.6, [5,6],   [11,12,13], False),
-    ("study_group",      ["study", "college"],                  ["insightful", "chill"],                0.6, [0,1,2], [14,15,16], True),
-    ("conference_panel", ["conference", "panel", "insightful"], ["college", "culture", "study"],        0.5, [1,2,3], [9,10,11],  False),
-    ("chinatown_event",  ["chinatown", "culture", "food"],      ["vendors", "art", "fair"],             0.6, [5,6],   [11,12,13], True),
-    ("fashion_show",     ["fits", "clothes", "art"],            ["culture", "thrift", "party"],         0.5, [5,6],   [17,18,19], False),
-    ("chill_hangout",    ["chill"],                             ["food", "drink", "music", "r&b"],      0.6, [4,5,6], [16,17,18], True),
-    ("rap_cypher",       ["rap", "wild"],                       ["music", "college", "party"],          0.6, [4,5],   [19,20,21], True),
-    ("comics_expo",      ["comics", "convention", "vendors"],   ["games", "anime", "art"],              0.7, [5,6],   [10,11,12], False),
-    ("culture_fest",     ["culture", "fair"],                   ["food", "music", "art", "chinatown"],  0.65,[5,6],   [11,12,13], True),
-    ("open_mic",         ["music", "art"],                      ["r&b", "rap", "chill", "party"],       0.6, [3,4,5], [19,20,21], True),
-    ("night_out",        ["drink", "wild", "party"],            ["music", "r&b", "rap"],                0.7, [4,5,6], [22,23,0],  False),
-    ("campus_fair",      ["college", "fair", "vendors"],        ["study", "food", "games"],             0.6, [1,2,3], [10,11,12], True),
+    ("rap_concert",      ["concert", "rap", "music"],           ["wild", "drink", "party"],             0.35, [4,5,6], [20,21,22], False),
+    ("rb_concert",       ["concert", "r&b", "music"],           ["chill", "drink", "party"],            0.35, [4,5,6], [19,20,21], False),
+    ("anime_convention", ["convention", "anime", "comics"],     ["vendors", "art", "games"],            0.5, [5,6],   [10,11,12], False),
+    ("gaming_meetup",    ["games"],                             ["anime", "comics"],                    0.4, [5,6],   [14,15,16], True),
+    ("art_fair",         ["art", "fair", "vendors"],            ["culture", "food", "insightful"],      0.4, [5,6],   [11,12,13], True),
+    ("thrift_market",    ["thrift", "vendors", "clothes"],      ["fair", "fits"],                       0.5, [5,6],   [10,11,12], True),
+    ("college_party",    ["party", "college"],                  ["drink", "wild"],                      0.6, [4,5],   [21,22,23], True),
+    ("birthday_party",   ["birthday", "party"],                 ["drink", "food", "wild"],              0.4, [5,6],   [18,19,20], True),
+    ("food_festival",    ["food", "fair", "vendors"],           ["drink", "culture"],                   0.4, [5,6],   [11,12,13], False),
+    ("study_group",      ["study", "college"],                  ["insightful", "chill"],                0.5, [0,1,2], [14,15,16], True),
+    ("conference_panel", ["conference", "panel", "insightful"], ["college", "culture", "study"],        0.35, [1,2,3], [9,10,11],  False),
+    ("chinatown_event",  ["chinatown", "culture", "food"],      ["vendors", "art"],                     0.4, [5,6],   [11,12,13], True),
+    ("fashion_show",     ["fits", "clothes", "art"],            ["culture", "thrift"],                  0.4, [5,6],   [17,18,19], False),
+    ("chill_hangout",    ["chill"],                             ["food", "drink", "r&b"],               0.35, [4,5,6], [16,17,18], True),
+    ("rap_cypher",       ["rap", "wild"],                       ["music", "college"],                   0.4, [4,5],   [19,20,21], True),
+    ("comics_expo",      ["comics", "convention", "vendors"],   ["games", "anime", "art"],              0.5, [5,6],   [10,11,12], False),
+    ("culture_fest",     ["culture", "fair"],                   ["food", "art", "chinatown"],           0.4, [5,6],   [11,12,13], True),
+    ("open_mic",         ["music", "art"],                      ["r&b", "chill"],                       0.4, [3,4,5], [19,20,21], True),
+    ("night_out",        ["drink", "wild", "party"],            ["music", "r&b", "rap"],                0.35, [4,5,6], [22,23,0],  False),
+    ("campus_fair",      ["college", "fair", "vendors"],        ["study", "food", "games"],             0.4, [1,2,3], [10,11,12], True),
 ]
+
+
+def generate_event_for_user(archetype: tuple, excluded_tags: set) -> np.ndarray:
+    """
+    Like generate_event but skips optional tags that are in `excluded_tags`.
+    Used when simulating attended events for users with blocked tags —
+    prevents e.g. a rap concert from adding `wild` to attended if user blocked wild.
+    Required tags still go in (it's still a rap concert).
+    """
+    name, required, optional, prob, dow_choices, hour_choices, is_free = archetype
+    tags = np.zeros(NUM_TAGS, dtype=np.float32)
+    for tag in required:
+        tags[TAG_IDX[tag]] = 1.0
+    for tag in optional:
+        if tag in excluded_tags:
+            continue
+        if random.random() < prob:
+            tags[TAG_IDX[tag]] = 1.0
+    return tags
 
 
 def generate_event(archetype: tuple) -> np.ndarray:
@@ -242,7 +261,24 @@ def simulate_user(persona: tuple) -> tuple[np.ndarray, np.ndarray, np.ndarray, l
 
     top_primary   = by_primary[:6]
     top_secondary = by_secondary[:6]
-    top_blocked   = by_blocked[:4]
+
+    # Filter blocked archetypes to avoid ones whose REQUIRED tags overlap with
+    # the user's primary or secondary tags. This prevents the blocked slice
+    # from accidentally suppressing tags the user actually likes.
+    liked_tags = primary_set | second_set
+    top_blocked = []
+    for arch_idx in by_blocked:
+        required_tags = set(EVENT_ARCHETYPES[arch_idx][1])
+        if _score_archetype(EVENT_ARCHETYPES[arch_idx], blocked_set) == 0:
+            break
+        # Only include if no required tag overlaps with liked tags
+        if not (required_tags & liked_tags):
+            top_blocked.append(arch_idx)
+        if len(top_blocked) >= 4:
+            break
+    # Fallback if no clean archetypes — take whatever matches blocked_set best
+    if not top_blocked:
+        top_blocked = by_blocked[:4]
 
     attended_rows   = []
     interested_rows = []
@@ -255,22 +291,24 @@ def simulate_user(persona: tuple) -> tuple[np.ndarray, np.ndarray, np.ndarray, l
     for _ in range(n_att_pri):
         idx = random.choice(top_primary)
         att_indices.append(idx)
-        attended_rows.append(generate_event(EVENT_ARCHETYPES[idx])[:NUM_TAGS])
+        attended_rows.append(generate_event_for_user(EVENT_ARCHETYPES[idx], blocked_set))
 
     for _ in range(n_att_sec):
         idx = random.choice(top_secondary)
         att_indices.append(idx)
-        attended_rows.append(generate_event(EVENT_ARCHETYPES[idx])[:NUM_TAGS])
+        attended_rows.append(generate_event_for_user(EVENT_ARCHETYPES[idx], blocked_set))
 
     for _ in range(n_int):
         idx = random.choice(top_primary + top_secondary)
         int_indices.append(idx)
-        interested_rows.append(generate_event(EVENT_ARCHETYPES[idx])[:NUM_TAGS])
+        interested_rows.append(generate_event_for_user(EVENT_ARCHETYPES[idx], blocked_set))
 
     for _ in range(n_blk):
         idx = random.choice(top_blocked)
         blk_indices.append(idx)
-        blocked_rows.append(generate_event(EVENT_ARCHETYPES[idx])[:NUM_TAGS])
+        # For blocked events, exclude liked tags so blocked slice doesn't
+        # bleed into tags the user attends
+        blocked_rows.append(generate_event_for_user(EVENT_ARCHETYPES[idx], liked_tags))
 
     att_mat  = np.array(attended_rows,   dtype=np.float32) if attended_rows   else np.zeros((0, NUM_TAGS), dtype=np.float32)
     int_mat  = np.array(interested_rows, dtype=np.float32) if interested_rows else np.zeros((0, NUM_TAGS), dtype=np.float32)
@@ -433,15 +471,9 @@ def mine_triplets(
 
     for u_idx in range(len(user_features)):
         scores = sim[u_idx]                    # (E,)
-
-        # Skip cold-start users — zero attended vector means all cosine scores
-        # are identical, so any triplets mined here are pure noise
-        if scores.max() - scores.min() < 1e-6:
-            continue
-
         ranked = np.argsort(scores)[::-1]      # (E,) sorted indices
 
-        pos_pool = ranked[:30].tolist()
+        pos_pool = ranked[:15].tolist()   # tighter pool → stronger positives
 
         _, _, blk_arch = interaction_history[u_idx]
         if blk_arch:
@@ -452,14 +484,18 @@ def mine_triplets(
         else:
             hard_neg_pool = []
 
-        easy_neg_pool = ranked[int(0.75 * num_events):].tolist()
-
+        # Fallback hard negatives: mid-ranked events (tag-similar but not top)
+        # These are harder than bottom-quartile easy negatives
         if not hard_neg_pool:
-            hard_neg_pool = ranked[40:150].tolist()
+            hard_neg_pool = ranked[80:300].tolist()
+
+        # Easy negatives: bottom quartile — clearly off-topic
+        easy_neg_pool = ranked[int(0.75 * num_events):].tolist()
 
         for _ in range(TRIPLETS_PER_USER):
             pos_idx  = random.choice(pos_pool)
-            use_hard = random.random() < 0.6
+            # Shifted from 60/40 → 75/25 to give model more hard cases to learn from
+            use_hard = random.random() < 0.75
             neg_idx  = random.choice(hard_neg_pool if use_hard else easy_neg_pool)
 
             if scores[pos_idx] > scores[neg_idx]:
