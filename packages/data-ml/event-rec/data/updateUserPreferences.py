@@ -1,21 +1,3 @@
-"""
-Builds and stores the 3-slice user feature vector for the Two-Tower model.
-
-User feature vector shape: (3 * num_tags,)
-  - slice [0        : num_tags]   → attended tag weights   (strong positive signal)
-  - slice [num_tags : 2*num_tags] → interested tag weights (weak positive signal)
-  - slice [2*num_tags: 3*num_tags]→ blocked tag weights    (negative signal)
-
-Formula (all three slices use the same bounding function):
-  bounded = 1 - exp(-(weighted_sum + BETA) / TAU)
-  BETA=0.10, TAU=1.25
-
-Interaction weights before bounding:
-  attended   → row contribution weight = 1.0
-  interested → row contribution weight = 0.5 (softer signal)
-  blocked    → row contribution weight = 1.0
-"""
-
 import os
 import numpy as np
 
@@ -47,6 +29,7 @@ TAG_ID_TO_IDX: dict[str, int] = {}
 # ── Tag/event helpers
 
 def init_tags() -> None:
+    """init tags"""
     global NUM_TAGS, TAG_ID_TO_IDX
     tags = get_client().query("data_ml/universal:queryAll", {"table_name": "tags"})
     TAG_ID_TO_IDX = {tag["_id"]: i for i, tag in enumerate(tags)}
@@ -65,7 +48,7 @@ def event_multihot(event_id: str) -> np.ndarray:
 
 
 def build_matrix(event_ids: list[str]) -> np.ndarray:
-    """Returns (n_events, num_tags) multihot matrix for a list of event IDs."""
+    """multihot matrix for list of event IDs."""
     if not event_ids:
         return np.zeros((0, NUM_TAGS), dtype=np.float32)
     return np.array([event_multihot(eid) for eid in event_ids], dtype=np.float32)
@@ -78,9 +61,9 @@ def build_weights(mat: np.ndarray, row_weight: float = 1.0) -> np.ndarray:
     Converts an (n_events, num_tags) matrix into a (num_tags,) bounded weight vector.
 
     row_weight: scales each event's contribution before bounding.
-      - attended   → 1.0  (full signal)
-      - interested → 0.5  (half signal — user expressed interest but didn't attend)
-      - blocked    → 1.0  (full signal — strong negative preference)
+      - attended: 1.0  (full signal)
+      - interested: 0.5  (half signal)
+      - blocked: 1.0  (full signal - strong negative preference)
     """
     if mat.shape[0] == 0:
         return np.zeros(NUM_TAGS, dtype=np.float32)
@@ -97,14 +80,10 @@ def build_weights(mat: np.ndarray, row_weight: float = 1.0) -> np.ndarray:
 
 def get_interaction_ids(user_id: str) -> tuple[list[str], list[str], list[str]]:
     """
-    Returns (attended_ids, interested_ids, blocked_ids) for a user.
-
     Returns rows from usersToEvents with fields:
-      { eventId: str, interactionType: "attended" | "interested" | "blocked" }
+    { eventId: str, interactionType: "attended" | "interested" | "blocked" }
     """
-    interactions = get_client().query(
-        "data_ml/eventRec:getInteractionsByUserId", {"userId": user_id}
-    )
+    interactions = get_client().query("data_ml/eventRec:getInteractionsByUserId", {"userId": user_id})
 
     attended = [row["eventId"] for row in interactions if row["interactionType"] == "attended"]
     interested = [row["eventId"] for row in interactions if row["interactionType"] == "interested"]
@@ -115,7 +94,7 @@ def get_interaction_ids(user_id: str) -> tuple[list[str], list[str], list[str]]:
 
 def build_user_feature_vector(user_id: str) -> np.ndarray:
     """
-    Builds the full (3 * num_tags,) feature vector for one user:
+    Builds full (3 * num_tags,) feature vector for one user:
       [attended_weights | interested_weights | blocked_weights]
     """
 
@@ -132,11 +111,9 @@ def build_user_feature_vector(user_id: str) -> np.ndarray:
 
     blk_weights = blk_weights
 
-    # Also incorporate initial tag preferences from account creation
-    # (adds a soft prior for users with little interaction history)
-    initial_prefs = get_client().query(
-        "data_ml/eventRec:getPreferredTagsByUserId", {"userId": user_id}
-    )
+    # Cold Start preferences
+    initial_prefs = get_client().query("data_ml/eventRec:getPreferredTagsByUserId", {"userId": user_id})
+
     if initial_prefs:
         prior = np.zeros(NUM_TAGS, dtype=np.float32)
         for tag_id in initial_prefs.get("tagIds", []):
@@ -164,19 +141,13 @@ def main(users: list[str], update_db: bool) -> None:
 
     if update_db:
         for user_id, vec in user_feature_vectors.items():
-            get_client().mutation(
-                "data_ml/eventRec:upsertUserTagWeights",
-                {
-                    "userId":  user_id,
-                    "weights": vec.tolist(),   # length = 3 * num_tags
-                }
-            )
+            get_client().mutation("data_ml/eventRec:upsertUserTagWeights",{"userId":  user_id, "weights": vec.tolist()})
         print(f"Updated {len(user_feature_vectors)} users in Convex.")
     else:
         for user_id, vec in user_feature_vectors.items():
             att = vec[:NUM_TAGS]
-            int_ = vec[NUM_TAGS:2*NUM_TAGS]
-            blk = vec[2*NUM_TAGS:]
+            int_ = vec[NUM_TAGS: 2 * NUM_TAGS]
+            blk = vec[2 * NUM_TAGS:]
             print(f"\nUser {user_id}:")
             print(f"  attended  weights (top 5): { sorted(enumerate(att), key=lambda x: -x[1])[:5] }")
             print(f"  interested weights (top 5): { sorted(enumerate(int_), key=lambda x: -x[1])[:5] }")

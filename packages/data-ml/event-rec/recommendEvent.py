@@ -7,11 +7,11 @@ from utils.utils import get_client
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-MAX_TAGS = 8   # normalizer for tag_count_norm, must match generate_training_data.py
+MAX_TAGS = 8   # normalizer for tag_count_norm
 
 
 def get_tag_info(client: ConvexClient) -> tuple[int, dict[str, int]]:
-    tags          = client.query("data_ml/universal:queryAll", {"table_name": "tags"})
+    tags = client.query("data_ml/universal:queryAll", {"table_name": "tags"})
     tag_id_to_idx = {tag["_id"]: i for i, tag in enumerate(tags)}
     return len(tags), tag_id_to_idx
 
@@ -39,11 +39,7 @@ def get_user_features(client: ConvexClient, users: list[str], num_tags: int) -> 
     return torch.from_numpy(np.stack(fixed))
 
 
-def get_event_features(
-    client:       ConvexClient,
-    num_tags:     int,
-    tag_id_to_idx: dict[str, int],
-) -> tuple[list[str], np.ndarray]:
+def get_event_features(client: ConvexClient, num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[list[str], np.ndarray]:
     """
     Builds the (num_tags + 4) feature vector for each event.
     Only returns events that haven't ended yet.
@@ -64,10 +60,11 @@ def get_event_features(
                 tags[tag_id_to_idx[row["tagId"]]] = 1.0
 
         tag_count_norm = tags.sum() / MAX_TAGS
-        day_norm       = float(event.get("dayOfWeek",  5)) / 6.0
-        hour_norm      = float(event.get("startHour", 19)) / 23.0
-        is_free        = float(event.get("isFree",  False))
 
+        # FIX: Need to be fixed, too lazy rn. Do in a diff pr
+        day_norm = float(event.get("dayOfWeek",  5)) / 6.0
+        hour_norm = float(event.get("startHour", 19)) / 23.0
+        is_free = float(event.get("isFree",  False))
 
         event_ids.append(eid)
         event_rows.append(np.concatenate([tags, [tag_count_norm, day_norm, hour_norm, is_free]]))
@@ -100,19 +97,15 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
     user_tower.eval()
     event_tower.eval()
 
-    # ── Inference: pass through towers → cosine similarity on embeddings
     with torch.no_grad():
-        user_embeddings  = user_tower(user_features)    # (U, embed_dim)
-        event_embeddings = event_tower(event_features)  # (E, embed_dim)
+        user_embeddings  = user_tower(user_features)
+        event_embeddings = event_tower(event_features)
 
-    # Towers apply F.normalize so embeddings are unit vectors.
-    # Cosine similarity = dot product. Remap [-1, 1] → [0, 1] for storage.
-    raw_scores = user_embeddings @ event_embeddings.T   # (U, E)
-    scores     = (raw_scores + 1.0) / 2.0               # (U, E)
+    raw_scores = user_embeddings @ event_embeddings.T
+    scores = (raw_scores + 1.0) / 2.0
 
     # ── Hard-mask blocked events so they can never surface in recommendations.
-    # The model's blocked slice nudges embeddings apart but isn't a guarantee —
-    # this ensures a user's explicitly blocked events are always excluded.
+    # The model's blocked slice nudges embeddings apart but isn't a guarantee
     for i, user_id in enumerate(users):
         interactions = client.query(
             "data_ml/eventRec:getInteractionsByUserId", {"userId": user_id}
@@ -145,9 +138,10 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
         for user_id, user_n in user_name.items():
             print(f'{user_n} : {user_id}')
 
+        print("")
+
         for event_id, event_n in event_name.items():
             print(f'{event_n} : {event_id}')
-
 
         for user_id in users:
             print(f"\n{user_name.get(user_id, user_id)}:")
@@ -156,8 +150,23 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
                 print(f"  {rank}. {event_name.get(event_id, event_id)}: {score:.4f}")
 
 
-USERS     = ["ALL"]
+USERS = ["ALL"]
 UPDATE_DB = False
 
 if __name__ == "__main__":
-    main(USERS, UPDATE_DB, 'models/model9.pt')
+    main(USERS, UPDATE_DB, 'models/model12.pt')
+
+""" 
+TODO: 
+    1. (updateUserPreferences.py) Currently collects all attended events and cold start info and then performs calculations
+       Need to update it so it performs running calculations. 
+            - Could be done by checking when the weights were calculated last and only select events 
+               that fall after that date.
+            - Problem: Formula may need to be adjusted to acomodate for this
+            - Could just ignore this issue. MVP!
+    2. (updateUserPreferences.py) Optional: Add weight decay so weights can also decrease. Possibly could be done by decrementing
+                 some weights if a user hasn't attended an event with said tag for the past X events.
+                 Idk how to really do that with a running weight adjustment though
+    3. (recommendEvent.py) Need to fix day_norm, hour_norm, and is_free fields in get_event_features. Commented "FIX:" at the spot
+    4. (All) UNIT TESTS
+"""

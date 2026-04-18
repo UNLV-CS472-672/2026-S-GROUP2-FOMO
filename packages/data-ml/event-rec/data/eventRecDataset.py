@@ -61,8 +61,7 @@ class EventRecDataset(Dataset[Any]):
         return user, pos, neg
 
 
-# ── Loaders ────────────────────────────────────────────────────────────────────
-
+# ── Loaders
 def _make_loaders(dataset: EventRecDataset ,batch_size: int = 32) -> tuple[DataLoader[EventRecDataset], DataLoader[EventRecDataset]]:
     train_size = int(0.8 * len(dataset))
     test_size  = len(dataset) - train_size

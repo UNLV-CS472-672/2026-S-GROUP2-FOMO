@@ -15,7 +15,6 @@ def main(epochs: int = 150, model_path: str | None = None) -> None:
 
     # user_feats  : (batch, 3 * num_tags)
     # event_feats : (batch, num_tags + 4)
-    # num_tags derived from event feature dim since it's unambiguous
     num_tags = event_feats.shape[1] - 4
 
     user_tower = UserTower(num_tags=num_tags).to(DEVICE)
@@ -129,4 +128,4 @@ def main(epochs: int = 150, model_path: str | None = None) -> None:
 
 
 if __name__ == "__main__":
-    main(model_path='models/model9.pt')
+    main(model_path='models/model11_interrupted.pt')
