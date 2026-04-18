@@ -93,7 +93,7 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
     user_tower  = UserTower(num_tags=num_tags).to(DEVICE)
     event_tower = EventTower(num_tags=num_tags).to(DEVICE)
 
-    model_weights = torch.load("models/model4.pt", map_location=DEVICE)
+    model_weights = torch.load("models/model8_interrupted.pt", map_location=DEVICE)
     user_tower.load_state_dict(model_weights['user_tower'])
     event_tower.load_state_dict(model_weights['event_tower'])
 
@@ -110,6 +110,18 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
     raw_scores = user_embeddings @ event_embeddings.T   # (U, E)
     scores     = (raw_scores + 1.0) / 2.0               # (U, E)
 
+    # ── Hard-mask blocked events so they can never surface in recommendations.
+    # The model's blocked slice nudges embeddings apart but isn't a guarantee —
+    # this ensures a user's explicitly blocked events are always excluded.
+    for i, user_id in enumerate(users):
+        interactions = client.query(
+            "data_ml/eventRec:getInteractionsByUserId", {"userId": user_id}
+        )
+        blocked_ids = {r["eventId"] for r in interactions if r["interactionType"] == "blocked"}
+        for j, eid in enumerate(event_ids):
+            if eid in blocked_ids:
+                scores[i, j] = -1.0
+
     k = min(k, scores.shape[1])
     top_scores, top_indices = torch.topk(scores, k=k, dim=1)
 
@@ -125,11 +137,16 @@ def main(users: list[str], update_db: bool, k: int = 10) -> None:
     if update_db:
         pass
     else:
+        all_users_rows = client.query("data_ml/universal:queryAll", {"table_name": "users"})
+        all_events_rows = client.query("data_ml/universal:queryAll", {"table_name": "events"})
+        user_name = {row["_id"]: row["name"] for row in all_users_rows}
+        event_name = {row["_id"]: row["name"] for row in all_events_rows}
+
         for user_id in users:
-            print(f"\nUser {user_id}:")
+            print(f"\n{user_name.get(user_id, user_id)}:")
             for rank, rec in enumerate(recommendations[user_id], start=1):
                 event_id, score = next(iter(rec.items()))
-                print(f"  {rank}. {event_id}: {score:.4f}")
+                print(f"  {rank}. {event_name.get(event_id, event_id)}: {score:.4f}")
 
 
 USERS     = ["ALL"]

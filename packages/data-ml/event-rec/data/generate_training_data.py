@@ -433,6 +433,12 @@ def mine_triplets(
 
     for u_idx in range(len(user_features)):
         scores = sim[u_idx]                    # (E,)
+
+        # Skip cold-start users — zero attended vector means all cosine scores
+        # are identical, so any triplets mined here are pure noise
+        if scores.max() - scores.min() < 1e-6:
+            continue
+
         ranked = np.argsort(scores)[::-1]      # (E,) sorted indices
 
         pos_pool = ranked[:30].tolist()

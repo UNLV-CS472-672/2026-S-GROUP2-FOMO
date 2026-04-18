@@ -85,10 +85,10 @@ def _load_offline(data_dir:   str, batch_size: int = 32) -> tuple[DataLoader[Eve
 def _load_online(batch_size: int = 32) -> tuple[DataLoader[EventRecDataset], DataLoader[EventRecDataset]]:
     """Pull live data from Convex."""
     from utils.utils import get_client
-    from updateUserPreferences import _init_tags, build_user_feature_vector, NUM_TAGS
+    from updateUserPreferences import init_tags, build_user_feature_vector, NUM_TAGS
 
     client = get_client()
-    _init_tags()
+    init_tags()
 
     # ── Users
     users    = client.query("data_ml/universal:queryAll", {"table_name": "users"})

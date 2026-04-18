@@ -150,6 +150,8 @@ def build_user_feature_vector(user_id: str) -> np.ndarray:
 def main(users: list[str], update_db: bool) -> None:
     init_tags()
 
+    print(TAG_ID_TO_IDX)
+
     if len(users) == 1 and users[0] == "ALL":
         all_users = get_client().query("data_ml/universal:queryAll", {"table_name": "users"})
         users = [row["_id"] for row in all_users]
@@ -180,7 +182,7 @@ def main(users: list[str], update_db: bool) -> None:
 
 
 USERS = ["ALL"]
-UPDATE_DB = True
+UPDATE_DB = False
 
 if __name__ == "__main__":
     main(USERS, UPDATE_DB)
