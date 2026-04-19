@@ -229,6 +229,52 @@ export const seed = mutation({
       { eventId: e9, tagId: tagIds['culture'] },
       { eventId: e9, tagId: tagIds['fits'] },
       { eventId: e9, tagId: tagIds['thrift'] },
+
+      { eventId: e10, tagId: tagIds['chinatown'] },
+      { eventId: e10, tagId: tagIds['culture'] },
+      { eventId: e10, tagId: tagIds['food'] },
+      { eventId: e10, tagId: tagIds['vendors'] },
+      { eventId: e10, tagId: tagIds['music'] },
+      // e11: UNLV Career & Culture Fair — college/fair/insightful/study/vendors
+      { eventId: e11, tagId: tagIds['college'] },
+      { eventId: e11, tagId: tagIds['fair'] },
+      { eventId: e11, tagId: tagIds['insightful'] },
+      { eventId: e11, tagId: tagIds['study'] },
+      { eventId: e11, tagId: tagIds['vendors'] },
+      // e12: Vegas Streetwear Market — fits/clothes/thrift/vendors/culture
+      { eventId: e12, tagId: tagIds['fits'] },
+      { eventId: e12, tagId: tagIds['clothes'] },
+      { eventId: e12, tagId: tagIds['thrift'] },
+      { eventId: e12, tagId: tagIds['vendors'] },
+      { eventId: e12, tagId: tagIds['culture'] },
+      // e13: Desert Rap Cypher — rap/wild/music/party/college
+      { eventId: e13, tagId: tagIds['rap'] },
+      { eventId: e13, tagId: tagIds['wild'] },
+      { eventId: e13, tagId: tagIds['music'] },
+      { eventId: e13, tagId: tagIds['party'] },
+      { eventId: e13, tagId: tagIds['college'] },
+      // e14: Downtown Art Walk — art/culture/insightful/fair
+      { eventId: e14, tagId: tagIds['art'] },
+      { eventId: e14, tagId: tagIds['culture'] },
+      { eventId: e14, tagId: tagIds['insightful'] },
+      { eventId: e14, tagId: tagIds['fair'] },
+      // e15: Sunset Chill Fest — chill/r&b/food/music/drink
+      { eventId: e15, tagId: tagIds['chill'] },
+      { eventId: e15, tagId: tagIds['r&b'] },
+      { eventId: e15, tagId: tagIds['food'] },
+      { eventId: e15, tagId: tagIds['music'] },
+      { eventId: e15, tagId: tagIds['drink'] },
+      // e16: Neon Birthday Bash — birthday/party/wild/drink/music
+      { eventId: e16, tagId: tagIds['birthday'] },
+      { eventId: e16, tagId: tagIds['party'] },
+      { eventId: e16, tagId: tagIds['wild'] },
+      { eventId: e16, tagId: tagIds['drink'] },
+      { eventId: e16, tagId: tagIds['music'] },
+      // e17: UNLV Anime Club Screening — anime/comics/college/chill
+      { eventId: e17, tagId: tagIds['anime'] },
+      { eventId: e17, tagId: tagIds['comics'] },
+      { eventId: e17, tagId: tagIds['college'] },
+      { eventId: e17, tagId: tagIds['chill'] },
     ];
     for (const pair of eventTagPairs) {
       const existing = await ctx.db

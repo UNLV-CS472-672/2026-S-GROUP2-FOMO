@@ -26,8 +26,6 @@ NUM_TAGS = 0
 TAG_ID_TO_IDX: dict[str, int] = {}
 
 
-# ── Tag/event helpers
-
 def init_tags() -> None:
     """init tags"""
     global NUM_TAGS, TAG_ID_TO_IDX
@@ -54,8 +52,6 @@ def build_matrix(event_ids: list[str]) -> np.ndarray:
     return np.array([event_multihot(eid) for eid in event_ids], dtype=np.float32)
 
 
-# ── Weight formula
-
 def build_weights(mat: np.ndarray, row_weight: float = 1.0) -> np.ndarray:
     """
     Converts an (n_events, num_tags) matrix into a (num_tags,) bounded weight vector.
@@ -75,8 +71,6 @@ def build_weights(mat: np.ndarray, row_weight: float = 1.0) -> np.ndarray:
 
     return (1.0 - np.exp(-(tag_weights + BETA) / TAU)).astype(np.float32)
 
-
-# ── Per-user feature building
 
 def get_interaction_ids(user_id: str) -> tuple[list[str], list[str], list[str]]:
     """
@@ -123,8 +117,6 @@ def build_user_feature_vector(user_id: str) -> np.ndarray:
 
     return np.concatenate([att_weights, int_weights, blk_weights]).astype(np.float32)
 
-
-# ── Main
 
 def main(users: list[str], update_db: bool) -> None:
     init_tags()

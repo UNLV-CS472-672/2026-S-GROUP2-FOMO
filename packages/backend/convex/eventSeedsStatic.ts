@@ -120,6 +120,94 @@ export const eventSeeds: EventSeed[] = [
       h3Index: '892986b9c2fffff',
     },
   },
+
+  // New events to test rec engine
+  {
+    name: 'Chinatown Night Market',
+    organization: 'Las Vegas Chinatown Plaza',
+    description:
+      'Street food, vendors, live music, and cultural performances in the heart of Chinatown.',
+    location: {
+      latitude: 36.12201837345691,
+      longitude: -115.19872034567823,
+      h3Index: '892986b8113ffff',
+    },
+  },
+  {
+    name: 'UNLV Career & Culture Fair',
+    organization: 'UNLV Student Affairs',
+    description:
+      'Network with employers, student orgs, and campus resources. Free food and giveaways.',
+    location: {
+      latitude: 36.10812345678901,
+      longitude: -115.14123456789012,
+      h3Index: '892986b8647ffff',
+    },
+  },
+  {
+    name: 'Vegas Streetwear Market',
+    organization: 'Desert Drip Collective',
+    description:
+      'Local and independent streetwear brands, vintage fits, and live customization booths.',
+    location: {
+      latitude: 36.16234567890123,
+      longitude: -115.14567890123456,
+      h3Index: '892986b989bffff',
+    },
+  },
+  {
+    name: 'Desert Rap Cypher',
+    organization: 'Vegas Underground',
+    description: 'Open mic rap cypher. Bring your bars or just pull up and vibe. No gatekeeping.',
+    location: {
+      latitude: 36.15123456789012,
+      longitude: -115.16234567890123,
+      h3Index: '892986b9ddbffff',
+    },
+  },
+  {
+    name: 'Downtown Art Walk',
+    organization: '18b Arts District',
+    description:
+      'Self-guided tour of galleries, murals, and pop-up installations across the 18b Arts District.',
+    location: {
+      latitude: 36.17234567890123,
+      longitude: -115.14890123456789,
+      h3Index: '892986b9803ffff',
+    },
+  },
+  {
+    name: 'Sunset Chill Fest',
+    organization: 'Sunset Park Events',
+    description:
+      'Laid-back outdoor hangout with food trucks, r&b sets, and lawn games at Sunset Park.',
+    location: {
+      latitude: 36.03912345678901,
+      longitude: -115.14678901234567,
+      h3Index: '89298685b73ffff',
+    },
+  },
+  {
+    name: 'Neon Birthday Bash',
+    organization: 'Private Event',
+    description: 'Annual neon-themed birthday party. BYOF (bring your own fits). Open bar for 21+.',
+    location: {
+      latitude: 36.11456789012345,
+      longitude: -115.17123456789012,
+      h3Index: '892986b8003ffff',
+    },
+  },
+  {
+    name: 'UNLV Anime Club Screening',
+    organization: 'UNLV Anime Club',
+    description:
+      'Monthly screening night. This month: Frieren. Snacks provided, cosplay encouraged.',
+    location: {
+      latitude: 36.10678901234567,
+      longitude: -115.14234567890123,
+      h3Index: '892986b8647ffff',
+    },
+  },
 ];
 
 /** Parallel to `eventSeeds` — used by seed handler and mobile search. */

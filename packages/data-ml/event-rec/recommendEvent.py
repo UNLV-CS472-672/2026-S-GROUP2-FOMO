@@ -75,7 +75,7 @@ def get_event_features(client: ConvexClient, num_tags: int, tag_id_to_idx: dict[
 def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> None:
     client = get_client()
 
-    # ── Preprocessing
+    # Preprocessing
     num_tags, tag_id_to_idx = get_tag_info(client)
 
     if len(users) == 1 and users[0] == "ALL":
@@ -86,7 +86,7 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
     event_ids, event_array = get_event_features(client, num_tags, tag_id_to_idx)
     event_features         = torch.from_numpy(event_array).to(DEVICE)
 
-    # ── Load model
+    # Load model
     user_tower  = UserTower(num_tags=num_tags).to(DEVICE)
     event_tower = EventTower(num_tags=num_tags).to(DEVICE)
 
@@ -104,12 +104,9 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
     raw_scores = user_embeddings @ event_embeddings.T
     scores = (raw_scores + 1.0) / 2.0
 
-    # ── Hard-mask blocked events so they can never surface in recommendations.
-    # The model's blocked slice nudges embeddings apart but isn't a guarantee
+    # Hard mask blocked events so they can never surface in recommendations.
     for i, user_id in enumerate(users):
-        interactions = client.query(
-            "data_ml/eventRec:getInteractionsByUserId", {"userId": user_id}
-        )
+        interactions = client.query("data_ml/eventRec:getInteractionsByUserId", {"userId": user_id})
         blocked_ids = {r["eventId"] for r in interactions if r["interactionType"] == "blocked"}
         for j, eid in enumerate(event_ids):
             if eid in blocked_ids:
@@ -118,7 +115,7 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
     k = min(k, scores.shape[1])
     top_scores, top_indices = torch.topk(scores, k=k, dim=1)
 
-    # ── Build recommendations
+    # Build recommendations
     recommendations: dict[str, list[dict]] = {}
     for i, user_id in enumerate(users):
         recommendations[user_id] = [
@@ -126,7 +123,7 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
             for rank, event_idx in enumerate(top_indices[i].tolist())
         ]
 
-    # ── Write to Convex / Print
+    # Write to Convex / Print
     if update_db:
         pass
     else:
@@ -154,7 +151,7 @@ USERS = ["ALL"]
 UPDATE_DB = False
 
 if __name__ == "__main__":
-    main(USERS, UPDATE_DB, 'models/model12.pt')
+    main(USERS, UPDATE_DB, 'models/curr_model.pt')
 
 """ 
 TODO: 

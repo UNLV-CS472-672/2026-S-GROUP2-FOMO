@@ -28,8 +28,6 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from typing import Any, Optional
 
 
-# ── Dataset ────────────────────────────────────────────────────────────────────
-
 class EventRecDataset(Dataset[Any]):
     """
     Each sample is a BPR triplet:
@@ -61,7 +59,6 @@ class EventRecDataset(Dataset[Any]):
         return user, pos, neg
 
 
-# ── Loaders
 def _make_loaders(dataset: EventRecDataset ,batch_size: int = 32) -> tuple[DataLoader[EventRecDataset], DataLoader[EventRecDataset]]:
     train_size = int(0.8 * len(dataset))
     test_size  = len(dataset) - train_size
@@ -81,6 +78,7 @@ def _load_offline(data_dir:   str, batch_size: int = 32) -> tuple[DataLoader[Eve
     return _make_loaders(dataset, batch_size)
 
 
+# Idk if this work :)
 def _load_online(batch_size: int = 32) -> tuple[DataLoader[EventRecDataset], DataLoader[EventRecDataset]]:
     """Pull live data from Convex."""
     from utils.utils import get_client
@@ -89,7 +87,7 @@ def _load_online(batch_size: int = 32) -> tuple[DataLoader[EventRecDataset], Dat
     client = get_client()
     init_tags()
 
-    # ── Users
+    # Users
     users    = client.query("data_ml/universal:queryAll", {"table_name": "users"})
     user_ids = [u["_id"] for u in users]
     np.random.shuffle(user_ids)
@@ -99,7 +97,7 @@ def _load_online(batch_size: int = 32) -> tuple[DataLoader[EventRecDataset], Dat
         dtype=np.float32,
     )
 
-    # ── Events: build (num_tags + 4) feature vectors
+    # Events: build (num_tags + 4) feature vectors
     all_events = client.query("data_ml/universal:queryAll", {"table_name": "events"})
 
     event_rows = []

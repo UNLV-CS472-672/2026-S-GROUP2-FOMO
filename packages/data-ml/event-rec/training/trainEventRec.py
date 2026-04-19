@@ -65,7 +65,7 @@ def main(epochs: int = 150, model_path: str | None = None) -> None:
 
     try:
         for epoch in range(epochs):
-            # ── Training
+            # Training
             user_tower.train()
             event_tower.train()
 
@@ -80,7 +80,7 @@ def main(epochs: int = 150, model_path: str | None = None) -> None:
 
             avg_loss = total_loss / len(train_loader)
 
-            # ── Evaluation
+            # Eval
             user_tower.eval()
             event_tower.eval()
 
@@ -103,7 +103,7 @@ def main(epochs: int = 150, model_path: str | None = None) -> None:
             # Step scheduler after eval each epoch
             trainer.step_scheduler()
 
-            # ── Save best checkpoint
+            # Save best checkpoint
             if avg_eval < best_eval_loss:
                 best_eval_loss = avg_eval
                 best_state = {
