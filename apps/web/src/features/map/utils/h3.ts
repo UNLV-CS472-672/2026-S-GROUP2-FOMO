@@ -1,5 +1,5 @@
-import type { FeatureCollection, Point, Polygon } from 'geojson';
-import { cellToBoundary, latLngToCell } from 'h3-js';
+import type { FeatureCollection, Point } from 'geojson';
+import { latLngToCell } from 'h3-js';
 
 // Convert array of longitude, latitude, weight points to a GeoJSON FeatureCollection for heatmap
 export function pointsToGeoJSON(
@@ -26,25 +26,4 @@ export const H3_RESOLUTION = 9;
  */
 export function coordsToH3Cell(longitude: number, latitude: number): string {
   return latLngToCell(latitude, longitude, H3_RESOLUTION);
-}
-
-// Convert array of h3Index and count from events to a GeoJSON FeatureCollection
-export function activityToGeoJSON(
-  cells: { h3Index: string; count: number }[]
-): FeatureCollection<Polygon, { h3Index: string; count: number }> {
-  return {
-    type: 'FeatureCollection',
-    features: cells.map(({ h3Index, count }) => {
-      // cellToBoundary returns [lat, lng]; flip to [lng, lat] for Mapbox
-      const boundary = cellToBoundary(h3Index).map(([lat, lng]) => [lng, lat] as [number, number]);
-      return {
-        type: 'Feature',
-        geometry: {
-          type: 'Polygon',
-          coordinates: [[...boundary, boundary[0]]],
-        },
-        properties: { h3Index, count },
-      };
-    }),
-  };
 }
