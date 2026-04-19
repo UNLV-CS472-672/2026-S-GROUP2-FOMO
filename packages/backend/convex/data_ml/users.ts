@@ -13,17 +13,20 @@ export const userExists = query({
   },
 });
 
-// Unique user ids that have at least one row in `usersToEvents` (i.e. attended an event).
-// Ensures that getting all user ids doesn't break later recommendation steps, mainly for the
-// similarity score logic as it would raise a KeyError. Can also be changed to get all user Ids in the future.
-export const getUserIdsWithEventAttendance = query({
+// Extracts all userIds from the `users` table.
+export const getAllUserIds = query({
   args: {},
   handler: async (ctx) => {
-    const rows = await ctx.db.query('usersToEvents').collect();
-    const uniqueUserIds = new Set<string>();
-    for (const row of rows) {
-      uniqueUserIds.add(row.userId);
-    }
-    return Array.from(uniqueUserIds);
+    const users = await ctx.db.query('users').collect();
+    return users.map((user) => user._id);
+  },
+});
+
+// Given a "userId", return "name".
+export const getNameById = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    return user?.name ?? null;
   },
 });
