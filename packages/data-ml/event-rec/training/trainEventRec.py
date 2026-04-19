@@ -128,4 +128,4 @@ def main(epochs: int = 150, model_path: str | None = None) -> None:
 
 
 if __name__ == "__main__":
-    main(model_path='models/model11_interrupted.pt')
+    main(model_path=None)
