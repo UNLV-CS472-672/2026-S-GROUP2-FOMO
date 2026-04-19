@@ -1,5 +1,6 @@
 import PostGrid from '@/components/ui/post-grid';
 import { Screen } from '@/components/ui/screen';
+import { openDirections } from '@/features/map/utils/directions';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
@@ -18,6 +19,8 @@ interface Event {
   image: any;
   description: string;
   posts: GridPost[];
+  location: { latitude: number; longitude: number };
+  name: string;
 }
 
 const EVENT_IMAGES = [
@@ -52,6 +55,8 @@ export default function EventDetails() {
       image: EVENT_IMAGES[eventDetail.imageIndex % EVENT_IMAGES.length],
       description: `${eventDetail.name}\n${eventDetail.organization}\n${eventDetail.attendeeCount} attending\n\n${eventDetail.description}`,
       posts: SAMPLE_POSTS,
+      location: eventDetail.location,
+      name: eventDetail.name,
     };
   }, [eventDetail]);
 
@@ -88,15 +93,28 @@ export default function EventDetails() {
               {event.description}
             </Text>
           </View>
-          <TouchableOpacity
-            className="h-12 w-12 items-center justify-center rounded-full border border-border bg-background"
-            activeOpacity={0.75}
-            onPress={() => {}}
-            accessibilityRole="button"
-            accessibilityLabel="Like post"
-          >
-            <Ionicons name="heart" size={24} color={theme.mutedText} />
-          </TouchableOpacity>
+          <View className="gap-3">
+            <TouchableOpacity
+              className="h-12 w-12 items-center justify-center rounded-full border border-border bg-background"
+              activeOpacity={0.75}
+              onPress={() => {}}
+              accessibilityRole="button"
+              accessibilityLabel="Like post"
+            >
+              <Ionicons name="heart" size={24} color={theme.mutedText} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="h-12 w-12 items-center justify-center rounded-full border border-border bg-background"
+              activeOpacity={0.75}
+              onPress={() =>
+                openDirections(event.location.latitude, event.location.longitude, event.name)
+              }
+              accessibilityRole="button"
+              accessibilityLabel="Get directions"
+            >
+              <Ionicons name="navigate" size={24} color={theme.mutedText} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View className="w-[60%] overflow-hidden rounded-2xl border border-border bg-background">
