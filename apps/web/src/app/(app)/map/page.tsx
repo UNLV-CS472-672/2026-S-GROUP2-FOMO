@@ -15,6 +15,7 @@ import {
 import { api } from '@fomo/backend/convex/_generated/api';
 import { env } from '@fomo/env/web';
 import { useQuery } from 'convex/react';
+import { Navigation } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
@@ -338,60 +339,76 @@ export default function MapPage() {
     };
   }, [sidebarState]);
 
+  function handleRecenter() {
+    if (!mapRef.current || !locationGranted) return;
+    mapRef.current.flyTo({ center: centerCoordinate, zoom: 13, duration: 1200 });
+  }
+
   return (
-    <section className="absolute inset-0 h-full w-full overflow-hidden bg-[#05070b]">
-      {staticMapSrc ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={staticMapSrc}
-          alt="Map"
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${mapReady ? 'opacity-0' : 'opacity-100'}`}
+    <>
+      <section className="absolute inset-0 h-full w-full overflow-hidden bg-[#05070b]">
+        {staticMapSrc ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={staticMapSrc}
+            alt="Map"
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${mapReady ? 'opacity-0' : 'opacity-100'}`}
+          />
+        ) : null}
+
+        <div
+          ref={mapContainerRef}
+          className={`absolute inset-0 h-full w-full transition-opacity duration-300 ${mapReady ? 'opacity-100' : 'opacity-0'}`}
         />
-      ) : null}
 
-      <div
-        ref={mapContainerRef}
-        className={`absolute inset-0 h-full w-full transition-opacity duration-300 ${mapReady ? 'opacity-100' : 'opacity-0'}`}
-      />
+        {loadError ? (
+          <div className="absolute inset-x-4 bottom-4 z-10 rounded-xl border border-red-400/30 bg-black/70 px-4 py-3 text-sm text-red-100 backdrop-blur">
+            {loadError}
+          </div>
+        ) : null}
 
-      {loadError ? (
-        <div className="absolute inset-x-4 bottom-4 z-10 rounded-xl border border-red-400/30 bg-black/70 px-4 py-3 text-sm text-red-100 backdrop-blur">
-          {loadError}
-        </div>
-      ) : null}
-
-      <style jsx>{`
-        .mapbox-location-puck {
-          position: relative;
-          width: 18px;
-          height: 18px;
-          border-radius: 9999px;
-          border: 2px solid rgba(255, 255, 255, 0.95);
-          background: #4a90d9;
-          box-shadow: 0 0 0 10px rgba(74, 144, 217, 0.18);
-        }
-
-        .mapbox-location-puck::after {
-          content: '';
-          position: absolute;
-          inset: -16px;
-          border-radius: 9999px;
-          background: rgba(74, 144, 217, 0.16);
-          animation: mapbox-pulse 1.8s ease-out infinite;
-        }
-
-        @keyframes mapbox-pulse {
-          0% {
-            transform: scale(0.5);
-            opacity: 0.85;
+        <style jsx>{`
+          .mapbox-location-puck {
+            position: relative;
+            width: 18px;
+            height: 18px;
+            border-radius: 9999px;
+            border: 2px solid rgba(255, 255, 255, 0.95);
+            background: #4a90d9;
+            box-shadow: 0 0 0 10px rgba(74, 144, 217, 0.18);
           }
 
-          100% {
-            transform: scale(1.4);
-            opacity: 0;
+          .mapbox-location-puck::after {
+            content: '';
+            position: absolute;
+            inset: -16px;
+            border-radius: 9999px;
+            background: rgba(74, 144, 217, 0.16);
+            animation: mapbox-pulse 1.8s ease-out infinite;
           }
-        }
-      `}</style>
-    </section>
+
+          @keyframes mapbox-pulse {
+            0% {
+              transform: scale(0.5);
+              opacity: 0.85;
+            }
+
+            100% {
+              transform: scale(1.4);
+              opacity: 0;
+            }
+          }
+        `}</style>
+      </section>
+
+      <button
+        aria-label="Recenter map on your location"
+        disabled={!locationGranted}
+        onClick={handleRecenter}
+        className="fixed bottom-6 right-5 z-50 flex size-12 items-center justify-center rounded-full bg-card shadow-sm transition-opacity active:opacity-90 active:scale-[0.96] disabled:opacity-55"
+      >
+        <Navigation size={20} className="text-primary" />
+      </button>
+    </>
   );
 }
