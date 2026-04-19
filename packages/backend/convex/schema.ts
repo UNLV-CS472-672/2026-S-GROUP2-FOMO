@@ -4,7 +4,7 @@ import { v } from 'convex/values';
 export default defineSchema({
   users: defineTable({
     name: v.string(),
-    clerkId: v.string(), // Clerk `tokenIdentifier`
+    clerkId: v.string(), // Clerk user id (`clerkId` JWT claim; Convex may still expose legacy `tokenIdentifier`)
   })
     .index('by_clerkId', ['clerkId'])
     .index('by_name', ['name']),

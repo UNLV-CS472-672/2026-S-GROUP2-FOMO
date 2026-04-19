@@ -1,65 +1,41 @@
+import { friends, type Friend } from '@/app/(tabs)/profile/friends-data';
 import FriendCell from '@/components/profile/friend-cell';
 import { Screen } from '@/components/ui/screen';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { useQuery } from 'convex/react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import type { ImageSourcePropType } from 'react-native';
-import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-type Friend = { username: string; realName?: string; imageSource: ImageSourcePropType };
+type FriendRec = { userId: string; score: number };
 
 /** Friends UI from this screen; embed in profile or use via {@link FriendsScreen}. */
 export function FriendsScreenContent() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{ source?: string | string[] }>();
   const theme = useAppTheme();
   const [searchText, setSearchText] = useState('');
   const [isRecommendedCollapsed, setIsRecommendedCollapsed] = useState(false);
+  const source = Array.isArray(params.source) ? params.source[0] : params.source;
+  const showRecommendedFriends = source !== 'visit-friend-profile';
 
   const friendRecResult = useQuery(api.data_ml.friends.getFriendRecs);
 
   const recommendedFriends = useMemo<Friend[]>(
     () =>
       (friendRecResult?.recs ?? []).map((rec) => ({
+        id: rec.userId,
         username: rec.userId,
         realName: `Score: ${rec.score.toFixed(2)}`,
         imageSource: require('@/assets/images/icon.png'),
+        posts: {
+          all: [],
+          recent: [],
+          tagged: [],
+        },
       })),
     [friendRecResult]
-  );
-
-  const friends = useMemo<Friend[]>(
-    () => [
-      {
-        username: 'PMA',
-        realName: 'Nathan K',
-        imageSource: require('@/assets/images/icon.png'),
-      },
-      {
-        username: 'heptahedron',
-        imageSource: require('@/assets/images/android-icon-foreground.png'),
-      },
-      {
-        username: 'NDP',
-        realName: 'Nathan D P',
-        imageSource: require('@/assets/images/android-icon-monochrome.png'),
-      },
-      {
-        username: 'Akeegaii',
-        realName: 'Reecius',
-        imageSource: require('@/assets/images/splash-icon.png'),
-      },
-      {
-        username: 'StJimmy',
-        realName: 'Jimmy D',
-        imageSource: require('@/assets/images/favicon.png'),
-      },
-      {
-        username: 'MaymuzuD',
-        realName: 'Danyella M',
-        imageSource: require('@/assets/images/partial-react-logo.png'),
-      },
-    ],
-    []
   );
 
   const filteredRecommended = useMemo(() => {
@@ -76,8 +52,8 @@ export function FriendsScreenContent() {
     );
   }, [friends, searchText]);
 
-  const handleFriendPress = (username: string) => {
-    Alert.alert('Friend selected', username);
+  const handleFriendPress = (friendId: string) => {
+    router.push(`/profile/visit-friend-profile?id=${friendId}`);
   };
 
   return (
@@ -95,37 +71,41 @@ export function FriendsScreenContent() {
       </View>
 
       {/* Recommended Friends */}
-      <View className="mb-4 border-y border-border">
-        <TouchableOpacity
-          onPress={() => setIsRecommendedCollapsed((current) => !current)}
-          className="flex-row items-center justify-between px-4 py-3"
-          accessibilityRole="button"
-          accessibilityLabel="Toggle recommended friends"
-        >
-          <Text className="text-lg font-bold text-foreground">Recommended Friends</Text>
-          <Text className="text-sm text-muted-foreground">
-            {isRecommendedCollapsed ? 'Show' : 'Hide'}
-          </Text>
-        </TouchableOpacity>
+      {showRecommendedFriends ? (
+        <View className="mb-4 border-y border-border">
+          <TouchableOpacity
+            onPress={() => setIsRecommendedCollapsed((current) => !current)}
+            className="flex-row items-center justify-between px-4 py-3"
+            accessibilityRole="button"
+            accessibilityLabel="Toggle recommended friends"
+          >
+            <Text className="text-lg font-bold text-foreground">Recommended Friends</Text>
+            <Text className="text-sm text-muted-foreground">
+              {isRecommendedCollapsed ? 'Show' : 'Hide'}
+            </Text>
+          </TouchableOpacity>
 
-        {!isRecommendedCollapsed && (
-          <View className="px-4 pb-1">
-            {filteredRecommended.length > 0 ? (
-              filteredRecommended.map((f) => (
-                <FriendCell
-                  key={f.username}
-                  username={f.username}
-                  realName={f.realName}
-                  imageSource={f.imageSource}
-                  onPress={() => handleFriendPress(f.username)}
-                />
-              ))
-            ) : (
-              <Text className="py-2 text-sm text-muted-foreground">No recommendations found.</Text>
-            )}
-          </View>
-        )}
-      </View>
+          {!isRecommendedCollapsed && (
+            <View className="px-4 pb-1">
+              {filteredRecommended.length > 0 ? (
+                filteredRecommended.map((f) => (
+                  <FriendCell
+                    key={f.id}
+                    username={f.username}
+                    realName={f.realName}
+                    imageSource={f.imageSource}
+                    onPress={() => handleFriendPress(f.id)}
+                  />
+                ))
+              ) : (
+                <Text className="py-2 text-sm text-muted-foreground">
+                  No recommendations found.
+                </Text>
+              )}
+            </View>
+          )}
+        </View>
+      ) : null}
 
       {/* Friends List */}
       <View className="border-y border-border">
@@ -136,11 +116,11 @@ export function FriendsScreenContent() {
           {filteredFriends.length > 0 ? (
             filteredFriends.map((f) => (
               <FriendCell
-                key={f.username}
+                key={f.id}
                 username={f.username}
                 realName={f.realName}
                 imageSource={f.imageSource}
-                onPress={() => handleFriendPress(f.username)}
+                onPress={() => handleFriendPress(f.id)}
               />
             ))
           ) : (
@@ -155,7 +135,7 @@ export function FriendsScreenContent() {
 export default function FriendsScreen() {
   return (
     <Screen className="flex-1">
-      <ScrollView className="flex-1 bg-background pt-20" contentContainerClassName="pb-6">
+      <ScrollView className="flex-1 bg-background pt-5" contentContainerClassName="pb-6">
         <FriendsScreenContent />
       </ScrollView>
     </Screen>

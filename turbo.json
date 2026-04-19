@@ -1,11 +1,17 @@
 {
-  "$schema": "https://v2-9-5.turborepo.dev/schema.json",
+  "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/.env.*local"],
   "globalEnv": ["ANDROID_HOME", "ANDROID_SDK_ROOT"],
   "tasks": {
     "build": {
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "env": [
+        "CLERK_SECRET_KEY",
+        "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+        "NEXT_PUBLIC_CONVEX_URL",
+        "NEXT_PUBLIC_MAPBOX_TOKEN"
+      ]
     },
     "dev": {
       "cache": false,
@@ -18,6 +24,10 @@
     "dev:android": {
       "cache": false,
       "persistent": true
+    },
+    "test": {},
+    "test:coverage": {
+      "outputs": ["coverage/**"]
     },
     "lint": {},
     "typecheck": {},

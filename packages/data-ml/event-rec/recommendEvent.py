@@ -168,5 +168,8 @@ TODO:
                  some weights if a user hasn't attended an event with said tag for the past X events.
                  Idk how to really do that with a running weight adjustment though
     3. (recommendEvent.py) Need to fix day_norm, hour_norm, and is_free fields in get_event_features. Commented "FIX:" at the spot
-    4. (All) UNIT TESTS
+    4. (recommendEvent.py) Need to push recs to DB
+    5. (All) UNIT TESTS
+    6. (Optional): updateUserPreferences and this file may have some repetitive code, could add to utils file. If nothing needs to be added there
+                   then we should just remove utils. Theres nothing really of use in there right now.
 """
