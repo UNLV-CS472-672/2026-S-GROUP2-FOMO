@@ -16,6 +16,7 @@ import { api } from '@fomo/backend/convex/_generated/api';
 import { env } from '@fomo/env/web';
 import { useQuery } from 'convex/react';
 import { useTheme } from 'next-themes';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 const MAPBOX_TOKEN = env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
@@ -24,10 +25,19 @@ const emptySubscribe = () => () => {};
 const HEATMAP_SOURCE = 'activity';
 const HEATMAP_LAYER = 'activity-heat';
 
+const EVENT_IMAGES = [
+  '/rigrig.jpg',
+  '/jonah-mog.png',
+  '/git-learning-class.png',
+  '/rate-my-date.jpg',
+];
+
 export default function MapPage() {
+  const router = useRouter();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapboxMap | null>(null);
   const markerRef = useRef<MapboxMarker | null>(null);
+  const eventMarkersRef = useRef<MapboxMarker[]>([]);
   const mapboxRef = useRef<MapboxGlobal | null>(null);
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
   const { resolvedTheme } = useTheme();
@@ -129,6 +139,8 @@ export default function MapPage() {
       }
       markerRef.current?.remove();
       markerRef.current = null;
+      eventMarkersRef.current.forEach((m) => m.remove());
+      eventMarkersRef.current = [];
       mapRef.current?.remove();
       mapRef.current = null;
       mapboxRef.current = null;
@@ -180,6 +192,78 @@ export default function MapPage() {
       map.off('styledata', applyHeatmap);
     };
   }, [mapReady, heatmapGeoJSON]);
+
+  // event markers sized popularity, based off mobile logic
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !mapboxRef.current) return;
+    const map = mapRef.current;
+    const mapboxgl = mapboxRef.current;
+
+    // clears event markers when refreshing
+    eventMarkersRef.current.forEach((m) => m.remove());
+    eventMarkersRef.current = [];
+
+    if (events.length === 0) return;
+
+    const weights = events.map((e) => e.attendeeCount);
+    const minWeight = Math.min(...weights);
+    const maxWeight = Math.max(...weights);
+
+    events.forEach((event, i) => {
+      const t = (event.attendeeCount - minWeight) / (maxWeight - minWeight || 1);
+      const size = 44 + t * 44;
+      const stemWidth = size * 0.28;
+      const stemHeight = size * 0.22;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'event-marker-wrapper';
+      wrapper.style.cssText = `display:flex;flex-direction:column;align-items:center;cursor:pointer;`;
+
+      const circle = document.createElement('div');
+      circle.style.cssText = `
+        width:${size}px;
+        height:${size}px;
+        border-radius:9999px;
+        border:2px solid #f59e0b;
+        overflow:hidden;
+        box-shadow:0 4px 12px rgba(0,0,0,0.35);
+      `;
+
+      const img = document.createElement('img');
+      img.src = EVENT_IMAGES[i % EVENT_IMAGES.length]!;
+      img.alt = event.name ?? 'Event';
+      img.style.cssText = `width:100%;height:100%;object-fit:cover;`;
+      circle.appendChild(img);
+
+      const stem = document.createElement('div');
+      stem.style.cssText = `
+        width:0;
+        height:0;
+        margin-top:-1px;
+        border-left:${stemWidth / 2}px solid transparent;
+        border-right:${stemWidth / 2}px solid transparent;
+        border-top:${stemHeight}px solid #f59e0b;
+      `;
+
+      wrapper.appendChild(circle);
+      wrapper.appendChild(stem);
+      wrapper.addEventListener('click', () => {
+        router.push(`/events/${event.id}`);
+      });
+
+      const marker = new mapboxgl.Marker({ element: wrapper, anchor: 'bottom' }).setLngLat([
+        event.location.longitude,
+        event.location.latitude,
+      ]);
+      marker.addTo(map);
+      eventMarkersRef.current.push(marker);
+    });
+
+    return () => {
+      eventMarkersRef.current.forEach((m) => m.remove());
+      eventMarkersRef.current = [];
+    };
+  }, [mapReady, events, router]);
 
   useEffect(() => {
     if (!mapRef.current || !mapReady) return;
