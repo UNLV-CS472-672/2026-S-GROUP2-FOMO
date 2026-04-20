@@ -299,7 +299,36 @@ export default function MapPage() {
     }
 
     const markerElement = document.createElement('div');
-    markerElement.className = 'mapbox-location-puck';
+    markerElement.style.cssText = [
+      'position:relative',
+      'width:18px',
+      'height:18px',
+      'border-radius:9999px',
+      'border:2px solid rgba(255, 255, 255, 0.95)',
+      'background:#4a90d9',
+      'box-shadow:0 0 0 10px rgba(74, 144, 217, 0.18)',
+    ].join(';');
+
+    const pulseElement = document.createElement('div');
+    pulseElement.style.cssText = [
+      'position:absolute',
+      'inset:-16px',
+      'border-radius:9999px',
+      'background:rgba(74, 144, 217, 0.16)',
+      'pointer-events:none',
+    ].join(';');
+    pulseElement.animate(
+      [
+        { transform: 'scale(0.5)', opacity: 0.85 },
+        { transform: 'scale(1.4)', opacity: 0 },
+      ],
+      {
+        duration: 1800,
+        easing: 'ease-out',
+        iterations: Number.POSITIVE_INFINITY,
+      }
+    );
+    markerElement.appendChild(pulseElement);
 
     markerRef.current?.remove();
     markerRef.current = new mapboxRef.current.Marker({ element: markerElement }).setLngLat(
@@ -366,39 +395,6 @@ export default function MapPage() {
             {loadError}
           </div>
         ) : null}
-
-        <style jsx>{`
-          .mapbox-location-puck {
-            position: relative;
-            width: 18px;
-            height: 18px;
-            border-radius: 9999px;
-            border: 2px solid rgba(255, 255, 255, 0.95);
-            background: #4a90d9;
-            box-shadow: 0 0 0 10px rgba(74, 144, 217, 0.18);
-          }
-
-          .mapbox-location-puck::after {
-            content: '';
-            position: absolute;
-            inset: -16px;
-            border-radius: 9999px;
-            background: rgba(74, 144, 217, 0.16);
-            animation: mapbox-pulse 1.8s ease-out infinite;
-          }
-
-          @keyframes mapbox-pulse {
-            0% {
-              transform: scale(0.5);
-              opacity: 0.85;
-            }
-
-            100% {
-              transform: scale(1.4);
-              opacity: 0;
-            }
-          }
-        `}</style>
       </section>
 
       <button
