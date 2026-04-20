@@ -162,7 +162,7 @@ function parseCoordinate(value?: string): number | null {
 }
 
 function uniqueEventKey(event: NormalizedEvent): string {
-  return `${event.name.trim().toLowerCase()}::${event.organization.trim().toLowerCase()}`;
+  return `${event.name.trim().toLowerCase()}::${event.organization.trim().toLowerCase()}::${event.startDate}`;
 }
 
 function candidateEventKey(event: TicketmasterEvent): string | null {
@@ -330,35 +330,39 @@ export const upsertNormalizedEvents = internalMutation({
     let unchanged = 0;
 
     for (const event of events) {
-      const candidates = await ctx.db
-        .query('events')
-        .withIndex('by_startDate', (q) => q.eq('startDate', event.startDate))
-        .collect();
-
-      const exactMatch = candidates.find(
-        (candidate) =>
-          candidate.name === event.name && candidate.organization === event.organization
-      );
-      const sameNameMatch = candidates.find((candidate) => candidate.name === event.name);
-      const existing = exactMatch ?? sameNameMatch;
+      const externalKey = uniqueEventKey(event);
+      const existing = await ctx.db
+        .query('externalEvents')
+        .withIndex('by_externalKey', (q) => q.eq('externalKey', externalKey))
+        .unique();
 
       if (!existing) {
-        await ctx.db.insert('events', event);
+        await ctx.db.insert('externalEvents', {
+          externalKey,
+          name: event.name,
+          organization: event.organization,
+          caption: event.description,
+          startDate: event.startDate,
+          endDate: event.endDate,
+          location: event.location,
+        });
         inserted += 1;
         continue;
       }
 
       if (
         existing.organization !== event.organization ||
-        existing.description !== event.description ||
+        existing.caption !== event.description ||
         existing.endDate !== event.endDate ||
         existing.location?.latitude !== event.location.latitude ||
         existing.location?.longitude !== event.location.longitude ||
         existing.location?.h3Index !== event.location.h3Index
       ) {
         await ctx.db.patch(existing._id, {
+          externalKey,
+          name: event.name,
           organization: event.organization,
-          description: event.description,
+          caption: event.description,
           endDate: event.endDate,
           location: event.location,
         });

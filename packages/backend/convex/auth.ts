@@ -17,6 +17,10 @@ async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
   return identity as ClerkIdentity;
 }
 
+function usernameFromIdentity(identity: ClerkIdentity): string {
+  return identity.nickname ?? clerkIdFromIdentity(identity);
+}
+
 async function getConvexUserRowForIdentity(
   ctx: QueryCtx,
   identity: ClerkIdentity
@@ -92,8 +96,9 @@ export const ensureCurrentUser = mutation({
     // New Clerk user: `clerkId` must match the stable id on `ctx.auth` (Clerk `clerkId` claim).
     return await ctx.db.insert('users', {
       clerkId: clerkIdFromIdentity(identity),
-      username: identity.nickname!,
-      displayName: identity.nickname!,
+      username: usernameFromIdentity(identity),
+      displayName: usernameFromIdentity(identity),
+      avatarUrl: '',
       bio: '',
       tagIds: [], // TODO :: add w/ the cold start interests later
     });

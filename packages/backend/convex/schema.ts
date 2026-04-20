@@ -1,6 +1,18 @@
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
+const sharedEventFields = {
+  name: v.string(),
+  caption: v.string(),
+  startDate: v.number(), // ms since epoch
+  endDate: v.number(), // ms since epoch
+  location: v.object({
+    latitude: v.number(),
+    longitude: v.number(),
+    h3Index: v.string(),
+  }),
+};
+
 export default defineSchema({
   users: defineTable({
     bio: v.string(), // clerk doesn't handle this
@@ -15,18 +27,20 @@ export default defineSchema({
     .index('by_username', ['username']),
 
   events: defineTable({
-    name: v.string(),
-    caption: v.string(),
-    mediaId: v.id('_storage'),
+    ...sharedEventFields,
+    mediaId: v.optional(v.id('_storage')),
     hostIds: v.array(v.id('users')),
-    startDate: v.number(), // ms since epoch
-    endDate: v.number(), // ms since epoch
-    location: v.object({
-      latitude: v.number(),
-      longitude: v.number(),
-      h3Index: v.string(),
-    }),
   })
+    .index('by_startDate', ['startDate'])
+    .index('by_endDate', ['endDate'])
+    .index('by_startDate_endDate', ['startDate', 'endDate']),
+
+  externalEvents: defineTable({
+    ...sharedEventFields,
+    externalKey: v.string(),
+    organization: v.string(),
+  })
+    .index('by_externalKey', ['externalKey'])
     .index('by_startDate', ['startDate'])
     .index('by_endDate', ['endDate'])
     .index('by_startDate_endDate', ['startDate', 'endDate']),

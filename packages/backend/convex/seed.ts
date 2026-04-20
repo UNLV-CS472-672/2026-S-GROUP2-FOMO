@@ -28,7 +28,15 @@ export const seed = mutation({
         .withIndex('by_clerkId', (q) => q.eq('clerkId', u.clerkId))
         .unique();
       userIds.push(
-        existing?._id ?? (await ctx.db.insert('users', { name: u.name, clerkId: u.clerkId }))
+        existing?._id ??
+          (await ctx.db.insert('users', {
+            clerkId: u.clerkId,
+            username: u.name.toLowerCase(),
+            displayName: u.name,
+            avatarUrl: '',
+            bio: '',
+            tagIds: [],
+          }))
       );
     }
     const [u1, u2, u3, u4, u5, u6, u7, u8, u9, u10] = userIds;
@@ -82,9 +90,12 @@ export const seed = mutation({
       eventIds.push(
         existing?._id ??
           (await ctx.db.insert('events', {
-            ...e,
+            name: e.name,
+            caption: e.description,
+            hostIds: [u1],
             startDate: Date.now() + 24 * 60 * 60 * 1000,
             endDate: Date.now() + 26 * 60 * 60 * 1000,
+            location: e.location,
           }))
       );
     }

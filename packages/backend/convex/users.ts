@@ -98,7 +98,7 @@ export const getProfileByName = query({
   handler: async (ctx, { name }) => {
     const user = await ctx.db
       .query('users')
-      .withIndex('by_name', (q) => q.eq('name', name))
+      .withIndex('by_username', (q) => q.eq('username', name))
       .first();
 
     if (!user) {
