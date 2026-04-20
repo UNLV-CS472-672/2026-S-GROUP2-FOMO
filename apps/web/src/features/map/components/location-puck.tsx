@@ -9,21 +9,13 @@ type LocationPuckMount = {
 
 export function LocationPuck() {
   return (
-    <div className="relative h-[18px] w-[18px] rounded-full border-2 border-white/95 bg-[#4a90d9] shadow-[0_0_0_10px_rgba(74,144,217,0.18)]">
-      <div className="pointer-events-none absolute inset-[-16px] animate-[mapbox-pulse_1.8s_ease-out_infinite] rounded-full bg-[rgba(74,144,217,0.16)]" />
-      <style jsx>{`
-        @keyframes mapbox-pulse {
-          0% {
-            transform: scale(0.5);
-            opacity: 0.85;
-          }
-
-          100% {
-            transform: scale(1.4);
-            opacity: 0;
-          }
-        }
-      `}</style>
+    <div className="relative flex h-5 w-5 items-center justify-center">
+      {/* Outer ping ring */}
+      <div className="pointer-events-none absolute -inset-4 rounded-full bg-[#4a90d9]/15 animate-ping animation-duration-2000" />
+      {/* Inner pulse glow */}
+      <div className="absolute -inset-2 rounded-full bg-[#4a90d9]/12 animate-pulse animation-duration-2000" />
+      {/* Center puck */}
+      <div className="relative h-full w-full rounded-full border-2 border-white/95 bg-[#4a90d9] shadow-[0_0_0_5px_rgba(74,144,217,0.18)]" />
     </div>
   );
 }
@@ -31,17 +23,25 @@ export function LocationPuck() {
 export function createLocationPuckMount(): LocationPuckMount {
   const element = document.createElement('div');
   const root = createRoot(element);
+  let didCleanup = false;
 
   root.render(<LocationPuck />);
 
   return {
     element,
     cleanup: () => {
+      if (didCleanup) {
+        return;
+      }
+
+      didCleanup = true;
       cleanupRoot(root);
     },
   };
 }
 
 function cleanupRoot(root: Root) {
-  root.unmount();
+  queueMicrotask(() => {
+    root.unmount();
+  });
 }
