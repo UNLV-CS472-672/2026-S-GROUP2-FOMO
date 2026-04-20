@@ -7,7 +7,6 @@ import {
 } from '@/features/map/components/event-marker';
 import { createLocationPuckMount } from '@/features/map/components/location-puck';
 import {
-  FALLBACK_COORDS,
   MAPBOX_STYLE_DARK,
   MAPBOX_STYLE_LIGHT,
   loadMapboxAssets,
@@ -97,7 +96,7 @@ export function useMapboxEventMap({
     let didLoad = false;
 
     async function initMap() {
-      if (!mapboxToken || !mapContainerRef.current || mapRef.current) {
+      if (!mapboxToken || !mapContainerRef.current || mapRef.current || !hasResolvedLocation) {
         return;
       }
 
@@ -113,7 +112,7 @@ export function useMapboxEventMap({
         mapRef.current = new mapboxgl.Map({
           container: mapContainerRef.current,
           style: MAPBOX_STYLE_LIGHT,
-          center: FALLBACK_COORDS,
+          center: centerCoordinate,
           zoom: DEFAULT_ZOOM,
           attributionControl: false,
         });
@@ -159,7 +158,7 @@ export function useMapboxEventMap({
       mapRef.current = null;
       mapboxRef.current = null;
     };
-  }, [clearEventMarkers, clearLocationMarker, mapboxToken]);
+  }, [centerCoordinate, clearEventMarkers, clearLocationMarker, hasResolvedLocation, mapboxToken]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) {
@@ -263,7 +262,7 @@ export function useMapboxEventMap({
   }, [isDark, mapReady]);
 
   useEffect(() => {
-    if (!mapRef.current) {
+    if (!mapReady || !mapRef.current) {
       return;
     }
 
@@ -297,7 +296,7 @@ export function useMapboxEventMap({
       cleanup: markerMount.cleanup,
     };
     locationMarkerRef.current.marker.addTo(mapRef.current);
-  }, [centerCoordinate, clearLocationMarker, hasResolvedLocation, locationGranted]);
+  }, [centerCoordinate, clearLocationMarker, hasResolvedLocation, locationGranted, mapReady]);
 
   useEffect(() => {
     const container = mapContainerRef.current;
