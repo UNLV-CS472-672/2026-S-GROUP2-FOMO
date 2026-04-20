@@ -3,11 +3,16 @@ import { v } from 'convex/values';
 
 export default defineSchema({
   users: defineTable({
-    name: v.string(),
-    clerkId: v.string(), // Clerk user id (`clerkId` JWT claim; Convex may still expose legacy `tokenIdentifier`)
+    bio: v.string(), // clerk doesn't handle this
+    tagIds: v.array(v.id('tags')),
+    // clerk handles below this
+    clerkId: v.string(), // For Clerk integration
+    username: v.string(), // should be unique and this is the main display/handle on frontend
+    displayName: v.string(), // display names that can be changed often/whenever? --- not sure if this will be a clerk value tbh
+    avatarUrl: v.string(), // should get from clerk
   })
     .index('by_clerkId', ['clerkId'])
-    .index('by_name', ['name']),
+    .index('by_username', ['username']),
 
   events: defineTable({
     name: v.string(),

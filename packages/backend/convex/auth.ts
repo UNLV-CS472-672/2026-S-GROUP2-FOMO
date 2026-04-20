@@ -9,6 +9,7 @@ function clerkIdFromIdentity(identity: ClerkIdentity): string {
 
 async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
   const identity = await ctx.auth.getUserIdentity();
+  console.log('identity', identity);
   if (!identity) {
     throw new Error('No Clerk identity found');
   }
@@ -90,8 +91,11 @@ export const ensureCurrentUser = mutation({
 
     // New Clerk user: `clerkId` must match the stable id on `ctx.auth` (Clerk `clerkId` claim).
     return await ctx.db.insert('users', {
-      name: identity.nickname!,
       clerkId: clerkIdFromIdentity(identity),
+      username: identity.nickname!,
+      displayName: identity.nickname!,
+      bio: '',
+      tagIds: [], // TODO :: add w/ the cold start interests later
     });
   },
 });
