@@ -53,17 +53,25 @@ export function getEventMarkerImage(index: number) {
 export function createEventMarkerMount(props: EventMarkerProps): EventMarkerMount {
   const element = document.createElement('div');
   const root = createRoot(element);
+  let didCleanup = false;
 
   root.render(<EventMarker {...props} />);
 
   return {
     element,
     cleanup: () => {
+      if (didCleanup) {
+        return;
+      }
+
+      didCleanup = true;
       cleanupRoot(root);
     },
   };
 }
 
 function cleanupRoot(root: Root) {
-  root.unmount();
+  queueMicrotask(() => {
+    root.unmount();
+  });
 }
