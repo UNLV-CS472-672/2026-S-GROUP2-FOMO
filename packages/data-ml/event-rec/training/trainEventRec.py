@@ -8,6 +8,20 @@ from data.eventRecDataset import get_data_loader
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
+def save_model(epochs_completed: int, user_tower: UserTower, event_tower: EventTower, num_tags: int, tag: str = "") -> None:
+    models_dir = Path("models")
+    models_dir.mkdir(exist_ok=True)
+    existing = len(list(models_dir.glob("model*.pt")))
+    save_path = models_dir / f"model{existing + 1}{tag}.pt"
+    torch.save({
+        'user_tower': user_tower.state_dict(),
+        'event_tower': event_tower.state_dict(),
+        'num_tags': num_tags,
+        'epochs': epochs_completed,
+    }, save_path)
+    print(f"Model saved to {save_path}")
+
+
 def main(epochs: int = 150, model_path: str | None = None) -> None:
     train_loader, test_loader = get_data_loader()
 
@@ -49,19 +63,6 @@ def main(epochs: int = 150, model_path: str | None = None) -> None:
 
     best_eval_loss = float("inf")
     best_state = None
-
-    def save_model(epochs_completed: int, tag: str = "") -> None:
-        models_dir = Path("models")
-        models_dir.mkdir(exist_ok=True)
-        existing = len(list(models_dir.glob("model*.pt")))
-        save_path = models_dir / f"model{existing + 1}{tag}.pt"
-        torch.save({
-            'user_tower': user_tower.state_dict(),
-            'event_tower': event_tower.state_dict(),
-            'num_tags': num_tags,
-            'epochs': epochs_completed,
-        }, save_path)
-        print(f"Model saved to {save_path}")
 
     try:
         for epoch in range(epochs):
@@ -117,14 +118,14 @@ def main(epochs: int = 150, model_path: str | None = None) -> None:
             event_tower.load_state_dict(best_state['event_tower'])
             print(f"\nRestored best checkpoint (eval loss: {best_eval_loss:.4f})")
 
-        save_model(epochs)
+        save_model(epochs, user_tower, event_tower, num_tags,)
 
     except KeyboardInterrupt:
         print("\nInterrupted — saving current model state...")
         if best_state is not None:
             user_tower.load_state_dict(best_state['user_tower'])
             event_tower.load_state_dict(best_state['event_tower'])
-        save_model(epoch + 1, tag="_interrupted")
+        save_model(epoch + 1, user_tower, event_tower, num_tags, tag="_interrupted")
 
 
 if __name__ == "__main__":

@@ -1,9 +1,6 @@
 import os
 import sys
-import numpy as np
 import pytest
-from unittest.mock import patch, MagicMock
-from typing import Generator
 import torch
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "event-rec"))
