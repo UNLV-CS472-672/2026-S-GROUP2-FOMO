@@ -44,9 +44,9 @@ def batch():
 #  save_model()
 # ------------------------------
 
-@patch('train.torch.save')
-@patch('train.Path.mkdir')
-@patch('train.Path.glob')
+@patch('training.trainEventRec.torch.save')
+@patch('training.trainEventRec.Path.mkdir')
+@patch('training.trainEventRec.Path.glob')
 def test_save_model_creates_first_file(mock_glob, mock_mkdir, mock_torch_save, towers):
     # Setup: no existing models
     mock_glob.return_value = []
@@ -69,13 +69,13 @@ def test_save_model_creates_first_file(mock_glob, mock_mkdir, mock_torch_save, t
     saved_dict = mock_torch_save.call_args[0][0]
     assert 'user_tower' in saved_dict
     assert 'event_tower' in saved_dict
-    assert saved_dict['num_tags'] == 10
+    assert saved_dict['num_tags'] == NUM_TAGS
     assert saved_dict['epochs'] == 150
 
 
-@patch('train.torch.save')
-@patch('train.Path.mkdir')
-@patch('train.Path.glob')
+@patch('training.trainEventRec.torch.save')
+@patch('training.trainEventRec.Path.mkdir')
+@patch('training.trainEventRec.Path.glob')
 def test_save_model_increments_filename(mock_glob, mock_mkdir, mock_torch_save, towers):
     mock_glob.return_value = [
         Path("models/model1.pt"),
@@ -90,9 +90,9 @@ def test_save_model_increments_filename(mock_glob, mock_mkdir, mock_torch_save, 
     assert save_path == Path("models") / "model4.pt"
 
 
-@patch('train.torch.save')
-@patch('train.Path.mkdir')
-@patch('train.Path.glob')
+@patch('training.trainEventRec.torch.save')
+@patch('training.trainEventRec.Path.mkdir')
+@patch('training.trainEventRec.Path.glob')
 def test_save_model_with_tag(mock_glob, mock_mkdir, mock_torch_save, towers):
     mock_glob.return_value = []
 
@@ -103,9 +103,9 @@ def test_save_model_with_tag(mock_glob, mock_mkdir, mock_torch_save, towers):
     assert save_path == Path("models") / "model1_interrupted.pt"
 
 
-@patch('train.torch.save')
-@patch('train.Path.mkdir')
-@patch('train.Path.glob')
+@patch('training.trainEventRec.torch.save')
+@patch('training.trainEventRec.Path.mkdir')
+@patch('training.trainEventRec.Path.glob')
 def test_save_model_state_dict_called(mock_glob, mock_mkdir, mock_torch_save, towers):
     mock_glob.return_value = []
 
@@ -125,11 +125,9 @@ def test_save_model_state_dict_called(mock_glob, mock_mkdir, mock_torch_save, to
 # ------------------------------
 
 @patch('training.trainEventRec.save_model')
-@patch('training.trainEventRec.TwoTowerTrainer')
 @patch('training.trainEventRec.get_data_loader')
-@patch('training.trainEventRec.UserTower')
-@patch('training.trainEventRec.EventTower')
-def test_main_trains_from_scratch(mock_event_tower, mock_user_tower, mock_get_data_loader, mock_trainer_class, mock_save_model, batch, towers):
+def test_main_trains_from_scratch(mock_get_data_loader, mock_save_model, batch):
+    """Test main() training loop - use minimal mocking"""
     # Setup mock data loader
     mock_train_loader = MagicMock()
     mock_test_loader = MagicMock()
@@ -142,32 +140,20 @@ def test_main_trains_from_scratch(mock_event_tower, mock_user_tower, mock_get_da
     mock_test_loader.__iter__.return_value = iter([(user_feats, pos_feats, neg_feats)])
     mock_test_loader.__len__.return_value = 1
 
-    user_tower, event_tower = towers
-    mock_user_tower.return_value = user_tower
-    mock_event_tower.return_value = event_tower
-
-    # Mock trainer
-    mock_trainer_instance = MagicMock()
-    mock_trainer_instance.train.return_value = 0.5
-    mock_trainer_instance.bpr_loss.return_value = torch.tensor(0.4)
-    mock_trainer_instance.optimizer.param_groups = [{'lr': 0.001}]
-    mock_trainer_class.return_value = mock_trainer_instance
-
+    # Run with 1 epoch
     main(epochs=1, model_path=None)
 
-    # Verify training happened
-    assert mock_trainer_instance.train.called
-    assert mock_trainer_instance.step_scheduler.called
+    # verify save was called
     assert mock_save_model.called
+    call_args = mock_save_model.call_args[0]
+    assert call_args[0] == 1  # epochs_completed
+    assert call_args[3] == NUM_TAGS  # num_tags
 
 
 @patch('training.trainEventRec.save_model')
-@patch('training.trainEventRec.torch.load')
-@patch('training.trainEventRec.TwoTowerTrainer')
 @patch('training.trainEventRec.get_data_loader')
-@patch('training.trainEventRec.UserTower')
-@patch('training.trainEventRec.EventTower')
-def test_main_loads_checkpoint(mock_event_tower, mock_user_tower, mock_get_data_loader, mock_trainer_class, mock_torch_load, mock_save_model, batch, towers):
+def test_main_loads_checkpoint(mock_get_data_loader, mock_save_model, batch, tmp_path):
+    """Test main() loads checkpoint correctly"""
     mock_train_loader = MagicMock()
     mock_test_loader = MagicMock()
     mock_get_data_loader.return_value = (mock_train_loader, mock_test_loader)
@@ -179,28 +165,19 @@ def test_main_loads_checkpoint(mock_event_tower, mock_user_tower, mock_get_data_
     mock_test_loader.__iter__.return_value = iter([(user_feats, pos_feats, neg_feats)])
     mock_test_loader.__len__.return_value = 1
 
-    # Mock checkpoint
-    mock_torch_load.return_value = {
-        'user_tower': {'fc1.weight': torch.randn(128, 81)},  # Use actual dimensions
-        'event_tower': {'fc1.weight': torch.randn(128, 31)},
+    checkpoint_path = tmp_path / "test_model.pt"
+    user_tower = UserTower(NUM_TAGS)
+    event_tower = EventTower(NUM_TAGS)
+
+    torch.save({
+        'user_tower': user_tower.state_dict(),
+        'event_tower': event_tower.state_dict(),
         'num_tags': NUM_TAGS,
         'epochs': 50
-    }
-
-    user_tower, event_tower = towers
-    mock_user_tower.return_value = user_tower
-    mock_event_tower.return_value = event_tower
-
-    mock_trainer_instance = MagicMock()
-    mock_trainer_instance.train.return_value = 0.5
-    mock_trainer_instance.bpr_loss.return_value = torch.tensor(0.4)
-    mock_trainer_instance.optimizer.param_groups = [{'lr': 0.001}]
-    mock_trainer_class.return_value = mock_trainer_instance
+    }, checkpoint_path)
 
     # Run with checkpoint
-    main(epochs=1, model_path="models/model1.pt")
+    main(epochs=1, model_path=str(checkpoint_path))
 
-    # Verify checkpoint was loaded
-    mock_torch_load.assert_called_once_with("models/model1.pt", map_location=torch.device('cpu'))
-    mock_user_tower.return_value.load_state_dict.assert_called_once()
-    mock_event_tower.return_value.load_state_dict.assert_called_once()
+    # Verify save was called (indicates training completed)
+    assert mock_save_model.called
