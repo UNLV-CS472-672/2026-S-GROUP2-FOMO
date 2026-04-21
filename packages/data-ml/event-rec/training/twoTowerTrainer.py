@@ -5,7 +5,7 @@ from models.twoTowerModel import UserTower, EventTower
 
 
 class TwoTowerTrainer():
-    def __init__(self, user_tower: UserTower, event_tower: EventTower,lr: float = 3e-4, epochs: int = 150):
+    def __init__(self, user_tower: UserTower, event_tower: EventTower, lr: float = 3e-4, epochs: int = 150):
         self.user_tower  = user_tower
         self.event_tower = event_tower
 
