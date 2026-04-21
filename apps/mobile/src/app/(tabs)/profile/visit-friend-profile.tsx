@@ -1,4 +1,3 @@
-import { friends } from '@/app/(tabs)/profile/friends-data';
 import ProfilePicture from '@/components/profile/profile-picture';
 import { Button, ButtonText } from '@/components/ui/button';
 import PostGrid from '@/components/ui/post-grid';
@@ -6,6 +5,9 @@ import { Screen } from '@/components/ui/screen';
 import StatLabel from '@/components/ui/stat-label';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { MaterialIcons } from '@expo/vector-icons';
+import { api } from '@fomo/backend/convex/_generated/api';
+import type { Id } from '@fomo/backend/convex/_generated/dataModel';
+import { useQuery } from 'convex/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -20,6 +22,15 @@ export default function VisitFriendProfileScreen() {
   const friendUsername = Array.isArray(params.username) ? params.username[0] : params.username;
 
   const [activeTab, setActiveTab] = useState<'all' | 'recent' | 'tagged'>('all');
+  const profileById = useQuery(
+    api.users.getProfileById,
+    friendId ? { userId: friendId as Id<'users'> } : 'skip'
+  );
+  const profileByName = useQuery(
+    api.users.getProfileByName,
+    !friendId && friendUsername ? { name: friendUsername } : 'skip'
+  );
+  const friendProfile = profileById ?? profileByName;
 
   if (!friendId && !friendUsername) {
     return (
@@ -32,9 +43,16 @@ export default function VisitFriendProfileScreen() {
     );
   }
 
-  const friendProfile = friends.find((friend) =>
-    friendId ? friend.id === friendId : friend.username === friendUsername
-  );
+  if (
+    (friendId && profileById === undefined) ||
+    (!friendId && friendUsername && profileByName === undefined)
+  ) {
+    return (
+      <Screen className="flex-1 items-center justify-center">
+        <Text className="text-foreground">Loading profile...</Text>
+      </Screen>
+    );
+  }
 
   if (!friendProfile) {
     return (
@@ -47,13 +65,26 @@ export default function VisitFriendProfileScreen() {
     );
   }
 
-  const displayPosts = friendProfile.posts[activeTab];
-  const profileBio = friendProfile.realName
-    ? `Hey! I am ${friendProfile.realName}.`
-    : `Hey! I am ${friendProfile.username}.`;
+  const postsByTab = (() => {
+    const allPosts = friendProfile.posts.map((post) => ({
+      id: String(post._id),
+      title: post.title,
+      subtitle: post.description,
+    }));
+
+    return {
+      all: allPosts,
+      recent: allPosts.slice(0, 6),
+      tagged: [],
+    };
+  })();
+  const displayPosts = postsByTab[activeTab];
+  const profileBio = friendProfile.user.bio?.trim()
+    ? friendProfile.user.bio
+    : `Hey! I am ${friendProfile.user.displayName ?? friendProfile.user.username}.`;
   const profileStats = {
-    postCount: displayPosts.length,
-    friendCount: friends.length,
+    postCount: friendProfile.stats.postCount,
+    eventCount: friendProfile.stats.eventCount,
   };
 
   return (
@@ -74,12 +105,19 @@ export default function VisitFriendProfileScreen() {
 
         {/* Profile Header Section */}
         <View className="flex-row items-start px-4 pb-4 pt-2">
-          <ProfilePicture imageSource={friendProfile.imageSource} />
+          <ProfilePicture
+            imageSource={
+              friendProfile.user.avatarUrl ? { uri: friendProfile.user.avatarUrl } : undefined
+            }
+            fallbackLabel={friendProfile.user.username}
+          />
 
           <View className="ml-3 flex-1 pr-0">
-            <Text className="text-lg font-bold text-foreground">{friendProfile.username}</Text>
-            {friendProfile.realName ? (
-              <Text className="text-sm text-muted-foreground">{friendProfile.realName}</Text>
+            <Text className="text-lg font-bold text-foreground">{friendProfile.user.username}</Text>
+            {friendProfile.user.displayName ? (
+              <Text className="text-sm text-muted-foreground">
+                {friendProfile.user.displayName}
+              </Text>
             ) : null}
             <Text className="mt-1 text-sm leading-5 text-foreground">{profileBio}</Text>
           </View>
@@ -92,11 +130,7 @@ export default function VisitFriendProfileScreen() {
               <StatLabel value={profileStats.postCount} label="Posts" onPress={() => {}} />
             </View>
             <View className="flex-1 items-center">
-              <StatLabel
-                value={profileStats.friendCount}
-                label="Friends"
-                onPress={() => router.push('/profile/friends?source=visit-friend-profile')}
-              />
+              <StatLabel value={profileStats.eventCount} label="Events" onPress={() => {}} />
             </View>
           </View>
         </View>

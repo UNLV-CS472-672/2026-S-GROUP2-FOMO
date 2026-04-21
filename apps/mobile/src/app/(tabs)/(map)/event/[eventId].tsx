@@ -1,3 +1,4 @@
+import { Image } from '@/components/image';
 import { Screen } from '@/components/ui/screen';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { useQuery } from 'convex/react';
@@ -13,15 +14,20 @@ export default function EventPage() {
     api.data_ml.events.getEventById,
     eventId ? { eventId: eventId } : 'skip'
   );
+  const eventImageUrl = useQuery(
+    api.files.getUrl,
+    eventDetail?.mediaId ? { storageId: eventDetail.mediaId } : 'skip'
+  );
 
   const event = useMemo(() => {
     if (!eventDetail) return null;
     return {
       id: eventDetail.id,
       name: eventDetail.name,
-      organization: eventDetail.organization,
-      description: eventDetail.description,
+      caption: eventDetail.caption,
       attendeeCount: eventDetail.attendeeCount,
+      startDate: eventDetail.startDate,
+      mediaId: eventDetail.mediaId,
     };
   }, [eventDetail]);
 
@@ -50,23 +56,31 @@ export default function EventPage() {
       <ScrollView contentContainerClassName="pb-10" showsVerticalScrollIndicator={false}>
         {/* Event Header */}
         <View className="flex-row gap-3.5 p-4">
-          <View
-            className="h-[180px] w-[140px] items-center justify-center rounded-2xl border border-border bg-surface-muted px-4"
-            style={{ borderCurve: 'continuous' }}
-          >
-            <Text className="text-5xl font-black uppercase text-foreground">
-              {event.name[0] ?? '?'}
-            </Text>
-            <Text className="mt-3 text-center text-xs font-medium text-muted-foreground">
-              {event.organization}
-            </Text>
+          <View className="h-[180px] w-[140px] overflow-hidden rounded-2xl border border-border bg-surface-muted">
+            {eventImageUrl ? (
+              <Image source={eventImageUrl} className="h-full w-full" contentFit="cover" />
+            ) : (
+              <View
+                className="h-full items-center justify-center px-4"
+                style={{ borderCurve: 'continuous' }}
+              >
+                <Text className="text-5xl font-black uppercase text-foreground">
+                  {event.name[0] ?? '?'}
+                </Text>
+                <Text className="mt-3 text-center text-xs font-medium text-muted-foreground">
+                  {event.attendeeCount} going
+                </Text>
+              </View>
+            )}
           </View>
           <View className="flex-1 justify-between">
             <View className="gap-1.5">
               <Text className="text-lg font-bold text-foreground">{event.name}</Text>
-              <Text className="text-sm text-muted-foreground">{event.organization}</Text>
+              <Text className="text-sm text-muted-foreground">
+                {new Date(event.startDate).toLocaleString()}
+              </Text>
               <Text className="mt-1 text-sm leading-4 text-foreground" numberOfLines={4}>
-                {event.description}
+                {event.caption}
               </Text>
             </View>
           </View>

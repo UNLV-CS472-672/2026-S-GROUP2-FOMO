@@ -1,9 +1,9 @@
-import { friends } from '@/app/(tabs)/profile/friends-data';
-import { getPostById } from '@/features/posts/post-data';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { MaterialIcons } from '@expo/vector-icons';
+import { api } from '@fomo/backend/convex/_generated/api';
+import { useQuery } from 'convex/react';
 import { useLocalSearchParams } from 'expo-router';
-import { Image, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PostDetailsScreen() {
@@ -11,10 +11,18 @@ export default function PostDetailsScreen() {
   const insets = useSafeAreaInsets();
   const { postId } = useLocalSearchParams<{ postId?: string | string[] }>();
   const normalizedPostId = Array.isArray(postId) ? postId[0] : postId;
-  const friendPost = normalizedPostId
-    ? friends.flatMap((friend) => friend.posts.all).find((entry) => entry.id === normalizedPostId)
-    : undefined;
-  const post = friendPost ?? (normalizedPostId ? getPostById(normalizedPostId) : undefined);
+  const post = useQuery(
+    api.posts.getPostById,
+    normalizedPostId ? { postId: normalizedPostId } : 'skip'
+  );
+
+  if (post === undefined) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <Text className="text-lg text-foreground">Loading post...</Text>
+      </View>
+    );
+  }
 
   if (!post) {
     return (
@@ -26,8 +34,10 @@ export default function PostDetailsScreen() {
 
   return (
     <View className="flex-1 bg-background pt-10">
-      <View className="aspect-square w-full bg-surface-muted">
-        <Image source={post.image} className="h-full w-full" />
+      <View className="gap-2 border-b border-border bg-primary/5 px-4 py-6">
+        <Text className="text-xl font-bold text-foreground">{post.title}</Text>
+        <Text className="text-sm text-muted-foreground">by {post.authorName}</Text>
+        <Text className="text-base text-foreground">{post.description}</Text>
       </View>
 
       <View className="flex-1 px-4 py-4">
@@ -36,16 +46,18 @@ export default function PostDetailsScreen() {
           className="flex-1"
           contentContainerStyle={{ paddingBottom: insets.bottom + 25 }}
         >
-          {(post.comments?.length ?? 0) > 0 ? (
-            post.comments?.map((comment, index) => (
-              <View key={index} className="mb-3 flex-row">
+          {post.comments.length > 0 ? (
+            post.comments.map((comment) => (
+              <View key={comment.id} className="mb-3 flex-row">
                 <View className="mr-3">
                   <MaterialIcons name="person" size={32} color={theme.text} />
                 </View>
 
                 <View className="flex-1">
-                  <Text className="mb-1 text-sm font-semibold text-foreground">User</Text>
-                  <Text className="text-sm text-muted-foreground">{comment}</Text>
+                  <Text className="mb-1 text-sm font-semibold text-foreground">
+                    {comment.authorName}
+                  </Text>
+                  <Text className="text-sm text-muted-foreground">{comment.text}</Text>
                 </View>
               </View>
             ))

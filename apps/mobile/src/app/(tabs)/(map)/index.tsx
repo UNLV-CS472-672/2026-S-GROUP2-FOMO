@@ -18,14 +18,6 @@ MapboxGL.setAccessToken(env.EXPO_PUBLIC_MAPBOX_TOKEN);
 
 const DEFAULT_ZOOM_LEVEL = 13;
 
-// hardcoded from feed
-const EVENT_IMAGES = [
-  require('@/assets/images/rigrig.jpg'),
-  require('@/assets/images/jonah-mog.png'),
-  require('@/assets/images/git-learning-class.png'),
-  require('@/assets/images/rate-my-date.jpg'),
-];
-
 export default function MapScreen() {
   const { push } = useRouter();
   const events = useQuery(api.data_ml.events.getEvents) ?? [];
@@ -93,7 +85,8 @@ export default function MapScreen() {
             key={event.id}
             id={event.id}
             coordinate={[event.location.longitude, event.location.latitude]}
-            image={EVENT_IMAGES[i % EVENT_IMAGES.length]}
+            label={event.name}
+            mediaId={event.mediaId}
             weight={event.attendeeCount}
             minWeight={minWeight}
             maxWeight={maxWeight}

@@ -1,39 +1,40 @@
-import { friends, type Friend } from '@/app/(tabs)/profile/friends-data';
 import FriendCell from '@/components/profile/friend-cell';
 import { Screen } from '@/components/ui/screen';
 import { useAppTheme } from '@/lib/use-app-theme';
+import { useUser } from '@clerk/expo';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { useQuery } from 'convex/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-type FriendRec = { userId: string; score: number };
+type FriendListEntry = {
+  id: string;
+  username: string;
+  realName?: string;
+  imageSource?: { uri: string };
+};
 
 /** Friends UI from this screen; embed in profile or use via {@link FriendsScreen}. */
 export function FriendsScreenContent() {
   const router = useRouter();
   const params = useLocalSearchParams<{ source?: string | string[] }>();
   const theme = useAppTheme();
+  const { isSignedIn } = useUser();
   const [searchText, setSearchText] = useState('');
   const [isRecommendedCollapsed, setIsRecommendedCollapsed] = useState(false);
   const source = Array.isArray(params.source) ? params.source[0] : params.source;
   const showRecommendedFriends = source !== 'visit-friend-profile';
 
-  const friendRecResult = useQuery(api.data_ml.friends.getFriendRecs);
+  const friendRecResult = useQuery(api.data_ml.friends.getFriendRecs, isSignedIn ? {} : 'skip');
+  const friendsResult = useQuery(api.data_ml.friends.getFriends, isSignedIn ? {} : 'skip');
 
-  const recommendedFriends = useMemo<Friend[]>(
+  const recommendedFriends = useMemo<FriendListEntry[]>(
     () =>
       (friendRecResult?.recs ?? []).map((rec) => ({
         id: rec.userId,
         username: rec.userId,
         realName: `Score: ${rec.score.toFixed(2)}`,
-        imageSource: require('@/assets/images/icon.png'),
-        posts: {
-          all: [],
-          recent: [],
-          tagged: [],
-        },
       })),
     [friendRecResult]
   );
@@ -47,10 +48,15 @@ export function FriendsScreenContent() {
 
   const filteredFriends = useMemo(() => {
     const q = searchText.trim().toLowerCase();
-    return friends.filter(
-      (f) => f.username.toLowerCase().includes(q) || f.realName?.toLowerCase().includes(q)
-    );
-  }, [friends, searchText]);
+    return (friendsResult ?? [])
+      .map((friend) => ({
+        id: String(friend.id),
+        username: friend.username,
+        realName: friend.displayName,
+        imageSource: friend.avatarUrl ? { uri: friend.avatarUrl } : undefined,
+      }))
+      .filter((f) => f.username.toLowerCase().includes(q) || f.realName?.toLowerCase().includes(q));
+  }, [friendsResult, searchText]);
 
   const handleFriendPress = (friendId: string) => {
     router.push(`/profile/visit-friend-profile?id=${friendId}`);

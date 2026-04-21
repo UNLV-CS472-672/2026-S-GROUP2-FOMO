@@ -1,21 +1,19 @@
 import { Icon } from '@/components/icon';
 import { useAppTheme } from '@/lib/use-app-theme';
-import {
-  eventSeedAttendees,
-  eventSeeds,
-  mockEventIdForSeedIndex,
-} from '@fomo/backend/convex/eventSeedsStatic';
+import { api } from '@fomo/backend/convex/_generated/api';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { useQuery } from 'convex/react';
 import { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 const SEARCH_FILTERS = ['Nearby', 'Tonight', 'Coffee', 'Study spots'];
 const RECENT_SEARCHES = ['Gorilla Sushi', 'Live music', 'Late-night food', 'Study groups'];
 
-type MapSeedEvent = {
+type SearchableEvent = {
+  id: string;
   name: string;
-  organization: string;
-  description: string;
+  caption: string;
+  attendeeCount: number;
   location: {
     latitude: number;
     longitude: number;
@@ -24,9 +22,7 @@ type MapSeedEvent = {
 };
 
 type SearchResult = {
-  event: MapSeedEvent;
-  seedIndex: number;
-  attendeeCount: number;
+  event: SearchableEvent;
 };
 
 type SearchContentProps = {
@@ -43,25 +39,21 @@ export function SearchContent({
   onSelectEvent,
 }: SearchContentProps) {
   const theme = useAppTheme();
+  const events = useQuery(api.data_ml.events.getEvents) ?? [];
 
   const filteredEvents = useMemo<SearchResult[]>(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    const indexedEvents = eventSeeds.map((event, seedIndex) => ({
-      event,
-      seedIndex,
-      attendeeCount: eventSeedAttendees[seedIndex] ?? 0,
-    }));
+    const indexedEvents = events.map((event) => ({ event }));
 
     if (!normalizedQuery) {
       return indexedEvents.slice(0, 6);
     }
 
-    // TODO :: replace witha  better way, possibly on the backend (when we have more events)
     return indexedEvents.filter(({ event }) => {
-      const haystack = `${event.name} ${event.organization} ${event.description}`.toLowerCase();
+      const haystack = `${event.name} ${event.caption}`.toLowerCase();
       return haystack.includes(normalizedQuery);
     });
-  }, [query]);
+  }, [events, query]);
 
   return (
     <BottomSheetScrollView
@@ -99,12 +91,12 @@ export function SearchContent({
         <Text className="text-[18px] font-semibold text-foreground">Suggested spots</Text>
 
         {filteredEvents.length > 0 ? (
-          filteredEvents.slice(0, 6).map(({ event, seedIndex, attendeeCount }, index) => (
+          filteredEvents.slice(0, 6).map(({ event }, index) => (
             <Pressable
               key={`${event.name}-${event.location.latitude}`}
               accessibilityRole="button"
               className="flex-row items-center gap-3 rounded-[24px] border border-border/70 bg-background/90 px-3 py-3"
-              onPress={() => onSelectEvent(mockEventIdForSeedIndex(seedIndex))}
+              onPress={() => onSelectEvent(event.id)}
             >
               <View className="size-12 items-center justify-center rounded-2xl bg-primary/10">
                 <Icon
@@ -116,14 +108,18 @@ export function SearchContent({
 
               <View className="flex-1 gap-1">
                 <Text className="text-[15px] font-semibold text-foreground">{event.name}</Text>
-                <Text className="text-[13px] text-muted-foreground">{event.organization}</Text>
+                <Text className="text-[13px] text-muted-foreground" numberOfLines={1}>
+                  {event.caption}
+                </Text>
               </View>
 
               <View className="items-end gap-1">
                 <Text className="text-[12px] font-semibold uppercase tracking-[0.8px] text-primary">
                   {(index + 2) * 3} min
                 </Text>
-                <Text className="text-[12px] text-muted-foreground">{attendeeCount} going</Text>
+                <Text className="text-[12px] text-muted-foreground">
+                  {event.attendeeCount} going
+                </Text>
               </View>
             </Pressable>
           ))

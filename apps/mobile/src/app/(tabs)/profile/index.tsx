@@ -6,14 +6,15 @@ import { Screen } from '@/components/ui/screen';
 import StatLabel from '@/components/ui/stat-label';
 import { Authenticated, GuestOnly } from '@/features/auth/components/auth-gate';
 import { useAppTheme } from '@/lib/use-app-theme';
+import { useUser } from '@clerk/expo';
+import { api } from '@fomo/backend/convex/_generated/api';
+import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 // imports for authentication and guest mode
 import { GuestMode } from '@/components/profile/guest-mode';
-import { allPosts, recentPosts, taggedPosts } from '@/features/posts/post-data';
-import { useUser } from '@clerk/expo';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 //import for icons
 import { MaterialIcons } from '@expo/vector-icons';
@@ -22,13 +23,27 @@ export default function ProfileScreen() {
   const router = useRouter();
   const theme = useAppTheme();
 
-  const { user } = useUser();
-  const username = user?.username ?? 'Guest';
+  const { user, isSignedIn } = useUser();
+  const profile = useQuery(api.users.getCurrentProfile, isSignedIn ? {} : 'skip');
+  const friends = useQuery(api.data_ml.friends.getFriends, isSignedIn ? {} : 'skip');
+  const username = profile?.user.username ?? user?.username ?? 'Guest';
 
   //In app profile information/states
   const [activeTab, setActiveTab] = useState<'all' | 'recent' | 'tagged'>('all');
-  const description =
-    'This is a placeholder bio. In a real app, this would be editable by the user and stored in the backend.';
+  const description = profile?.user.bio?.trim() ? profile.user.bio : 'No bio yet.';
+  const postsByTab = useMemo(() => {
+    const allPosts = (profile?.posts ?? []).map((post) => ({
+      id: String(post._id),
+      title: post.title,
+      subtitle: post.description,
+    }));
+
+    return {
+      all: allPosts,
+      recent: allPosts.slice(0, 6),
+      tagged: [],
+    };
+  }, [profile?.posts]);
 
   return (
     <Screen className="flex-1">
@@ -38,7 +53,10 @@ export default function ProfileScreen() {
       <Authenticated>
         <ScrollView className="flex-1 bg-background pt-20" contentContainerClassName="pb-8">
           <View className="flex-row items-start p-4">
-            <ProfilePicture imageSource={require('@/assets/images/icon.png')} />
+            <ProfilePicture
+              imageSource={profile?.user.avatarUrl ? { uri: profile.user.avatarUrl } : undefined}
+              fallbackLabel={username}
+            />
 
             <View className="ml-3 flex-1 pr-0">
               <View className="flex-row items-center justify-between">
@@ -60,11 +78,11 @@ export default function ProfileScreen() {
           <View className="px-4 pb-4">
             <View className="flex-row w-full">
               <View className="flex-1 items-center">
-                <StatLabel value={42} label="Posts" onPress={() => {}} />
+                <StatLabel value={profile?.stats.postCount ?? 0} label="Posts" onPress={() => {}} />
               </View>
               <View className="flex-1 items-center">
                 <StatLabel
-                  value={24}
+                  value={friends?.length ?? 0}
                   label="Friends"
                   onPress={() => router.push('/profile/friends?source=profile')}
                 />
@@ -112,9 +130,9 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
 
-          {activeTab === 'all' && <PostGrid posts={allPosts} />}
-          {activeTab === 'recent' && <PostGrid posts={recentPosts} />}
-          {activeTab === 'tagged' && <PostGrid posts={taggedPosts} />}
+          {activeTab === 'all' && <PostGrid posts={postsByTab.all} />}
+          {activeTab === 'recent' && <PostGrid posts={postsByTab.recent} />}
+          {activeTab === 'tagged' && <PostGrid posts={postsByTab.tagged} />}
         </ScrollView>
       </Authenticated>
     </Screen>

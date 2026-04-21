@@ -1,13 +1,41 @@
-import { mutation } from './_generated/server';
+import { anyApi } from 'convex/server';
+import { v } from 'convex/values';
+
+import { action, ActionCtx, internalMutation, internalQuery } from './_generated/server';
 import { eventSeedAttendees, eventSeeds } from './eventSeedsStatic';
 
 export { eventSeedAttendees, eventSeeds };
 
 //TODO get from backend instead
 
-export const seed = mutation({
+async function storeSeedEventImage(ctx: ActionCtx, imageUrl: string) {
+  const response = await fetch(imageUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch seeded event image: ${imageUrl}`);
+  }
+
+  return await ctx.storage.store(await response.blob());
+}
+
+export const getSeedEventMediaIds = internalQuery({
   args: {},
   handler: async (ctx) => {
+    const existingEvents = await ctx.db.query('events').collect();
+    const mediaIdByName = new Map(
+      existingEvents.map((event) => [event.name, event.mediaId ?? null])
+    );
+
+    return eventSeeds.map((event) => mediaIdByName.get(event.name) ?? null);
+  },
+});
+
+export const seedData = internalMutation({
+  args: { eventMediaIds: v.array(v.id('_storage')) },
+  handler: async (ctx, { eventMediaIds }) => {
+    if (eventMediaIds.length !== eventSeeds.length) {
+      throw new Error('Expected one media id per seeded event.');
+    }
+
     //  Users (Convex Table Name: users)
     const userSeeds = [
       { name: 'Alice', clerkId: 'seed|alice' },
@@ -82,21 +110,31 @@ export const seed = mutation({
 
     //  Events (Convex: events)
     const eventIds: any[] = [];
-    for (const e of eventSeeds) {
+    for (const [index, e] of eventSeeds.entries()) {
+      const mediaId = eventMediaIds[index]!;
       const existing = await ctx.db
         .query('events')
         .filter((q) => q.eq(q.field('name'), e.name))
         .first();
+
+      if (existing) {
+        if (!existing.mediaId) {
+          await ctx.db.patch(existing._id, { mediaId });
+        }
+
+        eventIds.push(existing._id);
+        continue;
+      }
       eventIds.push(
-        existing?._id ??
-          (await ctx.db.insert('events', {
-            name: e.name,
-            caption: e.description,
-            hostIds: [u1],
-            startDate: Date.now() + 24 * 60 * 60 * 1000,
-            endDate: Date.now() + 26 * 60 * 60 * 1000,
-            location: e.location,
-          }))
+        await ctx.db.insert('events', {
+          name: e.name,
+          caption: e.description,
+          mediaId,
+          hostIds: [u1],
+          startDate: Date.now() + 24 * 60 * 60 * 1000,
+          endDate: Date.now() + 26 * 60 * 60 * 1000,
+          location: e.location,
+        })
       );
     }
     const [e1, e2, e3, e4, e5, e6, e7, e8, e9] = eventIds;
@@ -587,5 +625,19 @@ export const seed = mutation({
       post: postIds,
       tags: tagIds,
     };
+  },
+});
+
+export const seed = action({
+  args: {},
+  handler: async (ctx) => {
+    const existingMediaIds = await ctx.runQuery(anyApi.seed.getSeedEventMediaIds, {});
+    const eventMediaIds = await Promise.all(
+      eventSeeds.map(async (event, index) => {
+        return existingMediaIds[index] ?? (await storeSeedEventImage(ctx, event.imageUrl));
+      })
+    );
+
+    return await ctx.runMutation(anyApi.seed.seedData, { eventMediaIds });
   },
 });

@@ -1,15 +1,9 @@
 import { v } from 'convex/values';
 import { latLngToCell } from 'h3-js';
 
-import type { Doc } from '../_generated/dataModel';
-import { query } from '../_generated/server';
+import type { Doc, Id } from '../_generated/dataModel';
+import { query, type QueryCtx } from '../_generated/server';
 import { __backend_only_guestOrAuthenticatedUser } from '../auth';
-import { eventSeeds, mockEventIdForSeedIndex } from '../eventSeedsStatic';
-
-// TODO: Remove mock-event helpers and seed-based implementations once events are loaded from
-// `ctx.db` (and external sources). `mockEventIdForSeedIndex` / `mock:event:*` ids are temporary.
-
-export { mockEventIdForSeedIndex };
 
 export function latLngToH3Index(lat: number, lng: number, resolution: number = 9): string {
   if (lat < -90 || lat > 90) {
@@ -24,63 +18,59 @@ export function latLngToH3Index(lat: number, lng: number, resolution: number = 9
   return latLngToCell(lat, lng, resolution);
 }
 
-// TODO: Delete; replace with a real query over `events` (and popularity) for guest browse.
-function eventsWithPopularityOnly() {
-  const mock_events = eventSeeds;
-  return mock_events.map((event, i) => ({
-    ...event,
-    id: mockEventIdForSeedIndex(i),
-    attendeeCount: i * 100,
-  }));
+async function getAttendeeCount(ctx: QueryCtx, eventId: Id<'events'>) {
+  const attendees = await ctx.db
+    .query('usersToEvents')
+    .withIndex('by_event', (q) => q.eq('eventId', eventId))
+    .collect();
+
+  return attendees.length;
 }
 
-// TODO: Delete; replace with DB + recommendation pipeline using `user._id`.
-function eventsWithRecScoresForUser(_user: Doc<'users'>) {
-  const mock_events = eventSeeds;
-  return mock_events.map((event, i) => ({
-    ...event,
-    id: mockEventIdForSeedIndex(i),
-    attendeeCount: i * 100,
-    recommendationScore: 1.0 / i,
-  }));
+async function serializeEvent(ctx: QueryCtx, event: Doc<'events'>, recommendationScore?: number) {
+  const attendeeCount = await getAttendeeCount(ctx, event._id);
+
+  return {
+    id: event._id,
+    name: event.name,
+    caption: event.caption,
+    location: event.location,
+    attendeeCount,
+    startDate: event.startDate,
+    endDate: event.endDate,
+    mediaId: event.mediaId ?? null,
+    hostIds: event.hostIds,
+    recommendationScore,
+  };
 }
 
-// TODO: Retain this public API, but reimplement handlers to use persisted events instead of seeds.
 export const getEvents = query({
   args: {},
   handler: async (ctx) => {
-    const [user, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
-    if (guestMode) {
-      // TODO: fetch from database; popularity-only for guest browse
-      return eventsWithPopularityOnly();
-    }
-    // TODO: recommendation scores from data model using user._id
-    return eventsWithRecScoresForUser(user);
+    const [, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
+
+    const events = await ctx.db.query('events').withIndex('by_startDate').collect();
+    return await Promise.all(
+      events.map((event, index) =>
+        serializeEvent(ctx, event, guestMode ? undefined : 1 / (index + 1))
+      )
+    );
   },
 });
 
-// TODO: Keep query shape; drop `mock:event:*` parsing once clients use real `Id<'events'>`.
 export const getEventById = query({
   args: { eventId: v.string() },
-  handler: async (_ctx, { eventId }) => {
-    // TODO: `eventId` → `Id<'events'>` + `ctx.db.get`; enrich from Ticketmaster / internal fields as needed.
-    const match = /^mock:event:(\d+)$/.exec(eventId);
-    if (!match) {
+  handler: async (ctx, { eventId }) => {
+    const normalizedEventId = await ctx.db.normalizeId('events', eventId);
+    if (!normalizedEventId) {
       return null;
     }
-    const index = Number(match[1]);
-    if (!Number.isInteger(index) || index < 0 || index >= eventSeeds.length) {
+
+    const event = await ctx.db.get(normalizedEventId);
+    if (!event) {
       return null;
     }
-    const event = eventSeeds[index]!;
-    return {
-      id: eventId,
-      name: event.name,
-      organization: event.organization,
-      description: event.description,
-      location: event.location,
-      attendeeCount: index * 100,
-      imageIndex: index % 4,
-    };
+
+    return await serializeEvent(ctx, event);
   },
 });
