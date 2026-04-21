@@ -53,6 +53,23 @@ export const getAttendeesByEventId = async (ctx: QueryCtx, eventId: Id<'events'>
   return attendees.filter(countsAsAttendee).map((attendee) => attendee.userId);
 };
 
+export const getEventAttendees = query({
+  args: { eventId: v.id('events') },
+  handler: async (ctx, { eventId }) => {
+    const attendeeIds = await getAttendeesByEventId(ctx, eventId);
+    const attendees = await Promise.all(attendeeIds.map((attendeeId) => ctx.db.get(attendeeId)));
+
+    return attendees
+      .filter((attendee): attendee is Doc<'users'> => attendee !== null)
+      .map((attendee) => ({
+        id: attendee._id,
+        name: attendee.displayName || attendee.username,
+        username: attendee.username,
+        avatarUrl: attendee.avatarUrl || null,
+      }));
+  },
+});
+
 export const getViewerAttendance = query({
   args: { eventId: v.id('events') },
   handler: async (ctx, { eventId }) => {

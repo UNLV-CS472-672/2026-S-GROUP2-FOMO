@@ -1,21 +1,15 @@
+import FriendCell from '@/components/profile/friend-cell';
 import { Screen } from '@/components/ui/screen';
-import { Avatar } from '@/features/events/components/avatar';
+import { useAppTheme } from '@/lib/use-app-theme';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
-
-function avatarColorForSeed(seed: string, index = 0) {
-  const colors = ['#64748b', '#94a3b8', '#FF7F50', '#4A90D9', '#50C878'];
-  let value = index;
-  for (let i = 0; i < seed.length; i++) {
-    value += seed.charCodeAt(i) * (i + 1);
-  }
-  return colors[Math.abs(value) % colors.length] ?? colors[0]!;
-}
+import { useMemo, useState } from 'react';
+import { ScrollView, Text, TextInput, View } from 'react-native';
 
 export default function EventAttendeesPage() {
+  const theme = useAppTheme();
   const { eventId: rawEventId, eventName } = useLocalSearchParams<{
     eventId?: string | string[];
     eventName?: string | string[];
@@ -24,7 +18,28 @@ export default function EventAttendeesPage() {
     | Id<'events'>
     | undefined;
   const resolvedEventName = Array.isArray(eventName) ? eventName[0] : eventName;
-  const attendees = useQuery(api.events.queries.getEventAttendees, eventId ? { eventId } : 'skip');
+  const [searchText, setSearchText] = useState('');
+  const attendees = useQuery(
+    api.events.attendance.getEventAttendees,
+    eventId ? { eventId } : 'skip'
+  );
+
+  const filteredAttendees = useMemo(() => {
+    if (!attendees) {
+      return [];
+    }
+
+    const query = searchText.trim().toLowerCase();
+    if (!query) {
+      return attendees;
+    }
+
+    return attendees.filter(
+      (attendee) =>
+        attendee.username.toLowerCase().includes(query) ||
+        attendee.name.toLowerCase().includes(query)
+    );
+  }, [attendees, searchText]);
 
   if (attendees === undefined) {
     return (
@@ -36,25 +51,47 @@ export default function EventAttendeesPage() {
   }
 
   return (
-    <Screen>
-      <Stack.Screen options={{ title: `${resolvedEventName ?? 'Event'} Attendees` }} />
-      <ScrollView contentContainerClassName="gap-3 px-4 pb-8 pt-4">
-        {attendees.map((attendee, index) => (
-          <View
-            key={attendee.id}
-            className="flex-row items-center gap-3 rounded-3xl border border-border bg-surface px-4 py-3"
-          >
-            <Avatar
-              name={attendee.name}
-              size={44}
-              color={avatarColorForSeed(attendee.name, index)}
-            />
-            <View className="flex-1">
-              <Text className="text-base font-semibold text-foreground">{attendee.name}</Text>
-              <Text className="text-sm text-muted-foreground">@{attendee.username}</Text>
-            </View>
+    <Screen className="flex-1">
+      <Stack.Screen options={{ title: 'Attending' }} />
+      <ScrollView className="flex-1 bg-background pt-5" contentContainerClassName="pb-6">
+        {resolvedEventName ? (
+          <View className="px-4 pb-2">
+            <Text className="text-sm text-muted-foreground">{resolvedEventName}</Text>
           </View>
-        ))}
+        ) : null}
+
+        <View className="px-4 pb-4">
+          <TextInput
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder="Search attendees"
+            placeholderTextColor={theme.mutedText}
+            className="rounded-lg border border-border bg-background px-4 py-2 text-base text-foreground"
+            accessibilityLabel="Search attendees"
+          />
+        </View>
+
+        <View className="border-y border-border">
+          <View className="flex-row items-center justify-between px-4 py-3">
+            <Text className="text-lg font-bold text-foreground">{attendees.length} Attending</Text>
+          </View>
+          <View className="px-4 pb-1">
+            {filteredAttendees.length > 0 ? (
+              filteredAttendees.map((attendee) => (
+                <FriendCell
+                  key={attendee.id}
+                  username={attendee.username}
+                  realName={attendee.name}
+                  imageSource={attendee.avatarUrl ? { uri: attendee.avatarUrl } : undefined}
+                />
+              ))
+            ) : (
+              <Text className="py-2 text-sm text-muted-foreground">
+                {attendees.length === 0 ? 'No attendees yet.' : 'No attendees found.'}
+              </Text>
+            )}
+          </View>
+        </View>
       </ScrollView>
     </Screen>
   );

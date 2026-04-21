@@ -1,6 +1,7 @@
 import { Image } from '@/components/image';
 import { DrawerModal } from '@/components/ui/drawer';
 import { Screen } from '@/components/ui/screen';
+import { Avatar } from '@/features/events/components/avatar';
 import { RsvpSheet } from '@/features/events/components/rsvp-sheet';
 import type { AttendanceStatus, NotificationPref } from '@/features/events/types';
 import { useGuest } from '@/integrations/session/provider';
@@ -9,19 +10,45 @@ import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+
+function formatEventDateRange(startDate: number, endDate: number) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  const date = start.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const startTime = start.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  const endTime = end.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+
+  return `${date} • ${startTime} - ${endTime}`;
+}
 
 export default function EventPage() {
   const theme = useAppTheme();
   const { isGuestMode } = useGuest();
+  const router = useRouter();
   const { eventId: rawEventId } = useLocalSearchParams<{ eventId?: string | string[] }>();
   const eventId = (Array.isArray(rawEventId) ? rawEventId[0] : rawEventId) as
     | Id<'events'>
     | undefined;
 
   const event = useQuery(api.events.queries.getEventById, eventId ? { eventId } : 'skip');
+  const attendees = useQuery(
+    api.events.attendance.getEventAttendees,
+    eventId ? { eventId } : 'skip'
+  );
   const viewerAttendance = useQuery(
     api.events.attendance.getViewerAttendance,
     eventId ? { eventId } : 'skip'
@@ -91,7 +118,7 @@ export default function EventPage() {
     setIsRsvpOpen(true);
   }, [isGuestMode]);
 
-  if (event === undefined || viewerAttendance === undefined) {
+  if (event === undefined || attendees === undefined || viewerAttendance === undefined) {
     return (
       <Screen className="items-center justify-center">
         <Stack.Screen options={{ title: 'Event Details' }} />
@@ -108,6 +135,8 @@ export default function EventPage() {
       </Screen>
     );
   }
+
+  const attendeeSample = attendees.slice(0, 3);
 
   return (
     <Screen>
@@ -134,13 +163,45 @@ export default function EventPage() {
             <View className="gap-1.5">
               <Text className="text-lg font-bold text-foreground">{event.name}</Text>
               <Text className="text-sm text-muted-foreground">
-                {new Date(event.startDate).toLocaleString()}
+                {formatEventDateRange(event.startDate, event.endDate)}
               </Text>
               <Text className="mt-1 text-sm leading-4 text-foreground" numberOfLines={4}>
                 {event.caption}
               </Text>
 
-              <View className="mt-3 flex-row items-center justify-end">
+              <View className="mt-3 flex-row items-center justify-between gap-2.5">
+                <Pressable
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(tabs)/(map)/event/attendees',
+                      params: { eventId: event.id, eventName: event.name },
+                    })
+                  }
+                  className="flex-row items-center"
+                  hitSlop={6}
+                >
+                  {attendeeSample.map((attendee, index) => (
+                    <View
+                      key={attendee.id}
+                      className="rounded-full border-2 border-surface"
+                      style={{ marginLeft: index === 0 ? 0 : -8 }}
+                    >
+                      <Avatar
+                        name={attendee.name}
+                        size={36}
+                        source={attendee.avatarUrl ? { uri: attendee.avatarUrl } : undefined}
+                      />
+                    </View>
+                  ))}
+                  {event.attendeeCount > attendeeSample.length ? (
+                    <View className="-ml-2 h-10 min-w-10 items-center justify-center rounded-full border-2 border-surface bg-muted px-2">
+                      <Text className="text-[10px] font-semibold text-muted-foreground">
+                        +{event.attendeeCount - attendeeSample.length}
+                      </Text>
+                    </View>
+                  ) : null}
+                </Pressable>
+
                 <Pressable
                   onPress={openRsvpSheet}
                   accessibilityRole="button"

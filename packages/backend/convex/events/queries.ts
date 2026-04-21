@@ -4,7 +4,7 @@ import { v } from 'convex/values';
 import type { Doc } from '../_generated/dataModel';
 import { query, type QueryCtx } from '../_generated/server';
 import { __backend_only_guestOrAuthenticatedUser } from '../auth';
-import { getAttendeeCount, getAttendeesByEventId } from './attendance';
+import { getAttendeeCount } from './attendance';
 
 export function latLngToH3Index(lat: number, lng: number, resolution: number = 9): string {
   if (lat < -90 || lat > 90) {
@@ -59,21 +59,5 @@ export const getEventById = query({
     }
 
     return await serializeEvent(ctx, event);
-  },
-});
-
-export const getEventAttendees = query({
-  args: { eventId: v.id('events') },
-  handler: async (ctx, { eventId }) => {
-    const attendeeIds = await getAttendeesByEventId(ctx, eventId);
-    const attendees = await Promise.all(attendeeIds.map((attendeeId) => ctx.db.get(attendeeId)));
-
-    return attendees
-      .filter((attendee): attendee is Doc<'users'> => attendee !== null)
-      .map((attendee) => ({
-        id: attendee._id,
-        name: attendee.displayName || attendee.username,
-        username: attendee.username,
-      }));
   },
 });
