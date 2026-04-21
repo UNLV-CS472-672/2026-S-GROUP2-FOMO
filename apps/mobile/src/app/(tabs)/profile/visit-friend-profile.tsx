@@ -6,7 +6,7 @@ import StatLabel from '@/components/ui/stat-label';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
-import type { Id } from '@fomo/backend/convex/_generated/dataModel';
+import type { Doc, Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -66,7 +66,7 @@ export default function VisitFriendProfileScreen() {
   }
 
   const postsByTab = (() => {
-    const allPosts = friendProfile.posts.map((post) => ({
+    const allPosts = friendProfile.posts.map((post: Doc<'posts'>) => ({
       id: String(post._id),
       title: post.title,
       subtitle: post.description,

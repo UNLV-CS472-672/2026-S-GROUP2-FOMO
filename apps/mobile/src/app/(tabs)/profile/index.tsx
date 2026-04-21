@@ -8,6 +8,7 @@ import { Authenticated, GuestOnly } from '@/features/auth/components/auth-gate';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { useUser } from '@clerk/expo';
 import { api } from '@fomo/backend/convex/_generated/api';
+import type { Doc } from '@fomo/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -32,7 +33,7 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<'all' | 'recent' | 'tagged'>('all');
   const description = profile?.user.bio?.trim() ? profile.user.bio : 'No bio yet.';
   const postsByTab = useMemo(() => {
-    const allPosts = (profile?.posts ?? []).map((post) => ({
+    const allPosts = (profile?.posts ?? []).map((post: Doc<'posts'>) => ({
       id: String(post._id),
       title: post.title,
       subtitle: post.description,

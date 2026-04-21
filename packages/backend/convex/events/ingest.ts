@@ -1,8 +1,8 @@
 import { env } from '@fomo/env/backend';
 import { v } from 'convex/values';
-import { internal } from './_generated/api';
-import { action, internalMutation } from './_generated/server';
-import { latLngToH3Index } from './events';
+import { internal } from '../_generated/api';
+import { action, internalMutation } from '../_generated/server';
+import { latLngToH3Index } from './queries';
 
 const normalizedEventValidator = v.object({
   name: v.string(),
@@ -509,7 +509,7 @@ export const syncTicketmasterLasVegas = action({
     }
 
     const result: UpsertNormalizedEventsResult = await ctx.runMutation(
-      internal.eventsIngest.upsertNormalizedEvents,
+      internal.events.ingest.upsertNormalizedEvents,
       {
         events: normalizedEvents.slice(0, targetEventCount),
       }

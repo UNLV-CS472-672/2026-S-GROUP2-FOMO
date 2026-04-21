@@ -3,6 +3,7 @@ import { Screen } from '@/components/ui/screen';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { useUser } from '@clerk/expo';
 import { api } from '@fomo/backend/convex/_generated/api';
+import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -13,6 +14,18 @@ type FriendListEntry = {
   username: string;
   realName?: string;
   imageSource?: { uri: string };
+};
+
+type FriendRecommendation = {
+  userId: Id<'users'>;
+  score: number;
+};
+
+type FriendRecord = {
+  id: Id<'users'>;
+  username: string;
+  displayName?: string;
+  avatarUrl?: string;
 };
 
 /** Friends UI from this screen; embed in profile or use via {@link FriendsScreen}. */
@@ -31,7 +44,7 @@ export function FriendsScreenContent() {
 
   const recommendedFriends = useMemo<FriendListEntry[]>(
     () =>
-      (friendRecResult?.recs ?? []).map((rec) => ({
+      (friendRecResult?.recs ?? []).map((rec: FriendRecommendation) => ({
         id: rec.userId,
         username: rec.userId,
         realName: `Score: ${rec.score.toFixed(2)}`,
@@ -48,7 +61,7 @@ export function FriendsScreenContent() {
 
   const filteredFriends = useMemo(() => {
     const q = searchText.trim().toLowerCase();
-    return (friendsResult ?? [])
+    return ((friendsResult ?? []) as FriendRecord[])
       .map((friend) => ({
         id: String(friend.id),
         username: friend.username,

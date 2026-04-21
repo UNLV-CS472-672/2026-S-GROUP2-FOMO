@@ -1,6 +1,7 @@
 import { useAppTheme } from '@/lib/use-app-theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
+import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { useLocalSearchParams } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
@@ -10,11 +11,16 @@ export default function PostDetailsScreen() {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const { postId } = useLocalSearchParams<{ postId?: string | string[] }>();
-  const normalizedPostId = Array.isArray(postId) ? postId[0] : postId;
+  const normalizedPostId = (Array.isArray(postId) ? postId[0] : postId) as Id<'posts'> | undefined;
   const post = useQuery(
     api.posts.getPostById,
     normalizedPostId ? { postId: normalizedPostId } : 'skip'
   );
+  type PostComment = {
+    id: string;
+    authorName: string;
+    text: string;
+  };
 
   if (post === undefined) {
     return (
@@ -47,7 +53,7 @@ export default function PostDetailsScreen() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 25 }}
         >
           {post.comments.length > 0 ? (
-            post.comments.map((comment) => (
+            post.comments.map((comment: PostComment) => (
               <View key={comment.id} className="mb-3 flex-row">
                 <View className="mr-3">
                   <MaterialIcons name="person" size={32} color={theme.text} />

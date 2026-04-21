@@ -12,7 +12,7 @@ export default function EventPage() {
     | Id<'events'>
     | undefined;
 
-  const event = useQuery(api.events.getEventById, eventId ? { eventId } : 'skip');
+  const event = useQuery(api.events.queries.getEventById, eventId ? { eventId } : 'skip');
   const eventImageUrl = useQuery(
     api.files.getUrl,
     event?.mediaId ? { storageId: event.mediaId } : 'skip'

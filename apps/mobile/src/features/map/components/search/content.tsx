@@ -1,6 +1,7 @@
 import { Icon } from '@/components/icon';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { api } from '@fomo/backend/convex/_generated/api';
+import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useQuery } from 'convex/react';
 import { useMemo } from 'react';
@@ -10,7 +11,7 @@ const SEARCH_FILTERS = ['Nearby', 'Tonight', 'Coffee', 'Study spots'];
 const RECENT_SEARCHES = ['Gorilla Sushi', 'Live music', 'Late-night food', 'Study groups'];
 
 type SearchableEvent = {
-  id: string;
+  id: Id<'events'>;
   name: string;
   caption: string;
   attendeeCount: number;
@@ -39,7 +40,7 @@ export function SearchContent({
   onSelectEvent,
 }: SearchContentProps) {
   const theme = useAppTheme();
-  const events = useQuery(api.events.getEvents) ?? [];
+  const events = (useQuery(api.events.queries.getEvents) ?? []) as SearchableEvent[];
 
   const filteredEvents = useMemo<SearchResult[]>(() => {
     const normalizedQuery = query.trim().toLowerCase();

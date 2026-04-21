@@ -1,9 +1,10 @@
 import { latLngToCell } from 'h3-js';
 
 import { v } from 'convex/values';
-import type { Doc, Id } from './_generated/dataModel';
-import { query, type QueryCtx } from './_generated/server';
-import { __backend_only_guestOrAuthenticatedUser } from './auth';
+import type { Doc } from '../_generated/dataModel';
+import { query, type QueryCtx } from '../_generated/server';
+import { __backend_only_guestOrAuthenticatedUser } from '../auth';
+import { getAttendeeCount } from './attendance';
 
 export function latLngToH3Index(lat: number, lng: number, resolution: number = 9): string {
   if (lat < -90 || lat > 90) {
@@ -16,15 +17,6 @@ export function latLngToH3Index(lat: number, lng: number, resolution: number = 9
     throw new RangeError(`Resolution must be an integer between 0 and 15. Got: ${resolution}`);
   }
   return latLngToCell(lat, lng, resolution);
-}
-
-async function getAttendeeCount(ctx: QueryCtx, eventId: Id<'events'>) {
-  const attendees = await ctx.db
-    .query('usersToEvents')
-    .withIndex('by_event', (q) => q.eq('eventId', eventId))
-    .collect();
-
-  return attendees.length;
 }
 
 async function serializeEvent(ctx: QueryCtx, event: Doc<'events'>, recommendationScore?: number) {
