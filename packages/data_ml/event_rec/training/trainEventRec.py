@@ -42,7 +42,7 @@ def main(epochs: int = 150, model_path: str | None = None) -> None:
             print(f"Loaded model from {model_path}")
         except RuntimeError as e:
             print(f"Full load failed ({e}), attempting partial load...")
-            def partial_load(model, saved_state):
+            def partial_load(model: UserTower | EventTower, saved_state:  dict[str, torch.Tensor]) -> None:
                 model_state = model.state_dict()
                 compatible = {
                     k: v for k, v in saved_state.items()

@@ -4,7 +4,6 @@ import numpy as np
 from unittest.mock import Mock, patch, MagicMock
 from typing import Optional
 
-# Import functions from recommendEvent
 import sys
 import os
 

@@ -34,6 +34,10 @@ import json
 import random
 import numpy as np
 from pathlib import Path
+from numpy.typing import NDArray
+from typing import TypeAlias
+
+ArchetypeType: TypeAlias = tuple[str, list[str], list[str], float, list[int], list[int], bool]
 
 
 # ── 1. Tag vocabulary ──────────────────────────────────────────────────────────
@@ -101,7 +105,7 @@ EVENT_ARCHETYPES = [
 ]
 
 
-def generate_event_for_user(archetype: tuple, excluded_tags: set) -> np.ndarray:
+def generate_event_for_user(archetype: ArchetypeType, excluded_tags: set[str]) -> NDArray[np.float32]:
     """
     Like generate_event but skips optional tags that are in `excluded_tags`.
     Used when simulating attended events for users with blocked tags —
@@ -120,7 +124,7 @@ def generate_event_for_user(archetype: tuple, excluded_tags: set) -> np.ndarray:
     return tags
 
 
-def generate_event(archetype: tuple) -> np.ndarray:
+def generate_event(archetype: ArchetypeType) -> NDArray[np.float32]:
     """Returns (num_tags + 4,) feature vector for one event."""
     name, required, optional, prob, dow_choices, hour_choices, is_free = archetype
 
@@ -214,7 +218,7 @@ BETA = 0.10
 TAU  = 1.25
 
 
-def build_weights(mat: np.ndarray, weight: float = 1.0) -> np.ndarray:
+def build_weights(mat: NDArray[np.float32], weight: float = 1.0) -> NDArray[np.float32]:
     """
     Converts an (n_events, num_tags) attendance matrix into a (num_tags,) weight vector.
     `weight` scales row contributions before the bounding formula:
@@ -230,16 +234,19 @@ def build_weights(mat: np.ndarray, weight: float = 1.0) -> np.ndarray:
     normalized  = mat / row_sums
     tag_weights = normalized.sum(axis=0) * weight
 
-    return (1.0 - np.exp(-(tag_weights + BETA) / TAU)).astype(np.float32)
+    result: NDArray[np.float32] = (1.0 - np.exp(-(tag_weights + BETA) / TAU)).astype(np.float32)
+    return result
 
 
 # ── 5. Simulate interactions ───────────────────────────────────────────────────
 
-def _score_archetype(arch: tuple, tag_set: set) -> int:
+def _score_archetype(arch: ArchetypeType, tag_set: set[str]) -> int:
     return len(set(arch[1]) & tag_set)
 
 
-def simulate_user(persona: tuple) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[int], list[int], list[int]]:
+def simulate_user(
+    persona: tuple[str, list[str], list[str], list[str], int, int, int, int]
+) -> tuple[NDArray[np.float32], NDArray[np.float32], NDArray[np.float32], list[int], list[int], list[int]]:
     """
     Returns:
         attended_weights   : (num_tags,)
@@ -360,7 +367,7 @@ for _w in _profile_weights:
     _profile_cumsum.append(_running)
 
 
-def _sample_profile() -> tuple:
+def _sample_profile() -> tuple[str, float, float, float, float]:
     r = random.random()
     for i, threshold in enumerate(_profile_cumsum):
         if r <= threshold:
@@ -368,9 +375,9 @@ def _sample_profile() -> tuple:
     return BEHAVIOR_PROFILES[-1]
 
 
-def generate_users() -> tuple[np.ndarray, list[tuple[list,list,list]]]:
-    user_features       = []
-    interaction_history = []
+def generate_users() -> tuple[NDArray[np.float32], list[tuple[list[int], list[int], list[int]]]]:
+    user_features: list[NDArray[np.float32]] = []
+    interaction_history: list[tuple[list[int], list[int], list[int]]] = []
 
     profile_counts: dict[str, int] = {p[0]: 0 for p in BEHAVIOR_PROFILES}
 
@@ -413,7 +420,7 @@ def generate_users() -> tuple[np.ndarray, list[tuple[list,list,list]]]:
 NUM_EVENTS = 4_000
 
 
-def generate_events() -> np.ndarray:
+def generate_events() -> NDArray[np.float32]:
     return np.array(
         [generate_event(random.choice(EVENT_ARCHETYPES)) for _ in range(NUM_EVENTS)],
         dtype=np.float32,
@@ -425,7 +432,7 @@ def generate_events() -> np.ndarray:
 TRIPLETS_PER_USER = 20
 
 
-def cosine_sim_attended(user_features: np.ndarray, event_features: np.ndarray) -> np.ndarray:
+def cosine_sim_attended(user_features: NDArray[np.float32], event_features: NDArray[np.float32]) -> NDArray[np.float32]:
     """
     Similarity using only the attended slice of user features vs event tag multihot.
     Used for triplet mining — we want to rank events by how well they match
@@ -439,14 +446,15 @@ def cosine_sim_attended(user_features: np.ndarray, event_features: np.ndarray) -
     u_norm = np.linalg.norm(att_weights, axis=1, keepdims=True) + 1e-8
     e_norm = np.linalg.norm(event_tags,  axis=1, keepdims=True) + 1e-8
 
-    return dot / (u_norm * e_norm.T)                    # (U, E)
+    result: NDArray[np.float32] = dot / (u_norm * e_norm.T)
+    return result
 
 
 def mine_triplets(
-    user_features: np.ndarray,
-    event_features: np.ndarray,
-    interaction_history: list[tuple[list,list,list]],
-) -> np.ndarray:
+    user_features: NDArray[np.float32],
+    event_features: NDArray[np.float32],
+    interaction_history: list[tuple[list[int], list[int], list[int]]],
+) -> NDArray[np.int32]:
     num_tags   = event_features.shape[1] - 4
     event_tags = event_features[:, :num_tags]                        # (E, T)
     sim        = cosine_sim_attended(user_features, event_features)  # (U, E)
@@ -456,7 +464,7 @@ def mine_triplets(
     # Precompute per-archetype event masks once — O(archetypes * E) instead of O(U * E)
     # arch_blk_masks[i] is a boolean (E,) array: True if event shares a required tag
     # with archetype i. Built outside the user loop so it's never recomputed.
-    arch_blk_masks: list[np.ndarray] = []
+    arch_blk_masks: list[NDArray[np.float32]] = []
     for arch in EVENT_ARCHETYPES:
         required_tags = arch[1]
         tag_indices   = [TAG_IDX[t] for t in required_tags if t in TAG_IDX]

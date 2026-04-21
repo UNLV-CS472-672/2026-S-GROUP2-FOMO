@@ -1,10 +1,12 @@
 import os
 import torch
 import numpy as np
+from numpy.typing import NDArray
 
 from convex import ConvexClient
 from dotenv import load_dotenv
-from typing import Optional
+from typing import Optional, Any
+
 
 from models.twoTowerModel import UserTower, EventTower
 
@@ -56,7 +58,7 @@ def get_user_features(client: ConvexClient, users: list[str], num_tags: int) -> 
     return torch.from_numpy(np.stack(fixed))
 
 
-def get_event_features(client: ConvexClient, num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[list[str], np.ndarray]:
+def get_event_features(client: ConvexClient, num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[list[str], NDArray[np.float32]]:
     """
     Builds the (num_tags + 4) feature vector for each event.
     Only returns events that haven't ended yet.
@@ -133,7 +135,7 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
     top_scores, top_indices = torch.topk(scores, k=k, dim=1)
 
     # Build recommendations
-    recommendations: dict[str, list[dict]] = {}
+    recommendations: dict[str, list[dict[str, float]]] = {}
     for i, user_id in enumerate(users):
         recommendations[user_id] = [
             {event_ids[event_idx]: top_scores[i][rank].item()}

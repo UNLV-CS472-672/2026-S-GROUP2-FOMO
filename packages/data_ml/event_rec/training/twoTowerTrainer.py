@@ -31,7 +31,7 @@ class TwoTowerTrainer():
         neg_vec  = self.event_tower(neg_event_tags)
 
         loss: torch.Tensor = self.bpr_loss(user_vec, pos_vec, neg_vec)
-        loss.backward()  # type: ignore
+        loss.backward()
         self.optimizer.step()
 
-        return loss.item()
+        return float(loss.item())

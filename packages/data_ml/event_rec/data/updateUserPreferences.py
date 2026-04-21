@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from numpy.typing import NDArray
 
 from convex import ConvexClient
 from dotenv import load_dotenv
@@ -34,7 +35,7 @@ def init_tags() -> None:
     NUM_TAGS = len(TAG_ID_TO_IDX)
 
 
-def event_multihot(event_id: str) -> np.ndarray:
+def event_multihot(event_id: str) -> NDArray[np.float32]:
     """Returns a (num_tags,) binary vector for one event."""
     vec = np.zeros(NUM_TAGS, dtype=np.float32)
     event_tags = get_client().query("data_ml/eventRec:getByEventId", {"eventId": event_id})
@@ -45,14 +46,14 @@ def event_multihot(event_id: str) -> np.ndarray:
     return vec
 
 
-def build_matrix(event_ids: list[str]) -> np.ndarray:
+def build_matrix(event_ids: list[str]) -> NDArray[np.float32]:
     """multihot matrix for list of event IDs."""
     if not event_ids:
         return np.zeros((0, NUM_TAGS), dtype=np.float32)
     return np.array([event_multihot(eid) for eid in event_ids], dtype=np.float32)
 
 
-def build_weights(mat: np.ndarray, row_weight: float = 1.0) -> np.ndarray:
+def build_weights(mat: NDArray[np.float32], row_weight: float = 1.0) -> NDArray[np.float32]:
     """
     Converts an (n_events, num_tags) matrix into a (num_tags,) bounded weight vector.
 
@@ -69,7 +70,8 @@ def build_weights(mat: np.ndarray, row_weight: float = 1.0) -> np.ndarray:
     normalized = mat / row_sums
     tag_weights = normalized.sum(axis=0) * row_weight
 
-    return (1.0 - np.exp(-(tag_weights + BETA) / TAU)).astype(np.float32)
+    result: NDArray[np.float32] = (1.0 - np.exp(-(tag_weights + BETA) / TAU)).astype(np.float32)
+    return result
 
 
 def get_interaction_ids(user_id: str) -> tuple[list[str], list[str], list[str]]:
@@ -86,7 +88,7 @@ def get_interaction_ids(user_id: str) -> tuple[list[str], list[str], list[str]]:
     return attended, interested, blocked
 
 
-def build_user_feature_vector(user_id: str) -> np.ndarray:
+def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
     """
     Builds full (3 * num_tags,) feature vector for one user:
       [attended_weights | interested_weights | blocked_weights]
@@ -115,7 +117,8 @@ def build_user_feature_vector(user_id: str) -> np.ndarray:
                 prior[TAG_ID_TO_IDX[tag_id]] = 0.5
         att_weights = np.clip(att_weights + prior * (1.0 - att_weights), 0.0, 1.0)
 
-    return np.concatenate([att_weights, int_weights, blk_weights]).astype(np.float32)
+    result: NDArray[np.float32] = np.concatenate([att_weights, int_weights, blk_weights]).astype(np.float32)
+    return result
 
 
 def main(users: list[str], update_db: bool) -> None:
@@ -125,7 +128,7 @@ def main(users: list[str], update_db: bool) -> None:
         all_users = get_client().query("data_ml/universal:queryAll", {"table_name": "users"})
         users = [row["_id"] for row in all_users]
 
-    user_feature_vectors: dict[str, np.ndarray] = {}
+    user_feature_vectors: dict[str, NDArray[np.float32]] = {}
     for user_id in users:
         user_feature_vectors[user_id] = build_user_feature_vector(user_id)
 
