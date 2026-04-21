@@ -480,11 +480,11 @@ export const seed = mutation({
     ];
     for (const pair of postLikePairs) {
       const existing = await ctx.db
-        .query('userPostLike')
+        .query('likes')
         .withIndex('by_userId_postId', (q) => q.eq('userId', pair.userId).eq('postId', pair.postId))
         .unique();
       if (!existing) {
-        await ctx.db.insert('userPostLike', pair);
+        await ctx.db.insert('likes', pair);
         const post = (await ctx.db.get(pair.postId)) as any;
         await ctx.db.patch(pair.postId, { likeCount: (post?.likeCount ?? 0) + 1 });
       }
@@ -522,13 +522,13 @@ export const seed = mutation({
 
     for (const pair of commentLikePairs) {
       const existing = await ctx.db
-        .query('userCommentLike')
+        .query('likes')
         .withIndex('by_userId_commentId', (q) =>
           q.eq('userId', pair.userId).eq('commentId', pair.commentId)
         )
         .unique();
       if (!existing) {
-        await ctx.db.insert('userCommentLike', pair);
+        await ctx.db.insert('likes', pair);
         const comment = (await ctx.db.get(pair.commentId)) as any;
         await ctx.db.patch(pair.commentId, { likeCount: (comment?.likeCount ?? 0) + 1 });
       }

@@ -108,19 +108,14 @@ export default defineSchema({
     tagIds: v.array(v.id('tags')),
   }).index('by_userId', ['userId']),
 
-  userPostLike: defineTable({
+  likes: defineTable({
     userId: v.id('users'),
-    postId: v.id('posts'),
+    commentId: v.optional(v.id('comments')), // optional -- only if liking a comment
+    postId: v.optional(v.id('posts')), // optional -- only if liking a post
   })
     .index('by_userId', ['userId'])
     .index('by_postId', ['postId'])
-    .index('by_userId_postId', ['userId', 'postId']),
-
-  userCommentLike: defineTable({
-    userId: v.id('users'),
-    commentId: v.id('comments'),
-  })
-    .index('by_userId', ['userId'])
     .index('by_commentId', ['commentId'])
+    .index('by_userId_postId', ['userId', 'postId'])
     .index('by_userId_commentId', ['userId', 'commentId']),
 });

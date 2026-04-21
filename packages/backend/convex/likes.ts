@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
-import { __backend_only_getAndAuthenticateCurrentConvexUser } from './users';
+import { __backend_only_getAndAuthenticateCurrentConvexUser } from './auth';
 
 // ─── Post Likes ───────────────────────────────────────────────
 
@@ -11,7 +11,7 @@ export const togglePostLike = mutation({
     const userId = user._id;
 
     const existing = await ctx.db
-      .query('userPostLike')
+      .query('likes')
       .withIndex('by_userId_postId', (q) => q.eq('userId', userId).eq('postId', postId))
       .unique();
 
@@ -23,7 +23,7 @@ export const togglePostLike = mutation({
       return { liked: false };
     }
 
-    await ctx.db.insert('userPostLike', { userId, postId });
+    await ctx.db.insert('likes', { userId, postId });
     const post = await ctx.db.get(postId);
     await ctx.db.patch(postId, {
       likeCount: (post?.likeCount ?? 0) + 1,
@@ -41,7 +41,7 @@ export const hasUserLikedPost = query({
     if (!userId) return false;
 
     const existing = await ctx.db
-      .query('userPostLike')
+      .query('likes')
       .withIndex('by_userId_postId', (q) => q.eq('userId', userId).eq('postId', postId))
       .unique();
 
@@ -64,16 +64,18 @@ export const getUserLikedPosts = query({
     const userId = user._id;
 
     const likes = await ctx.db
-      .query('userPostLike')
+      .query('likes')
       .withIndex('by_userId_postId', (q) => q.eq('userId', userId))
       .order('desc')
       .collect();
 
     const posts = await Promise.all(
-      likes.map(async (like) => {
-        const post = await ctx.db.get(like.postId);
-        return post; // filter out nulls downstream if posts get deleted
-      })
+      likes
+        .filter((like) => like.postId !== undefined)
+        .map(async (like) => {
+          const post = await ctx.db.get(like.postId!);
+          return post; // filter out nulls downstream if posts get deleted
+        })
     );
 
     return posts.filter(Boolean);
@@ -89,7 +91,7 @@ export const toggleCommentLike = mutation({
     const userId = user._id;
 
     const existing = await ctx.db
-      .query('userCommentLike')
+      .query('likes')
       .withIndex('by_userId_commentId', (q) => q.eq('userId', userId).eq('commentId', commentId))
       .unique();
 
@@ -101,7 +103,7 @@ export const toggleCommentLike = mutation({
       return { liked: false };
     }
 
-    await ctx.db.insert('userCommentLike', { userId, commentId });
+    await ctx.db.insert('likes', { userId, commentId });
     const comment = await ctx.db.get(commentId);
     await ctx.db.patch(commentId, {
       likeCount: (comment?.likeCount ?? 0) + 1,
@@ -119,7 +121,7 @@ export const hasUserLikedComment = query({
     if (!userId) return false;
 
     const existing = await ctx.db
-      .query('userCommentLike')
+      .query('likes')
       .withIndex('by_userId_commentId', (q) => q.eq('userId', userId).eq('commentId', commentId))
       .unique();
 
