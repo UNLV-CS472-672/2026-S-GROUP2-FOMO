@@ -1,37 +1,24 @@
 import { Image } from '@/components/image';
 import { Screen } from '@/components/ui/screen';
 import { api } from '@fomo/backend/convex/_generated/api';
+import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useMemo } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 export default function EventPage() {
   const { eventId: rawEventId } = useLocalSearchParams<{ eventId?: string | string[] }>();
-  const eventId = Array.isArray(rawEventId) ? rawEventId[0] : rawEventId;
+  const eventId = (Array.isArray(rawEventId) ? rawEventId[0] : rawEventId) as
+    | Id<'events'>
+    | undefined;
 
-  const eventDetail = useQuery(
-    api.data_ml.events.getEventById,
-    eventId ? { eventId: eventId } : 'skip'
-  );
+  const event = useQuery(api.events.getEventById, eventId ? { eventId } : 'skip');
   const eventImageUrl = useQuery(
     api.files.getUrl,
-    eventDetail?.mediaId ? { storageId: eventDetail.mediaId } : 'skip'
+    event?.mediaId ? { storageId: event.mediaId } : 'skip'
   );
 
-  const event = useMemo(() => {
-    if (!eventDetail) return null;
-    return {
-      id: eventDetail.id,
-      name: eventDetail.name,
-      caption: eventDetail.caption,
-      attendeeCount: eventDetail.attendeeCount,
-      startDate: eventDetail.startDate,
-      mediaId: eventDetail.mediaId,
-    };
-  }, [eventDetail]);
-
-  if (eventDetail === undefined) {
+  if (event === undefined) {
     return (
       <Screen className="items-center justify-center">
         <Stack.Screen options={{ title: 'Event Details' }} />
@@ -66,9 +53,6 @@ export default function EventPage() {
               >
                 <Text className="text-5xl font-black uppercase text-foreground">
                   {event.name[0] ?? '?'}
-                </Text>
-                <Text className="mt-3 text-center text-xs font-medium text-muted-foreground">
-                  {event.attendeeCount} going
                 </Text>
               </View>
             )}

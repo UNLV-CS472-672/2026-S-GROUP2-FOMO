@@ -20,7 +20,7 @@ const DEFAULT_ZOOM_LEVEL = 13;
 
 export default function MapScreen() {
   const { push } = useRouter();
-  const events = useQuery(api.data_ml.events.getEvents) ?? [];
+  const events = useQuery(api.events.getEvents) ?? [];
   const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();

@@ -5,7 +5,7 @@
  * can bundle shared `@fomo/backend` files into React Native, and Hermes throws on
  * `TextDecoder('utf-16le')` when `h3-js` loads.
  *
- * H3 indices below are precomputed at resolution 9 to match `latLngToH3Index` in `data_ml/events.ts`.
+ * H3 indices below are precomputed at resolution 9 to match `latLngToH3Index` in `events.ts`.
  */
 
 export type EventSeedLocation = {

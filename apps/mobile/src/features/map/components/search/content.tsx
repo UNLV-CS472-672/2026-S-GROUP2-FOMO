@@ -39,7 +39,7 @@ export function SearchContent({
   onSelectEvent,
 }: SearchContentProps) {
   const theme = useAppTheme();
-  const events = useQuery(api.data_ml.events.getEvents) ?? [];
+  const events = useQuery(api.events.getEvents) ?? [];
 
   const filteredEvents = useMemo<SearchResult[]>(() => {
     const normalizedQuery = query.trim().toLowerCase();
