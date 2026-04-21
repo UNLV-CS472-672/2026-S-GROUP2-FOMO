@@ -1,39 +1,50 @@
 'use client';
 
 import { useSidebar } from '@/components/ui/sidebar';
-import { MapSearchOverlay } from '@/features/map/components/map-search-overlay';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import {
   FALLBACK_COORDS,
+  MAPBOX_STYLE_DARK,
+  MAPBOX_STYLE_LIGHT,
   loadMapboxAssets,
   type MapboxGlobal,
   type MapboxMap,
   type MapboxMarker,
 } from '@/features/map/utils/load-mapbox-assets';
 import { env } from '@fomo/env/web';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTheme } from 'next-themes';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 const MAPBOX_TOKEN = env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
+const emptySubscribe = () => () => {};
 
 export default function MapPage() {
-  const { open, isMobile } = useSidebar();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapboxMap | null>(null);
   const markerRef = useRef<MapboxMarker | null>(null);
   const mapboxRef = useRef<MapboxGlobal | null>(null);
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
+  const { resolvedTheme } = useTheme();
+  const { state: sidebarState } = useSidebar();
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+
+  const isDark = mounted && resolvedTheme === 'dark';
 
   const staticMapSrc = useMemo(() => {
-    if (!MAPBOX_TOKEN) {
+    if (!mounted || !MAPBOX_TOKEN) {
       return '';
     }
 
+    const styleId = isDark ? 'dark-v11' : 'streets-v12';
     const [lng, lat] = centerCoordinate;
-    return `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
-  }, [centerCoordinate]);
+    return `https://api.mapbox.com/styles/v1/mapbox/${styleId}/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
+  }, [centerCoordinate, isDark, mounted]);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,7 +67,7 @@ export default function MapPage() {
 
         mapRef.current = new mapboxgl.Map({
           container: mapContainerRef.current,
-          style: 'mapbox://styles/mapbox/dark-v11',
+          style: MAPBOX_STYLE_LIGHT,
           center: FALLBACK_COORDS,
           zoom: 13,
           attributionControl: false,
@@ -65,6 +76,7 @@ export default function MapPage() {
         mapRef.current.on('load', () => {
           if (!cancelled) {
             didLoad = true;
+            mapRef.current?.resize();
             setMapReady(true);
             setLoadError(null);
             if (loadTimeout) {
@@ -103,6 +115,12 @@ export default function MapPage() {
       mapboxRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return;
+    const targetStyle = isDark ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT;
+    mapRef.current.setStyle(targetStyle);
+  }, [isDark, mapReady]);
 
   useEffect(() => {
     if (!mapRef.current) {
@@ -157,24 +175,22 @@ export default function MapPage() {
   }, []);
 
   useEffect(() => {
-    if (!mapRef.current || isMobile) {
-      return;
-    }
+    if (!mapRef.current) return;
 
-    const resizeFrames = [0, 120, 240];
-    const timers = resizeFrames.map((delay) =>
+    const delays = [0, 50, 100, 200, 300];
+    const timers = delays.map((delay) =>
       window.setTimeout(() => {
         mapRef.current?.resize();
       }, delay)
     );
 
     return () => {
-      timers.forEach((timer) => window.clearTimeout(timer));
+      timers.forEach((t) => window.clearTimeout(t));
     };
-  }, [open, isMobile]);
+  }, [sidebarState]);
 
   return (
-    <section className="relative h-[calc(100vh-7rem)] min-h-[32rem] overflow-hidden rounded-[2rem] border border-white/[0.12] bg-[#05070b]">
+    <section className="absolute inset-0 h-full w-full overflow-hidden bg-[#05070b]">
       {staticMapSrc ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -186,10 +202,8 @@ export default function MapPage() {
 
       <div
         ref={mapContainerRef}
-        className={`absolute inset-0 transition-opacity duration-300 ${mapReady ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute inset-0 h-full w-full transition-opacity duration-300 ${mapReady ? 'opacity-100' : 'opacity-0'}`}
       />
-
-      <MapSearchOverlay isOpen={isSearchOpen} onToggle={() => setIsSearchOpen((open) => !open)} />
 
       {loadError ? (
         <div className="absolute inset-x-4 bottom-4 z-10 rounded-xl border border-red-400/30 bg-black/70 px-4 py-3 text-sm text-red-100 backdrop-blur">
