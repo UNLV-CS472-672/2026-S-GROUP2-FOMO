@@ -1,9 +1,26 @@
+import os
 import torch
 import numpy as np
 
-from models.twoTowerModel import UserTower, EventTower
 from convex import ConvexClient
-from utils.utils import get_client
+from dotenv import load_dotenv
+from typing import Optional
+
+from models.twoTowerModel import UserTower, EventTower
+
+load_dotenv()
+
+CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
+
+client: Optional[ConvexClient] = (
+    ConvexClient(CONVEX_CLOUD_URL) if CONVEX_CLOUD_URL else None
+)
+
+def get_client() -> ConvexClient:
+    if client is None:
+        raise RuntimeError("ConvexClient not initialized")
+    return client
+
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
