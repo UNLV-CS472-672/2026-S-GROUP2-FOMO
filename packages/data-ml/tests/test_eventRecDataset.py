@@ -20,7 +20,7 @@ from data.eventRecDataset import (
 #  FAKE MOCK DATA
 # ------------------------------
 
-@pytest.fixturef
+@pytest.fixture
 def sample_user_features() -> torch.Tensor:
     """Sample user features: (5 users, 3 * 10 tags)"""
     return torch.randn(5, 30, dtype=torch.float32)
