@@ -18,6 +18,14 @@ export default function MapLayout() {
           headerLeft: () => <AppHeaderBackButton />,
         }}
       />
+      <Stack.Screen
+        name="event/attendees"
+        options={{
+          headerShown: true,
+          title: 'Attendees',
+          headerLeft: () => <AppHeaderBackButton />,
+        }}
+      />
     </Stack>
   );
 }

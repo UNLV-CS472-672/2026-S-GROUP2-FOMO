@@ -5,7 +5,7 @@ export const getByUserId = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
     return await ctx.db
-      .query('usersToEvents')
+      .query('attendance')
       .withIndex('by_userId', (q) => q.eq('userId', userId))
       .collect();
   },

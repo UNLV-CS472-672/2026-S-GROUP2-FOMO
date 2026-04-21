@@ -73,9 +73,13 @@ export default defineSchema({
   // - etc ...
   //
 
-  usersToEvents: defineTable({
+  attendance: defineTable({
     userId: v.id('users'),
     eventId: v.id('events'),
+    status: v.optional(
+      v.union(v.literal('going'), v.literal('interested'), v.literal('uninterested'))
+    ),
+    notification: v.optional(v.union(v.literal('all'), v.literal('friends'), v.literal('none'))),
   })
     .index('by_userId', ['userId'])
     .index('by_event', ['eventId'])

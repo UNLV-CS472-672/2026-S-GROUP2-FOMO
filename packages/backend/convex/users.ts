@@ -15,7 +15,7 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
       .withIndex('by_author', (q) => q.eq('authorId', user._id))
       .collect(),
     ctx.db
-      .query('usersToEvents')
+      .query('attendance')
       .withIndex('by_userId', (q) => q.eq('userId', user._id))
       .collect(),
     ctx.db
@@ -25,7 +25,7 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
   ]);
 
   const events = (
-    await Promise.all(userEventLinks.map((link: Doc<'usersToEvents'>) => ctx.db.get(link.eventId)))
+    await Promise.all(userEventLinks.map((link: Doc<'attendance'>) => ctx.db.get(link.eventId)))
   ).filter((event: Doc<'events'> | null): event is Doc<'events'> => event !== null);
 
   const recommendedUsers = friendRecs

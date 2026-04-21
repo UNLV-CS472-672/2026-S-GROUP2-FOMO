@@ -139,7 +139,7 @@ export const seedData = internalMutation({
     }
     const [e1, e2, e3, e4, e5, e6, e7, e8, e9] = eventIds;
 
-    //  Users/Events Join Table (Convex: usersToEvents)
+    //  Users/Events Join Table (Convex: attendance)
     const userEventPairs = [
       { userId: u1, eventId: e1 },
       { userId: u1, eventId: e5 },
@@ -194,12 +194,12 @@ export const seedData = internalMutation({
     ];
     for (const pair of userEventPairs) {
       const existing = await ctx.db
-        .query('usersToEvents')
+        .query('attendance')
         .filter((q) =>
           q.and(q.eq(q.field('userId'), pair.userId), q.eq(q.field('eventId'), pair.eventId))
         )
         .first();
-      if (!existing) await ctx.db.insert('usersToEvents', pair);
+      if (!existing) await ctx.db.insert('attendance', pair);
     }
 
     //  Event Tags (Convex: eventTags)
