@@ -441,6 +441,7 @@ export const seed = mutation({
       { postId: p19, authorId: u6, text: 'psi rho stays winning' },
       { postId: p19, authorId: u3, text: 'brotherhood > everything' },
     ];
+    const seededComments: { _id: any; postId: any; authorId: any; text: string }[] = [];
     for (const comment of comments) {
       const existing = await ctx.db
         .query('comments')
@@ -452,7 +453,85 @@ export const seed = mutation({
           )
         )
         .first();
-      if (!existing) await ctx.db.insert('comments', comment);
+      const commentId = existing?._id ?? (await ctx.db.insert('comments', comment));
+      seededComments.push({ _id: commentId, ...comment });
+    }
+
+    // Seed post likes from a handful of example posts.
+    const postLikePairs = [
+      { userId: u2, postId: p1 },
+      { userId: u4, postId: p1 },
+      { userId: u3, postId: p3 },
+      { userId: u6, postId: p3 },
+      { userId: u1, postId: p4 },
+      { userId: u8, postId: p7 },
+      { userId: u9, postId: p7 },
+      { userId: u3, postId: p8 },
+      { userId: u7, postId: p10 },
+      { userId: u1, postId: p11 },
+      { userId: u8, postId: p12 },
+      { userId: u2, postId: p13 },
+      { userId: u8, postId: p14 },
+      { userId: u7, postId: p15 },
+      { userId: u2, postId: p16 },
+      { userId: u4, postId: p17 },
+      { userId: u5, postId: p18 },
+      { userId: u2, postId: p19 },
+    ];
+    for (const pair of postLikePairs) {
+      const existing = await ctx.db
+        .query('likes')
+        .withIndex('by_userId_postId', (q) => q.eq('userId', pair.userId).eq('postId', pair.postId))
+        .unique();
+      if (!existing) {
+        await ctx.db.insert('likes', pair);
+        const post = (await ctx.db.get(pair.postId)) as any;
+        await ctx.db.patch(pair.postId, { likeCount: (post?.likeCount ?? 0) + 1 });
+      }
+    }
+
+    const findCommentId = (postId: any, text: string) =>
+      seededComments.find(
+        (comment) => String(comment.postId) === String(postId) && comment.text === text
+      )?._id;
+
+    // Seed comment likes from a few of the example comments.
+    const commentLikePairs = [
+      { userId: u1, commentId: findCommentId(p1, 'Gorilla Sushi!') },
+      { userId: u6, commentId: findCommentId(p1, 'used to be top sushi, went downhill tho') },
+      { userId: u3, commentId: findCommentId(p2, 'Im honestly shocked Airoma wasnt on the list.') },
+      { userId: u8, commentId: findCommentId(p3, 'straight for da noggin') },
+      { userId: u9, commentId: findCommentId(p4, 'Thank you for the fun night!!') },
+      { userId: u4, commentId: findCommentId(p6, 'my guy said sao im crine') },
+      { userId: u5, commentId: findCommentId(p7, 'I love it!!') },
+      {
+        userId: u2,
+        commentId: findCommentId(p10, 'YES and you 100% should cosplay, its way more fun'),
+      },
+      { userId: u9, commentId: findCommentId(p11, 'carhartt for $18 is actually insane') },
+      { userId: u1, commentId: findCommentId(p12, 'literally cried it was so pretty') },
+      { userId: u4, commentId: findCommentId(p14, 'save me a spot at the hot pot place') },
+      { userId: u8, commentId: findCommentId(p16, 'family ties made the whole crowd go insane') },
+      {
+        userId: u1,
+        commentId: findCommentId(p17, 'which artists did you see? looking for local recs'),
+      },
+      { userId: u6, commentId: findCommentId(p18, 'pop cafe is the move, see you there') },
+      { userId: u5, commentId: findCommentId(p19, 'brotherhood > everything') },
+    ].filter((pair): pair is { userId: any; commentId: any } => Boolean(pair.commentId));
+
+    for (const pair of commentLikePairs) {
+      const existing = await ctx.db
+        .query('likes')
+        .withIndex('by_userId_commentId', (q) =>
+          q.eq('userId', pair.userId).eq('commentId', pair.commentId)
+        )
+        .unique();
+      if (!existing) {
+        await ctx.db.insert('likes', pair);
+        const comment = (await ctx.db.get(pair.commentId)) as any;
+        await ctx.db.patch(pair.commentId, { likeCount: (comment?.likeCount ?? 0) + 1 });
+      }
     }
 
     const friendPairs = [
