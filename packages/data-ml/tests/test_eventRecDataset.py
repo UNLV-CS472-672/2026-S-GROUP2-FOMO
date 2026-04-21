@@ -20,7 +20,7 @@ from data.eventRecDataset import (
 #  FAKE MOCK DATA
 # ------------------------------
 
-@pytest.fixture
+@pytest.fixturef
 def sample_user_features() -> torch.Tensor:
     """Sample user features: (5 users, 3 * 10 tags)"""
     return torch.randn(5, 30, dtype=torch.float32)
@@ -300,7 +300,7 @@ def test_get_data_loader_passes_batch_size(mock_load_offline: MagicMock) -> None
 #  _load_online (basic tests)
 # ------------------------------
 
-@patch('utils.utils.get_client')
+@patch('recommendEvent.get_client')
 @patch('updateUserPreferences.init_tags')
 @patch('updateUserPreferences.build_user_feature_vector')
 def test_load_online_calls_init_tags(mock_build_vector: MagicMock, mock_init_tags: MagicMock, mock_get_client: MagicMock) -> None:
@@ -317,7 +317,7 @@ def test_load_online_calls_init_tags(mock_build_vector: MagicMock, mock_init_tag
     mock_init_tags.assert_called_once()
 
 
-@patch('utils.utils.get_client')
+@patch('recommendEvent.get_client')
 @patch('updateUserPreferences.init_tags')
 @patch('updateUserPreferences.build_user_feature_vector')
 def test_load_online_queries_users(mock_build_vector: MagicMock, mock_init_tags: MagicMock, mock_get_client: MagicMock) -> None:

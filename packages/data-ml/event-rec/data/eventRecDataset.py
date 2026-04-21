@@ -81,7 +81,7 @@ def _load_offline(data_dir:   str, batch_size: int = 32) -> tuple[DataLoader[Eve
 # Idk if this work :)
 def _load_online(batch_size: int = 32) -> tuple[DataLoader[EventRecDataset], DataLoader[EventRecDataset]]:
     """Pull live data from Convex."""
-    from utils.utils import get_client
+    from recommendEvent import get_client
     from updateUserPreferences import init_tags, build_user_feature_vector, NUM_TAGS
 
     client = get_client()
