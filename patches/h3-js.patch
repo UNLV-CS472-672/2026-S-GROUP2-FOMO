@@ -1,0 +1,52 @@
+diff --git a/dist/browser/h3-js.es.js b/dist/browser/h3-js.es.js
+index 730ca53472f7a86671924af02c279129310063f7..287a9af056b2296ae01ce76850fdd30fb8aea5fa 100644
+--- a/dist/browser/h3-js.es.js
++++ b/dist/browser/h3-js.es.js
+@@ -257,7 +257,7 @@ var libh3 = function (libh3) {
+   function stringToUTF8(str, outPtr, maxBytesToWrite) {
+     return stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
+   }
+-  var UTF16Decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-16le") : undefined;
++  var UTF16Decoder = (function() { try { return typeof TextDecoder !== "undefined" ? new TextDecoder("utf-16le") : undefined; } catch(e) { return undefined; } })();
+   function writeArrayToMemory(array, buffer) {
+     HEAP8.set(array, buffer);
+   }
+diff --git a/dist/browser/h3-js.js b/dist/browser/h3-js.js
+index ca2448a33c9c8eced73e9fbcb91ef33857ab00d3..50bf50c6b6fbf4e125cd0057a714172a5b7c945c 100644
+--- a/dist/browser/h3-js.js
++++ b/dist/browser/h3-js.js
+@@ -257,7 +257,7 @@ var libh3 = function (libh3) {
+   function stringToUTF8(str, outPtr, maxBytesToWrite) {
+     return stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
+   }
+-  var UTF16Decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-16le") : undefined;
++  var UTF16Decoder = (function() { try { return typeof TextDecoder !== "undefined" ? new TextDecoder("utf-16le") : undefined; } catch(e) { return undefined; } })();
+   function writeArrayToMemory(array, buffer) {
+     HEAP8.set(array, buffer);
+   }
+diff --git a/dist/h3-js.es.js b/dist/h3-js.es.js
+index a416b7d3e371e6a7db56b9c6d22517ff9ee57f10..357079b0865de06f2b20066be787fe2ba01674cd 100644
+--- a/dist/h3-js.es.js
++++ b/dist/h3-js.es.js
+@@ -365,7 +365,7 @@ var libh3 = function (libh3) {
+   function stringToUTF8(str, outPtr, maxBytesToWrite) {
+     return stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
+   }
+-  var UTF16Decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-16le") : undefined;
++  var UTF16Decoder = (function() { try { return typeof TextDecoder !== "undefined" ? new TextDecoder("utf-16le") : undefined; } catch(e) { return undefined; } })();
+   function writeArrayToMemory(array, buffer) {
+     HEAP8.set(array, buffer);
+   }
+diff --git a/dist/h3-js.js b/dist/h3-js.js
+index e70b2f1d29e7820f4e2908f85269d1debae6cd28..43bf4c821e443002cb5f22214b95267033ee33b2 100644
+--- a/dist/h3-js.js
++++ b/dist/h3-js.js
+@@ -365,7 +365,7 @@ var libh3 = function (libh3) {
+   function stringToUTF8(str, outPtr, maxBytesToWrite) {
+     return stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
+   }
+-  var UTF16Decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-16le") : undefined;
++  var UTF16Decoder = (function() { try { return typeof TextDecoder !== "undefined" ? new TextDecoder("utf-16le") : undefined; } catch(e) { return undefined; } })();
+   function writeArrayToMemory(array, buffer) {
+     HEAP8.set(array, buffer);
+   }

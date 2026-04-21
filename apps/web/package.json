@@ -21,6 +21,7 @@
     "@paper-design/shaders-react": "^0.0.75",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "h3-js": "^4.4.0",
     "lucide-react": "^0.577.0",
     "motion": "^12.38.0",
     "next": "16.1.6",

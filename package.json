@@ -56,6 +56,9 @@
     "overrides": {
       "react": "19.1.0",
       "react-dom": "19.1.0"
+    },
+    "patchedDependencies": {
+      "h3-js": "patches/h3-js.patch"
     }
   },
   "reactDoctor": {
