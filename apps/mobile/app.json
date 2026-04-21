@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "fomo",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "platforms": ["ios", "android"],
     "ios": {
       "supportsTablet": true,
@@ -28,7 +27,6 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.fomo.mobile"
     },
@@ -67,18 +65,10 @@
           }
         }
       ],
-      "@rnmapbox/maps",
       [
         "expo-location",
         {
           "locationWhenInUsePermission": "FOMO uses your location to show events near you on the map."
-        }
-      ],
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "FOMO uses your camera so you can capture photos and videos for posts.",
-          "microphonePermission": "FOMO uses your microphone when recording videos."
         }
       ],
       [
@@ -87,6 +77,22 @@
           "microphonePermission": "FOMO uses your microphone so you can search with your voice.",
           "speechRecognitionPermission": "FOMO uses speech recognition so you can search events with your voice.",
           "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos.",
+          "savePhotosPermission": "Allow $(PRODUCT_NAME) to save photos.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ],
+      [
+        "react-native-vision-camera",
+        {
+          "enableMicrophonePermission": true,
+          "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera.",
+          "microphonePermissionText": "$(PRODUCT_NAME) needs access to your Microphone."
         }
       ],
       [

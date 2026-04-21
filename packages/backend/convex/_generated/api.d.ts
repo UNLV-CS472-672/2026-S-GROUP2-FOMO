@@ -18,7 +18,6 @@ import type * as data_ml_usersToEvents from "../data_ml/usersToEvents.js";
 import type * as eventSeedsStatic from "../eventSeedsStatic.js";
 import type * as events from "../events.js";
 import type * as eventsIngest from "../eventsIngest.js";
-import type * as files from "../files.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
 
@@ -39,7 +38,6 @@ declare const fullApi: ApiFromModules<{
   eventSeedsStatic: typeof eventSeedsStatic;
   events: typeof events;
   eventsIngest: typeof eventsIngest;
-  files: typeof files;
   seed: typeof seed;
   users: typeof users;
 }>;

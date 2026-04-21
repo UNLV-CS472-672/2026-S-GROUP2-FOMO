@@ -36,6 +36,8 @@ export default function LoginScreen() {
   });
   const navigation = useNavigation();
   const usingPassword = state.challengeMethod === 'password';
+  const shouldRenderVerification =
+    state.challengeMethod === 'email_code' && state.hasPreparedEmailCodeChallenge;
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -88,38 +90,40 @@ export default function LoginScreen() {
         />
       ) : (
         <>
-          <View className="rounded-2xl bg-muted-foreground/8 p-1.5">
-            <View className="flex-row gap-2">
-              <Pressable
-                className={`flex-1 rounded-2xl px-4 py-3 ${
-                  !usingPassword ? 'bg-background' : 'bg-transparent'
-                }`}
-                onPress={() => void switchChallengeMethod('email_code')}
-              >
-                <Text
-                  className={`text-center text-sm font-semibold ${
-                    !usingPassword ? 'text-foreground' : 'text-muted-foreground'
+          {!state.emailCodeUnavailable && (
+            <View className="rounded-2xl bg-muted-foreground/8 p-1.5">
+              <View className="flex-row gap-2">
+                <Pressable
+                  className={`flex-1 rounded-2xl px-4 py-3 ${
+                    !usingPassword ? 'bg-background' : 'bg-transparent'
                   }`}
+                  onPress={() => void switchChallengeMethod('email_code')}
                 >
-                  Email code
-                </Text>
-              </Pressable>
-              <Pressable
-                className={`flex-1 rounded-2xl px-4 py-3 ${
-                  usingPassword ? 'bg-background' : 'bg-transparent'
-                }`}
-                onPress={() => void switchChallengeMethod('password')}
-              >
-                <Text
-                  className={`text-center text-sm font-semibold ${
-                    usingPassword ? 'text-foreground' : 'text-muted-foreground'
+                  <Text
+                    className={`text-center text-sm font-semibold ${
+                      !usingPassword ? 'text-foreground' : 'text-muted-foreground'
+                    }`}
+                  >
+                    Email code
+                  </Text>
+                </Pressable>
+                <Pressable
+                  className={`flex-1 rounded-2xl px-4 py-3 ${
+                    usingPassword ? 'bg-background' : 'bg-transparent'
                   }`}
+                  onPress={() => void switchChallengeMethod('password')}
                 >
-                  Password
-                </Text>
-              </Pressable>
+                  <Text
+                    className={`text-center text-sm font-semibold ${
+                      usingPassword ? 'text-foreground' : 'text-muted-foreground'
+                    }`}
+                  >
+                    Password
+                  </Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
+          )}
 
           {usingPassword ? (
             <PasswordStep
@@ -134,7 +138,7 @@ export default function LoginScreen() {
               onChangeText={setPassword}
               onSubmit={onPasswordSignInPress}
             />
-          ) : (
+          ) : shouldRenderVerification ? (
             <VerificationStep
               value={state.code}
               onChangeText={setCode}
@@ -147,7 +151,7 @@ export default function LoginScreen() {
               submitLoadingLabel="Verifying..."
               error={state.errors?.code}
             />
-          )}
+          ) : null}
         </>
       )}
     </AuthWrapper>

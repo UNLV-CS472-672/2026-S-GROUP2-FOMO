@@ -59,7 +59,7 @@ export function FriendsScreenContent() {
   }, [friendsResult, searchText]);
 
   const handleFriendPress = (friendId: string) => {
-    router.push(`/profile/visit-friend-profile?id=${friendId}`);
+    router.push({ pathname: '/profile/visit-friend-profile', params: { id: friendId } });
   };
 
   return (

@@ -142,6 +142,7 @@ export function Sidebar({
   const { isMobile, open, openMobile, setOpenMobile, state } = useSidebar();
   const desktopWidth =
     collapsible === 'icon' && !open ? 'var(--sidebar-width-icon)' : 'var(--sidebar-width)';
+  const sidebarViewportHeight = 'calc(100svh - var(--header-height, 0px))';
   const shellClasses =
     variant === 'floating'
       ? 'm-3 rounded-3xl border border-border bg-surface shadow-[0_24px_64px_rgba(45,23,18,0.08)]'
@@ -173,7 +174,10 @@ export function Sidebar({
       <Dialog.Root open={openMobile} onOpenChange={setOpenMobile}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm" />
-          <Dialog.Content className="fixed inset-y-0 left-0 z-50 w-[var(--sidebar-width-mobile)] border-r border-border bg-surface p-0 shadow-xl outline-none">
+          <Dialog.Content
+            className="fixed left-0 z-50 w-[var(--sidebar-width-mobile)] border-r border-border bg-surface p-0 shadow-xl outline-none"
+            style={{ top: 'var(--header-height, 0px)', height: sidebarViewportHeight }}
+          >
             <Dialog.Title className="sr-only">Sidebar</Dialog.Title>
             <div className="flex h-full flex-col">{children}</div>
           </Dialog.Content>
@@ -184,8 +188,12 @@ export function Sidebar({
 
   return (
     <div
-      className="sticky top-0 h-screen shrink-0 self-start overflow-hidden transition-[width] duration-200"
-      style={{ width: desktopWidth }}
+      className="sticky shrink-0 self-start overflow-hidden transition-[width] duration-200"
+      style={{
+        top: 'var(--header-height, 0px)',
+        width: desktopWidth,
+        height: sidebarViewportHeight,
+      }}
     >
       {content}
     </div>
