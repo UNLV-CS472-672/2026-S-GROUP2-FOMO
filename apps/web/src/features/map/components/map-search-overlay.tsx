@@ -11,7 +11,6 @@ type MapSearchOverlayProps = {
   onSelectEvent?: (event: MapSearchEvent) => void;
 };
 
-const H3_INDEX_PATTERN = /^[0-9a-f]{15}$/i;
 const resultDateFormatter = new Intl.DateTimeFormat(undefined, {
   month: 'short',
   day: 'numeric',
@@ -37,16 +36,12 @@ export function MapSearchOverlay({ isOpen, onToggle, onSelectEvent }: MapSearchO
   const [searchValue, setSearchValue] = useState('');
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const normalizedSearchValue = searchValue.trim();
-  const h3Index = H3_INDEX_PATTERN.test(normalizedSearchValue)
-    ? normalizedSearchValue.toLowerCase()
-    : undefined;
   const debouncedSearchValue = useDebouncedValue(normalizedSearchValue, 250);
   const events = useQuery(
     api.events.search,
     isOpen
       ? {
-          query: h3Index ? '' : debouncedSearchValue,
-          h3Index,
+          query: debouncedSearchValue,
           limit: 8,
         }
       : 'skip'
@@ -88,7 +83,7 @@ export function MapSearchOverlay({ isOpen, onToggle, onSelectEvent }: MapSearchO
                   onToggle();
                 }
               }}
-              placeholder="Search events by name or ID"
+              placeholder="Search events by name"
               className="w-full bg-transparent text-[15px] text-white outline-none placeholder:text-white/40"
             />
           </label>

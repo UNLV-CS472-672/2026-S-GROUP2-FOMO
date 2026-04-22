@@ -22,17 +22,6 @@ export const search = query({
     const limit = normalizeLimit(args.limit);
     const searchTerm = args.query?.trim() ?? '';
     const h3Index = args.h3Index?.trim() ?? '';
-    const eventId = searchTerm ? ctx.db.normalizeId('events', searchTerm) : null;
-
-    if (eventId) {
-      const event = await ctx.db.get(eventId);
-
-      if (!event || (h3Index && event.location.h3Index !== h3Index)) {
-        return [];
-      }
-
-      return [event];
-    }
 
     if (searchTerm && h3Index) {
       return await ctx.db
