@@ -9,6 +9,8 @@ import { Authenticated, GuestOnly } from '@/features/auth/components/auth-gate';
 export default function CreateScreen() {
   const { push } = useRouter();
 
+  //hiiiiiii
+
   return (
     <Screen>
       <GuestOnly>
@@ -50,7 +52,7 @@ export default function CreateScreen() {
             variant="secondary"
             size="lg"
             className="items-start text-xl font-semibold"
-            onPress={() => push('/create/post')}
+            onPress={() => push('/create/camera-screen')}
           >
             <ButtonText variant="secondary" className="text-xl">
               Create Post

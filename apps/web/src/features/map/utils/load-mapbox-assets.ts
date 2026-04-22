@@ -1,16 +1,34 @@
 export type Coordinates = [number, number];
 
+export type MapboxMapEventHandler<T = Record<string, unknown>> = (e: T) => void;
+
 export const MAPBOX_STYLE_DARK = 'mapbox://styles/mapbox/dark-v11';
 export const MAPBOX_STYLE_LIGHT = 'mapbox://styles/mapbox/streets-v12';
 
 export type MapboxMap = {
-  on: (event: string, handler: () => void) => void;
+  on: (
+    event: string,
+    layerOrHandler: string | MapboxMapEventHandler,
+    handler?: MapboxMapEventHandler
+  ) => void;
+  off: (
+    event: string,
+    layerOrHandler: string | MapboxMapEventHandler,
+    handler?: MapboxMapEventHandler
+  ) => void;
   flyTo: (options: Record<string, unknown>) => void;
   jumpTo: (options: Record<string, unknown>) => void;
   setStyle: (style: string) => void;
   getStyle: () => { name?: string };
   resize: () => void;
   remove: () => void;
+  addSource: (id: string, source: Record<string, unknown>) => void;
+  getSource: (id: string) => { setData: (data: unknown) => void } | undefined;
+  addLayer: (layer: Record<string, unknown>) => void;
+  getLayer: (id: string) => unknown;
+  removeLayer: (id: string) => void;
+  removeSource: (id: string) => void;
+  getCanvas: () => HTMLCanvasElement;
 };
 
 export type MapboxMarker = {

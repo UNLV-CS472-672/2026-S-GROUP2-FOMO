@@ -29,12 +29,14 @@ export default defineSchema({
     title: v.string(),
     description: v.string(),
     authorId: v.id('users'),
+    likeCount: v.optional(v.number()),
   }).index('by_author', ['authorId']),
 
   comments: defineTable({
     postId: v.id('posts'),
     authorId: v.id('users'),
     text: v.string(),
+    likeCount: v.optional(v.number()),
   })
     .index('by_post', ['postId'])
     .index('by_author', ['authorId'])
@@ -54,10 +56,12 @@ export default defineSchema({
   usersToEvents: defineTable({
     userId: v.id('users'),
     eventId: v.id('events'),
+    interactionType: v.union(v.literal('attended'), v.literal('interested'), v.literal('blocked')),
   })
     .index('by_userId', ['userId'])
     .index('by_event', ['eventId'])
-    .index('by_user_event', ['userId', 'eventId']),
+    .index('by_user_event', ['userId', 'eventId'])
+    .index('by_userId_interactionType', ['userId', 'interactionType']),
 
   eventTags: defineTable({
     eventId: v.id('events'),
@@ -105,4 +109,15 @@ export default defineSchema({
     userId: v.id('users'),
     tagIds: v.array(v.id('tags')),
   }).index('by_userId', ['userId']),
+
+  likes: defineTable({
+    userId: v.id('users'),
+    commentId: v.optional(v.id('comments')), // optional -- only if liking a comment
+    postId: v.optional(v.id('posts')), // optional -- only if liking a post
+  })
+    .index('by_userId', ['userId'])
+    .index('by_postId', ['postId'])
+    .index('by_commentId', ['commentId'])
+    .index('by_userId_postId', ['userId', 'postId'])
+    .index('by_userId_commentId', ['userId', 'commentId']),
 });
