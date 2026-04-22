@@ -26,6 +26,14 @@ export default function MapLayout() {
           headerLeft: () => <AppHeaderBackButton />,
         }}
       />
+      <Stack.Screen
+        name="event/profile/[username]"
+        options={{
+          headerShown: true,
+          title: 'Profile',
+          headerLeft: () => <AppHeaderBackButton />,
+        }}
+      />
     </Stack>
   );
 }

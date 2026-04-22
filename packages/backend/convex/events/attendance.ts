@@ -56,8 +56,14 @@ export const getAttendeesByEventId = async (ctx: QueryCtx, eventId: Id<'events'>
 export const getEventAttendees = query({
   args: { eventId: v.id('events') },
   handler: async (ctx, { eventId }) => {
-    const attendeeIds = await getAttendeesByEventId(ctx, eventId);
-    const attendees = await Promise.all(attendeeIds.map((attendeeId) => ctx.db.get(attendeeId)));
+    const attendanceRecords = await ctx.db
+      .query('attendance')
+      .withIndex('by_event', (q) => q.eq('eventId', eventId))
+      .order('desc')
+      .collect();
+
+    const goingRecords = attendanceRecords.filter(countsAsAttendee);
+    const attendees = await Promise.all(goingRecords.map((record) => ctx.db.get(record.userId)));
 
     return attendees
       .filter((attendee): attendee is Doc<'users'> => attendee !== null)

@@ -13,6 +13,7 @@ export type FeedComment = {
 export type FeedPost = {
   id: string;
   authorName: string;
+  authorUsername: string;
   authorAvatarUrl?: string;
   caption: string;
   likes: number;

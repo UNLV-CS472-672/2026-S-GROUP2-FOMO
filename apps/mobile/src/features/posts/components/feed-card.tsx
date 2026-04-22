@@ -8,6 +8,7 @@ import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { useQuery } from 'convex/react';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -15,6 +16,8 @@ type FeedCardProps = {
   post: FeedPost;
   readOnly: boolean;
   onToggleLike: () => void;
+  disableAuthorPress?: boolean;
+  onPressAuthor?: () => void;
 };
 
 type MediaTileProps = {
@@ -128,8 +131,15 @@ function FeedCardMedia({
   );
 }
 
-export function FeedCard({ post, readOnly, onToggleLike }: FeedCardProps) {
+export function FeedCard({
+  post,
+  readOnly,
+  onToggleLike,
+  disableAuthorPress,
+  onPressAuthor,
+}: FeedCardProps) {
   const theme = useAppTheme();
+  const router = useRouter();
   const [carouselIndex, setCarouselIndex] = useState<number | null>(null);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
 
@@ -154,14 +164,28 @@ export function FeedCard({ post, readOnly, onToggleLike }: FeedCardProps) {
       />
 
       <View className="gap-2.5">
-        <View className="flex-row items-center gap-2.5">
+        <Pressable
+          className="flex-row items-center gap-2.5"
+          hitSlop={4}
+          disabled={disableAuthorPress}
+          onPress={() => {
+            if (onPressAuthor) {
+              onPressAuthor();
+            } else if (post.authorUsername) {
+              router.push({
+                pathname: '/(tabs)/(map)/event/profile/[username]',
+                params: { username: post.authorUsername },
+              });
+            }
+          }}
+        >
           <Avatar
             name={post.authorName}
             size={36}
             source={post.authorAvatarUrl ? { uri: post.authorAvatarUrl } : undefined}
           />
           <Text className="text-[15px] font-semibold text-foreground">{post.authorName}</Text>
-        </View>
+        </Pressable>
 
         <FeedCardMedia mediaIds={post.mediaIds} onPressMedia={setCarouselIndex} />
 

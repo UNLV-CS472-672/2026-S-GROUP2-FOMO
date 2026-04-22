@@ -216,6 +216,7 @@ export function ProfilePage({
                   key={post.id}
                   post={post}
                   readOnly={isGuestMode}
+                  disableAuthorPress
                   onToggleLike={() => {
                     if (isGuestMode) return;
                     void togglePostLike({ postId: post.id as Id<'posts'> }).catch((error) => {

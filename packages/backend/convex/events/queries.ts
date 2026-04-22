@@ -57,6 +57,7 @@ async function serializeEventFeedPost(
     id: post._id,
     caption: post.caption ?? '',
     authorName: author?.displayName || author?.username || 'Unknown user',
+    authorUsername: author?.username ?? '',
     authorAvatarUrl: author?.avatarUrl || '',
     likes: post.likeCount ?? likes.length,
     liked: viewerId ? likes.some((like) => like.userId === viewerId) : false,

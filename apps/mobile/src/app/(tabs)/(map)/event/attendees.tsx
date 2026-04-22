@@ -1,15 +1,19 @@
 import { Screen } from '@/components/ui/screen';
 import { FriendCell } from '@/features/profile/components/friend-cell';
 import { useAppTheme } from '@/lib/use-app-theme';
+import { useUser } from '@clerk/expo';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, Text, TextInput, View } from 'react-native';
 
 export default function EventAttendeesPage() {
   const theme = useAppTheme();
+  const router = useRouter();
+  const { isSignedIn } = useUser();
+  const currentUser = useQuery(api.users.getCurrentProfile, isSignedIn ? {} : 'skip');
   const { eventId: rawEventId, eventName } = useLocalSearchParams<{
     eventId?: string | string[];
     eventName?: string | string[];
@@ -83,6 +87,14 @@ export default function EventAttendeesPage() {
                   username={attendee.username}
                   displayName={attendee.name}
                   avatarUrl={attendee.avatarUrl ?? undefined}
+                  onPress={() =>
+                    currentUser?.user.username === attendee.username
+                      ? router.push('/(tabs)/profile')
+                      : router.push({
+                          pathname: '/(tabs)/(map)/event/profile/[username]',
+                          params: { username: attendee.username },
+                        })
+                  }
                 />
               ))
             ) : (
