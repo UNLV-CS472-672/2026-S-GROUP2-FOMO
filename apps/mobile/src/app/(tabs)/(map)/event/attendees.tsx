@@ -1,5 +1,5 @@
-import FriendCell from '@/components/profile/friend-cell';
 import { Screen } from '@/components/ui/screen';
+import { FriendCell } from '@/features/profile/components/friend-cell';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';

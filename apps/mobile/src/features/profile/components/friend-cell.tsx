@@ -8,7 +8,7 @@ type FriendCellProps = {
   onPress?: () => void;
 };
 
-export default function FriendCell({ username, displayName, avatarUrl, onPress }: FriendCellProps) {
+export function FriendCell({ username, displayName, avatarUrl, onPress }: FriendCellProps) {
   return (
     <TouchableOpacity
       onPress={onPress}

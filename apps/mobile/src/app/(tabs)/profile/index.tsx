@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import { ScrollView } from 'react-native';
 
 // imports for authentication and guest mode
-import { GuestMode } from '@/components/profile/guest-mode';
+import { GuestMode } from '@/features/profile/components/guest-mode';
 
 export default function ProfileScreen() {
   const router = useRouter();

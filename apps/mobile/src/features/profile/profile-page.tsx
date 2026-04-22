@@ -1,9 +1,9 @@
 import { Button, ButtonText } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
-import StatLabel from '@/components/ui/stat-label';
 import { Avatar } from '@/features/posts/components/avatar';
 import { FeedCard } from '@/features/posts/components/feed-card';
 import type { FeedPost } from '@/features/posts/types';
+import StatLabel from '@/features/profile/components/stat-label';
 import { useGuest } from '@/integrations/session/provider';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { MaterialIcons } from '@expo/vector-icons';
