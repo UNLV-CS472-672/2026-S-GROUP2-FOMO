@@ -19,9 +19,7 @@ export default function PostDetailsScreen() {
     api.posts.getPostById,
     normalizedPostId ? { postId: normalizedPostId } : 'skip'
   );
-  const primaryMediaId = Array.isArray(post?.mediaIds)
-    ? post.mediaIds[0]
-    : (post?.mediaIds ?? undefined);
+  const primaryMediaId = post?.mediaIds[0];
   const mediaUrl = useQuery(
     api.files.getUrl,
     primaryMediaId ? { storageId: primaryMediaId } : 'skip'

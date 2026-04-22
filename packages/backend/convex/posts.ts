@@ -20,11 +20,7 @@ export const getPostById = query({
       return null;
     }
 
-    const mediaIds = Array.isArray(post.mediaIds)
-      ? post.mediaIds
-      : post.mediaIds
-        ? [post.mediaIds]
-        : [];
+    const mediaIds = post.mediaIds;
 
     const [author, comments] = await Promise.all([
       ctx.db.get(post.authorId),

@@ -48,7 +48,7 @@ export default defineSchema({
   posts: defineTable({
     eventId: v.optional(v.id('events')),
     caption: v.optional(v.string()), // necessary if no mediaIds
-    mediaIds: v.optional(v.union(v.id('_storage'), v.array(v.id('_storage')))), // necessary if no caption
+    mediaIds: v.array(v.id('_storage')), // necessary if no caption
     authorId: v.id('users'),
     likeCount: v.optional(v.number()),
   })

@@ -218,10 +218,7 @@ export const getSeedPostMediaIds = internalQuery({
   handler: async (ctx) => {
     const existingPosts = await ctx.db.query('posts').collect();
     const mediaIdByCaption = new Map(
-      existingPosts.map((post) => [
-        post.caption ?? null,
-        Array.isArray(post.mediaIds) ? (post.mediaIds[0] ?? null) : (post.mediaIds ?? null),
-      ])
+      existingPosts.map((post) => [post.caption ?? null, post.mediaIds[0] ?? null])
     );
 
     return postSeedMedia.map((entry) => mediaIdByCaption.get(entry.key) ?? null);
@@ -233,10 +230,7 @@ export const getSeedVariantPostMediaIds = internalQuery({
   handler: async (ctx) => {
     const existingPosts = await ctx.db.query('posts').collect();
     const mediaIdsByCaption = new Map(
-      existingPosts.map((post) => [
-        post.caption ?? null,
-        Array.isArray(post.mediaIds) ? post.mediaIds : post.mediaIds ? [post.mediaIds] : [],
-      ])
+      existingPosts.map((post) => [post.caption ?? null, post.mediaIds])
     );
 
     return eventVariantPostBlueprints.map((entry) => {
@@ -662,7 +656,9 @@ export const seedData = internalMutation({
       }
 
       const { lookupCaption: _lookupCaption, ...post } = p;
-      postIds.push(await ctx.db.insert('posts', { ...post, caption }));
+      postIds.push(
+        await ctx.db.insert('posts', { ...post, caption, mediaIds: post.mediaIds ?? [] })
+      );
     }
 
     const eventIdList = [e1, e2, e3, e4, e5, e6, e7, e8, e9];
@@ -677,7 +673,7 @@ export const seedData = internalMutation({
         eventId: eventIdList[blueprint.eventIndex]!,
         authorId: userIds[blueprint.authorIndex]!,
         caption: blueprint.caption,
-        mediaIds: mediaIds.length > 0 ? mediaIds : undefined,
+        mediaIds: mediaIds,
       };
 
       if (existing) {
