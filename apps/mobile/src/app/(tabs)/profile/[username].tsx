@@ -10,6 +10,10 @@ export default function VisitProfileScreen() {
   const screenTitle = username ?? 'Profile';
 
   const profile = useQuery(api.users.getProfileByUsername, username ? { username } : 'skip');
+  const feedPosts = useQuery(
+    api.users.getProfileFeed,
+    profile ? { userId: profile.user._id } : 'skip'
+  );
 
   if (!username) {
     return (
@@ -51,6 +55,7 @@ export default function VisitProfileScreen() {
       <Stack.Screen options={{ title: screenTitle }} />
       <ProfilePage
         profile={profile}
+        feedPosts={feedPosts ?? []}
         secondaryStat={{
           label: 'Events',
           value: profile.stats.eventCount,

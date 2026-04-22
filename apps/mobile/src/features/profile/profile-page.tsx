@@ -1,13 +1,18 @@
 import { Button, ButtonText } from '@/components/ui/button';
-import PostGrid from '@/components/ui/post-grid';
 import { Screen } from '@/components/ui/screen';
 import StatLabel from '@/components/ui/stat-label';
 import { Avatar } from '@/features/posts/components/avatar';
+import { FeedCard } from '@/features/posts/components/feed-card';
+import type { FeedPost } from '@/features/posts/types';
+import { useGuest } from '@/integrations/session/provider';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { MaterialIcons } from '@expo/vector-icons';
-import type { Doc } from '@fomo/backend/convex/_generated/dataModel';
+import { api } from '@fomo/backend/convex/_generated/api';
+import type { Doc, Id } from '@fomo/backend/convex/_generated/dataModel';
+import { useMutation, useQuery } from 'convex/react';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 type ProfileData = {
   user: {
@@ -25,6 +30,7 @@ type ProfileData = {
 
 type ProfilePageProps = {
   profile: ProfileData;
+  feedPosts: FeedPost[];
   secondaryStat: {
     label: string;
     value: number;
@@ -60,34 +66,52 @@ export function ProfileStateScreen({
   );
 }
 
+function MediaGridItem({ postId, mediaId }: { postId: string; mediaId: Id<'_storage'> }) {
+  const router = useRouter();
+  const mediaUrl = useQuery(api.files.getUrl, { storageId: mediaId });
+
+  return (
+    <TouchableOpacity
+      onPress={() =>
+        router.push({
+          pathname: '../profile/post-details',
+          params: { postId },
+        })
+      }
+      className="aspect-square w-1/3"
+    >
+      {mediaUrl ? (
+        <Image source={{ uri: mediaUrl }} className="h-full w-full" resizeMode="cover" />
+      ) : (
+        <View className="h-full w-full bg-primary/5" />
+      )}
+    </TouchableOpacity>
+  );
+}
+
 export function ProfilePage({
   profile,
+  feedPosts,
   secondaryStat,
   activityLabel,
-  emptyPostsMessage = 'No posts in this category',
+  emptyPostsMessage = 'No posts yet',
   onPressSettings,
   topPaddingClassName = 'pt-20',
   bioFallback,
 }: ProfilePageProps) {
   const theme = useAppTheme();
-  const [activeTab, setActiveTab] = useState<'all' | 'recent' | 'tagged'>('all');
+  const { isGuestMode } = useGuest();
+  const togglePostLike = useMutation(api.likes.togglePostLike);
+  const [activeTab, setActiveTab] = useState<'feed' | 'media'>('feed');
 
-  const postsByTab = (() => {
-    const allPosts = profile.posts.map((post) => ({
-      id: String(post._id),
-      title: post.caption ?? 'Untitled post',
-      subtitle: '',
-    }));
-
-    return {
-      all: allPosts,
-      recent: allPosts.slice(0, 6),
-      tagged: [],
-    };
-  })();
-
-  const displayPosts = postsByTab[activeTab];
-  const profileBio = profile.user.bio;
+  const mediaItems = feedPosts.flatMap((p) =>
+    p.mediaIds.map((mediaId) => ({
+      key: `${p.id}-${mediaId}`,
+      postId: p.id,
+      mediaId: mediaId as Id<'_storage'>,
+    }))
+  );
+  const profileBio = profile.user.bio ?? bioFallback;
 
   return (
     <Screen className="flex-1">
@@ -124,7 +148,9 @@ export function ProfilePage({
                 </Button>
               ) : null}
             </View>
-            <Text className="mt-1 text-sm leading-5 text-foreground">{profileBio}</Text>
+            {profileBio ? (
+              <Text className="mt-1 text-sm leading-5 text-foreground">{profileBio}</Text>
+            ) : null}
           </View>
         </View>
 
@@ -152,38 +178,39 @@ export function ProfilePage({
         <View className="flex-row border-y border-primary-soft-border">
           <TouchableOpacity
             className={`flex-1 items-center py-3 ${
-              activeTab === 'all' ? 'border-b-[5px] border-b-primary' : ''
+              activeTab === 'feed' ? 'border-b-[5px] border-b-primary' : ''
             }`}
-            onPress={() => setActiveTab('all')}
+            onPress={() => setActiveTab('feed')}
             accessibilityRole="tab"
-            accessibilityLabel="All posts tab"
-            accessibilityState={{ selected: activeTab === 'all' }}
+            accessibilityLabel="Feed tab"
+            accessibilityState={{ selected: activeTab === 'feed' }}
           >
             <Text
               className={
-                activeTab === 'all' ? 'font-semibold text-primary' : 'text-muted-foreground'
+                activeTab === 'feed' ? 'font-semibold text-primary' : 'text-muted-foreground'
               }
             >
-              All
+              Feed
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             className={`flex-1 items-center py-3 ${
-              activeTab === 'recent' ? 'border-b-[5px] border-b-primary' : ''
+              activeTab === 'media' ? 'border-b-[5px] border-b-primary' : ''
             }`}
-            onPress={() => setActiveTab('recent')}
+            onPress={() => setActiveTab('media')}
             accessibilityRole="tab"
-            accessibilityLabel="Recent posts tab"
-            accessibilityState={{ selected: activeTab === 'recent' }}
+            accessibilityLabel="Media tab"
+            accessibilityState={{ selected: activeTab === 'media' }}
           >
             <Text
               className={
-                activeTab === 'recent' ? 'font-semibold text-primary' : 'text-muted-foreground'
+                activeTab === 'media' ? 'font-semibold text-primary' : 'text-muted-foreground'
               }
             >
-              Recent
+              Media
             </Text>
           </TouchableOpacity>
+          {/* Tagged tab - TODO :: uncommment when ready
           <TouchableOpacity
             className={`flex-1 items-center py-3 ${
               activeTab === 'tagged' ? 'border-b-[5px] border-b-primary' : ''
@@ -201,13 +228,43 @@ export function ProfilePage({
               Tagged
             </Text>
           </TouchableOpacity>
+          */}
         </View>
 
-        {displayPosts.length > 0 ? (
-          <PostGrid posts={displayPosts} />
+        {activeTab === 'feed' ? (
+          feedPosts.length > 0 ? (
+            <View className="gap-3 pt-4 mx-2">
+              {feedPosts.map((post) => (
+                <FeedCard
+                  key={post.id}
+                  post={post}
+                  readOnly={isGuestMode}
+                  onToggleLike={() => {
+                    if (isGuestMode) return;
+                    void togglePostLike({ postId: post.id as Id<'posts'> }).catch((error) => {
+                      console.error('Failed to toggle profile post like', error);
+                    });
+                  }}
+                />
+              ))}
+            </View>
+          ) : (
+            <View className="items-center justify-center py-8">
+              <Text className="text-muted-foreground">{emptyPostsMessage}</Text>
+            </View>
+          )
+        ) : mediaItems.length > 0 ? (
+          <FlatList
+            data={mediaItems}
+            renderItem={({ item }) => <MediaGridItem postId={item.postId} mediaId={item.mediaId} />}
+            keyExtractor={(item) => item.key}
+            numColumns={3}
+            scrollEnabled={false}
+            contentContainerStyle={{ paddingBottom: 100 }}
+          />
         ) : (
           <View className="items-center justify-center py-8">
-            <Text className="text-muted-foreground">{emptyPostsMessage}</Text>
+            <Text className="text-muted-foreground">No media posts yet</Text>
           </View>
         )}
       </ScrollView>

@@ -16,6 +16,10 @@ export default function ProfileScreen() {
   const { isSignedIn } = useUser();
   const profile = useQuery(api.users.getCurrentProfile, isSignedIn ? {} : 'skip');
   const friends = useQuery(api.data_ml.friends.getFriends, isSignedIn ? {} : 'skip');
+  const feedPosts = useQuery(
+    api.users.getProfileFeed,
+    profile ? { userId: profile.user._id } : 'skip'
+  );
 
   return (
     <Screen className="flex-1">
@@ -26,6 +30,7 @@ export default function ProfileScreen() {
         {profile ? (
           <ProfilePage
             profile={profile}
+            feedPosts={feedPosts ?? []}
             secondaryStat={{
               label: 'Friends',
               value: friends?.length ?? 0,

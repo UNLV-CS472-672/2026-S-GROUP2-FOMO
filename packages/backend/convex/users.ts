@@ -2,7 +2,11 @@ import { v } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
 import { query, QueryCtx } from './_generated/server';
-import { __backend_only_getAndAuthenticateCurrentConvexUser } from './auth';
+import {
+  __backend_only_getAndAuthenticateCurrentConvexUser,
+  __backend_only_guestOrAuthenticatedUser,
+} from './auth';
+import { getThreadedCommentsByPost } from './comments';
 
 async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
   const [posts, comments, userEventLinks, friendRecs] = await Promise.all([
@@ -106,5 +110,53 @@ export const getProfileByUsername = query({
     }
 
     return await buildProfile(ctx, user);
+  },
+});
+
+function countComments(comments: Awaited<ReturnType<typeof getThreadedCommentsByPost>>): number {
+  return comments.reduce((total, comment) => total + 1 + countComments(comment.replies), 0);
+}
+
+async function serializeProfileFeedPost(
+  ctx: QueryCtx,
+  post: Doc<'posts'>,
+  viewerId?: Doc<'users'>['_id']
+) {
+  const [author, comments, likes] = await Promise.all([
+    ctx.db.get(post.authorId),
+    getThreadedCommentsByPost(ctx, post._id),
+    ctx.db
+      .query('likes')
+      .withIndex('by_postId', (q) => q.eq('postId', post._id))
+      .collect(),
+  ]);
+
+  return {
+    id: post._id,
+    caption: post.caption ?? '',
+    authorName: author?.displayName || author?.username || 'Unknown user',
+    authorAvatarUrl: author?.avatarUrl || '',
+    likes: post.likeCount ?? likes.length,
+    liked: viewerId ? likes.some((like) => like.userId === viewerId) : false,
+    mediaIds: post.mediaIds ?? [],
+    commentCount: countComments(comments),
+    comments,
+  };
+}
+
+export const getProfileFeed = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
+
+    const posts = await ctx.db
+      .query('posts')
+      .withIndex('by_author', (q) => q.eq('authorId', userId))
+      .order('desc')
+      .collect();
+
+    return await Promise.all(
+      posts.map((post) => serializeProfileFeedPost(ctx, post, guestMode ? undefined : viewer._id))
+    );
   },
 });
