@@ -58,7 +58,7 @@ export default function CreateEventScreen() {
               ? undefined
               : () =>
                   router.push({
-                    pathname: '/(tabs)/create/camera-screen',
+                    pathname: './camera-screen',
                     params: { returnTo: '/create/event' },
                   })
           }
@@ -113,7 +113,7 @@ export default function CreateEventScreen() {
       </ScrollView>
 
       <Button
-        onPress={() => router.replace('/(tabs)/create')}
+        onPress={() => router.replace('./')}
         style={{
           position: 'absolute',
           bottom: tabBarHeight + 20,
