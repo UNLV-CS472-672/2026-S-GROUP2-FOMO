@@ -10,6 +10,7 @@ type EventMediaPost = {
   id: string;
   authorName: string;
   likeCount: number;
+  liked: boolean;
   mediaIds: Id<'_storage'>[];
 };
 
@@ -65,7 +66,7 @@ function EventMediaTile({ post, cell }: EventMediaTileProps) {
           style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
           pointerEvents="none"
         >
-          <Ionicons name="heart" size={11} color="#fff" />
+          <Ionicons name="heart" size={11} color={post.liked ? '#FF4B6E' : '#fff'} />
           <Text
             className="text-[11px] font-semibold text-white"
             style={{ fontVariant: ['tabular-nums'] }}

@@ -3,6 +3,7 @@ import { DrawerModal } from '@/components/ui/drawer';
 import { Screen } from '@/components/ui/screen';
 import { Avatar } from '@/features/events/components/avatar';
 import { Feed } from '@/features/events/components/feed';
+import { MediaCarousel } from '@/features/events/components/media-carousel';
 import { RsvpSheet } from '@/features/events/components/rsvp-sheet';
 import { TopMoments } from '@/features/events/components/top-moments';
 import type { AttendanceStatus, NotificationPref } from '@/features/events/types';
@@ -67,6 +68,7 @@ export default function EventPage() {
   const [attendance, setAttendance] = useState<AttendanceStatus>(null);
   const [notification, setNotification] = useState<NotificationPref>('all');
   const [isRsvpOpen, setIsRsvpOpen] = useState(false);
+  const [headerCarouselOpen, setHeaderCarouselOpen] = useState(false);
 
   useEffect(() => {
     if (!viewerAttendance) {
@@ -156,9 +158,22 @@ export default function EventPage() {
       <ScrollView contentContainerClassName="pb-10" showsVerticalScrollIndicator={false}>
         {/* Event Header */}
         <View className="flex-row gap-3.5 p-4">
-          <View className="h-[180px] w-[140px] overflow-hidden rounded-2xl border border-border bg-surface-muted">
+          <Pressable
+            className="h-[180px] w-[140px] overflow-hidden rounded-2xl border border-border bg-surface-muted"
+            onPress={() => eventImageUrl && setHeaderCarouselOpen(true)}
+            disabled={!eventImageUrl}
+          >
             {eventImageUrl ? (
-              <Image source={eventImageUrl} className="h-full w-full" contentFit="cover" />
+              <>
+                {headerCarouselOpen && (
+                  <MediaCarousel
+                    mediaIds={[event.mediaId!]}
+                    initialIndex={0}
+                    onClose={() => setHeaderCarouselOpen(false)}
+                  />
+                )}
+                <Image source={eventImageUrl} className="h-full w-full" contentFit="cover" />
+              </>
             ) : (
               <View
                 className="h-full items-center justify-center px-4"
@@ -169,7 +184,7 @@ export default function EventPage() {
                 </Text>
               </View>
             )}
-          </View>
+          </Pressable>
           <View className="flex-1 justify-between">
             <View className="gap-1.5">
               <Text className="text-lg font-bold text-foreground">{event.name}</Text>

@@ -109,6 +109,8 @@ export const getEventById = query({
 export const getTopMediaPosts = query({
   args: { eventId: v.id('events') },
   handler: async (ctx, { eventId }) => {
+    const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
+
     const posts = await ctx.db
       .query('posts')
       .withIndex('by_event', (q) => q.eq('eventId', eventId))
@@ -122,12 +124,20 @@ export const getTopMediaPosts = query({
           return null;
         }
 
-        const author = await ctx.db.get(post.authorId);
+        const [author, likes] = await Promise.all([
+          ctx.db.get(post.authorId),
+          ctx.db
+            .query('likes')
+            .withIndex('by_postId', (q) => q.eq('postId', post._id))
+            .collect(),
+        ]);
+
         return {
           id: post._id,
           caption: post.caption ?? '',
           mediaIds,
           likeCount: post.likeCount ?? 0,
+          liked: guestMode ? false : likes.some((like) => like.userId === viewer._id),
           matchedTagCount: 0,
           creationTime: post._creationTime,
           authorName: author?.displayName || author?.username || 'Unknown user',

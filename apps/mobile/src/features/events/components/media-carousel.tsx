@@ -6,26 +6,19 @@ import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { BlurView } from 'expo-blur';
 import { useEffect, useState } from 'react';
-import {
-  Modal,
-  Pressable,
-  SafeAreaView,
-  StatusBar,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { Modal, Pressable, StatusBar, Text, View, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import type { SharedValue } from 'react-native-reanimated';
 import Animated, {
   Extrapolation,
   interpolate,
-  runOnJS,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { scheduleOnRN } from 'react-native-worklets';
 
 const SPRING = { damping: 15, stiffness: 200 } as const;
 
@@ -62,6 +55,7 @@ function CarouselSlide({
   isActive,
   isZoomed,
   onZoomed,
+  onClose,
 }: {
   mediaId: Id<'_storage'>;
   width: number;
@@ -69,6 +63,7 @@ function CarouselSlide({
   isActive: boolean;
   isZoomed: boolean;
   onZoomed: (zoomed: boolean) => void;
+  onClose: () => void;
 }) {
   const mediaUrl = useQuery(api.files.getUrl, { storageId: mediaId });
 
@@ -104,10 +99,10 @@ function CarouselSlide({
         savedScale.value = 1;
         savedTranslateX.value = 0;
         savedTranslateY.value = 0;
-        runOnJS(onZoomed)(false);
+        scheduleOnRN(onZoomed, false);
       } else {
         savedScale.value = scale.value;
-        runOnJS(onZoomed)(true);
+        scheduleOnRN(onZoomed, true);
       }
     });
 
@@ -134,7 +129,7 @@ function CarouselSlide({
         savedScale.value = 1;
         savedTranslateX.value = 0;
         savedTranslateY.value = 0;
-        runOnJS(onZoomed)(false);
+        scheduleOnRN(onZoomed, false);
       } else {
         // Zoom into the tapped focal point
         const focalX = e.x - width / 2;
@@ -147,11 +142,18 @@ function CarouselSlide({
         savedScale.value = DOUBLE_TAP_SCALE;
         savedTranslateX.value = tx;
         savedTranslateY.value = ty;
-        runOnJS(onZoomed)(true);
+        scheduleOnRN(onZoomed, true);
       }
     });
 
-  const composed = Gesture.Simultaneous(pinch, Gesture.Race(doubleTap, pan));
+  const singleTap = Gesture.Tap().onEnd(() => {
+    if (scale.value <= 1) scheduleOnRN(onClose);
+  });
+
+  const composed = Gesture.Simultaneous(
+    pinch,
+    Gesture.Race(Gesture.Exclusive(doubleTap, singleTap), pan)
+  );
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -221,6 +223,7 @@ export function MediaCarousel({
               isActive={index === currentIndex}
               isZoomed={isZoomed}
               onZoomed={setIsZoomed}
+              onClose={onClose}
             />
           )}
           keyExtractor={(item, i) => `${item}-${i}`}
