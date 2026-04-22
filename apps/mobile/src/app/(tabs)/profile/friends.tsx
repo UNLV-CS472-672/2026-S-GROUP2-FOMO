@@ -8,6 +8,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+type FriendRec = { userId: string; score: number };
+
 /** Friends UI from this screen; embed in profile or use via {@link FriendsScreen}. */
 export function FriendsScreenContent() {
   const router = useRouter();
@@ -48,7 +50,7 @@ export function FriendsScreenContent() {
     return friends.filter(
       (f) => f.username.toLowerCase().includes(q) || f.realName?.toLowerCase().includes(q)
     );
-  }, [searchText]);
+  }, [friends, searchText]);
 
   const handleFriendPress = (friendId: string) => {
     router.push({
