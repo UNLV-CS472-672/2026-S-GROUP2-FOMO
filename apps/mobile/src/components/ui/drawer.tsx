@@ -53,7 +53,7 @@ export function Drawer({
         pressBehavior={enablePanDownToClose ? 'close' : 'collapse'}
       />
     ),
-    [backdropAppearsOnIndex, backdropDisappearsOnIndex]
+    [backdropAppearsOnIndex, backdropDisappearsOnIndex, enablePanDownToClose]
   );
 
   const handleChange = useCallback(

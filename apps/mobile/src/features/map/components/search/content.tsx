@@ -1,7 +1,6 @@
 import { Icon } from '@/components/icon';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { api } from '@fomo/backend/convex/_generated/api';
-import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useQuery } from 'convex/react';
 import { useMemo } from 'react';
@@ -9,22 +8,6 @@ import { Pressable, Text, View } from 'react-native';
 
 const SEARCH_FILTERS = ['Nearby', 'Tonight', 'Coffee', 'Study spots'];
 const RECENT_SEARCHES = ['Gorilla Sushi', 'Live music', 'Late-night food', 'Study groups'];
-
-type SearchableEvent = {
-  id: Id<'events'>;
-  name: string;
-  caption: string;
-  attendeeCount: number;
-  location: {
-    latitude: number;
-    longitude: number;
-    h3Index: string;
-  };
-};
-
-type SearchResult = {
-  event: SearchableEvent;
-};
 
 type SearchContentProps = {
   query: string;
@@ -40,17 +23,16 @@ export function SearchContent({
   onSelectEvent,
 }: SearchContentProps) {
   const theme = useAppTheme();
-  const events = (useQuery(api.events.queries.getEvents) ?? []) as SearchableEvent[];
+  const events = useQuery(api.events.queries.getEvents) ?? [];
 
-  const filteredEvents = useMemo<SearchResult[]>(() => {
+  const filteredEvents = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    const indexedEvents = events.map((event) => ({ event }));
 
     if (!normalizedQuery) {
-      return indexedEvents.slice(0, 6);
+      return events.slice(0, 6);
     }
 
-    return indexedEvents.filter(({ event }) => {
+    return events.filter((event) => {
       const haystack = `${event.name} ${event.caption}`.toLowerCase();
       return haystack.includes(normalizedQuery);
     });
@@ -92,7 +74,7 @@ export function SearchContent({
         <Text className="text-[18px] font-semibold text-foreground">Suggested spots</Text>
 
         {filteredEvents.length > 0 ? (
-          filteredEvents.slice(0, 6).map(({ event }, index) => (
+          filteredEvents.slice(0, 6).map((event, index) => (
             <Pressable
               key={`${event.name}-${event.location.latitude}`}
               accessibilityRole="button"
