@@ -10,17 +10,21 @@ import { Modal, Pressable, StatusBar, Text, View, useWindowDimensions } from 're
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import type { SharedValue } from 'react-native-reanimated';
 import Animated, {
+  Easing,
   Extrapolation,
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 const SPRING = { damping: 15, stiffness: 200 } as const;
+const DISMISS_THRESHOLD = 150;
+const DISMISS_VELOCITY = 1000;
 
 function Dot({
   index,
@@ -56,6 +60,8 @@ function CarouselSlide({
   isZoomed,
   onZoomed,
   onClose,
+  dismissY,
+  dismissOpacity,
 }: {
   mediaId: Id<'_storage'>;
   width: number;
@@ -64,6 +70,8 @@ function CarouselSlide({
   isZoomed: boolean;
   onZoomed: (zoomed: boolean) => void;
   onClose: () => void;
+  dismissY: SharedValue<number>;
+  dismissOpacity: SharedValue<number>;
 }) {
   const mediaUrl = useQuery(api.files.getUrl, { storageId: mediaId });
 
@@ -118,6 +126,37 @@ function CarouselSlide({
       savedTranslateY.value = translateY.value;
     });
 
+  // Swipe-down to dismiss — only active when not zoomed, fails on horizontal swipes
+  const dismissPan = Gesture.Pan()
+    .enabled(!isZoomed)
+    .activeOffsetY(10)
+    .failOffsetX([-20, 20])
+    .onUpdate((e) => {
+      dismissY.value = Math.max(0, e.translationY);
+      dismissOpacity.value = interpolate(
+        Math.max(0, e.translationY),
+        [0, height / 3],
+        [1, 0.3],
+        Extrapolation.CLAMP
+      );
+    })
+    .onEnd((e) => {
+      'worklet';
+      if (e.translationY > DISMISS_THRESHOLD || e.velocityY > DISMISS_VELOCITY) {
+        dismissOpacity.value = withTiming(0, { duration: 200 });
+        dismissY.value = withTiming(
+          height,
+          { duration: 280, easing: Easing.out(Easing.cubic) },
+          (finished) => {
+            if (finished) scheduleOnRN(onClose);
+          }
+        );
+      } else {
+        dismissY.value = withSpring(0, SPRING);
+        dismissOpacity.value = withSpring(1, SPRING);
+      }
+    });
+
   const doubleTap = Gesture.Tap()
     .numberOfTaps(2)
     .maxDuration(250)
@@ -152,6 +191,7 @@ function CarouselSlide({
 
   const composed = Gesture.Simultaneous(
     pinch,
+    dismissPan,
     Gesture.Race(Gesture.Exclusive(doubleTap, singleTap), pan)
   );
 
@@ -163,16 +203,23 @@ function CarouselSlide({
     ],
   }));
 
+  const dismissStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: dismissY.value }],
+    opacity: dismissOpacity.value,
+  }));
+
   return (
-    <GestureDetector gesture={composed}>
-      <Animated.View
-        style={[{ width, height, alignItems: 'center', justifyContent: 'center' }, animatedStyle]}
-      >
-        {mediaUrl ? (
-          <Image source={mediaUrl} style={{ width, height }} contentFit="contain" />
-        ) : null}
-      </Animated.View>
-    </GestureDetector>
+    <Animated.View style={[{ width, height }, dismissStyle]}>
+      <GestureDetector gesture={composed}>
+        <Animated.View
+          style={[{ width, height, alignItems: 'center', justifyContent: 'center' }, animatedStyle]}
+        >
+          {mediaUrl ? (
+            <Image source={mediaUrl} style={{ width, height }} contentFit="contain" />
+          ) : null}
+        </Animated.View>
+      </GestureDetector>
+    </Animated.View>
   );
 }
 
@@ -186,9 +233,12 @@ export function MediaCarousel({
   onClose: () => void;
 }) {
   const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isZoomed, setIsZoomed] = useState(false);
   const scrollX = useSharedValue(initialIndex * width);
+  const dismissY = useSharedValue(0);
+  const dismissOpacity = useSharedValue(1);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (e) => {
@@ -206,10 +256,11 @@ export function MediaCarousel({
           pagingEnabled
           scrollEnabled={!isZoomed}
           showsHorizontalScrollIndicator={false}
-          initialScrollIndex={initialIndex}
+          contentOffset={{ x: initialIndex * width, y: 0 }}
           getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
           onScroll={scrollHandler}
           scrollEventThrottle={16}
+          style={{ flex: 1 }}
           onMomentumScrollEnd={(e) => {
             const newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
             setCurrentIndex(newIndex);
@@ -224,12 +275,14 @@ export function MediaCarousel({
               isZoomed={isZoomed}
               onZoomed={setIsZoomed}
               onClose={onClose}
+              dismissY={dismissY}
+              dismissOpacity={dismissOpacity}
             />
           )}
           keyExtractor={(item, i) => `${item}-${i}`}
         />
 
-        <SafeAreaView style={{ position: 'absolute', left: 0, right: 0, top: 0 }}>
+        <View style={{ position: 'absolute', left: 0, right: 0, top: insets.top }}>
           <View className="flex-row items-center justify-between px-4 py-2">
             <Pressable onPress={onClose} hitSlop={12} className="rounded-full bg-black/50 p-2">
               <Ionicons name="close" size={22} color="white" />
@@ -242,16 +295,16 @@ export function MediaCarousel({
               </View>
             )}
           </View>
-        </SafeAreaView>
+        </View>
 
         {mediaIds.length > 1 && (
-          <SafeAreaView style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+          <View style={{ position: 'absolute', bottom: insets.bottom, left: 0, right: 0 }}>
             <View className="flex-row items-center justify-center gap-1.5 pb-4 pt-2">
               {mediaIds.map((_, i) => (
                 <Dot key={i} index={i} scrollX={scrollX} slideWidth={width} />
               ))}
             </View>
-          </SafeAreaView>
+          </View>
         )}
       </BlurView>
     </Modal>
