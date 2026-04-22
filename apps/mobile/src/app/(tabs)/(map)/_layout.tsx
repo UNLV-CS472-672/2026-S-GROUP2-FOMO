@@ -26,14 +26,6 @@ export default function MapLayout() {
           headerLeft: () => <AppHeaderBackButton />,
         }}
       />
-      <Stack.Screen
-        name="event/post/[postId]"
-        options={{
-          headerShown: true,
-          title: 'Post Details',
-          headerLeft: () => <AppHeaderBackButton />,
-        }}
-      />
     </Stack>
   );
 }

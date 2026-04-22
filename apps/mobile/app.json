@@ -13,6 +13,7 @@
       "bundleIdentifier": "com.fomo.mobile",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": ["comgooglemaps"],
         "NSLocationWhenInUseUsageDescription": "FOMO uses your location to show events near you on the map.",
         "NSCameraUsageDescription": "FOMO uses your camera so you can capture photos and videos for posts.",
         "NSPhotoLibraryUsageDescription": "FOMO needs access to your photos so you can choose media for posts.",

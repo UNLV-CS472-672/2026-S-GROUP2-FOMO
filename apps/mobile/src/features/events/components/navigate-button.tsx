@@ -16,7 +16,7 @@ export function NavigateButton({ latitude, longitude, label }: NavigateButtonPro
     <TouchableOpacity
       className="h-12 w-12 items-center justify-center rounded-full border border-border bg-background"
       activeOpacity={0.75}
-      onPress={() => openDirections(latitude, longitude, label)}
+      onPress={() => void openDirections(latitude, longitude, label)}
       accessibilityRole="button"
       accessibilityLabel="Get directions"
     >
