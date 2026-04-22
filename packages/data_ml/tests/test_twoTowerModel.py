@@ -11,21 +11,21 @@ EMBED_DIM = 64
 BATCH = 8
 
 
-def test_user_tower_shape():
+def test_user_tower_shape() -> None:
     tower = UserTower(num_tags=NUM_TAGS, hidden_dim=128, embed_dim=EMBED_DIM)
     x = torch.randn(BATCH, 3 * NUM_TAGS)
     out = tower(x)
     assert out.shape == (BATCH, EMBED_DIM)
 
 
-def test_event_tower_shape():
+def test_event_tower_shape() -> None:
     tower = EventTower(num_tags=NUM_TAGS, hidden_dim=128, embed_dim=EMBED_DIM)
     x = torch.randn(BATCH, NUM_TAGS + 4)
     out = tower(x)
     assert out.shape == (BATCH, EMBED_DIM)
 
 
-def test_outputs_are_l2_normalized():
+def test_outputs_are_l2_normalized() -> None:
     user = UserTower(num_tags=NUM_TAGS)
     event = EventTower(num_tags=NUM_TAGS)
     u_out = user(torch.randn(BATCH, 3 * NUM_TAGS))
@@ -34,7 +34,7 @@ def test_outputs_are_l2_normalized():
     assert torch.allclose(e_out.norm(dim=-1), torch.ones(BATCH), atol=1e-5)
 
 
-def test_towers_produce_matching_embed_dim():
+def test_towers_produce_matching_embed_dim() -> None:
     """Required for cosine similarity in BPR loss."""
     user = UserTower(num_tags=NUM_TAGS, embed_dim=EMBED_DIM)
     event = EventTower(num_tags=NUM_TAGS, embed_dim=EMBED_DIM)
@@ -45,7 +45,7 @@ def test_towers_produce_matching_embed_dim():
     assert sim.shape == (1,)
 
 
-def test_gradients_flow():
+def test_gradients_flow() -> None:
     tower = UserTower(num_tags=NUM_TAGS)
     x = torch.randn(BATCH, 3 * NUM_TAGS, requires_grad=False)
     out = tower(x)

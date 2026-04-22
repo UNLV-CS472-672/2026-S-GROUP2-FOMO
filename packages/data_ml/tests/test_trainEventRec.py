@@ -4,6 +4,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 import torch
+from typing import Tuple
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "event_rec"))
 
@@ -19,19 +20,19 @@ NUM_TAGS = 27
 # ------------------------------
 
 @pytest.fixture
-def towers():
+def towers() -> Tuple[UserTower, EventTower]:
     """Fresh towers for each test — prevents state leakage between tests."""
     return UserTower(NUM_TAGS), EventTower(NUM_TAGS)
 
 
 @pytest.fixture
-def trainer(towers):
+def trainer(towers: Tuple[UserTower, EventTower]) -> TwoTowerTrainer:
     user_tower, event_tower = towers
     return TwoTowerTrainer(user_tower, event_tower, lr=1e-4, epochs=150)
 
 
 @pytest.fixture
-def batch():
+def batch() -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Synthetic training batch."""
     user_tags = torch.randn(BATCH, 3 * NUM_TAGS)
     pos_tags = torch.randn(BATCH, NUM_TAGS + 4)
@@ -45,7 +46,7 @@ def batch():
 @patch('training.trainEventRec.torch.save')
 @patch('training.trainEventRec.Path.mkdir')
 @patch('training.trainEventRec.Path.glob')
-def test_save_model_creates_first_file(mock_glob, mock_mkdir, mock_torch_save, towers):
+def test_save_model_creates_first_file(mock_glob: MagicMock, mock_mkdir: MagicMock, mock_torch_save: MagicMock, towers: Tuple[UserTower, EventTower]) -> None:
     # Setup: no existing models
     mock_glob.return_value = []
 
@@ -74,7 +75,7 @@ def test_save_model_creates_first_file(mock_glob, mock_mkdir, mock_torch_save, t
 @patch('training.trainEventRec.torch.save')
 @patch('training.trainEventRec.Path.mkdir')
 @patch('training.trainEventRec.Path.glob')
-def test_save_model_increments_filename(mock_glob, mock_mkdir, mock_torch_save, towers):
+def test_save_model_increments_filename(mock_glob: MagicMock, mock_mkdir: MagicMock, mock_torch_save: MagicMock, towers: Tuple[UserTower, EventTower]) -> None:
     mock_glob.return_value = [
         Path("models/model1.pt"),
         Path("models/model2.pt"),
@@ -91,7 +92,7 @@ def test_save_model_increments_filename(mock_glob, mock_mkdir, mock_torch_save, 
 @patch('training.trainEventRec.torch.save')
 @patch('training.trainEventRec.Path.mkdir')
 @patch('training.trainEventRec.Path.glob')
-def test_save_model_with_tag(mock_glob, mock_mkdir, mock_torch_save, towers):
+def test_save_model_with_tag(mock_glob: MagicMock, mock_mkdir: MagicMock, mock_torch_save: MagicMock, towers: Tuple[UserTower, EventTower]) -> None:
     mock_glob.return_value = []
 
     user_tower, event_tower = towers
@@ -104,7 +105,7 @@ def test_save_model_with_tag(mock_glob, mock_mkdir, mock_torch_save, towers):
 @patch('training.trainEventRec.torch.save')
 @patch('training.trainEventRec.Path.mkdir')
 @patch('training.trainEventRec.Path.glob')
-def test_save_model_state_dict_called(mock_glob, mock_mkdir, mock_torch_save, towers):
+def test_save_model_state_dict_called(mock_glob: MagicMock, mock_mkdir: MagicMock, mock_torch_save: MagicMock, towers: Tuple[UserTower, EventTower]) -> None:
     mock_glob.return_value = []
 
     user_tower, event_tower = towers
@@ -124,7 +125,7 @@ def test_save_model_state_dict_called(mock_glob, mock_mkdir, mock_torch_save, to
 
 @patch('training.trainEventRec.save_model')
 @patch('training.trainEventRec.get_data_loader')
-def test_main_trains_from_scratch(mock_get_data_loader, mock_save_model, batch):
+def test_main_trains_from_scratch(mock_get_data_loader: MagicMock, mock_save_model: MagicMock, batch: Tuple[torch.Tensor, torch.Tensor, torch.Tensor]) -> None:
     """Test main() training loop - use minimal mocking"""
     # Setup mock data loader
     mock_train_loader = MagicMock()
@@ -150,7 +151,7 @@ def test_main_trains_from_scratch(mock_get_data_loader, mock_save_model, batch):
 
 @patch('training.trainEventRec.save_model')
 @patch('training.trainEventRec.get_data_loader')
-def test_main_loads_checkpoint(mock_get_data_loader, mock_save_model, batch, tmp_path):
+def test_main_loads_checkpoint(mock_get_data_loader: MagicMock, mock_save_model: MagicMock, batch: Tuple[torch.Tensor, torch.Tensor, torch.Tensor], tmp_path: Path) -> None:
     """Test main() loads checkpoint correctly"""
     mock_train_loader = MagicMock()
     mock_test_loader = MagicMock()

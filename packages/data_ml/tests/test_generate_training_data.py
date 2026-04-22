@@ -179,7 +179,7 @@ def test_generate_event_for_user_includes_required_tags() -> None:
 def test_generate_event_for_user_returns_correct_shape() -> None:
     """Test generate_event_for_user returns (NUM_TAGS,) array (no extra features)"""
     archetype = EVENT_ARCHETYPES[0]
-    excluded_tags = set()
+    excluded_tags: set[str] = set()
 
     event = generate_event_for_user(archetype, excluded_tags)
 
@@ -426,7 +426,7 @@ def test_mine_triplets_returns_correct_shape() -> None:
     num_users = 10
     user_features = np.random.rand(num_users, 3 * NUM_TAGS).astype(np.float32)
     event_features = np.random.rand(100, NUM_TAGS + 4).astype(np.float32)
-    interaction_history = [([], [], []) for _ in range(num_users)]
+    interaction_history: list[tuple[list[int], list[int], list[int]]] = [([], [], []) for _ in range(num_users)]
 
     triplets = mine_triplets(user_features, event_features, interaction_history)
 
@@ -440,7 +440,7 @@ def test_mine_triplets_returns_int32() -> None:
     """Test mine_triplets returns int32 array"""
     user_features = np.random.rand(10, 3 * NUM_TAGS).astype(np.float32)
     event_features = np.random.rand(100, NUM_TAGS + 4).astype(np.float32)
-    interaction_history = [([], [], []) for _ in range(10)]
+    interaction_history: list[tuple[list[int], list[int], list[int]]] = [([], [], []) for _ in range(10)]
 
     triplets = mine_triplets(user_features, event_features, interaction_history)
 
@@ -454,7 +454,7 @@ def test_mine_triplets_valid_indices() -> None:
 
     user_features = np.random.rand(num_users, 3 * NUM_TAGS).astype(np.float32)
     event_features = np.random.rand(num_events, NUM_TAGS + 4).astype(np.float32)
-    interaction_history = [([], [], []) for _ in range(num_users)]
+    interaction_history: list[tuple[list[int], list[int], list[int]]] = [([], [], []) for _ in range(num_users)]
 
     triplets = mine_triplets(user_features, event_features, interaction_history)
 
@@ -473,7 +473,7 @@ def test_mine_triplets_positive_margin() -> None:
     """Test mined triplets generally have positive similarity margin"""
     user_features = np.random.rand(10, 3 * NUM_TAGS).astype(np.float32)
     event_features = np.random.rand(100, NUM_TAGS + 4).astype(np.float32)
-    interaction_history = [([], [], []) for _ in range(10)]
+    interaction_history: list[tuple[list[int], list[int], list[int]]] = [([], [], []) for _ in range(10)]
 
     triplets = mine_triplets(user_features, event_features, interaction_history)
 
