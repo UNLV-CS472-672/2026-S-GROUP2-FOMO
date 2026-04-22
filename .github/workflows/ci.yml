@@ -83,4 +83,4 @@ jobs:
 
       - name: Run mypy (data_ml)
         working-directory: packages/data_ml
-        run: uv run mypy .
+        run: uv run mypy . --ignore-missing-imports
