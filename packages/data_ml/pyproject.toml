@@ -1,5 +1,5 @@
 [project]
-name = "data-ml"
+name = "data_ml"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -12,6 +12,7 @@ dependencies = [
     "requests>=2.32.5",
     "scikit-learn>=1.8.0",
     "mypy>=1.19.1",
+    "torch>=2.11.0",
 ]
 
 [tool.mypy]

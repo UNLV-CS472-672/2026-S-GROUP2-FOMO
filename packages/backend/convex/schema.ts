@@ -56,10 +56,12 @@ export default defineSchema({
   usersToEvents: defineTable({
     userId: v.id('users'),
     eventId: v.id('events'),
+    interactionType: v.union(v.literal('attended'), v.literal('interested'), v.literal('blocked')),
   })
     .index('by_userId', ['userId'])
     .index('by_event', ['eventId'])
-    .index('by_user_event', ['userId', 'eventId']),
+    .index('by_user_event', ['userId', 'eventId'])
+    .index('by_userId_interactionType', ['userId', 'interactionType']),
 
   eventTags: defineTable({
     eventId: v.id('events'),

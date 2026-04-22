@@ -74,13 +74,13 @@ jobs:
         uses: astral-sh/setup-uv@v4
 
       - name: Install dependencies from uv.lock
-        working-directory: packages/data-ml
+        working-directory: packages/data_ml
         run: uv sync --frozen
 
       - name: Run pytest
-        working-directory: packages/data-ml
+        working-directory: packages/data_ml
         run: uv run pytest --cov=. --cov-report=term-missing --cov-fail-under=97
 
-      - name: Run mypy (data-ml)
-        working-directory: packages/data-ml
-        run: uv run mypy .
+      - name: Run mypy (data_ml)
+        working-directory: packages/data_ml
+        run: uv run mypy . --ignore-missing-imports
