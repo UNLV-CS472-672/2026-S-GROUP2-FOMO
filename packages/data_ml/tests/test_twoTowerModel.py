@@ -3,7 +3,7 @@ import sys
 import pytest
 import torch
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "event-rec", "models"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "event_rec", "models"))
 from twoTowerModel import UserTower, EventTower
 
 NUM_TAGS = 27

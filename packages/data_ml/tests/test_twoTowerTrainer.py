@@ -3,7 +3,7 @@ import sys
 import pytest
 import torch
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "event-rec"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "event_rec"))
 
 from training.twoTowerTrainer import TwoTowerTrainer
 from models.twoTowerModel import UserTower, EventTower

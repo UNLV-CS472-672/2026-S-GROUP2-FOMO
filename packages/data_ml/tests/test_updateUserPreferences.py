@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from typing import Generator
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "event-rec", "data"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "event_rec", "data"))
 import updateUserPreferences
 from updateUserPreferences import (
     init_tags,

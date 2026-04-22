@@ -5,7 +5,7 @@ import pytest
 import torch
 from unittest.mock import patch, MagicMock
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "event-rec"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "event_rec"))
 
 from data.eventRecDataset import (
     EventRecDataset,

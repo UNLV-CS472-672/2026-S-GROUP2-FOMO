@@ -81,6 +81,6 @@ jobs:
         working-directory: packages/data_ml
         run: uv run pytest --cov=. --cov-report=term-missing --cov-fail-under=97
 
-      - name: Run mypy (data-ml)
+      - name: Run mypy (data_ml)
         working-directory: packages/data_ml
         run: uv run mypy .
