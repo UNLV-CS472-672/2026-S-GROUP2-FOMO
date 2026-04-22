@@ -15,6 +15,7 @@ import { GuestMode } from '@/components/profile/guest-mode';
 import { allPosts, recentPosts, taggedPosts } from '@/features/posts/post-data';
 import { useUser } from '@clerk/expo';
 import { useState } from 'react';
+import { useUniwind } from 'uniwind';
 
 //import for icons
 import { MaterialIcons } from '@expo/vector-icons';
@@ -22,6 +23,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 export default function ProfileScreen() {
   const router = useRouter();
   const theme = useAppTheme();
+  const { theme: activeTheme } = useUniwind();
+  const recentActivityButtonVariant = activeTheme === 'dark' ? 'primary' : 'tertiary';
 
   const { user } = useUser();
   const username = user?.username ?? 'Guest';
@@ -100,8 +103,8 @@ export default function ProfileScreen() {
           </View>
 
           <View className="mb-4 flex-row px-4">
-            <Button variant="tertiary" className="h-[82px] flex-1 rounded-2xl">
-              <ButtonText variant="tertiary">Recent Activity</ButtonText>
+            <Button variant={recentActivityButtonVariant} className="h-[82px] flex-1 rounded-2xl">
+              <ButtonText variant={recentActivityButtonVariant}>Recent Activity</ButtonText>
             </Button>
           </View>
 

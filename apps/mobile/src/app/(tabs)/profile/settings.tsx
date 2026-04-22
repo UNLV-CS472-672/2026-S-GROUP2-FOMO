@@ -1,5 +1,6 @@
 import { Button, ButtonText } from '@/components/ui/button';
 import { signOutClerkExpo } from '@/features/auth/utils/clerk-sign-out';
+import { useAppTheme } from '@/lib/use-app-theme';
 import { useClerk } from '@clerk/expo';
 import { useState } from 'react';
 import { ScrollView, Switch, Text, View } from 'react-native';
@@ -7,9 +8,10 @@ import { Uniwind, useUniwind } from 'uniwind';
 
 export default function SettingsScreen() {
   const clerk = useClerk();
-  const { theme } = useUniwind();
+  const { theme: activeTheme } = useUniwind();
+  const theme = useAppTheme();
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const isDarkModeEnabled = theme === 'dark';
+  const isDarkModeEnabled = activeTheme === 'dark';
 
   function handleDarkModeToggle(enabled: boolean) {
     Uniwind.setTheme(enabled ? 'dark' : 'light');
@@ -42,6 +44,9 @@ export default function SettingsScreen() {
         <Switch
           value={isDarkModeEnabled}
           onValueChange={handleDarkModeToggle}
+          trackColor={{ false: theme.border, true: theme.tint }}
+          thumbColor={isDarkModeEnabled ? theme.tintForeground : theme.surface}
+          ios_backgroundColor={theme.border}
           accessibilityLabel="Dark mode"
         />
       </View>
