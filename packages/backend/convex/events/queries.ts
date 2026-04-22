@@ -78,7 +78,7 @@ async function serializeEventFeedPost(
     authorAvatarUrl: author?.avatarUrl || '',
     likes: post.likeCount ?? likes.length,
     liked: viewerId ? likes.some((like) => like.userId === viewerId) : false,
-    mediaId: mediaIds[0] ?? null,
+    mediaIds,
     commentCount: commentsWithAuthors.length,
     comments: commentsWithAuthors,
   };

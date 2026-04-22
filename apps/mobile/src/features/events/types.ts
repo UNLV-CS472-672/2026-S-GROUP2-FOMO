@@ -11,7 +11,7 @@ export type FeedPost = {
   caption: string;
   likes: number;
   liked: boolean;
-  mediaId?: Id<'_storage'> | null;
+  mediaIds: Id<'_storage'>[];
   commentCount: number;
   comments: Array<{
     id: string;

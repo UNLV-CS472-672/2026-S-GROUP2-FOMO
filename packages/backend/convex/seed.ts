@@ -8,58 +8,189 @@ export { eventSeedAttendees, eventSeeds };
 
 //TODO get from backend instead
 
+type EventVariantPostBlueprint = {
+  caption: string;
+  eventIndex: number;
+  authorIndex: number;
+  mediaCount: number;
+  mediaQuery: string;
+};
+
+const stockImageUrls = [
+  'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1515823662972-da6a2e4d3002?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1501612780327-45045538702b?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1505236858219-8359eb29e329?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1521334884684-d80222895322?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80',
+] as const;
+
+function hashSeed(seed: string) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
+function stockImageUrl(_query: string, seed: string) {
+  return stockImageUrls[hashSeed(seed) % stockImageUrls.length]!;
+}
+
+const eventMediaQueries = [
+  'coffee,study,cafe',
+  'concert,rap,music',
+  'birthday,party,college',
+  'art,street,festival',
+  'conference,panel,speaker',
+  'anime,cosplay,gaming',
+  'concert,stage,hip-hop',
+  'lantern,night,festival',
+  'thrift,fashion,streetwear',
+] as const;
+
 const postSeedMedia = [
   {
-    key: 'Top 5 matcha cafes across Las Vegas Chinatown.\n\nSpoiler Alert: it aint Pop Cafe',
-    imageUrl:
-      'https://images.unsplash.com/photo-1515823662972-da6a2e4d3002?auto=format&fit=crop&w=1200&q=80',
+    key: 'Best late-night food near campus?\n\nDrop your go-to spots.',
+    imageUrl: stockImageUrl('late night food restaurant', 'seed-e1-p1'),
   },
   {
-    key: 'fight at first friday!!!\n\nBROOOO THSI DUDE HIT HIM W A STOP SIGN',
-    imageUrl:
-      'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=80',
+    key: 'Top 5 matcha cafes across Las Vegas Chinatown.\n\nSpoiler Alert: it aint Pop Cafe',
+    imageUrl: stockImageUrl('matcha cafe tea', 'seed-e1-p2'),
   },
   {
     key: 'Happy Birthday Shemes!!!\n\nGo Psi Rho! Happy birthday to my big bro, the BIG 21!',
-    imageUrl:
-      'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: stockImageUrl('birthday party friends', 'seed-e3-p1'),
+  },
+  {
+    key: 'psi rho rush week recap\n\nif you missed it you really missed it. brotherhood is unmatched fr',
+    imageUrl: stockImageUrl('college party group', 'seed-e3-p2'),
+  },
+  {
+    key: 'fight at first friday!!!\n\nBROOOO THSI DUDE HIT HIM W A STOP SIGN',
+    imageUrl: stockImageUrl('street festival crowd', 'seed-e4-p1'),
+  },
+  {
+    key: 'first friday art picks this month\n\nsaw some insane murals near the container park. the arts scene in dtlv is really coming up',
+    imageUrl: stockImageUrl('street art mural', 'seed-e4-p2'),
+  },
+  {
+    key: 'St Jimmy - A prodigy, a god-sent\n\nA pinnacle of man. The way he orchestrates his words... Extraordinary...',
+    imageUrl: stockImageUrl('speaker conference stage', 'seed-e5-p1'),
+  },
+  {
+    key: 'panel notes from st. jimmy\n\nstill processing half of what he said but the room was locked in the whole time',
+    imageUrl: stockImageUrl('conference audience panel', 'seed-e5-p2'),
   },
   {
     key: 'Rate my cosplays! 1-10\n\nbe brutally honest, i spent 5 grand on all these cosplays',
-    imageUrl:
-      'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    key: 'met baby keem ?????\n\ni just saw this dude walking across caesars palace? asked for a pic but he spit in my face and started flying way :(',
-    imageUrl:
-      'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: stockImageUrl('cosplay anime convention', 'seed-e6-p1'),
   },
   {
     key: 'anyone going to LVL UP this year?\n\nfirst time going, dont know what to expect. do i need to cosplay??',
-    imageUrl:
-      'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    key: 'thrift valley haul just dropped\n\ngrabbed a vintage carhartt and some cargos for $18 total. they are NOT out of stussy btw',
-    imageUrl:
-      'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    key: 'water lantern festival was so peaceful\n\ngenuinely one of the most beautiful nights ive had in vegas. 10/10 would litter the pond again',
-    imageUrl:
-      'https://images.unsplash.com/photo-1505236858219-8359eb29e329?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: stockImageUrl('gaming expo convention', 'seed-e6-p2'),
   },
   {
     key: 'my first cosplay ever!!\n\nwent as toji fushiguro and someone said i looked like a middle schooler in a costume... be kind',
-    imageUrl:
-      'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: stockImageUrl('anime cosplay portrait', 'seed-e6-p3'),
+  },
+  {
+    key: 'met baby keem ?????\n\ni just saw this dude walking across caesars palace? asked for a pic but he spit in my face and started flying way :(',
+    imageUrl: stockImageUrl('concert venue crowd', 'seed-e7-p1'),
   },
   {
     key: 'baby keem setlist was CRAZY\n\nhomicide, trademark da baby, family ties back to back?? i blacked out',
-    imageUrl:
-      'https://images.unsplash.com/photo-1501612780327-45045538702b?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: stockImageUrl('concert stage lights', 'seed-e7-p2'),
+  },
+  {
+    key: 'water lantern festival was so peaceful\n\ngenuinely one of the most beautiful nights ive had in vegas. 10/10 would litter the pond again',
+    imageUrl: stockImageUrl('lantern festival water', 'seed-e8-p1'),
+  },
+  {
+    key: 'lantern messages hit way too hard\n\nread three strangers wishes and had to stare at the water for a minute',
+    imageUrl: stockImageUrl('night lanterns lake', 'seed-e8-p2'),
+  },
+  {
+    key: 'thrift valley haul just dropped\n\ngrabbed a vintage carhartt and some cargos for $18 total. they are NOT out of stussy btw',
+    imageUrl: stockImageUrl('thrift fashion outfit', 'seed-e9-p1'),
+  },
+  {
+    key: 'best rack at thrift valley no debate\n\nfound two washed hoodies and a denim jacket that still smelled expensive',
+    imageUrl: stockImageUrl('streetwear thrift rack', 'seed-e9-p2'),
   },
 ] as const;
+
+const eventVariantPostBlueprints: EventVariantPostBlueprint[] = eventSeeds.flatMap(
+  (event, eventIndex) => [
+    {
+      caption: `${event.name} roll call\n\nwho is actually pulling up to ${event.organization}?`,
+      eventIndex,
+      authorIndex: eventIndex % 9,
+      mediaCount: 0,
+      mediaQuery: eventMediaQueries[eventIndex]!,
+    },
+    {
+      caption: `${event.name} preview dump\n\nsaving these before everyone starts asking where this was`,
+      eventIndex,
+      authorIndex: (eventIndex + 1) % 9,
+      mediaCount: 1,
+      mediaQuery: `${eventMediaQueries[eventIndex]!},people`,
+    },
+    {
+      caption: `${event.name} single-frame recap`,
+      eventIndex,
+      authorIndex: (eventIndex + 2) % 9,
+      mediaCount: 1,
+      mediaQuery: `${eventMediaQueries[eventIndex]!},portrait`,
+    },
+    {
+      caption: `${event.name} photo pair\n\ntwo angles because one was not enough`,
+      eventIndex,
+      authorIndex: (eventIndex + 3) % 9,
+      mediaCount: 2,
+      mediaQuery: `${eventMediaQueries[eventIndex]!},duo`,
+    },
+    {
+      caption: `${event.name} mini album\n\nthree frames and somehow none of them fully explain the vibe`,
+      eventIndex,
+      authorIndex: (eventIndex + 4) % 9,
+      mediaCount: 3,
+      mediaQuery: `${eventMediaQueries[eventIndex]!},crowd`,
+    },
+    {
+      caption: `${event.name} full set\n\nposting four because deleting any of these felt criminal`,
+      eventIndex,
+      authorIndex: (eventIndex + 5) % 9,
+      mediaCount: 4,
+      mediaQuery: `${eventMediaQueries[eventIndex]!},details`,
+    },
+    {
+      caption: `${event.name} camera roll unload\n\nfive shots deep and i still left out the best part of the night`,
+      eventIndex,
+      authorIndex: (eventIndex + 6) % 9,
+      mediaCount: 5,
+      mediaQuery: `${eventMediaQueries[eventIndex]!},night`,
+    },
+  ]
+);
 
 async function storeSeedEventImage(ctx: ActionCtx, imageUrl: string) {
   const response = await fetch(imageUrl);
@@ -97,17 +228,39 @@ export const getSeedPostMediaIds = internalQuery({
   },
 });
 
+export const getSeedVariantPostMediaIds = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const existingPosts = await ctx.db.query('posts').collect();
+    const mediaIdsByCaption = new Map(
+      existingPosts.map((post) => [
+        post.caption ?? null,
+        Array.isArray(post.mediaIds) ? post.mediaIds : post.mediaIds ? [post.mediaIds] : [],
+      ])
+    );
+
+    return eventVariantPostBlueprints.map((entry) => {
+      const existingMediaIds = mediaIdsByCaption.get(entry.caption) ?? [];
+      return existingMediaIds.slice(0, entry.mediaCount);
+    });
+  },
+});
+
 export const seedData = internalMutation({
   args: {
     eventMediaIds: v.array(v.id('_storage')),
     postMediaIds: v.array(v.id('_storage')),
+    variantPostMediaIds: v.array(v.array(v.id('_storage'))),
   },
-  handler: async (ctx, { eventMediaIds, postMediaIds }) => {
+  handler: async (ctx, { eventMediaIds, postMediaIds, variantPostMediaIds }) => {
     if (eventMediaIds.length !== eventSeeds.length) {
       throw new Error('Expected one media id per seeded event.');
     }
     if (postMediaIds.length !== postSeedMedia.length) {
       throw new Error('Expected one media id per seeded post photo.');
+    }
+    if (variantPostMediaIds.length !== eventVariantPostBlueprints.length) {
+      throw new Error('Expected one media id array per seeded variant post.');
     }
 
     //  Users (Convex Table Name: users)
@@ -323,32 +476,34 @@ export const seedData = internalMutation({
       {
         caption: 'Best late-night food near campus?\n\nDrop your go-to spots.',
         eventId: e1,
+        mediaIds: [postMediaIds[0]!],
         authorId: u1,
       },
       {
         caption:
           'Top 5 matcha cafes across Las Vegas Chinatown.\n\nSpoiler Alert: it aint Pop Cafe',
         eventId: e1,
-        mediaIds: [postMediaIds[0]!],
+        mediaIds: [postMediaIds[1]!],
         authorId: u1,
       },
       {
         lookupCaption: 'fight at first friday!!!\n\nBROOOO THSI DUDE HIT HIM W A STOP SIGN',
         eventId: e4,
-        mediaIds: [postMediaIds[1]!],
+        mediaIds: [postMediaIds[6]!],
         authorId: u3,
       },
       {
         caption:
           'Happy Birthday Shemes!!!\n\nGo Psi Rho! Happy birthday to my big bro, the BIG 21!',
         eventId: e3,
-        mediaIds: [postMediaIds[2]!],
+        mediaIds: [postMediaIds[4]!],
         authorId: u4,
       },
       {
         caption:
           'St Jimmy - A prodigy, a god-sent\n\nA pinnacle of man. The way he orchestrates his words... Extraordinary...',
         eventId: e5,
+        mediaIds: [postMediaIds[8]!],
         authorId: u5,
       },
       {
@@ -360,7 +515,7 @@ export const seedData = internalMutation({
         lookupCaption:
           'Rate my cosplays! 1-10\n\nbe brutally honest, i spent 5 grand on all these cosplays',
         eventId: e6,
-        mediaIds: [postMediaIds[3]!],
+        mediaIds: [postMediaIds[10]!],
         authorId: u7,
       },
       {
@@ -368,7 +523,7 @@ export const seedData = internalMutation({
           'met baby keem ?????\n\n' +
           'i just saw this dude walking across caesars palace? asked for a pic but he spit in my face and started flying way :(',
         eventId: e7,
-        mediaIds: [postMediaIds[4]!],
+        mediaIds: [postMediaIds[13]!],
         authorId: u8,
       },
       {
@@ -380,7 +535,7 @@ export const seedData = internalMutation({
         caption:
           'anyone going to LVL UP this year?\n\nfirst time going, dont know what to expect. do i need to cosplay??',
         eventId: e6,
-        mediaIds: [postMediaIds[5]!],
+        mediaIds: [postMediaIds[11]!],
         authorId: u5,
       },
       {
@@ -388,7 +543,7 @@ export const seedData = internalMutation({
           'thrift valley haul just dropped\n\n' +
           'grabbed a vintage carhartt and some cargos for $18 total. they are NOT out of stussy btw',
         eventId: e9,
-        mediaIds: [postMediaIds[6]!],
+        mediaIds: [postMediaIds[15]!],
         authorId: u2,
       },
       {
@@ -396,7 +551,7 @@ export const seedData = internalMutation({
           'water lantern festival was so peaceful\n\n' +
           'genuinely one of the most beautiful nights ive had in vegas. 10/10 would litter the pond again',
         eventId: e8,
-        mediaIds: [postMediaIds[7]!],
+        mediaIds: [postMediaIds[15]!],
         authorId: u4,
       },
       {
@@ -416,14 +571,14 @@ export const seedData = internalMutation({
           'my first cosplay ever!!\n\n' +
           'went as toji fushiguro and someone said i looked like a middle schooler in a costume... be kind',
         eventId: e6,
-        mediaIds: [postMediaIds[8]!],
+        mediaIds: [postMediaIds[12]!],
         authorId: u5,
       },
       {
         lookupCaption:
           'baby keem setlist was CRAZY\n\nhomicide, trademark da baby, family ties back to back?? i blacked out',
         eventId: e7,
-        mediaIds: [postMediaIds[9]!],
+        mediaIds: [postMediaIds[14]!],
         authorId: u8,
       },
       {
@@ -431,6 +586,7 @@ export const seedData = internalMutation({
           'first friday art picks this month\n\n' +
           'saw some insane murals near the container park. the arts scene in dtlv is really coming up',
         eventId: e4,
+        mediaIds: [postMediaIds[7]!],
         authorId: u6,
       },
       {
@@ -444,6 +600,7 @@ export const seedData = internalMutation({
         caption:
           'psi rho rush week recap\n\nif you missed it you really missed it. brotherhood is unmatched fr',
         eventId: e3,
+        mediaIds: [postMediaIds[5]!],
         authorId: u4,
       },
       {
@@ -451,20 +608,53 @@ export const seedData = internalMutation({
           'panel notes from st. jimmy\n\n' +
           'still processing half of what he said but the room was locked in the whole time',
         eventId: e5,
+        mediaIds: [postMediaIds[9]!],
         authorId: u6,
+      },
+      {
+        caption:
+          'pre-concert fit check\n\nblack tee, silver chain, questionable financial decisions at the merch booth incoming',
+        eventId: e2,
+        mediaIds: [postMediaIds[2]!],
+        authorId: u2,
+      },
+      {
+        caption:
+          'rocky opener was actually insane\n\ncrowd was yelling every word before the lights even dropped',
+        eventId: e2,
+        mediaIds: [postMediaIds[3]!],
+        authorId: u6,
+      },
+      {
+        caption:
+          'lantern messages hit way too hard\n\nread three strangers wishes and had to stare at the water for a minute',
+        eventId: e8,
+        mediaIds: [postMediaIds[16]!],
+        authorId: u8,
+      },
+      {
+        caption:
+          'best rack at thrift valley no debate\n\nfound two washed hoodies and a denim jacket that still smelled expensive',
+        eventId: e9,
+        mediaIds: [postMediaIds[16]!],
+        authorId: u7,
       },
     ];
     const postIds: any[] = [];
     for (const p of postSeeds) {
-      const existingCaption = p.lookupCaption ?? p.caption;
+      const caption = p.caption ?? p.lookupCaption;
+      if (!caption) {
+        throw new Error('Seeded post is missing caption text.');
+      }
+
       const existing = await ctx.db
         .query('posts')
-        .filter((q) => q.eq(q.field('caption'), existingCaption))
+        .filter((q) => q.eq(q.field('caption'), caption))
         .first();
       if (existing) {
         await ctx.db.patch(existing._id, {
           eventId: p.eventId,
-          caption: p.caption,
+          caption,
           mediaIds: p.mediaIds,
         });
         postIds.push(existing._id);
@@ -472,7 +662,31 @@ export const seedData = internalMutation({
       }
 
       const { lookupCaption: _lookupCaption, ...post } = p;
-      postIds.push(await ctx.db.insert('posts', post));
+      postIds.push(await ctx.db.insert('posts', { ...post, caption }));
+    }
+
+    const eventIdList = [e1, e2, e3, e4, e5, e6, e7, e8, e9];
+    for (const [index, blueprint] of eventVariantPostBlueprints.entries()) {
+      const existing = await ctx.db
+        .query('posts')
+        .filter((q) => q.eq(q.field('caption'), blueprint.caption))
+        .first();
+
+      const mediaIds = variantPostMediaIds[index] ?? [];
+      const payload = {
+        eventId: eventIdList[blueprint.eventIndex]!,
+        authorId: userIds[blueprint.authorIndex]!,
+        caption: blueprint.caption,
+        mediaIds: mediaIds.length > 0 ? mediaIds : undefined,
+      };
+
+      if (existing) {
+        await ctx.db.patch(existing._id, payload);
+        postIds.push(existing._id);
+        continue;
+      }
+
+      postIds.push(await ctx.db.insert('posts', payload));
     }
     const [
       p1,
@@ -495,6 +709,10 @@ export const seedData = internalMutation({
       p18,
       p19,
       p20,
+      p21,
+      p22,
+      p23,
+      p24,
     ] = postIds;
 
     //  Post Tags (Convex: postTags)
@@ -551,6 +769,17 @@ export const seedData = internalMutation({
       { postId: p20, tagId: tagIds['panel'] },
       { postId: p20, tagId: tagIds['conference'] },
       { postId: p20, tagId: tagIds['insightful'] },
+      { postId: p21, tagId: tagIds['concert'] },
+      { postId: p21, tagId: tagIds['fits'] },
+      { postId: p21, tagId: tagIds['music'] },
+      { postId: p22, tagId: tagIds['concert'] },
+      { postId: p22, tagId: tagIds['rap'] },
+      { postId: p22, tagId: tagIds['music'] },
+      { postId: p23, tagId: tagIds['chill'] },
+      { postId: p23, tagId: tagIds['culture'] },
+      { postId: p24, tagId: tagIds['thrift'] },
+      { postId: p24, tagId: tagIds['fits'] },
+      { postId: p24, tagId: tagIds['clothes'] },
     ];
     for (const pair of postTagPairs) {
       const existing = await ctx.db
@@ -630,6 +859,14 @@ export const seedData = internalMutation({
       { postId: p19, authorId: u2, text: 'rush week was unreal, glad i joined' },
       { postId: p19, authorId: u6, text: 'psi rho stays winning' },
       { postId: p19, authorId: u3, text: 'brotherhood > everything' },
+      { postId: p21, authorId: u8, text: 'chain is carrying the whole fit ngl' },
+      { postId: p21, authorId: u4, text: 'merch booth debt is temporary aura is forever' },
+      { postId: p22, authorId: u2, text: 'the opener lowkey outperformed everybody' },
+      { postId: p22, authorId: u9, text: 'i lost my voice before rocky even came out' },
+      { postId: p23, authorId: u5, text: 'this whole event healed me a little bit' },
+      { postId: p23, authorId: u3, text: 'sunset park after dark really has a crazy vibe' },
+      { postId: p24, authorId: u2, text: 'denim jacket sounds like a generational pull' },
+      { postId: p24, authorId: u8, text: 'need thrift valley to become a monthly problem' },
     ];
     const seededComments: { _id: any; postId: any; authorId: any; text: string }[] = [];
     for (const comment of comments) {
@@ -667,6 +904,10 @@ export const seedData = internalMutation({
       { userId: u4, postId: p17 },
       { userId: u5, postId: p18 },
       { userId: u2, postId: p19 },
+      { userId: u8, postId: p21 },
+      { userId: u4, postId: p22 },
+      { userId: u1, postId: p23 },
+      { userId: u6, postId: p24 },
     ];
     for (const pair of postLikePairs) {
       const existing = await ctx.db
@@ -853,6 +1094,10 @@ export const seed = action({
   handler: async (ctx) => {
     const existingMediaIds = await ctx.runQuery(anyApi.seed.getSeedEventMediaIds, {});
     const existingPostMediaIds = await ctx.runQuery(anyApi.seed.getSeedPostMediaIds, {});
+    const existingVariantPostMediaIds = await ctx.runQuery(
+      anyApi.seed.getSeedVariantPostMediaIds,
+      {}
+    );
     const eventMediaIds = await Promise.all(
       eventSeeds.map(async (event, index) => {
         return existingMediaIds[index] ?? (await storeSeedEventImage(ctx, event.imageUrl));
@@ -863,7 +1108,33 @@ export const seed = action({
         return existingPostMediaIds[index] ?? (await storeSeedEventImage(ctx, entry.imageUrl));
       })
     );
+    const variantPostMediaIds = await Promise.all(
+      eventVariantPostBlueprints.map(async (entry, index) => {
+        const existingIds = existingVariantPostMediaIds[index] ?? [];
+        if (existingIds.length === entry.mediaCount) {
+          return existingIds;
+        }
 
-    return await ctx.runMutation(anyApi.seed.seedData, { eventMediaIds, postMediaIds });
+        return await Promise.all(
+          Array.from(
+            { length: entry.mediaCount },
+            async (_value, mediaIndex) =>
+              await storeSeedEventImage(
+                ctx,
+                stockImageUrl(
+                  entry.mediaQuery,
+                  `variant-${entry.eventIndex}-${index}-${mediaIndex}`
+                )
+              )
+          )
+        );
+      })
+    );
+
+    return await ctx.runMutation(anyApi.seed.seedData, {
+      eventMediaIds,
+      postMediaIds,
+      variantPostMediaIds,
+    });
   },
 });
