@@ -41,7 +41,7 @@ async function serializeEventFeedPost(
   post: Doc<'posts'>,
   viewerId?: Doc<'users'>['_id']
 ) {
-  const mediaIds = post.mediaIds;
+  const mediaIds = post.mediaIds ?? [];
 
   const [author, comments, likes] = await Promise.all([
     ctx.db.get(post.authorId),
@@ -116,7 +116,7 @@ export const getTopMediaPosts = query({
 
     const postsWithAuthors = await Promise.all(
       posts.map(async (post) => {
-        const mediaIds = post.mediaIds;
+        const mediaIds = post.mediaIds ?? [];
 
         if (!mediaIds.length) {
           return null;
@@ -126,7 +126,7 @@ export const getTopMediaPosts = query({
         return {
           id: post._id,
           caption: post.caption ?? '',
-          mediaId: mediaIds[0] ?? null,
+          mediaIds,
           likeCount: post.likeCount ?? 0,
           matchedTagCount: 0,
           creationTime: post._creationTime,

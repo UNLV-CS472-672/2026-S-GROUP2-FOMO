@@ -12,7 +12,6 @@ import { Pressable, Text, View } from 'react-native';
 type FeedCardProps = {
   post: FeedPost;
   readOnly: boolean;
-  onOpenPost: () => void;
   onToggleLike: () => void;
 };
 
@@ -120,7 +119,7 @@ function FeedCardMedia({
   );
 }
 
-export function FeedCard({ post, readOnly, onOpenPost, onToggleLike }: FeedCardProps) {
+export function FeedCard({ post, readOnly, onToggleLike }: FeedCardProps) {
   const theme = useAppTheme();
   const [carouselIndex, setCarouselIndex] = useState<number | null>(null);
 
@@ -137,12 +136,7 @@ export function FeedCard({ post, readOnly, onOpenPost, onToggleLike }: FeedCardP
         />
       )}
 
-      <Pressable
-        onPress={onOpenPost}
-        accessibilityRole="button"
-        accessibilityLabel={`Open post by ${post.authorName}`}
-        className="gap-2.5"
-      >
+      <View className="gap-2.5">
         <View className="flex-row items-center gap-2.5">
           <Avatar
             name={post.authorName}
@@ -157,7 +151,7 @@ export function FeedCard({ post, readOnly, onOpenPost, onToggleLike }: FeedCardP
         {post.caption ? (
           <Text className="text-[15px] leading-[21px] text-foreground">{post.caption}</Text>
         ) : null}
-      </Pressable>
+      </View>
 
       <View className="ml-2 flex-row items-center gap-5 pt-0.5">
         <Pressable
@@ -180,7 +174,7 @@ export function FeedCard({ post, readOnly, onOpenPost, onToggleLike }: FeedCardP
           </Text>
         </Pressable>
 
-        <Pressable onPress={onOpenPost} className="flex-row items-center gap-1.5" hitSlop={8}>
+        <View className="flex-row items-center gap-1.5">
           <Ionicons name="chatbubble-outline" size={18} color={theme.mutedText} />
           <Text
             className="text-[13px] text-muted-foreground"
@@ -188,7 +182,7 @@ export function FeedCard({ post, readOnly, onOpenPost, onToggleLike }: FeedCardP
           >
             {post.commentCount}
           </Text>
-        </Pressable>
+        </View>
       </View>
     </View>
   );

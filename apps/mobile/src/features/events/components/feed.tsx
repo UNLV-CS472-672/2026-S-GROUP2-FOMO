@@ -7,10 +7,9 @@ import { Text, View } from 'react-native';
 
 type FeedProps = {
   eventId: Id<'events'>;
-  onOpenPost: (postId: string) => void;
 };
 
-export function Feed({ eventId, onOpenPost }: FeedProps) {
+export function Feed({ eventId }: FeedProps) {
   const { isGuestMode } = useGuest();
   const posts = useQuery(api.events.queries.getEventFeed, { eventId });
   const togglePostLike = useMutation(api.likes.togglePostLike);
@@ -33,7 +32,6 @@ export function Feed({ eventId, onOpenPost }: FeedProps) {
             key={post.id}
             post={post}
             readOnly={isGuestMode}
-            onOpenPost={() => onOpenPost(post.id)}
             onToggleLike={() => {
               if (isGuestMode) {
                 return;

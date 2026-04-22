@@ -2,9 +2,9 @@ import { Image } from '@/components/image';
 import { DrawerModal } from '@/components/ui/drawer';
 import { Screen } from '@/components/ui/screen';
 import { Avatar } from '@/features/events/components/avatar';
-import { EventMediaGrid } from '@/features/events/components/event-media-grid';
 import { Feed } from '@/features/events/components/feed';
 import { RsvpSheet } from '@/features/events/components/rsvp-sheet';
+import { TopMoments } from '@/features/events/components/top-moments';
 import type { AttendanceStatus, NotificationPref } from '@/features/events/types';
 import { useGuest } from '@/integrations/session/provider';
 import { useAppTheme } from '@/lib/use-app-theme';
@@ -124,17 +124,8 @@ export default function EventPage() {
     setIsRsvpOpen(true);
   }, [isGuestMode]);
 
-  const openEventPost = useCallback(
-    (postId: string) => {
-      router.push({
-        pathname: '/(tabs)/(map)/event/post/[postId]',
-        params: { postId },
-      });
-    },
-    [router]
-  );
-
   if (
+    !eventId ||
     event === undefined ||
     attendees === undefined ||
     topMediaPosts === undefined ||
@@ -264,8 +255,8 @@ export default function EventPage() {
           </View>
         </View>
 
-        <EventMediaGrid posts={topMediaPosts} onOpenPost={openEventPost} />
-        {eventId ? <Feed eventId={eventId} onOpenPost={openEventPost} /> : null}
+        <TopMoments posts={topMediaPosts} />
+        <Feed eventId={eventId} />
       </ScrollView>
 
       <DrawerModal
