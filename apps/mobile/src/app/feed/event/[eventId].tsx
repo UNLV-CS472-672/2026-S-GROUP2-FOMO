@@ -1,6 +1,6 @@
 import PostGrid from '@/components/ui/post-grid';
 import { Screen } from '@/components/ui/screen';
-import { openDirections } from '@/features/map/utils/directions';
+import { NavigateButton } from '@/features/map/components/navigate-button';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
@@ -19,8 +19,6 @@ interface Event {
   image: any;
   description: string;
   posts: GridPost[];
-  location: { latitude: number; longitude: number };
-  name: string;
 }
 
 const EVENT_IMAGES = [
@@ -55,8 +53,6 @@ export default function EventDetails() {
       image: EVENT_IMAGES[eventDetail.imageIndex % EVENT_IMAGES.length],
       description: `${eventDetail.name}\n${eventDetail.organization}\n${eventDetail.attendeeCount} attending\n\n${eventDetail.description}`,
       posts: SAMPLE_POSTS,
-      location: eventDetail.location,
-      name: eventDetail.name,
     };
   }, [eventDetail]);
 
@@ -69,7 +65,7 @@ export default function EventDetails() {
     );
   }
 
-  if (!event) {
+  if (!eventDetail || !event) {
     return (
       <Screen className="items-center justify-center">
         <Stack.Screen options={{ title: 'Event Details' }} />
@@ -103,17 +99,11 @@ export default function EventDetails() {
             >
               <Ionicons name="heart" size={24} color={theme.mutedText} />
             </TouchableOpacity>
-            <TouchableOpacity
-              className="h-12 w-12 items-center justify-center rounded-full border border-border bg-background"
-              activeOpacity={0.75}
-              onPress={() =>
-                openDirections(event.location.latitude, event.location.longitude, event.name)
-              }
-              accessibilityRole="button"
-              accessibilityLabel="Get directions"
-            >
-              <Ionicons name="navigate" size={24} color={theme.mutedText} />
-            </TouchableOpacity>
+            <NavigateButton
+              latitude={eventDetail.location.latitude}
+              longitude={eventDetail.location.longitude}
+              label={eventDetail.name}
+            />
           </View>
         </View>
 
