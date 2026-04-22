@@ -6,8 +6,9 @@ import { Screen } from '@/components/ui/screen';
 import StatLabel from '@/components/ui/stat-label';
 import { Authenticated, GuestOnly } from '@/features/auth/components/auth-gate';
 import { useAppTheme } from '@/lib/use-app-theme';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ImageSourcePropType, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 // imports for authentication and guest mode
 import { GuestMode } from '@/components/profile/guest-mode';
@@ -27,8 +28,34 @@ export default function ProfileScreen() {
 
   //In app profile information/states
   const [activeTab, setActiveTab] = useState<'all' | 'recent' | 'tagged'>('all');
+  const [profileImageSource, setProfileImageSource] = useState<ImageSourcePropType>(
+    require('@/assets/images/icon.png')
+  );
   const description =
     'This is a placeholder bio. In a real app, this would be editable by the user and stored in the backend.';
+
+  const handleSelectProfileImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert(
+        'Permission needed',
+        'Please allow photo library access to choose a profile picture.'
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.9,
+    });
+
+    if (!result.canceled && result.assets[0]?.uri) {
+      setProfileImageSource({ uri: result.assets[0].uri });
+    }
+  };
 
   return (
     <Screen className="flex-1">
@@ -38,7 +65,7 @@ export default function ProfileScreen() {
       <Authenticated>
         <ScrollView className="flex-1 bg-background pt-20" contentContainerClassName="pb-8">
           <View className="flex-row items-start p-4">
-            <ProfilePicture imageSource={require('@/assets/images/icon.png')} />
+            <ProfilePicture imageSource={profileImageSource} onPress={handleSelectProfileImage} />
 
             <View className="ml-3 flex-1 pr-0">
               <View className="flex-row items-center justify-between">

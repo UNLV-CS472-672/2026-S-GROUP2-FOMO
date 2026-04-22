@@ -8,7 +8,7 @@ import { useAppTheme } from '@/lib/use-app-theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 export default function VisitFriendProfileScreen() {
   const router = useRouter();
@@ -20,6 +20,7 @@ export default function VisitFriendProfileScreen() {
   const friendUsername = Array.isArray(params.username) ? params.username[0] : params.username;
 
   const [activeTab, setActiveTab] = useState<'all' | 'recent' | 'tagged'>('all');
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
 
   if (!friendId && !friendUsername) {
     return (
@@ -74,7 +75,10 @@ export default function VisitFriendProfileScreen() {
 
         {/* Profile Header Section */}
         <View className="flex-row items-start px-4 pb-4 pt-2">
-          <ProfilePicture imageSource={friendProfile.imageSource} />
+          <ProfilePicture
+            imageSource={friendProfile.imageSource}
+            onPress={() => setIsImagePreviewOpen(true)}
+          />
 
           <View className="ml-3 flex-1 pr-0">
             <Text className="text-lg font-bold text-foreground">{friendProfile.username}</Text>
@@ -171,6 +175,30 @@ export default function VisitFriendProfileScreen() {
           </View>
         )}
       </ScrollView>
+
+      <Modal
+        visible={isImagePreviewOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsImagePreviewOpen(false)}
+      >
+        <View className="flex-1 items-center justify-center bg-black/90 px-4">
+          <TouchableOpacity
+            onPress={() => setIsImagePreviewOpen(false)}
+            className="absolute right-4 top-14 rounded-full bg-black/40 p-2"
+            accessibilityRole="button"
+            accessibilityLabel="Close profile picture preview"
+          >
+            <MaterialIcons name="close" size={26} color="#ffffff" />
+          </TouchableOpacity>
+
+          <Image
+            source={friendProfile.imageSource}
+            className="h-80 w-80 rounded-2xl"
+            resizeMode="contain"
+          />
+        </View>
+      </Modal>
     </Screen>
   );
 }
