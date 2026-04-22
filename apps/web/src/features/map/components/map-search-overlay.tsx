@@ -19,6 +19,20 @@ const resultDateFormatter = new Intl.DateTimeFormat(undefined, {
   minute: '2-digit',
 });
 
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedValue(value), delayMs);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [delayMs, value]);
+
+  return debouncedValue;
+}
+
 export function MapSearchOverlay({ isOpen, onToggle, onSelectEvent }: MapSearchOverlayProps) {
   const [searchValue, setSearchValue] = useState('');
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -26,11 +40,12 @@ export function MapSearchOverlay({ isOpen, onToggle, onSelectEvent }: MapSearchO
   const h3Index = H3_INDEX_PATTERN.test(normalizedSearchValue)
     ? normalizedSearchValue.toLowerCase()
     : undefined;
+  const debouncedSearchValue = useDebouncedValue(normalizedSearchValue, 250);
   const events = useQuery(
     api.events.search,
     isOpen
       ? {
-          query: h3Index ? '' : normalizedSearchValue,
+          query: h3Index ? '' : debouncedSearchValue,
           h3Index,
           limit: 8,
         }
