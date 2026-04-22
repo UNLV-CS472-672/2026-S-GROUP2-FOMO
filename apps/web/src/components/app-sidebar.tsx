@@ -1,18 +1,15 @@
 'use client';
 
-import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
-import { CalendarPlus, LogIn, Map, Settings, User, UserPlus } from 'lucide-react';
+import { CalendarPlus, Map, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -39,24 +36,6 @@ export function AppSidebar() {
 
   return (
     <Sidebar variant="inset" collapsible="icon">
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname === '/'}
-              className={open ? 'justify-start' : 'justify-center px-0'}
-            >
-              <Link href="/" className={open ? 'min-w-0' : 'justify-center'}>
-                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-semibold text-primary-foreground shadow-[0_14px_28px_rgba(198,29,8,0.18)]">
-                  F
-                </span>
-                {open ? <span>FOMO</span> : null}
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           {open ? <SidebarGroupLabel>Navigation</SidebarGroupLabel> : null}
@@ -89,79 +68,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
-        <SidebarMenu>
-          <Show when="signed-out">
-            <SidebarMenuItem>
-              <SignInButton mode="modal">
-                <SidebarMenuButton
-                  className={open ? 'justify-start' : 'justify-center px-0'}
-                  aria-label="Sign In"
-                  title={!open ? 'Sign In' : undefined}
-                >
-                  <LogIn className="h-4 w-4" />
-                  {open ? <span>Sign In</span> : null}
-                </SidebarMenuButton>
-              </SignInButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SignUpButton mode="modal">
-                <SidebarMenuButton
-                  className={open ? 'justify-start' : 'justify-center px-0'}
-                  aria-label="Create Account"
-                  title={!open ? 'Create Account' : undefined}
-                >
-                  <UserPlus className="h-4 w-4" />
-                  {open ? <span>Create Account</span> : null}
-                </SidebarMenuButton>
-              </SignUpButton>
-            </SidebarMenuItem>
-          </Show>
-
-          <Show when="signed-in">
-            <SidebarMenuItem>
-              <div
-                className={[
-                  'relative rounded-xl border border-border',
-                  isRouteActive(pathname, '/profile')
-                    ? 'border-primary-soft-border bg-primary text-primary-foreground shadow-[0_18px_36px_rgba(198,29,8,0.18)]'
-                    : 'bg-transparent',
-                ].join(' ')}
-              >
-                <SidebarMenuButton
-                  asChild
-                  isActive={false}
-                  className={[
-                    'w-full',
-                    open ? 'justify-start pr-14' : 'justify-center px-0',
-                    isRouteActive(pathname, '/profile')
-                      ? 'text-primary-foreground hover:bg-transparent'
-                      : '',
-                  ].join(' ')}
-                >
-                  <Link
-                    href="/profile"
-                    aria-label="Profile"
-                    title={!open ? 'Profile' : undefined}
-                    className={open ? 'min-w-0' : 'justify-center'}
-                  >
-                    <User className="h-4 w-4" />
-                    {open ? <span>Profile</span> : null}
-                  </Link>
-                </SidebarMenuButton>
-                <div
-                  className={[
-                    'absolute inset-y-0 z-10 flex items-center',
-                    open ? 'right-2' : 'inset-x-0 flex justify-center',
-                  ].join(' ')}
-                >
-                  <UserButton />
-                </div>
-              </div>
-            </SidebarMenuItem>
-          </Show>
-        </SidebarMenu>
-      </SidebarFooter>
     </Sidebar>
   );
 }

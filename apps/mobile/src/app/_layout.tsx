@@ -1,72 +1,65 @@
 import '@/global.css';
 
-import { useAuth } from '@clerk/expo';
+import { useAuth as useClerkAuth } from '@clerk/expo';
 import { navigationThemeColors } from '@fomo/theme/native';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useConvexAuth } from 'convex/react';
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useMemo } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
 
 import { AppHeaderBackButton } from '@/components/navigation/header-back-button';
+import { AuthLoadingScreen } from '@/features/auth/components/auth-loading-screen';
 import ClerkProvider from '@/integrations/clerk/provider';
 import ConvexProvider from '@/integrations/convex/provider';
 import GuestProvider, { useGuest } from '@/integrations/session/provider';
 
 function RootNavigator() {
-  const { isLoaded: isClerkLoaded, isSignedIn } = useAuth({
-    treatPendingAsSignedOut: false,
-  });
-  const { isAuthenticated, isLoading } = useConvexAuth();
-  const { isGuestMode, isGuestLoading } = useGuest();
+  const { isLoaded: isClerkLoaded, isSignedIn: isClerkAuthenticated } = useClerkAuth();
+  const { isAuthenticated, isLoading: isConvexLoading } = useConvexAuth();
+  const { isGuestLoading, isGuestMode } = useGuest();
   const segments = useSegments();
+  const isLoading = isConvexLoading || isGuestLoading;
 
-  const authState =
-    !isClerkLoaded || isGuestLoading || isLoading || (isSignedIn && !isAuthenticated)
-      ? 'loading'
-      : isAuthenticated
-        ? 'authenticated'
-        : isGuestMode
-          ? 'guest'
-          : 'unauthenticated';
-
-  if (authState === 'loading') {
+  const isAuthResolving = !isClerkLoaded || isLoading || (isClerkAuthenticated && !isAuthenticated);
+  if (isAuthResolving) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator />
-      </View>
+      <AuthLoadingScreen
+        isClerkLoaded={isClerkLoaded}
+        isClerkAuthenticated={isClerkAuthenticated}
+        isAuthenticated={isAuthenticated}
+        isLoading={isLoading}
+      />
     );
   }
 
   const isAuthenticatedRouteAllowed = segments[0] === '(tabs)' || segments[0] === 'feed';
-
-  if (authState === 'authenticated' && !isAuthenticatedRouteAllowed) {
+  if (isAuthenticated && !isAuthenticatedRouteAllowed) {
     return <Redirect href="/(tabs)/(map)" />;
   }
 
-  if (authState === 'unauthenticated' && segments[0] !== '(auth)') {
+  const isAuthRoute = segments[0] === '(auth)';
+  if (!isAuthenticated && !isGuestMode && !isAuthRoute) {
     return <Redirect href="/(auth)/welcome" />;
   }
 
   return (
-    <>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="feed/event/[h3Id]"
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            title: 'Event Details',
-            headerLeft: () => <AppHeaderBackButton />,
-          }}
-        />
-      </Stack>
-    </>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen
+        name="feed/event/[eventId]"
+        options={{
+          presentation: 'modal',
+          headerShown: true,
+          title: 'Event Details',
+          headerLeft: () => <AppHeaderBackButton />,
+        }}
+      />
+    </Stack>
   );
 }
 
@@ -85,15 +78,17 @@ export default function RootLayout() {
   );
 
   return (
-    <ThemeProvider value={navigationTheme}>
-      <ClerkProvider>
-        <ConvexProvider>
-          <GuestProvider>
-            <RootNavigator />
-            <StatusBar style={isDark ? 'light' : 'dark'} />
-          </GuestProvider>
-        </ConvexProvider>
-      </ClerkProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={navigationTheme}>
+        <ClerkProvider>
+          <ConvexProvider>
+            <GuestProvider>
+              <RootNavigator />
+              <StatusBar style={isDark ? 'light' : 'dark'} />
+            </GuestProvider>
+          </ConvexProvider>
+        </ClerkProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

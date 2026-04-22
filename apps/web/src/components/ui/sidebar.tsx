@@ -5,12 +5,12 @@ import { Slot } from '@radix-ui/react-slot';
 import { PanelLeft } from 'lucide-react';
 import * as React from 'react';
 
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 const SIDEBAR_WIDTH = '16rem';
 const SIDEBAR_WIDTH_ICON = '4.5rem';
 const SIDEBAR_WIDTH_MOBILE = '18rem';
-const MOBILE_BREAKPOINT = 768;
 
 type SidebarContextValue = {
   isMobile: boolean;
@@ -51,17 +51,7 @@ export function SidebarProvider({
 }: SidebarProviderProps) {
   const [internalOpen, setInternalOpen] = React.useState(defaultOpen);
   const [openMobile, setOpenMobile] = React.useState(false);
-  const [isMobile, setIsMobile] = React.useState(false);
-
-  React.useEffect(() => {
-    const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
-    const updateIsMobile = () => setIsMobile(mediaQuery.matches);
-
-    updateIsMobile();
-    mediaQuery.addEventListener('change', updateIsMobile);
-
-    return () => mediaQuery.removeEventListener('change', updateIsMobile);
-  }, []);
+  const isMobile = useIsMobile();
 
   const open = openProp ?? internalOpen;
   const setOpen = React.useCallback(
@@ -152,6 +142,7 @@ export function Sidebar({
   const { isMobile, open, openMobile, setOpenMobile, state } = useSidebar();
   const desktopWidth =
     collapsible === 'icon' && !open ? 'var(--sidebar-width-icon)' : 'var(--sidebar-width)';
+  const sidebarViewportHeight = 'calc(100svh - var(--header-height, 0px))';
   const shellClasses =
     variant === 'floating'
       ? 'm-3 rounded-3xl border border-border bg-surface shadow-[0_24px_64px_rgba(45,23,18,0.08)]'
@@ -183,7 +174,10 @@ export function Sidebar({
       <Dialog.Root open={openMobile} onOpenChange={setOpenMobile}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm" />
-          <Dialog.Content className="fixed inset-y-0 left-0 z-50 w-[var(--sidebar-width-mobile)] border-r border-border bg-surface p-0 shadow-xl outline-none">
+          <Dialog.Content
+            className="fixed left-0 z-50 w-[var(--sidebar-width-mobile)] border-r border-border bg-surface p-0 shadow-xl outline-none"
+            style={{ top: 'var(--header-height, 0px)', height: sidebarViewportHeight }}
+          >
             <Dialog.Title className="sr-only">Sidebar</Dialog.Title>
             <div className="flex h-full flex-col">{children}</div>
           </Dialog.Content>
@@ -194,8 +188,12 @@ export function Sidebar({
 
   return (
     <div
-      className="sticky top-0 h-screen shrink-0 self-start overflow-hidden transition-[width] duration-200"
-      style={{ width: desktopWidth }}
+      className="sticky shrink-0 self-start overflow-hidden transition-[width] duration-200"
+      style={{
+        top: 'var(--header-height, 0px)',
+        width: desktopWidth,
+        height: sidebarViewportHeight,
+      }}
     >
       {content}
     </div>

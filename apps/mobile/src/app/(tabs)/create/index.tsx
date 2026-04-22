@@ -4,64 +4,65 @@ import { ScrollView, Text } from 'react-native';
 import { GuestMode } from '@/components/profile/guest-mode';
 import { Button, ButtonText } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
-import { useGuest } from '@/integrations/session/provider';
+import { Authenticated, GuestOnly } from '@/features/auth/components/auth-gate';
 
 export default function CreateScreen() {
   const { push } = useRouter();
-  const { isGuestMode } = useGuest();
+
+  //hiiiiiii
 
   return (
     <Screen>
-      <ScrollView
-        className="flex-1 gap-3"
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{
-          flexGrow: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 24,
-          rowGap: 12,
-        }}
-      >
-        <Text className="text-[30px] font-bold leading-8 text-foreground">Create</Text>
-        <Text className="text-base leading-6 text-foreground">
-          Choose what you want to publish.
-        </Text>
+      <GuestOnly>
+        <GuestMode />
+      </GuestOnly>
 
-        {isGuestMode ? (
-          <GuestMode />
-        ) : (
-          <>
-            <Button
-              variant="secondary"
-              size="lg"
-              className="items-start text-xl font-semibold"
-              onPress={() => push('/create/event')}
-            >
-              <ButtonText variant="secondary" className="text-xl">
-                Create Event
-              </ButtonText>
-              <ButtonText className="mt-1 text-base leading-6 text-foreground">
-                Host an event with location, time, and details.
-              </ButtonText>
-            </Button>
+      <Authenticated>
+        <ScrollView
+          className="flex-1 gap-3"
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{
+            flexGrow: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+            rowGap: 12,
+          }}
+        >
+          <Text className="text-[30px] font-bold leading-8 text-foreground">Create</Text>
+          <Text className="text-base leading-6 text-foreground">
+            Choose what you want to publish.
+          </Text>
 
-            <Button
-              variant="secondary"
-              size="lg"
-              className="items-start text-xl font-semibold"
-              onPress={() => push('/create/post')}
-            >
-              <ButtonText variant="secondary" className="text-xl">
-                Create Post
-              </ButtonText>
-              <ButtonText className="mt-1 text-base leading-6 text-foreground">
-                Share an update, photo, or thought with the community.
-              </ButtonText>
-            </Button>
-          </>
-        )}
-      </ScrollView>
+          <Button
+            variant="secondary"
+            size="lg"
+            className="items-start text-xl font-semibold"
+            onPress={() => push('/create/event')}
+          >
+            <ButtonText variant="secondary" className="text-xl">
+              Create Event
+            </ButtonText>
+            <ButtonText className="mt-1 text-base leading-6 text-foreground">
+              Host an event with location, time, and details.
+            </ButtonText>
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="lg"
+            className="items-start text-xl font-semibold"
+            onPress={() => push('/create/camera-screen')}
+          >
+            <ButtonText variant="secondary" className="text-xl">
+              Create Post
+            </ButtonText>
+            <ButtonText className="mt-1 text-base leading-6 text-foreground">
+              Share an update, photo, or thought with the community.
+            </ButtonText>
+          </Button>
+        </ScrollView>
+      </Authenticated>
     </Screen>
   );
 }

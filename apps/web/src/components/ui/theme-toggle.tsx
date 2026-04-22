@@ -1,33 +1,41 @@
 'use client';
 
-import { Moon, Sun } from 'lucide-react';
+import { Monitor, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useMemo } from 'react';
 
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
-export function ThemeToggle() {
-  const { setTheme } = useTheme();
+const cycle = { system: 'light', light: 'dark', dark: 'system' } as const;
+
+type ThemeToggleProps = {
+  className?: string;
+  iconClassName?: string;
+};
+export function ThemeToggle({ className, iconClassName }: ThemeToggleProps) {
+  const { theme = 'system', resolvedTheme, setTheme } = useTheme();
+
+  const mode = useMemo(() => {
+    // When theme is "system", resolvedTheme is the actual light/dark choice.
+    if (theme === 'system') return 'system' as const;
+    return (theme as keyof typeof cycle) ?? 'system';
+  }, [theme]);
+
+  const resolvedIconClassName = iconClassName ?? 'h-10 w-10';
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon">
-          <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
-          <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
-          <span className="sr-only">Toggle theme</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme('light')}>Light</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')}>Dark</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')}>System</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Button
+      type="button"
+      onClick={() => setTheme(cycle[mode] ?? 'system')}
+      aria-label="Toggle theme"
+      variant="ghost"
+      size="icon"
+      className={cn('rounded-full transition-all duration-200 h-auto w-auto block p-3', className)}
+    >
+      {theme === 'system' && <Monitor className={resolvedIconClassName} aria-hidden="true" />}
+      {theme === 'light' && <Sun className={resolvedIconClassName} aria-hidden="true" />}
+      {theme === 'dark' && <Moon className={resolvedIconClassName} aria-hidden="true" />}
+    </Button>
   );
 }

@@ -1,3 +1,4 @@
+import { useOnSignInComplete } from '@/features/auth/hooks/use-on-sign-in-complete';
 import {
   buildIncompleteSignUpMessage,
   buildMissingRequirementsMessage,
@@ -116,6 +117,7 @@ export function useGoogleSignIn({
 }: UseGoogleSignInArgs) {
   const { isSignedIn } = useAuth({ treatPendingAsSignedOut: false });
   const { startGoogleAuthenticationFlow } = useSignInWithGoogle();
+  const onSignInComplete = useOnSignInComplete();
 
   // state
   const [loadingProvider, setLoadingProvider] = useState<SocialProvider | null>(null);
@@ -144,7 +146,7 @@ export function useGoogleSignIn({
       const result = await startGoogleAuthenticationFlow();
 
       if (__DEV__) {
-        console.log('Google auth flow completed', {
+        console.log('[google auth] completed', {
           createdSessionId: result.createdSessionId,
           hasSetActive: Boolean(result.setActive),
           signInStatus: getClerkStatus(result.signIn as SignInMeta | undefined),
@@ -162,7 +164,7 @@ export function useGoogleSignIn({
       });
 
       if (resolvedSessionId && result.setActive) {
-        await result.setActive({ session: resolvedSessionId });
+        await onSignInComplete({ sessionId: resolvedSessionId, setActive: result.setActive });
         return;
       }
 
@@ -216,7 +218,7 @@ export function useGoogleSignIn({
       }
 
       if (__DEV__) {
-        console.warn('Unhandled Google auth result', {
+        console.warn('[google auth] unhandled result', {
           createdSessionId: result.createdSessionId,
           signInStatus: getClerkStatus(signIn),
           signInFirstFactorStatus: signIn?.firstFactorVerification?.status ?? null,
@@ -257,7 +259,10 @@ export function useGoogleSignIn({
       const signUpAttemptMeta = signUpAttempt as SignUpMeta;
 
       if (getClerkStatus(signUpAttemptMeta) === 'complete' && signUpAttemptMeta.createdSessionId) {
-        await pendingUsernameSetup.setActive?.({ session: signUpAttemptMeta.createdSessionId });
+        await onSignInComplete({
+          sessionId: signUpAttemptMeta.createdSessionId,
+          setActive: pendingUsernameSetup.setActive,
+        });
         setPendingUsernameSetup(null);
         return;
       }

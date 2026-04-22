@@ -1,5 +1,6 @@
+import { useOnSignInComplete } from '@/features/auth/hooks/use-on-sign-in-complete';
 import { buildClerkErrorState, clearAuthErrors, LoginErrors } from '@/features/auth/utils/errors';
-import { useAuth } from '@clerk/expo';
+import { isClerkAPIResponseError, useAuth } from '@clerk/expo';
 import { useSignIn } from '@clerk/expo/legacy';
 import { useState } from 'react';
 
@@ -15,6 +16,7 @@ type LoginStatus =
 export function useLogin() {
   const { isSignedIn } = useAuth();
   const { isLoaded, signIn, setActive } = useSignIn();
+  const onSignInComplete = useOnSignInComplete();
 
   // state
   const [step, setStep] = useState<LoginStep>('identifier');
@@ -26,6 +28,7 @@ export function useLogin() {
   const [errors, setErrors] = useState<LoginErrors | null>(null);
   const [resendAvailableAt, setResendAvailableAt] = useState<number | null>(null);
   const [hasPreparedEmailCodeChallenge, setHasPreparedEmailCodeChallenge] = useState(false);
+  const [emailCodeUnavailable, setEmailCodeUnavailable] = useState(false);
 
   // derived state
   const isBusy = status !== 'idle';
@@ -60,25 +63,62 @@ export function useLogin() {
   };
 
   // ------- actions -------
-  const sendCode = async (nextStatus: 'sending_code' | 'resending_code') => {
-    if (!isLoaded || isSignedIn || status !== 'idle') return false;
+  type SendCodeResult = 'success' | 'email_unavailable' | 'error';
+
+  const isEmailUnavailableError = (error: unknown): boolean =>
+    isClerkAPIResponseError(error) &&
+    error.errors?.some((e) => {
+      const normalizedMessage = e.message?.toLowerCase() ?? '';
+      const normalizedCode = e.code?.toLowerCase() ?? '';
+
+      return (
+        e.code === 'sending_sms_rate_limited' ||
+        normalizedCode.includes('rate_limit') ||
+        normalizedCode.includes('email') ||
+        normalizedCode.includes('message') ||
+        normalizedMessage.includes('monthly limit') ||
+        normalizedMessage.includes('email') ||
+        normalizedMessage.includes('message')
+      );
+    });
+
+  const sendCode = async (
+    nextStatus: 'sending_code' | 'resending_code'
+  ): Promise<SendCodeResult> => {
+    if (!isLoaded || isSignedIn || status !== 'idle') return 'error';
 
     const trimmedIdentifier = identifier.trim();
-    if (!trimmedIdentifier) return false;
+    if (!trimmedIdentifier) return 'error';
 
     setErrors(null);
     setStatus(nextStatus);
 
     try {
       await signIn.create({ identifier: trimmedIdentifier });
+    } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to create sign-in', error);
+      }
 
+      if (isEmailUnavailableError(error)) {
+        setStatus('idle');
+        return 'email_unavailable';
+      }
+
+      handleClerkError(error);
+      setStatus('idle');
+      return 'error';
+    }
+
+    try {
       const emailFactor = signIn.supportedFirstFactors?.find(
         (factor) => factor.strategy === 'email_code'
       );
 
       if (!emailFactor || !('emailAddressId' in emailFactor) || !emailFactor.emailAddressId) {
         setErrors({ global: 'Email code sign-in is not available for this account.' });
-        return false;
+        setStatus('idle');
+        return 'error';
       }
 
       await signIn.prepareFirstFactor({
@@ -88,12 +128,23 @@ export function useLogin() {
 
       setHasPreparedEmailCodeChallenge(true);
       setResendAvailableAt(Date.now() + 60_000);
-      return true;
-    } catch (error) {
-      handleClerkError(error);
-      return false;
-    } finally {
       setStatus('idle');
+      return 'success';
+    } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to send login code', error);
+      }
+
+      setStatus('idle');
+      if (isEmailUnavailableError(error)) {
+        if (__DEV__) {
+          console.error('Email code rate limited, falling back to password', error);
+        }
+        return 'email_unavailable';
+      }
+
+      handleClerkError(error);
+      return 'error';
     }
   };
 
@@ -107,16 +158,22 @@ export function useLogin() {
     setPasswordValue('');
     setResendAvailableAt(null);
     setHasPreparedEmailCodeChallenge(false);
+    setEmailCodeUnavailable(false);
 
-    const didSendCode = await sendCode('sending_code');
-    if (didSendCode) {
+    const result = await sendCode('sending_code');
+    if (result === 'success') {
       setStep('challenge');
+    } else if (result === 'email_unavailable') {
+      setStep('challenge');
+      setChallengeMethod('password');
+      setEmailCodeUnavailable(true);
     }
   };
 
   const switchChallengeMethod = async (value: ChallengeMethod) => {
     if (challengeMethod === value) return;
 
+    const previousMethod = challengeMethod;
     setChallengeMethod(value);
     setErrors((current) => clearAuthErrors(current, ['code', 'password', 'global']));
 
@@ -129,7 +186,11 @@ export function useLogin() {
 
     const canSendCode = !resendAvailableAt || resendAvailableAt <= Date.now();
     if (step === 'challenge' && canSendCode) {
-      await sendCode('sending_code');
+      const result = await sendCode('sending_code');
+
+      if (result !== 'success') {
+        setChallengeMethod(previousMethod);
+      }
     }
   };
 
@@ -174,9 +235,13 @@ export function useLogin() {
       });
 
       if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
+        await onSignInComplete({ sessionId: result.createdSessionId, setActive });
       }
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to verify login code', error);
+      }
+
       handleClerkError(error);
     } finally {
       setStatus('idle');
@@ -195,9 +260,13 @@ export function useLogin() {
     try {
       const result = await signIn.create({ identifier: trimmedIdentifier, password });
       if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
+        await onSignInComplete({ sessionId: result.createdSessionId, setActive });
       }
     } catch (error) {
+      if (__DEV__) {
+        console.error('Failed to sign in with password', error);
+      }
+
       handleClerkError(error);
     } finally {
       setStatus('idle');
@@ -212,6 +281,8 @@ export function useLogin() {
       password,
       code,
       resendAvailableAt,
+      hasPreparedEmailCodeChallenge,
+      emailCodeUnavailable,
       errors,
       isBusy,
       isSendingCode: status === 'sending_code',

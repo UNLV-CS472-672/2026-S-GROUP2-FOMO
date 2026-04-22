@@ -1,19 +1,26 @@
+'use client';
+
 import { AppSidebar } from '@/components/app-sidebar';
-import { SidebarEdgeTrigger } from '@/components/sidebar-edge-trigger';
+import { AppHeader } from '@/components/header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import type { CSSProperties, ReactNode } from 'react';
+
+const HEADER_HEIGHT = '4rem';
 
 export default function AppLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <SidebarEdgeTrigger />
-        <main className="min-w-0 p-4 pt-20 md:p-8 md:pt-8">{children}</main>
-      </SidebarInset>
+    <SidebarProvider style={{ '--header-height': HEADER_HEIGHT } as CSSProperties}>
+      <AppHeader />
+      <div className="flex w-full" style={{ paddingTop: HEADER_HEIGHT }}>
+        <AppSidebar />
+        <SidebarInset className="relative" style={{ minHeight: `calc(100svh - ${HEADER_HEIGHT})` }}>
+          {children}
+        </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

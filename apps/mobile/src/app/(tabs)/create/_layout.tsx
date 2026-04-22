@@ -25,6 +25,27 @@ export default function CreateLayout() {
           title: 'Create Post',
         }}
       />
+      <Stack.Screen
+        name="camera-screen"
+        options={{
+          presentation: 'fullScreenModal',
+          title: 'Camera',
+        }}
+      />
+      <Stack.Screen
+        name="gallery"
+        options={{
+          presentation: 'fullScreenModal',
+          title: 'Gallery',
+        }}
+      />
+      <Stack.Screen
+        name="post-preview"
+        options={{
+          presentation: 'fullScreenModal',
+          title: 'Preview',
+        }}
+      />
     </Stack>
   );
 }

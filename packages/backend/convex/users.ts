@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
 import { query, QueryCtx } from './_generated/server';
+import { __backend_only_getAndAuthenticateCurrentConvexUser } from './auth';
 
 async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
   const [posts, comments, userEventLinks, friendRecs] = await Promise.all([
@@ -70,21 +71,7 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
 export const getCurrentProfile = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      return null;
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_token', (q) => q.eq('tokenIdentifier', identity.tokenIdentifier))
-      .first();
-
-    if (!user) {
-      return null;
-    }
-
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
     return await buildProfile(ctx, user);
   },
 });

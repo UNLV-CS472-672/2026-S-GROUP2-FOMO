@@ -23,6 +23,8 @@
     "mobile:prebuild": "turbo run prebuild --filter=@fomo/mobile",
     "mobile:prebuild:clean": "turbo run prebuild:clean --filter=@fomo/mobile",
     "prepare": "husky",
+    "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
     "typecheck": "turbo typecheck"
   },
   "lint-staged": {
@@ -42,7 +44,7 @@
     "prettier-plugin-packagejson": "^3.0.0",
     "prettier-plugin-sort-json": "^4.2.0",
     "prettier-plugin-tailwindcss": "^0.7.2",
-    "turbo": "^2.8.3",
+    "turbo": "^2.9.5",
     "typescript": "^5",
     "zod": "^3.24.1"
   },
@@ -54,6 +56,9 @@
     "overrides": {
       "react": "19.1.0",
       "react-dom": "19.1.0"
+    },
+    "patchedDependencies": {
+      "h3-js": "patches/h3-js.patch"
     }
   },
   "reactDoctor": {
