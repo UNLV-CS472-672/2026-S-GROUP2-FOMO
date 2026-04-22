@@ -2,6 +2,7 @@ import { Image } from '@/components/image';
 import type { FeedPost } from '@/features/events/types';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
+import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { BlurView } from 'expo-blur';
 import { useEffect, useState } from 'react';
@@ -62,7 +63,7 @@ function CarouselSlide({
   isZoomed,
   onZoomed,
 }: {
-  mediaId: string;
+  mediaId: Id<'_storage'>;
   width: number;
   height: number;
   isActive: boolean;
