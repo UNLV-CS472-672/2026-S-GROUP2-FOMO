@@ -106,7 +106,7 @@ export default function VisitFriendProfileScreen() {
         </View>
 
         <View className="mb-4 flex-row px-4">
-          <Button variant="tertiary" className="h-[82px] flex-1 rounded-none">
+          <Button variant="tertiary" className="h-[82px] flex-1 rounded-2xl">
             <ButtonText variant="tertiary">Recent Events</ButtonText>
           </Button>
         </View>
