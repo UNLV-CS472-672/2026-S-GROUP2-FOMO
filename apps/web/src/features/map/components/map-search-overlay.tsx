@@ -128,7 +128,10 @@ export function MapSearchOverlay({ isOpen, onToggle, onSelectEvent }: MapSearchO
                     key={event._id}
                     type="button"
                     className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-left transition hover:border-white/25 hover:bg-white/[0.08] focus:border-white/40 focus:outline-none"
-                    onClick={() => onSelectEvent?.(event)}
+                    onClick={() => {
+                      setSearchValue(event.name);
+                      onSelectEvent?.(event);
+                    }}
                   >
                     <span className="block text-sm font-semibold text-white">{event.name}</span>
                     <span className="mt-1 block text-xs leading-5 text-white/60">
