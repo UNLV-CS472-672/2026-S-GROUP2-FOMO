@@ -2,14 +2,14 @@ import { Image } from '@/components/image';
 import { DrawerModal } from '@/components/ui/drawer';
 import { Screen } from '@/components/ui/screen';
 import { Feed } from '@/features/events/components/feed';
+import { NavigateButton } from '@/features/events/components/navigate-button';
+import { RsvpButton } from '@/features/events/components/rsvp-button';
 import { RsvpSheet } from '@/features/events/components/rsvp-sheet';
 import { TopMoments } from '@/features/events/components/top-moments';
 import type { AttendanceStatus, NotificationPref } from '@/features/events/types';
 import { Avatar } from '@/features/posts/components/avatar';
 import { MediaCarousel } from '@/features/posts/components/media-carousel';
 import { useGuest } from '@/integrations/session/provider';
-import { useAppTheme } from '@/lib/use-app-theme';
-import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
@@ -39,7 +39,6 @@ function formatEventDateRange(startDate: number, endDate: number) {
 }
 
 export default function EventPage() {
-  const theme = useAppTheme();
   const { isGuestMode } = useGuest();
   const router = useRouter();
   const { eventId: rawEventId } = useLocalSearchParams<{ eventId?: string | string[] }>();
@@ -228,43 +227,19 @@ export default function EventPage() {
                   ) : null}
                 </Pressable>
 
-                <Pressable
-                  onPress={openRsvpSheet}
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    attendance === 'going'
-                      ? 'Going'
-                      : attendance === 'interested'
-                        ? 'Interested'
-                        : attendance === 'uninterested'
-                          ? 'Not interested'
-                          : 'RSVP'
-                  }
-                  className="h-12 w-12 items-center justify-center rounded-2xl"
-                  hitSlop={8}
-                  disabled={isGuestMode}
-                  style={{
-                    borderCurve: 'continuous',
-                    backgroundColor: attendance ? theme.primarySoft : theme.tint,
-                    borderWidth: attendance ? 1 : 0,
-                    borderColor: theme.primarySoftBorder,
-                    opacity: isGuestMode ? 0.5 : 1,
-                  }}
-                >
-                  <Ionicons
-                    name={
-                      attendance === 'going'
-                        ? 'checkmark-circle'
-                        : attendance === 'interested'
-                          ? 'star'
-                          : attendance === 'uninterested'
-                            ? 'close-circle'
-                            : 'add-circle-outline'
-                    }
-                    size={26}
-                    color={attendance ? theme.primaryText : theme.tintForeground}
+                <View className="flex-row items-center gap-2.5">
+                  <NavigateButton
+                    latitude={event.location.latitude}
+                    longitude={event.location.longitude}
+                    label={event.name}
                   />
-                </Pressable>
+
+                  <RsvpButton
+                    attendance={attendance}
+                    disabled={isGuestMode}
+                    onPress={openRsvpSheet}
+                  />
+                </View>
               </View>
             </View>
           </View>

@@ -1,7 +1,7 @@
+import { openDirections } from '@/features/map/utils/directions';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
-import { openDirections } from '../utils/directions';
 
 type NavigateButtonProps = {
   latitude: number;
