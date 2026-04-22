@@ -358,60 +358,103 @@ export const seedData = internalMutation({
         })
       );
     }
-    const [e1, e2, e3, e4, e5, e6, e7, e8, e9] = eventIds;
+    const [e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16, e17] = eventIds;
 
     //  Users/Events Join Table (Convex: attendance)
-    const userEventPairs = [
-      { userId: u1, eventId: e1 },
-      { userId: u1, eventId: e5 },
-      { userId: u1, eventId: e4 },
-      { userId: u1, eventId: e3 },
-      { userId: u1, eventId: e9 },
+    const userEventPairs: {
+      userId: any;
+      eventId: any;
+      status?: 'going' | 'interested' | 'uninterested';
+    }[] = [
+      { userId: u1, eventId: e1, status: 'going' },
+      { userId: u1, eventId: e5, status: 'going' },
+      { userId: u1, eventId: e4, status: 'going' },
+      { userId: u1, eventId: e3, status: 'going' },
+      { userId: u1, eventId: e9, status: 'going' },
 
-      { userId: u2, eventId: e2 },
-      { userId: u2, eventId: e7 },
-      { userId: u2, eventId: e1 },
-      { userId: u2, eventId: e9 },
+      { userId: u2, eventId: e2, status: 'going' },
+      { userId: u2, eventId: e7, status: 'going' },
+      { userId: u2, eventId: e1, status: 'going' },
+      { userId: u2, eventId: e9, status: 'going' },
 
-      { userId: u3, eventId: e2 },
-      { userId: u3, eventId: e4 },
-      { userId: u3, eventId: e8 },
-      { userId: u3, eventId: e5 },
-      { userId: u3, eventId: e6 },
+      { userId: u3, eventId: e2, status: 'going' },
+      { userId: u3, eventId: e4, status: 'going' },
+      { userId: u3, eventId: e8, status: 'going' },
+      { userId: u3, eventId: e5, status: 'going' },
 
-      { userId: u4, eventId: e3 },
-      { userId: u4, eventId: e8 },
-      { userId: u4, eventId: e7 },
-      { userId: u4, eventId: e2 },
-      { userId: u4, eventId: e5 },
-      { userId: u4, eventId: e9 },
+      { userId: u4, eventId: e3, status: 'going' },
+      { userId: u4, eventId: e8, status: 'going' },
+      { userId: u4, eventId: e7, status: 'going' },
+      { userId: u4, eventId: e2, status: 'going' },
+      { userId: u4, eventId: e5, status: 'going' },
+      { userId: u4, eventId: e9, status: 'going' },
 
-      { userId: u5, eventId: e6 },
-      { userId: u5, eventId: e9 },
+      { userId: u5, eventId: e6, status: 'going' },
+      { userId: u5, eventId: e9, status: 'going' },
 
-      { userId: u6, eventId: e2 },
-      { userId: u6, eventId: e7 },
-      { userId: u6, eventId: e8 },
-      { userId: u6, eventId: e3 },
-      { userId: u6, eventId: e6 },
+      { userId: u6, eventId: e2, status: 'going' },
+      { userId: u6, eventId: e7, status: 'going' },
+      { userId: u6, eventId: e8, status: 'going' },
+      { userId: u6, eventId: e3, status: 'going' },
+      { userId: u6, eventId: e6, status: 'going' },
 
-      { userId: u7, eventId: e9 },
-      { userId: u7, eventId: e8 },
-      { userId: u7, eventId: e4 },
-      { userId: u7, eventId: e3 },
+      { userId: u7, eventId: e9, status: 'going' },
+      { userId: u7, eventId: e8, status: 'going' },
+      { userId: u7, eventId: e4, status: 'going' },
+      { userId: u7, eventId: e3, status: 'going' },
 
-      { userId: u8, eventId: e2 },
-      { userId: u8, eventId: e4 },
-      { userId: u8, eventId: e7 },
-      { userId: u8, eventId: e8 },
-      { userId: u8, eventId: e1 },
-      { userId: u8, eventId: e6 },
-      { userId: u8, eventId: e9 },
+      { userId: u8, eventId: e2, status: 'going' },
+      { userId: u8, eventId: e4, status: 'going' },
+      { userId: u8, eventId: e7, status: 'going' },
+      { userId: u8, eventId: e8, status: 'going' },
+      { userId: u8, eventId: e1, status: 'going' },
+      { userId: u8, eventId: e6, status: 'going' },
+      { userId: u8, eventId: e9, status: 'going' },
 
-      { userId: u9, eventId: e4 },
-      { userId: u9, eventId: e6 },
-      { userId: u9, eventId: e2 },
-      { userId: u9, eventId: e8 },
+      { userId: u9, eventId: e4, status: 'going' },
+      { userId: u9, eventId: e6, status: 'going' },
+      { userId: u9, eventId: e2, status: 'going' },
+      { userId: u9, eventId: e8, status: 'going' },
+
+      // Interested but not yet going.
+      { userId: u1, eventId: e8, status: 'interested' },
+      { userId: u1, eventId: e6, status: 'interested' },
+      { userId: u2, eventId: e4, status: 'interested' },
+      { userId: u2, eventId: e3, status: 'interested' },
+      { userId: u3, eventId: e7, status: 'interested' },
+      { userId: u3, eventId: e9, status: 'interested' },
+      { userId: u4, eventId: e4, status: 'interested' },
+      { userId: u4, eventId: e6, status: 'interested' },
+      { userId: u5, eventId: e2, status: 'interested' },
+      { userId: u5, eventId: e4, status: 'interested' },
+      { userId: u6, eventId: e4, status: 'interested' },
+      { userId: u6, eventId: e9, status: 'interested' },
+      { userId: u7, eventId: e6, status: 'interested' },
+      { userId: u7, eventId: e2, status: 'interested' },
+      { userId: u8, eventId: e5, status: 'interested' },
+      { userId: u8, eventId: e3, status: 'interested' },
+      { userId: u9, eventId: e7, status: 'interested' },
+      { userId: u9, eventId: e3, status: 'interested' },
+
+      // Events the user explicitly does not want.
+      { userId: u1, eventId: e2, status: 'uninterested' },
+      { userId: u1, eventId: e7, status: 'uninterested' },
+      { userId: u2, eventId: e6, status: 'uninterested' },
+      { userId: u2, eventId: e5, status: 'uninterested' },
+      { userId: u3, eventId: e3, status: 'uninterested' },
+      { userId: u3, eventId: e6, status: 'uninterested' },
+      { userId: u4, eventId: e1, status: 'uninterested' },
+      { userId: u4, eventId: e5, status: 'uninterested' },
+      { userId: u5, eventId: e3, status: 'uninterested' },
+      { userId: u5, eventId: e1, status: 'uninterested' },
+      { userId: u6, eventId: e1, status: 'uninterested' },
+      { userId: u6, eventId: e5, status: 'uninterested' },
+      { userId: u7, eventId: e2, status: 'uninterested' },
+      { userId: u7, eventId: e7, status: 'uninterested' },
+      { userId: u8, eventId: e3, status: 'uninterested' },
+      { userId: u8, eventId: e6, status: 'uninterested' },
+      { userId: u9, eventId: e1, status: 'uninterested' },
+      { userId: u9, eventId: e5, status: 'uninterested' },
     ];
     for (const pair of userEventPairs) {
       const existing = await ctx.db
@@ -454,6 +497,52 @@ export const seedData = internalMutation({
       { eventId: e9, tagId: tagIds['culture'] },
       { eventId: e9, tagId: tagIds['fits'] },
       { eventId: e9, tagId: tagIds['thrift'] },
+
+      { eventId: e10, tagId: tagIds['chinatown'] },
+      { eventId: e10, tagId: tagIds['culture'] },
+      { eventId: e10, tagId: tagIds['food'] },
+      { eventId: e10, tagId: tagIds['vendors'] },
+      { eventId: e10, tagId: tagIds['music'] },
+      // e11: UNLV Career & Culture Fair — college/fair/insightful/study/vendors
+      { eventId: e11, tagId: tagIds['college'] },
+      { eventId: e11, tagId: tagIds['fair'] },
+      { eventId: e11, tagId: tagIds['insightful'] },
+      { eventId: e11, tagId: tagIds['study'] },
+      { eventId: e11, tagId: tagIds['vendors'] },
+      // e12: Vegas Streetwear Market — fits/clothes/thrift/vendors/culture
+      { eventId: e12, tagId: tagIds['fits'] },
+      { eventId: e12, tagId: tagIds['clothes'] },
+      { eventId: e12, tagId: tagIds['thrift'] },
+      { eventId: e12, tagId: tagIds['vendors'] },
+      { eventId: e12, tagId: tagIds['culture'] },
+      // e13: Desert Rap Cypher — rap/wild/music/party/college
+      { eventId: e13, tagId: tagIds['rap'] },
+      { eventId: e13, tagId: tagIds['wild'] },
+      { eventId: e13, tagId: tagIds['music'] },
+      { eventId: e13, tagId: tagIds['party'] },
+      { eventId: e13, tagId: tagIds['college'] },
+      // e14: Downtown Art Walk — art/culture/insightful/fair
+      { eventId: e14, tagId: tagIds['art'] },
+      { eventId: e14, tagId: tagIds['culture'] },
+      { eventId: e14, tagId: tagIds['insightful'] },
+      { eventId: e14, tagId: tagIds['fair'] },
+      // e15: Sunset Chill Fest — chill/r&b/food/music/drink
+      { eventId: e15, tagId: tagIds['chill'] },
+      { eventId: e15, tagId: tagIds['r&b'] },
+      { eventId: e15, tagId: tagIds['food'] },
+      { eventId: e15, tagId: tagIds['music'] },
+      { eventId: e15, tagId: tagIds['drink'] },
+      // e16: Neon Birthday Bash — birthday/party/wild/drink/music
+      { eventId: e16, tagId: tagIds['birthday'] },
+      { eventId: e16, tagId: tagIds['party'] },
+      { eventId: e16, tagId: tagIds['wild'] },
+      { eventId: e16, tagId: tagIds['drink'] },
+      { eventId: e16, tagId: tagIds['music'] },
+      // e17: UNLV Anime Club Screening — anime/comics/college/chill
+      { eventId: e17, tagId: tagIds['anime'] },
+      { eventId: e17, tagId: tagIds['comics'] },
+      { eventId: e17, tagId: tagIds['college'] },
+      { eventId: e17, tagId: tagIds['chill'] },
     ];
     for (const pair of eventTagPairs) {
       const existing = await ctx.db

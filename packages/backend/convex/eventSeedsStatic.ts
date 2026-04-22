@@ -134,6 +134,110 @@ export const eventSeeds: EventSeed[] = [
       h3Index: '892986b9c2fffff',
     },
   },
+
+  // New events to test rec engine
+  {
+    name: 'Chinatown Night Market',
+    organization: 'Las Vegas Chinatown Plaza',
+    description:
+      'Street food, vendors, live music, and cultural performances in the heart of Chinatown.',
+    imageUrl:
+      'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=1200&q=80',
+    location: {
+      latitude: 36.12201837345691,
+      longitude: -115.19872034567823,
+      h3Index: '892986b8113ffff',
+    },
+  },
+  {
+    name: 'UNLV Career & Culture Fair',
+    organization: 'UNLV Student Affairs',
+    description:
+      'Network with employers, student orgs, and campus resources. Free food and giveaways.',
+    imageUrl:
+      'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80',
+    location: {
+      latitude: 36.10812345678901,
+      longitude: -115.14123456789012,
+      h3Index: '892986b8647ffff',
+    },
+  },
+  {
+    name: 'Vegas Streetwear Market',
+    organization: 'Desert Drip Collective',
+    description:
+      'Local and independent streetwear brands, vintage fits, and live customization booths.',
+    imageUrl:
+      'https://images.unsplash.com/photo-1523398002811-999ca8dec234?auto=format&fit=crop&w=1200&q=80',
+    location: {
+      latitude: 36.16234567890123,
+      longitude: -115.14567890123456,
+      h3Index: '892986b989bffff',
+    },
+  },
+  {
+    name: 'Desert Rap Cypher',
+    organization: 'Vegas Underground',
+    description: 'Open mic rap cypher. Bring your bars or just pull up and vibe. No gatekeeping.',
+    imageUrl:
+      'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1200&q=80',
+    location: {
+      latitude: 36.15123456789012,
+      longitude: -115.16234567890123,
+      h3Index: '892986b9ddbffff',
+    },
+  },
+  {
+    name: 'Downtown Art Walk',
+    organization: '18b Arts District',
+    description:
+      'Self-guided tour of galleries, murals, and pop-up installations across the 18b Arts District.',
+    imageUrl:
+      'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=1200&q=80',
+    location: {
+      latitude: 36.17234567890123,
+      longitude: -115.14890123456789,
+      h3Index: '892986b9803ffff',
+    },
+  },
+  {
+    name: 'Sunset Chill Fest',
+    organization: 'Sunset Park Events',
+    description:
+      'Laid-back outdoor hangout with food trucks, r&b sets, and lawn games at Sunset Park.',
+    imageUrl:
+      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
+    location: {
+      latitude: 36.03912345678901,
+      longitude: -115.14678901234567,
+      h3Index: '89298685b73ffff',
+    },
+  },
+  {
+    name: 'Neon Birthday Bash',
+    organization: 'Private Event',
+    description: 'Annual neon-themed birthday party. BYOF (bring your own fits). Open bar for 21+.',
+    imageUrl:
+      'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=80',
+    location: {
+      latitude: 36.11456789012345,
+      longitude: -115.17123456789012,
+      h3Index: '892986b8003ffff',
+    },
+  },
+  {
+    name: 'UNLV Anime Club Screening',
+    organization: 'UNLV Anime Club',
+    description:
+      'Monthly screening night. This month: Frieren. Snacks provided, cosplay encouraged.',
+    imageUrl:
+      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=80',
+    location: {
+      latitude: 36.10678901234567,
+      longitude: -115.14234567890123,
+      h3Index: '892986b8647ffff',
+    },
+  },
 ];
 
 /** Parallel to `eventSeeds` for seed-time attendee links. */
