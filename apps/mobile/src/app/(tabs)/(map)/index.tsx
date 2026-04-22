@@ -135,12 +135,7 @@ export default function MapScreen() {
       </MapboxGL.MapView>
 
       <SearchDrawer
-        onSelectEvent={(eventId) =>
-          push({
-            pathname: '/feed/event/[eventId]',
-            params: { eventId },
-          })
-        }
+        onSelectEvent={(eventId) => push(`/feed/event/${eventId}`)}
         animatedIndex={drawerAnimatedIndex}
         animatedPosition={drawerAnimatedPosition}
         isFocused={isFocused}
