@@ -10,8 +10,8 @@ import { useIsFocused } from '@react-navigation/native';
 import MapboxGL from '@rnmapbox/maps';
 import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useRef } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
 
@@ -32,7 +32,13 @@ export default function MapScreen() {
   const events = (useQuery(api.events.queries.getEvents) ?? []) as MapEvent[];
   const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);
-  const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
+  const {
+    centerCoordinate,
+    hasResolvedLocation,
+    isResolvingLocation,
+    locationError,
+    locationGranted,
+  } = useUserLocation();
   const { theme } = useUniwind();
   const isDark = theme === 'dark';
   const drawerAnimatedIndex = useSharedValue(0);
@@ -50,19 +56,23 @@ export default function MapScreen() {
   const maxWeight =
     events.length === 0 ? 1 : Math.max(...events.map((event) => event.attendeeCount));
 
-  useEffect(() => {
-    if (!hasResolvedLocation) return;
-
-    cameraRef.current?.setCamera({
-      centerCoordinate,
-      zoomLevel: DEFAULT_ZOOM_LEVEL,
-      heading: 0,
-      animationMode: 'flyTo',
-      animationDuration: 1200,
-    });
-  }, [centerCoordinate, hasResolvedLocation]);
-
   // TODO: Add a map toggle to size icons by recommendation score or popularity.
+
+  if (!centerCoordinate) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        {isResolvingLocation ? (
+          <>
+            <ActivityIndicator />
+          </>
+        ) : (
+          <Text className="text-center text-foreground">
+            {locationError ?? 'Location access is required to use the map.'}
+          </Text>
+        )}
+      </View>
+    );
+  }
 
   return (
     <View className="absolute inset-0">
