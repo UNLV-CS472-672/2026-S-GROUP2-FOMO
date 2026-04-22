@@ -68,8 +68,8 @@ export default function VisitFriendProfileScreen() {
   const postsByTab = (() => {
     const allPosts = friendProfile.posts.map((post: Doc<'posts'>) => ({
       id: String(post._id),
-      title: post.title,
-      subtitle: post.description,
+      title: post.caption ?? 'Untitled post',
+      subtitle: '',
     }));
 
     return {

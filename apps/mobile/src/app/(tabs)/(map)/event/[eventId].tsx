@@ -2,6 +2,7 @@ import { Image } from '@/components/image';
 import { DrawerModal } from '@/components/ui/drawer';
 import { Screen } from '@/components/ui/screen';
 import { Avatar } from '@/features/events/components/avatar';
+import { EventMediaGrid } from '@/features/events/components/event-media-grid';
 import { RsvpSheet } from '@/features/events/components/rsvp-sheet';
 import type { AttendanceStatus, NotificationPref } from '@/features/events/types';
 import { useGuest } from '@/integrations/session/provider';
@@ -47,6 +48,10 @@ export default function EventPage() {
   const event = useQuery(api.events.queries.getEventById, eventId ? { eventId } : 'skip');
   const attendees = useQuery(
     api.events.attendance.getEventAttendees,
+    eventId ? { eventId } : 'skip'
+  );
+  const topMediaPosts = useQuery(
+    api.events.queries.getTopMediaPosts,
     eventId ? { eventId } : 'skip'
   );
   const viewerAttendance = useQuery(
@@ -118,7 +123,22 @@ export default function EventPage() {
     setIsRsvpOpen(true);
   }, [isGuestMode]);
 
-  if (event === undefined || attendees === undefined || viewerAttendance === undefined) {
+  const openEventPost = useCallback(
+    (postId: string) => {
+      router.push({
+        pathname: '/(tabs)/(map)/event/post/[postId]',
+        params: { postId },
+      });
+    },
+    [router]
+  );
+
+  if (
+    event === undefined ||
+    attendees === undefined ||
+    topMediaPosts === undefined ||
+    viewerAttendance === undefined
+  ) {
     return (
       <Screen className="items-center justify-center">
         <Stack.Screen options={{ title: 'Event Details' }} />
@@ -137,7 +157,6 @@ export default function EventPage() {
   }
 
   const attendeeSample = attendees.slice(0, 3);
-
   return (
     <Screen>
       <Stack.Screen options={{ title: event.name }} />
@@ -243,6 +262,8 @@ export default function EventPage() {
             </View>
           </View>
         </View>
+
+        <EventMediaGrid posts={topMediaPosts} onOpenPost={openEventPost} />
       </ScrollView>
 
       <DrawerModal

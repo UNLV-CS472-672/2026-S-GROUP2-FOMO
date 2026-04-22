@@ -35,8 +35,8 @@ export default function ProfileScreen() {
   const postsByTab = useMemo(() => {
     const allPosts = (profile?.posts ?? []).map((post: Doc<'posts'>) => ({
       id: String(post._id),
-      title: post.title,
-      subtitle: post.description,
+      title: post.caption ?? 'Untitled post',
+      subtitle: '',
     }));
 
     return {

@@ -46,11 +46,14 @@ export default defineSchema({
     .index('by_startDate_endDate', ['startDate', 'endDate']),
 
   posts: defineTable({
-    title: v.string(),
-    description: v.string(),
+    eventId: v.optional(v.id('events')),
+    caption: v.optional(v.string()), // necessary if no mediaIds
+    mediaIds: v.optional(v.union(v.id('_storage'), v.array(v.id('_storage')))), // necessary if no caption
     authorId: v.id('users'),
     likeCount: v.optional(v.number()),
-  }).index('by_author', ['authorId']),
+  })
+    .index('by_author', ['authorId'])
+    .index('by_event', ['eventId']),
 
   comments: defineTable({
     postId: v.id('posts'),

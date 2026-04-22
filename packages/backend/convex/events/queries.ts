@@ -61,3 +61,43 @@ export const getEventById = query({
     return await serializeEvent(ctx, event);
   },
 });
+
+export const getTopMediaPosts = query({
+  args: { eventId: v.id('events') },
+  handler: async (ctx, { eventId }) => {
+    const posts = await ctx.db
+      .query('posts')
+      .withIndex('by_event', (q) => q.eq('eventId', eventId))
+      .collect();
+
+    const postsWithAuthors = await Promise.all(
+      posts.map(async (post) => {
+        const mediaIds = Array.isArray(post.mediaIds)
+          ? post.mediaIds
+          : post.mediaIds
+            ? [post.mediaIds]
+            : [];
+
+        if (!mediaIds.length) {
+          return null;
+        }
+
+        const author = await ctx.db.get(post.authorId);
+        return {
+          id: post._id,
+          caption: post.caption ?? '',
+          mediaId: mediaIds[0] ?? null,
+          likeCount: post.likeCount ?? 0,
+          matchedTagCount: 0,
+          creationTime: post._creationTime,
+          authorName: author?.displayName || author?.username || 'Unknown user',
+        };
+      })
+    );
+
+    return postsWithAuthors
+      .filter((post): post is NonNullable<typeof post> => post !== null)
+      .sort((a, b) => b.likeCount - a.likeCount || b.creationTime - a.creationTime)
+      .slice(0, 3);
+  },
+});

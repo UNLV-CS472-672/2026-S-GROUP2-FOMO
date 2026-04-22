@@ -247,117 +247,181 @@ export const seedData = internalMutation({
     //  Posts (Convex: posts)
     const postSeeds = [
       {
-        title: 'Best late-night food near campus?',
-        description: 'Drop your go-to spots.',
+        caption: 'Best late-night food near campus?\n\nDrop your go-to spots.',
+        eventId: e1,
         authorId: u1,
       },
       {
-        title: 'Top 5 matcha cafes across Las Vegas Chinatown.',
-        description: 'Spoiler Alert: it aint Pop Cafe',
+        caption:
+          'Top 5 matcha cafes across Las Vegas Chinatown.\n\nSpoiler Alert: it aint Pop Cafe',
+        eventId: e1,
+        mediaIds: [eventMediaIds[0]!],
         authorId: u1,
       },
       {
-        title: 'fight at first friday!!!',
-        description: 'BROOOO THSI DUDE HIT HIM W A STOP SIGN',
+        lookupCaption: 'fight at first friday!!!\n\nBROOOO THSI DUDE HIT HIM W A STOP SIGN',
+        eventId: e4,
+        mediaIds: [eventMediaIds[3]!],
         authorId: u3,
       },
       {
-        title: 'Happy Birthday Shemes!!!',
-        description: 'Go Psi Rho! Happy birthday to my big bro, the BIG 21!',
+        caption:
+          'Happy Birthday Shemes!!!\n\nGo Psi Rho! Happy birthday to my big bro, the BIG 21!',
+        eventId: e3,
+        mediaIds: [eventMediaIds[2]!],
         authorId: u4,
       },
       {
-        title: 'St Jimmy - A prodigy, a god-sent',
-        description: 'A pinnacle of man. The way he orchestrates his words... Extraordinary...',
+        caption:
+          'St Jimmy - A prodigy, a god-sent\n\nA pinnacle of man. The way he orchestrates his words... Extraordinary...',
+        eventId: e5,
         authorId: u5,
       },
       {
-        title: 'Need some anime recs / good music',
-        description: 'i loveeee wallows and vinland saga',
+        caption: 'Need some anime recs / good music\n\ni loveeee wallows and vinland saga',
+        eventId: e6,
         authorId: u7,
       },
       {
-        title: 'Rate my cosplays! 1-10',
-        description: 'be brutally honest, i spent 5 grand on all these cosplays',
+        lookupCaption:
+          'Rate my cosplays! 1-10\n\nbe brutally honest, i spent 5 grand on all these cosplays',
+        eventId: e6,
+        mediaIds: [eventMediaIds[5]!],
         authorId: u7,
       },
       {
-        title: 'met baby keem ?????',
-        description:
+        lookupCaption:
+          'met baby keem ?????\n\n' +
           'i just saw this dude walking across caesars palace? asked for a pic but he spit in my face and started flying way :(',
+        eventId: e7,
+        mediaIds: [eventMediaIds[6]!],
         authorId: u8,
       },
       {
-        title: 'FOMO Study Session',
-        description: 'we are WINNING that competition',
+        caption: 'FOMO Study Session\n\nwe are WINNING that competition',
+        eventId: e1,
         authorId: u9,
       },
       {
-        title: 'anyone going to LVL UP this year?',
-        description: 'first time going, dont know what to expect. do i need to cosplay??',
+        caption:
+          'anyone going to LVL UP this year?\n\nfirst time going, dont know what to expect. do i need to cosplay??',
+        eventId: e6,
+        mediaIds: [eventMediaIds[5]!],
         authorId: u5,
       },
       {
-        title: 'thrift valley haul just dropped',
-        description:
+        lookupCaption:
+          'thrift valley haul just dropped\n\n' +
           'grabbed a vintage carhartt and some cargos for $18 total. they are NOT out of stussy btw',
+        eventId: e9,
+        mediaIds: [eventMediaIds[8]!],
         authorId: u2,
       },
       {
-        title: 'water lantern festival was so peaceful',
-        description:
+        lookupCaption:
+          'water lantern festival was so peaceful\n\n' +
           'genuinely one of the most beautiful nights ive had in vegas. 10/10 would litter the pond again',
+        eventId: e8,
+        mediaIds: [eventMediaIds[7]!],
         authorId: u4,
       },
       {
-        title: 'UNLV library or coffee shop for finals?',
-        description: 'im cooked either way but where do yall go to grind',
+        caption:
+          'UNLV library or coffee shop for finals?\n\nim cooked either way but where do yall go to grind',
+        eventId: e1,
         authorId: u9,
       },
       {
-        title: 'chinatown food crawl this saturday',
-        description: 'hitting 5 spots in one night. dm if you tryna pull up',
+        caption:
+          'chinatown food crawl this saturday\n\nhitting 5 spots in one night. dm if you tryna pull up',
+        eventId: e1,
         authorId: u3,
       },
       {
-        title: 'my first cosplay ever!!',
-        description:
+        caption:
+          'my first cosplay ever!!\n\n' +
           'went as toji fushiguro and someone said i looked like a middle schooler in a costume... be kind',
+        eventId: e6,
+        mediaIds: [eventMediaIds[5]!],
         authorId: u5,
       },
       {
-        title: 'baby keem setlist was CRAZY',
-        description: 'homicide, trademark da baby, family ties back to back?? i blacked out',
+        lookupCaption:
+          'baby keem setlist was CRAZY\n\nhomicide, trademark da baby, family ties back to back?? i blacked out',
+        eventId: e7,
+        mediaIds: [eventMediaIds[6]!],
         authorId: u8,
       },
       {
-        title: 'first friday art picks this month',
-        description:
+        caption:
+          'first friday art picks this month\n\n' +
           'saw some insane murals near the container park. the arts scene in dtlv is really coming up',
+        eventId: e4,
         authorId: u6,
       },
       {
-        title: 'need a study group for calc 2',
-        description:
+        caption:
+          'need a study group for calc 2\n\n' +
           'series and sequences got me in a chokehold. anyone down to meet up at pop cafe?',
+        eventId: e1,
         authorId: u1,
       },
       {
-        title: 'psi rho rush week recap',
-        description: 'if you missed it you really missed it. brotherhood is unmatched fr',
+        caption:
+          'psi rho rush week recap\n\nif you missed it you really missed it. brotherhood is unmatched fr',
+        eventId: e3,
         authorId: u4,
+      },
+      {
+        caption:
+          'panel notes from st. jimmy\n\n' +
+          'still processing half of what he said but the room was locked in the whole time',
+        eventId: e5,
+        authorId: u6,
       },
     ];
     const postIds: any[] = [];
     for (const p of postSeeds) {
+      const existingCaption = p.lookupCaption ?? p.caption;
       const existing = await ctx.db
         .query('posts')
-        .filter((q) => q.eq(q.field('title'), p.title))
+        .filter((q) => q.eq(q.field('caption'), existingCaption))
         .first();
-      postIds.push(existing?._id ?? (await ctx.db.insert('posts', p)));
+      if (existing) {
+        await ctx.db.patch(existing._id, {
+          eventId: p.eventId,
+          caption: p.caption,
+          mediaIds: p.mediaIds,
+        });
+        postIds.push(existing._id);
+        continue;
+      }
+
+      const { lookupCaption: _lookupCaption, ...post } = p;
+      postIds.push(await ctx.db.insert('posts', post));
     }
-    const [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19] =
-      postIds;
+    const [
+      p1,
+      p2,
+      p3,
+      p4,
+      p5,
+      p6,
+      p7,
+      p8,
+      p9,
+      p10,
+      p11,
+      p12,
+      p13,
+      p14,
+      p15,
+      p16,
+      p17,
+      p18,
+      p19,
+      p20,
+    ] = postIds;
 
     //  Post Tags (Convex: postTags)
     const postTagPairs = [
@@ -410,6 +474,9 @@ export const seedData = internalMutation({
       { postId: p19, tagId: tagIds['party'] },
       { postId: p19, tagId: tagIds['college'] },
       { postId: p19, tagId: tagIds['insightful'] },
+      { postId: p20, tagId: tagIds['panel'] },
+      { postId: p20, tagId: tagIds['conference'] },
+      { postId: p20, tagId: tagIds['insightful'] },
     ];
     for (const pair of postTagPairs) {
       const existing = await ctx.db
