@@ -60,10 +60,12 @@ export default defineSchema({
     authorId: v.id('users'),
     text: v.string(),
     likeCount: v.optional(v.number()),
+    parentId: v.optional(v.id('comments')),
   })
     .index('by_post', ['postId'])
     .index('by_author', ['authorId'])
-    .index('by_post_author', ['postId', 'authorId']),
+    .index('by_post_author', ['postId', 'authorId'])
+    .index('by_parent', ['parentId']),
 
   tags: defineTable({
     name: v.string(),

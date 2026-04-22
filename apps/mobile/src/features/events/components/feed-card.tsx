@@ -126,8 +126,7 @@ export function FeedCard({ post, readOnly, onToggleLike }: FeedCardProps) {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
 
   return (
-    <Pressable
-      onPress={() => setIsCommentsOpen(true)}
+    <View
       className="gap-2.5 rounded-2xl border border-muted bg-surface p-3.5 shadow-xl"
       style={{ borderCurve: 'continuous' }}
     >
@@ -198,6 +197,6 @@ export function FeedCard({ post, readOnly, onToggleLike }: FeedCardProps) {
           </Text>
         </Pressable>
       </View>
-    </Pressable>
+    </View>
   );
 }

@@ -4,6 +4,7 @@ import { v } from 'convex/values';
 import type { Doc } from '../_generated/dataModel';
 import { query, type QueryCtx } from '../_generated/server';
 import { __backend_only_guestOrAuthenticatedUser } from '../auth';
+import { getThreadedCommentsByPost } from '../comments';
 import { getAttendeeCount } from './attendance';
 
 export function latLngToH3Index(lat: number, lng: number, resolution: number = 9): string {
@@ -45,27 +46,12 @@ async function serializeEventFeedPost(
 
   const [author, comments, likes] = await Promise.all([
     ctx.db.get(post.authorId),
-    ctx.db
-      .query('comments')
-      .withIndex('by_post', (q) => q.eq('postId', post._id))
-      .collect(),
+    getThreadedCommentsByPost(ctx, post._id),
     ctx.db
       .query('likes')
       .withIndex('by_postId', (q) => q.eq('postId', post._id))
       .collect(),
   ]);
-
-  const commentsWithAuthors = await Promise.all(
-    comments.map(async (comment) => {
-      const commentAuthor = await ctx.db.get(comment.authorId);
-
-      return {
-        id: comment._id,
-        text: comment.text,
-        authorName: commentAuthor?.displayName || commentAuthor?.username || 'Unknown user',
-      };
-    })
-  );
 
   return {
     id: post._id,
@@ -75,9 +61,13 @@ async function serializeEventFeedPost(
     likes: post.likeCount ?? likes.length,
     liked: viewerId ? likes.some((like) => like.userId === viewerId) : false,
     mediaIds,
-    commentCount: commentsWithAuthors.length,
-    comments: commentsWithAuthors,
+    commentCount: countComments(comments),
+    comments,
   };
+}
+
+function countComments(comments: Awaited<ReturnType<typeof getThreadedCommentsByPost>>): number {
+  return comments.reduce((total, comment) => total + 1 + countComments(comment.replies), 0);
 }
 
 export const getEvents = query({
