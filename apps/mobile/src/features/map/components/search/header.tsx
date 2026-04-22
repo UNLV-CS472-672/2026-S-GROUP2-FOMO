@@ -2,7 +2,7 @@ import { Icon } from '@/components/icon';
 import { SEARCH_DRAWER_STATE } from '@/features/map/components/search/constants';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { type RefObject } from 'react';
-import { Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -84,7 +84,9 @@ export function SearchHeader({
   return (
     <View className="relative z-10 mx-4 mt-2 mb-8">
       <Animated.View style={inputAnimatedStyle}>
-        <View className="rounded-2xl border border-border bg-background px-4 py-3 pb-4">
+        <View
+          className={`rounded-2xl border border-border bg-background px-4 ${Platform.OS === 'android' ? 'py-1' : 'py-3 pb-4'}`}
+        >
           <View className="flex-row items-center gap-3">
             <Icon name="search" size={24} className="text-muted-foreground" />
             <BottomSheetTextInput

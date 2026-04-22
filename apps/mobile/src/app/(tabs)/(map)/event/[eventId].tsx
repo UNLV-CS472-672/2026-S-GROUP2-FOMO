@@ -17,6 +17,12 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+const AVATAR_W = 40; // size-36 + 2px border each side
+const AVATAR_STEP = 32; // minus 8px overlap
+const BUBBLE_W = 44; // min-w-10 + 2px border each side
+const BUBBLE_STEP = 36; // minus 8px overlap
+const ROW_GAP = 10; // gap-2.5
+
 function formatEventDateRange(startDate: number, endDate: number) {
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -68,6 +74,8 @@ export default function EventPage() {
   const [notification, setNotification] = useState<NotificationPref>('all');
   const [isRsvpOpen, setIsRsvpOpen] = useState(false);
   const [headerCarouselOpen, setHeaderCarouselOpen] = useState(false);
+  const [attendeeRowWidth, setAttendeeRowWidth] = useState(0);
+  const [buttonsWidth, setButtonsWidth] = useState(0);
 
   useEffect(() => {
     if (!viewerAttendance) {
@@ -150,6 +158,23 @@ export default function EventPage() {
   }
 
   const attendeeSample = attendees.slice(0, 3);
+
+  const visibleAvatarCount = (() => {
+    if (attendeeRowWidth === 0 || buttonsWidth === 0) return attendeeSample.length;
+    const available = attendeeRowWidth - buttonsWidth - ROW_GAP;
+    for (let n = attendeeSample.length; n >= 0; n--) {
+      const hasMore = event.attendeeCount > n;
+      const needed =
+        n === 0
+          ? hasMore
+            ? BUBBLE_W
+            : 0
+          : AVATAR_W + (n - 1) * AVATAR_STEP + (hasMore ? BUBBLE_STEP : 0);
+      if (needed <= available) return n;
+    }
+    return 0;
+  })();
+
   return (
     <Screen>
       <Stack.Screen options={{ title: event.name }} />
@@ -186,7 +211,9 @@ export default function EventPage() {
           </Pressable>
           <View className="flex-1 justify-between">
             <View className="gap-1.5">
-              <Text className="text-lg font-bold text-foreground">{event.name}</Text>
+              <Text className="text-lg font-bold text-foreground" numberOfLines={2}>
+                {event.name}
+              </Text>
               <Text className="text-sm text-muted-foreground">
                 {formatEventDateRange(event.startDate, event.endDate)}
               </Text>
@@ -194,7 +221,10 @@ export default function EventPage() {
                 {event.caption}
               </Text>
 
-              <View className="mt-3 flex-row items-center justify-between gap-2.5">
+              <View
+                className="mt-3 flex-row items-center justify-between gap-2.5"
+                onLayout={(e) => setAttendeeRowWidth(e.nativeEvent.layout.width)}
+              >
                 <Pressable
                   onPress={() =>
                     router.push({
@@ -203,9 +233,10 @@ export default function EventPage() {
                     })
                   }
                   className="flex-row items-center"
+                  style={{ flexShrink: 1, minWidth: 0 }}
                   hitSlop={6}
                 >
-                  {attendeeSample.map((attendee, index) => (
+                  {attendeeSample.slice(0, visibleAvatarCount).map((attendee, index) => (
                     <View
                       key={attendee.id}
                       className="rounded-full border-2 border-surface"
@@ -218,16 +249,23 @@ export default function EventPage() {
                       />
                     </View>
                   ))}
-                  {event.attendeeCount > attendeeSample.length ? (
-                    <View className="-ml-2 h-10 min-w-10 items-center justify-center rounded-full border-2 border-surface bg-muted px-2">
+                  {event.attendeeCount > visibleAvatarCount ? (
+                    <View
+                      className="h-10 min-w-10 items-center justify-center rounded-full border-2 border-surface bg-muted px-2"
+                      style={{ marginLeft: visibleAvatarCount > 0 ? -8 : 0 }}
+                    >
                       <Text className="text-[10px] font-semibold text-muted-foreground">
-                        +{event.attendeeCount - attendeeSample.length}
+                        +{event.attendeeCount - visibleAvatarCount}
                       </Text>
                     </View>
                   ) : null}
                 </Pressable>
 
-                <View className="flex-row items-center gap-2.5">
+                <View
+                  className="flex-row items-center gap-2"
+                  style={{ flexShrink: 0 }}
+                  onLayout={(e) => setButtonsWidth(e.nativeEvent.layout.width)}
+                >
                   <NavigateButton
                     latitude={event.location.latitude}
                     longitude={event.location.longitude}
