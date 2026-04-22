@@ -6,14 +6,13 @@ export type NotificationPref = 'all' | 'friends' | 'none';
 
 export type FeedPost = {
   id: string;
-  author: string;
-  title: string;
-  description: string;
   authorName: string;
+  authorAvatarUrl?: string;
+  caption: string;
   likes: number;
+  liked: boolean;
   mediaId?: Id<'_storage'> | null;
   commentCount: number;
-  matchedTagCount: number;
   comments: Array<{
     id: string;
     text: string;

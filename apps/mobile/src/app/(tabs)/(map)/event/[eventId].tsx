@@ -3,6 +3,7 @@ import { DrawerModal } from '@/components/ui/drawer';
 import { Screen } from '@/components/ui/screen';
 import { Avatar } from '@/features/events/components/avatar';
 import { EventMediaGrid } from '@/features/events/components/event-media-grid';
+import { Feed } from '@/features/events/components/feed';
 import { RsvpSheet } from '@/features/events/components/rsvp-sheet';
 import type { AttendanceStatus, NotificationPref } from '@/features/events/types';
 import { useGuest } from '@/integrations/session/provider';
@@ -264,6 +265,7 @@ export default function EventPage() {
         </View>
 
         <EventMediaGrid posts={topMediaPosts} onOpenPost={openEventPost} />
+        {eventId ? <Feed eventId={eventId} onOpenPost={openEventPost} /> : null}
       </ScrollView>
 
       <DrawerModal

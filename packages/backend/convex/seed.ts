@@ -8,6 +8,59 @@ export { eventSeedAttendees, eventSeeds };
 
 //TODO get from backend instead
 
+const postSeedMedia = [
+  {
+    key: 'Top 5 matcha cafes across Las Vegas Chinatown.\n\nSpoiler Alert: it aint Pop Cafe',
+    imageUrl:
+      'https://images.unsplash.com/photo-1515823662972-da6a2e4d3002?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    key: 'fight at first friday!!!\n\nBROOOO THSI DUDE HIT HIM W A STOP SIGN',
+    imageUrl:
+      'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    key: 'Happy Birthday Shemes!!!\n\nGo Psi Rho! Happy birthday to my big bro, the BIG 21!',
+    imageUrl:
+      'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    key: 'Rate my cosplays! 1-10\n\nbe brutally honest, i spent 5 grand on all these cosplays',
+    imageUrl:
+      'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    key: 'met baby keem ?????\n\ni just saw this dude walking across caesars palace? asked for a pic but he spit in my face and started flying way :(',
+    imageUrl:
+      'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    key: 'anyone going to LVL UP this year?\n\nfirst time going, dont know what to expect. do i need to cosplay??',
+    imageUrl:
+      'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    key: 'thrift valley haul just dropped\n\ngrabbed a vintage carhartt and some cargos for $18 total. they are NOT out of stussy btw',
+    imageUrl:
+      'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    key: 'water lantern festival was so peaceful\n\ngenuinely one of the most beautiful nights ive had in vegas. 10/10 would litter the pond again',
+    imageUrl:
+      'https://images.unsplash.com/photo-1505236858219-8359eb29e329?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    key: 'my first cosplay ever!!\n\nwent as toji fushiguro and someone said i looked like a middle schooler in a costume... be kind',
+    imageUrl:
+      'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    key: 'baby keem setlist was CRAZY\n\nhomicide, trademark da baby, family ties back to back?? i blacked out',
+    imageUrl:
+      'https://images.unsplash.com/photo-1501612780327-45045538702b?auto=format&fit=crop&w=1200&q=80',
+  },
+] as const;
+
 async function storeSeedEventImage(ctx: ActionCtx, imageUrl: string) {
   const response = await fetch(imageUrl);
   if (!response.ok) {
@@ -29,11 +82,32 @@ export const getSeedEventMediaIds = internalQuery({
   },
 });
 
+export const getSeedPostMediaIds = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const existingPosts = await ctx.db.query('posts').collect();
+    const mediaIdByCaption = new Map(
+      existingPosts.map((post) => [
+        post.caption ?? null,
+        Array.isArray(post.mediaIds) ? (post.mediaIds[0] ?? null) : (post.mediaIds ?? null),
+      ])
+    );
+
+    return postSeedMedia.map((entry) => mediaIdByCaption.get(entry.key) ?? null);
+  },
+});
+
 export const seedData = internalMutation({
-  args: { eventMediaIds: v.array(v.id('_storage')) },
-  handler: async (ctx, { eventMediaIds }) => {
+  args: {
+    eventMediaIds: v.array(v.id('_storage')),
+    postMediaIds: v.array(v.id('_storage')),
+  },
+  handler: async (ctx, { eventMediaIds, postMediaIds }) => {
     if (eventMediaIds.length !== eventSeeds.length) {
       throw new Error('Expected one media id per seeded event.');
+    }
+    if (postMediaIds.length !== postSeedMedia.length) {
+      throw new Error('Expected one media id per seeded post photo.');
     }
 
     //  Users (Convex Table Name: users)
@@ -255,20 +329,20 @@ export const seedData = internalMutation({
         caption:
           'Top 5 matcha cafes across Las Vegas Chinatown.\n\nSpoiler Alert: it aint Pop Cafe',
         eventId: e1,
-        mediaIds: [eventMediaIds[0]!],
+        mediaIds: [postMediaIds[0]!],
         authorId: u1,
       },
       {
         lookupCaption: 'fight at first friday!!!\n\nBROOOO THSI DUDE HIT HIM W A STOP SIGN',
         eventId: e4,
-        mediaIds: [eventMediaIds[3]!],
+        mediaIds: [postMediaIds[1]!],
         authorId: u3,
       },
       {
         caption:
           'Happy Birthday Shemes!!!\n\nGo Psi Rho! Happy birthday to my big bro, the BIG 21!',
         eventId: e3,
-        mediaIds: [eventMediaIds[2]!],
+        mediaIds: [postMediaIds[2]!],
         authorId: u4,
       },
       {
@@ -286,7 +360,7 @@ export const seedData = internalMutation({
         lookupCaption:
           'Rate my cosplays! 1-10\n\nbe brutally honest, i spent 5 grand on all these cosplays',
         eventId: e6,
-        mediaIds: [eventMediaIds[5]!],
+        mediaIds: [postMediaIds[3]!],
         authorId: u7,
       },
       {
@@ -294,7 +368,7 @@ export const seedData = internalMutation({
           'met baby keem ?????\n\n' +
           'i just saw this dude walking across caesars palace? asked for a pic but he spit in my face and started flying way :(',
         eventId: e7,
-        mediaIds: [eventMediaIds[6]!],
+        mediaIds: [postMediaIds[4]!],
         authorId: u8,
       },
       {
@@ -306,7 +380,7 @@ export const seedData = internalMutation({
         caption:
           'anyone going to LVL UP this year?\n\nfirst time going, dont know what to expect. do i need to cosplay??',
         eventId: e6,
-        mediaIds: [eventMediaIds[5]!],
+        mediaIds: [postMediaIds[5]!],
         authorId: u5,
       },
       {
@@ -314,7 +388,7 @@ export const seedData = internalMutation({
           'thrift valley haul just dropped\n\n' +
           'grabbed a vintage carhartt and some cargos for $18 total. they are NOT out of stussy btw',
         eventId: e9,
-        mediaIds: [eventMediaIds[8]!],
+        mediaIds: [postMediaIds[6]!],
         authorId: u2,
       },
       {
@@ -322,7 +396,7 @@ export const seedData = internalMutation({
           'water lantern festival was so peaceful\n\n' +
           'genuinely one of the most beautiful nights ive had in vegas. 10/10 would litter the pond again',
         eventId: e8,
-        mediaIds: [eventMediaIds[7]!],
+        mediaIds: [postMediaIds[7]!],
         authorId: u4,
       },
       {
@@ -342,14 +416,14 @@ export const seedData = internalMutation({
           'my first cosplay ever!!\n\n' +
           'went as toji fushiguro and someone said i looked like a middle schooler in a costume... be kind',
         eventId: e6,
-        mediaIds: [eventMediaIds[5]!],
+        mediaIds: [postMediaIds[8]!],
         authorId: u5,
       },
       {
         lookupCaption:
           'baby keem setlist was CRAZY\n\nhomicide, trademark da baby, family ties back to back?? i blacked out',
         eventId: e7,
-        mediaIds: [eventMediaIds[6]!],
+        mediaIds: [postMediaIds[9]!],
         authorId: u8,
       },
       {
@@ -778,12 +852,18 @@ export const seed = action({
   args: {},
   handler: async (ctx) => {
     const existingMediaIds = await ctx.runQuery(anyApi.seed.getSeedEventMediaIds, {});
+    const existingPostMediaIds = await ctx.runQuery(anyApi.seed.getSeedPostMediaIds, {});
     const eventMediaIds = await Promise.all(
       eventSeeds.map(async (event, index) => {
         return existingMediaIds[index] ?? (await storeSeedEventImage(ctx, event.imageUrl));
       })
     );
+    const postMediaIds = await Promise.all(
+      postSeedMedia.map(async (entry, index) => {
+        return existingPostMediaIds[index] ?? (await storeSeedEventImage(ctx, entry.imageUrl));
+      })
+    );
 
-    return await ctx.runMutation(anyApi.seed.seedData, { eventMediaIds });
+    return await ctx.runMutation(anyApi.seed.seedData, { eventMediaIds, postMediaIds });
   },
 });

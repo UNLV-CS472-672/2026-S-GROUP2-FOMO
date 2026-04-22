@@ -36,6 +36,54 @@ async function serializeEvent(ctx: QueryCtx, event: Doc<'events'>, recommendatio
   };
 }
 
+async function serializeEventFeedPost(
+  ctx: QueryCtx,
+  post: Doc<'posts'>,
+  viewerId?: Doc<'users'>['_id']
+) {
+  const mediaIds = Array.isArray(post.mediaIds)
+    ? post.mediaIds
+    : post.mediaIds
+      ? [post.mediaIds]
+      : [];
+
+  const [author, comments, likes] = await Promise.all([
+    ctx.db.get(post.authorId),
+    ctx.db
+      .query('comments')
+      .withIndex('by_post', (q) => q.eq('postId', post._id))
+      .collect(),
+    ctx.db
+      .query('likes')
+      .withIndex('by_postId', (q) => q.eq('postId', post._id))
+      .collect(),
+  ]);
+
+  const commentsWithAuthors = await Promise.all(
+    comments.map(async (comment) => {
+      const commentAuthor = await ctx.db.get(comment.authorId);
+
+      return {
+        id: comment._id,
+        text: comment.text,
+        authorName: commentAuthor?.displayName || commentAuthor?.username || 'Unknown user',
+      };
+    })
+  );
+
+  return {
+    id: post._id,
+    caption: post.caption ?? '',
+    authorName: author?.displayName || author?.username || 'Unknown user',
+    authorAvatarUrl: author?.avatarUrl || '',
+    likes: post.likeCount ?? likes.length,
+    liked: viewerId ? likes.some((like) => like.userId === viewerId) : false,
+    mediaId: mediaIds[0] ?? null,
+    commentCount: commentsWithAuthors.length,
+    comments: commentsWithAuthors,
+  };
+}
+
 export const getEvents = query({
   args: {},
   handler: async (ctx) => {
@@ -99,5 +147,21 @@ export const getTopMediaPosts = query({
       .filter((post): post is NonNullable<typeof post> => post !== null)
       .sort((a, b) => b.likeCount - a.likeCount || b.creationTime - a.creationTime)
       .slice(0, 3);
+  },
+});
+
+export const getEventFeed = query({
+  args: { eventId: v.id('events') },
+  handler: async (ctx, { eventId }) => {
+    const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
+    const posts = await ctx.db
+      .query('posts')
+      .withIndex('by_event', (q) => q.eq('eventId', eventId))
+      .order('desc')
+      .collect();
+
+    return await Promise.all(
+      posts.map((post) => serializeEventFeedPost(ctx, post, guestMode ? undefined : viewer._id))
+    );
   },
 });
