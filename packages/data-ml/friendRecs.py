@@ -18,11 +18,6 @@ def get_client() -> ConvexClient:
     return client
 
 
-
-# Checks if a userid exists in the "users" table.
-def user_exists(user_id: str) -> bool:
-    return get_client().query("data_ml/users:userExists", {"userId": user_id}) is not None
-
 # Get all unique userIds that have at least one row in "usersToEvents"
 def get_user_ids_with_event_attendance() -> list[str]:
     # Cast to a list[str] to satisfy myPy since Convex returns Any.
@@ -33,6 +28,12 @@ def get_user_ids_with_event_attendance() -> list[str]:
 def get_all_user_ids() -> list[str]:
     user_ids: list[str] = get_client().query("data_ml/users:getAllUserIds", {})
     return user_ids
+
+
+# Get all accepted friend userIds for a user.
+def get_friend_ids(user_id: str) -> list[str]:
+    friend_ids: list[str] = get_client().query("data_ml/users:getFriendIds", {"userId": user_id})
+    return friend_ids
 
 
 
@@ -176,11 +177,13 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> N
         .drop(columns='rank')
     )
 
+    existing_friend_ids = set(get_friend_ids(userId))
+
     # Parse out any userIds that are already friends.
     top_sim_scores = [
         {"userId": friendId, "score": float(score)}
         for friendId, score in top_sim_scores["similarity_score"].items() 
-        if get_client().query("data_ml/friends:friendExists", {"userAId": userId, "userBId": friendId},) is None
+        if friendId not in existing_friend_ids
     ]
 
     # If list is larger than rec_amt, truncate.
@@ -201,9 +204,6 @@ def main_one_user(user: str, rec_amt: int, seed: bool) -> None:
 
     if seed:
         get_client().mutation("seed:seed")    
-        
-    if not user_exists(user):
-        raise Exception(f"\"{user}\" cannot be found in users.")
 
     raw_events_df          = raw_matrix_events()
     raw_eventTags_df       = raw_matrix_eventTags()
@@ -232,9 +232,6 @@ def main_all_users(rec_amt: int, seed: bool) -> None:
     raw_postTags_df = raw_matrix_postTags()
 
     for user_id in user_ids:
-        if not user_exists(user_id):
-            raise Exception(f"\"{user_id}\" cannot be found in users.")
-
         simscores_events_df = similarity_score(raw_events_df, user_id)
         simscores_eventTags_df = similarity_score(raw_eventTags_df, user_id)
         simscores_postTags_df = similarity_score(raw_postTags_df, user_id)
