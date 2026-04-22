@@ -1,5 +1,6 @@
 import { Image } from '@/components/image';
 import { Avatar } from '@/features/events/components/avatar';
+import { CommentDrawer } from '@/features/events/components/comment-drawer';
 import { MediaCarousel } from '@/features/events/components/media-carousel';
 import type { FeedPost } from '@/features/events/types';
 import { useAppTheme } from '@/lib/use-app-theme';
@@ -122,9 +123,11 @@ function FeedCardMedia({
 export function FeedCard({ post, readOnly, onToggleLike }: FeedCardProps) {
   const theme = useAppTheme();
   const [carouselIndex, setCarouselIndex] = useState<number | null>(null);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
 
   return (
-    <View
+    <Pressable
+      onPress={() => setIsCommentsOpen(true)}
       className="gap-2.5 rounded-2xl border border-muted bg-surface p-3.5 shadow-xl"
       style={{ borderCurve: 'continuous' }}
     >
@@ -135,6 +138,13 @@ export function FeedCard({ post, readOnly, onToggleLike }: FeedCardProps) {
           onClose={() => setCarouselIndex(null)}
         />
       )}
+
+      <CommentDrawer
+        open={isCommentsOpen}
+        onClose={() => setIsCommentsOpen(false)}
+        post={post}
+        readOnly={readOnly}
+      />
 
       <View className="gap-2.5">
         <View className="flex-row items-center gap-2.5">
@@ -174,7 +184,11 @@ export function FeedCard({ post, readOnly, onToggleLike }: FeedCardProps) {
           </Text>
         </Pressable>
 
-        <View className="flex-row items-center gap-1.5">
+        <Pressable
+          onPress={() => setIsCommentsOpen(true)}
+          className="flex-row items-center gap-1.5"
+          hitSlop={8}
+        >
           <Ionicons name="chatbubble-outline" size={18} color={theme.mutedText} />
           <Text
             className="text-[13px] text-muted-foreground"
@@ -182,8 +196,8 @@ export function FeedCard({ post, readOnly, onToggleLike }: FeedCardProps) {
           >
             {post.commentCount}
           </Text>
-        </View>
+        </Pressable>
       </View>
-    </View>
+    </Pressable>
   );
 }
