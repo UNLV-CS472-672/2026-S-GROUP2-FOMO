@@ -13,12 +13,12 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   interpolate,
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scheduleOnRN } from 'react-native-worklets';
 
 type ReplyTarget = { id: string; authorName: string } | null;
 
@@ -45,7 +45,7 @@ function CommentItem({
     })
     .onEnd(() => {
       if (translateX.value >= 60) {
-        runOnJS(triggerReply)();
+        scheduleOnRN(triggerReply);
       }
       translateX.value = withTiming(0, { duration: 180 });
     });
@@ -243,7 +243,7 @@ export function CommentDrawer({ open, onClose, post, readOnly }: CommentDrawerPr
       keyboardBehavior="extend"
     >
       <View className="flex-1">
-        <View className="flex-row items-center gap-2.5 mx-4 mb-4">
+        <View className="flex-row items-center gap-2.5 mx-6 mb-4">
           <Ionicons name="chatbubble-outline" size={18} color={theme.mutedText} />
           <Text className=" text-[17px] font-bold text-foreground">Comments</Text>
           <Text
