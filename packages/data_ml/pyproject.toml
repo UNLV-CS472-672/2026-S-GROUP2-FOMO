@@ -51,6 +51,5 @@ ignore_missing_imports = true
 
 [dependency-groups]
 dev = [
-    "mypy>=1.19.1",
     "pytest-cov>=7.1.0",
 ]
