@@ -10,12 +10,21 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from recommendEvent import (
-    get_tag_info,
-    get_user_features,
-    get_event_features,
+from data.generate_training_data import (
+    TAG_IDX,
+    TAGS,
+    NUM_TAGS,
+    MAX_TAGS,
+    EVENT_ARCHETYPES,
+    USER_PERSONAS,
+    generate_event,
+    generate_event_for_user,
+    simulate_user,
+    generate_users,
+    generate_events,
+    cosine_sim_attended,
+    mine_triplets,
     main,
-    MAX_TAGS
 )
 
 
