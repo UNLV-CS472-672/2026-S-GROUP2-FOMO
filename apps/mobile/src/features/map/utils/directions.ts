@@ -80,9 +80,9 @@ export async function openDirections(lat: number, lng: number, label: string) {
       return;
     }
 
-    const canOpenGoogleMapsWeb = await canOpenUrl(googleMapsWeb);
-
-    if (canOpenGoogleMapsWeb && (await tryOpenUrl(googleMapsWeb))) {
+    // Some Android devices and emulators report false negatives for canOpenURL
+    // on https URLs even though a browser can handle them.
+    if (await tryOpenUrl(googleMapsWeb)) {
       return;
     }
 
