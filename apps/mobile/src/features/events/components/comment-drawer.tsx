@@ -175,11 +175,15 @@ export function CommentDrawer({ open, onClose, post, readOnly }: CommentDrawerPr
   const createComment = useMutation(api.comments.createComment);
   const inputRef = useRef<any>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+  const commentPositionsRef = useRef<Record<string, number>>({});
   const [replyTo, setReplyTo] = useState<ReplyTarget>(null);
+  const [pendingScrollCommentId, setPendingScrollCommentId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
       setReplyTo(null);
+      setPendingScrollCommentId(null);
+      commentPositionsRef.current = {};
       return;
     }
     const timer = setTimeout(() => inputRef.current?.focus(), 150);
@@ -188,8 +192,21 @@ export function CommentDrawer({ open, onClose, post, readOnly }: CommentDrawerPr
 
   useEffect(() => {
     if (!open) return;
-    setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 50);
-  }, [commentCount, open]);
+    if (!pendingScrollCommentId) {
+      const timer = setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 50);
+      return () => clearTimeout(timer);
+    }
+
+    const timer = setTimeout(() => {
+      const y = commentPositionsRef.current[pendingScrollCommentId];
+      if (typeof y === 'number') {
+        scrollViewRef.current?.scrollTo({ y: Math.max(y - 24, 0), animated: true });
+        setPendingScrollCommentId(null);
+      }
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [commentCount, open, pendingScrollCommentId]);
 
   const handleReply = useCallback((target: NonNullable<ReplyTarget>) => {
     setReplyTo(target);
@@ -203,7 +220,13 @@ export function CommentDrawer({ open, onClose, post, readOnly }: CommentDrawerPr
         postId: post.id as Id<'posts'>,
         text,
         ...(parentId !== undefined && { parentId }),
-      }).catch((err) => console.error('Failed to create comment', err));
+      })
+        .then((commentId) => {
+          if (commentId) {
+            setPendingScrollCommentId(String(commentId));
+          }
+        })
+        .catch((err) => console.error('Failed to create comment', err));
       setReplyTo(null);
     },
     [createComment, post.id, replyTo]
@@ -238,12 +261,25 @@ export function CommentDrawer({ open, onClose, post, readOnly }: CommentDrawerPr
           {commentCount > 0 ? (
             <View className="gap-4">
               {comments.map((comment) => (
-                <View key={comment.id} className="gap-3">
+                <View
+                  key={comment.id}
+                  className="gap-3"
+                  onLayout={(event) => {
+                    commentPositionsRef.current[comment.id] = event.nativeEvent.layout.y;
+                  }}
+                >
                   <CommentItem comment={comment} onReply={handleReply} />
                   {comment.replies.length > 0 ? (
                     <View className="gap-3 pl-11">
                       {comment.replies.map((reply) => (
-                        <CommentItem key={reply.id} comment={reply} onReply={handleReply} />
+                        <View
+                          key={reply.id}
+                          onLayout={(event) => {
+                            commentPositionsRef.current[reply.id] = event.nativeEvent.layout.y;
+                          }}
+                        >
+                          <CommentItem comment={reply} onReply={handleReply} />
+                        </View>
                       ))}
                     </View>
                   ) : null}
