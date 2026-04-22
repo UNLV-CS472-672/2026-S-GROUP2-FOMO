@@ -105,6 +105,7 @@
           "microphonePermission": "FOMO uses your microphone when recording videos."
         }
       ],
+      "expo-video",
       "expo-secure-store",
       "expo-web-browser"
     ],

@@ -3,16 +3,16 @@ import { Screen } from '@/components/ui/screen';
 import { Avatar } from '@/features/posts/components/avatar';
 import { FeedCard } from '@/features/posts/components/feed-card';
 import type { FeedPost } from '@/features/posts/types';
+import PostGrid, { type GridMediaItem } from '@/features/profile/components/post-grid';
 import StatLabel from '@/features/profile/components/stat-label';
 import { useGuest } from '@/integrations/session/provider';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Doc, Id } from '@fomo/backend/convex/_generated/dataModel';
-import { useMutation, useQuery } from 'convex/react';
-import { useRouter } from 'expo-router';
+import { useMutation } from 'convex/react';
 import { useState } from 'react';
-import { FlatList, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 type ProfileData = {
   user: {
@@ -66,29 +66,6 @@ export function ProfileStateScreen({
   );
 }
 
-function MediaGridItem({ postId, mediaId }: { postId: string; mediaId: Id<'_storage'> }) {
-  const router = useRouter();
-  const mediaUrl = useQuery(api.files.getUrl, { storageId: mediaId });
-
-  return (
-    <TouchableOpacity
-      onPress={() =>
-        router.push({
-          pathname: '../profile/post-details',
-          params: { postId },
-        })
-      }
-      className="aspect-square w-1/3"
-    >
-      {mediaUrl ? (
-        <Image source={{ uri: mediaUrl }} className="h-full w-full" resizeMode="cover" />
-      ) : (
-        <View className="h-full w-full bg-primary/5" />
-      )}
-    </TouchableOpacity>
-  );
-}
-
 export function ProfilePage({
   profile,
   feedPosts,
@@ -104,9 +81,9 @@ export function ProfilePage({
   const togglePostLike = useMutation(api.likes.togglePostLike);
   const [activeTab, setActiveTab] = useState<'feed' | 'media'>('feed');
 
-  const mediaItems = feedPosts.flatMap((p) =>
+  const mediaItems: GridMediaItem[] = feedPosts.flatMap((p) =>
     p.mediaIds.map((mediaId) => ({
-      key: `${p.id}-${mediaId}`,
+      id: `${p.id}-${mediaId}`,
       postId: p.id,
       mediaId: mediaId as Id<'_storage'>,
     }))
@@ -254,14 +231,7 @@ export function ProfilePage({
             </View>
           )
         ) : mediaItems.length > 0 ? (
-          <FlatList
-            data={mediaItems}
-            renderItem={({ item }) => <MediaGridItem postId={item.postId} mediaId={item.mediaId} />}
-            keyExtractor={(item) => item.key}
-            numColumns={3}
-            scrollEnabled={false}
-            contentContainerStyle={{ paddingBottom: 100 }}
-          />
+          <PostGrid posts={mediaItems} />
         ) : (
           <View className="items-center justify-center py-8">
             <Text className="text-muted-foreground">No media posts yet</Text>

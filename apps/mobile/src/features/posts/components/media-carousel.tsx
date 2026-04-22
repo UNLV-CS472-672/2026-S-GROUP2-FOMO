@@ -5,8 +5,9 @@ import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { BlurView } from 'expo-blur';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, StatusBar, Text, View, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, StatusBar, Text, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import type { SharedValue } from 'react-native-reanimated';
 import Animated, {
@@ -74,6 +75,23 @@ function CarouselSlide({
   dismissOpacity: SharedValue<number>;
 }) {
   const mediaUrl = useQuery(api.files.getUrl, { storageId: mediaId });
+  const mediaMetadata = useQuery(api.files.getMetadata, { storageId: mediaId });
+  const mediaTypeResolved = mediaMetadata !== undefined;
+  const isVideo = mediaMetadata?.contentType?.startsWith('video/') ?? false;
+
+  const player = useVideoPlayer(isVideo ? (mediaUrl ?? null) : null);
+
+  useEffect(() => {
+    if (!mediaUrl || !isVideo) return;
+    player.loop = true;
+    player.muted = false;
+    if (isActive) {
+      player.play();
+    } else {
+      player.pause();
+      player.currentTime = 0;
+    }
+  }, [isActive, isVideo, mediaUrl, player]);
 
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
@@ -185,11 +203,12 @@ function CarouselSlide({
     if (scale.value <= 1) scheduleOnRN(onClose);
   });
 
-  const composed = Gesture.Simultaneous(
+  const imageGesture = Gesture.Simultaneous(
     pinch,
     dismissPan,
     Gesture.Race(Gesture.Exclusive(doubleTap, singleTap), pan)
   );
+  const composed = isVideo ? dismissPan : imageGesture;
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -210,9 +229,18 @@ function CarouselSlide({
         <Animated.View
           style={[{ width, height, alignItems: 'center', justifyContent: 'center' }, animatedStyle]}
         >
-          {mediaUrl ? (
+          {isVideo ? (
+            <VideoView
+              player={player}
+              style={{ width, height }}
+              contentFit="contain"
+              nativeControls
+            />
+          ) : mediaTypeResolved && mediaUrl ? (
             <Image source={mediaUrl} style={{ width, height }} contentFit="contain" />
-          ) : null}
+          ) : (
+            <View style={{ width, height, backgroundColor: 'black' }} />
+          )}
         </Animated.View>
       </GestureDetector>
     </Animated.View>

@@ -1,10 +1,12 @@
+import { Image } from '@/components/image';
+import { VideoThumbnail } from '@/components/video';
 import { MediaCarousel } from '@/features/posts/components/media-carousel';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { useState } from 'react';
-import { Image, Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 type EventMediaPost = {
   id: string;
@@ -40,7 +42,12 @@ function EventMediaTile({ post, cell }: EventMediaTileProps) {
   const [carouselOpen, setCarouselOpen] = useState(false);
   const thumbnailId = post.mediaIds[0]!;
   const mediaUrl = useQuery(api.files.getUrl, thumbnailId ? { storageId: thumbnailId } : 'skip');
-  const imageSource = mediaUrl ? { uri: mediaUrl } : undefined;
+  const mediaMetadata = useQuery(
+    api.files.getMetadata,
+    thumbnailId ? { storageId: thumbnailId } : 'skip'
+  );
+  const mediaTypeResolved = mediaMetadata !== undefined;
+  const isVideo = mediaMetadata?.contentType?.startsWith('video/') ?? false;
 
   return (
     <>
@@ -58,9 +65,17 @@ function EventMediaTile({ post, cell }: EventMediaTileProps) {
         className="overflow-hidden rounded-xl bg-surface-muted"
         style={{ width: cell, height: cell }}
       >
-        {imageSource ? (
-          <Image source={imageSource} className="h-full w-full" resizeMode="cover" />
-        ) : null}
+        {isVideo ? (
+          <VideoThumbnail
+            uri={mediaUrl}
+            className="h-full w-full"
+            fallbackClassName="h-full w-full bg-black"
+          />
+        ) : mediaTypeResolved && mediaUrl ? (
+          <Image source={mediaUrl} className="h-full w-full" contentFit="cover" />
+        ) : (
+          <View className="h-full w-full bg-surface-muted" />
+        )}
         <View
           className="absolute bottom-1 right-1 flex-row items-center gap-0.5 rounded-md px-1 py-0.5"
           style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}

@@ -1,4 +1,5 @@
 import { Image } from '@/components/image';
+import { VideoPlayer } from '@/components/video';
 import { Avatar } from '@/features/posts/components/avatar';
 import { CommentDrawer } from '@/features/posts/components/comment-drawer';
 import { MediaCarousel } from '@/features/posts/components/media-carousel';
@@ -25,10 +26,19 @@ type MediaTileProps = {
 
 function MediaTile({ mediaId, className, overlayLabel, onPress }: MediaTileProps) {
   const mediaUrl = useQuery(api.files.getUrl, mediaId ? { storageId: mediaId } : 'skip');
+  const mediaMetadata = useQuery(api.files.getMetadata, mediaId ? { storageId: mediaId } : 'skip');
+  const mediaTypeResolved = mediaMetadata !== undefined;
+  const isVideo = mediaMetadata?.contentType?.startsWith('video/') ?? false;
 
   const inner = (
     <>
-      {mediaUrl ? <Image source={mediaUrl} className="h-full w-full" contentFit="cover" /> : null}
+      {isVideo ? (
+        <VideoPlayer uri={mediaUrl} className="h-full w-full bg-black" showPlaybackToggle />
+      ) : mediaTypeResolved && mediaUrl ? (
+        <Image source={mediaUrl} className="h-full w-full" contentFit="cover" />
+      ) : (
+        <View className="h-full w-full bg-surface-muted" />
+      )}
       {overlayLabel ? (
         <View className="absolute inset-0 items-center justify-center bg-black/50">
           <Text className="text-xl font-bold text-white">{overlayLabel}</Text>
