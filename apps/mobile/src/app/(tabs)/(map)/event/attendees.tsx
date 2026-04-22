@@ -81,8 +81,8 @@ export default function EventAttendeesPage() {
                 <FriendCell
                   key={attendee.id}
                   username={attendee.username}
-                  realName={attendee.name}
-                  imageSource={attendee.avatarUrl ? { uri: attendee.avatarUrl } : undefined}
+                  displayName={attendee.name}
+                  avatarUrl={attendee.avatarUrl ?? undefined}
                 />
               ))
             ) : (

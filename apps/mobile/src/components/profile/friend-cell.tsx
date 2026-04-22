@@ -1,24 +1,24 @@
-import { Image, ImageSourcePropType, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Text, TouchableOpacity, View } from 'react-native';
 
 type FriendCellProps = {
   username: string;
-  realName?: string;
-  imageSource?: ImageSourcePropType;
+  displayName?: string;
+  avatarUrl?: string;
   onPress?: () => void;
 };
 
-export default function FriendCell({ username, realName, imageSource, onPress }: FriendCellProps) {
+export default function FriendCell({ username, displayName, avatarUrl, onPress }: FriendCellProps) {
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
       className="flex-row items-center border-b border-border py-3"
       accessibilityRole={onPress ? 'button' : 'none'}
-      accessibilityLabel={`${username}${realName ? `, ${realName}` : ''}`}
+      accessibilityLabel={`${username}${displayName ? `, ${displayName}` : ''}`}
     >
       <View className="mr-3 border-2 border-border p-[2px]">
-        {imageSource ? (
-          <Image source={imageSource} className="h-10 w-10" />
+        {avatarUrl ? (
+          <Image source={{ uri: avatarUrl }} className="h-10 w-10" />
         ) : (
           <View className="h-10 w-10 items-center justify-center bg-primary-soft">
             <Text className="text-lg font-bold text-muted-foreground">
@@ -30,7 +30,7 @@ export default function FriendCell({ username, realName, imageSource, onPress }:
 
       <View className="flex-1">
         <Text className="text-base font-semibold text-foreground">{username}</Text>
-        {realName ? <Text className="text-sm text-muted-foreground">{realName}</Text> : null}
+        {displayName ? <Text className="text-sm text-muted-foreground">{displayName}</Text> : null}
       </View>
     </TouchableOpacity>
   );

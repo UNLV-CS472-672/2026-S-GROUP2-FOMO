@@ -91,14 +91,14 @@ export const getProfileById = query({
   },
 });
 
-export const getProfileByName = query({
+export const getProfileByUsername = query({
   args: {
-    name: v.string(),
+    username: v.string(),
   },
-  handler: async (ctx, { name }) => {
+  handler: async (ctx, { username }) => {
     const user = await ctx.db
       .query('users')
-      .withIndex('by_username', (q) => q.eq('username', name))
+      .withIndex('by_username', (q) => q.eq('username', username))
       .first();
 
     if (!user) {

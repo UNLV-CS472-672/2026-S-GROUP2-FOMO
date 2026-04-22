@@ -61,9 +61,27 @@ export const getFriendRecs = query({
     const INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
 
     const isFresh = rec.updatedAt ? now - rec.updatedAt < INTERVAL : false;
+    const recommendedFriends = (
+      await Promise.all(
+        rec.recs.map(async (recommendation) => {
+          const friend = await ctx.db.get(recommendation.userId);
+
+          if (!friend) {
+            return null;
+          }
+
+          return {
+            id: friend._id,
+            username: friend.username,
+            displayName: friend.displayName,
+            avatarUrl: friend.avatarUrl,
+          };
+        })
+      )
+    ).filter((friend): friend is NonNullable<typeof friend> => friend !== null);
 
     return {
-      recs: rec.recs,
+      recs: recommendedFriends,
       isFresh,
       updatedAt: rec.updatedAt,
     };
