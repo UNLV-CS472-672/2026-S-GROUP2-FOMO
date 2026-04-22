@@ -1,4 +1,4 @@
-import { FeedCard } from '@/features/events/components/feed-card';
+import { FeedCard } from '@/features/posts/components/feed-card';
 import { useGuest } from '@/integrations/session/provider';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';

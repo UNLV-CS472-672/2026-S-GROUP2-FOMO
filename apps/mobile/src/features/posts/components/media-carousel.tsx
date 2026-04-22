@@ -1,5 +1,5 @@
 import { Image } from '@/components/image';
-import type { FeedPost } from '@/features/events/types';
+import type { FeedPost } from '@/features/posts/types';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
@@ -82,7 +82,6 @@ function CarouselSlide({
   const savedTranslateX = useSharedValue(0);
   const savedTranslateY = useSharedValue(0);
 
-  // Reset when the slide scrolls out of view
   useEffect(() => {
     if (!isActive) {
       scale.value = 1;
@@ -114,7 +113,6 @@ function CarouselSlide({
       }
     });
 
-  // Pan is only enabled when zoomed — keeps carousel swipe working at 1x
   const pan = Gesture.Pan()
     .enabled(isZoomed)
     .onUpdate((e) => {
@@ -126,7 +124,6 @@ function CarouselSlide({
       savedTranslateY.value = translateY.value;
     });
 
-  // Swipe-down to dismiss — only active when not zoomed, fails on horizontal swipes
   const dismissPan = Gesture.Pan()
     .enabled(!isZoomed)
     .activeOffsetY(10)
@@ -170,7 +167,6 @@ function CarouselSlide({
         savedTranslateY.value = 0;
         scheduleOnRN(onZoomed, false);
       } else {
-        // Zoom into the tapped focal point
         const focalX = e.x - width / 2;
         const focalY = e.y - height / 2;
         const tx = -focalX * (DOUBLE_TAP_SCALE - 1);

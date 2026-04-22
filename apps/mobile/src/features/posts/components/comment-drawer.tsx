@@ -1,6 +1,6 @@
 import { DrawerModal } from '@/components/ui/drawer';
-import { Avatar } from '@/features/events/components/avatar';
-import type { FeedComment, FeedPost } from '@/features/events/types';
+import { Avatar } from '@/features/posts/components/avatar';
+import type { FeedComment, FeedPost } from '@/features/posts/types';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
@@ -144,7 +144,7 @@ function CommentComposer({
             placeholder={replyTo ? `Reply to ${replyTo.authorName}...` : 'Add a comment...'}
             placeholderTextColor={theme.mutedText}
             multiline
-            className="min-h-10 max-h-28 flex-1 rounded-xl border border-border px-3 py-2 text-[15px] text-foreground bg-muted"
+            className="min-h-10 max-h-28 flex-1 rounded-xl border border-border bg-muted px-3 py-2 text-[15px] text-foreground"
           />
           <Pressable
             onPress={submit}
@@ -243,9 +243,9 @@ export function CommentDrawer({ open, onClose, post, readOnly }: CommentDrawerPr
       keyboardBehavior="extend"
     >
       <View className="flex-1">
-        <View className="flex-row items-center gap-2.5 mx-6 mb-4">
+        <View className="mx-6 mb-4 flex-row items-center gap-2.5">
           <Ionicons name="chatbubble-outline" size={18} color={theme.mutedText} />
-          <Text className=" text-[17px] font-bold text-foreground">Comments</Text>
+          <Text className="text-[17px] font-bold text-foreground">Comments</Text>
           <Text
             className="text-[15px] text-muted-foreground"
             style={{ fontVariant: ['tabular-nums'] }}

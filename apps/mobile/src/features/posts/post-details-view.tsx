@@ -1,4 +1,4 @@
-import { Avatar } from '@/features/events/components/avatar';
+import { Avatar } from '@/features/posts/components/avatar';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useHeaderHeight } from '@react-navigation/elements';

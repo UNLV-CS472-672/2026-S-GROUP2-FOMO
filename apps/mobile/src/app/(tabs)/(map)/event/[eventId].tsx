@@ -1,12 +1,12 @@
 import { Image } from '@/components/image';
 import { DrawerModal } from '@/components/ui/drawer';
 import { Screen } from '@/components/ui/screen';
-import { Avatar } from '@/features/events/components/avatar';
 import { Feed } from '@/features/events/components/feed';
-import { MediaCarousel } from '@/features/events/components/media-carousel';
 import { RsvpSheet } from '@/features/events/components/rsvp-sheet';
 import { TopMoments } from '@/features/events/components/top-moments';
 import type { AttendanceStatus, NotificationPref } from '@/features/events/types';
+import { Avatar } from '@/features/posts/components/avatar';
+import { MediaCarousel } from '@/features/posts/components/media-carousel';
 import { useGuest } from '@/integrations/session/provider';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';

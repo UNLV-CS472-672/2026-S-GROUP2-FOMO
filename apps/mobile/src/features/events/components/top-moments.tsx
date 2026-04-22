@@ -1,4 +1,4 @@
-import { MediaCarousel } from '@/features/events/components/media-carousel';
+import { MediaCarousel } from '@/features/posts/components/media-carousel';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';

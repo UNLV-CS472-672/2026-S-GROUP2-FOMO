@@ -1,8 +1,8 @@
 import { Image } from '@/components/image';
-import { Avatar } from '@/features/events/components/avatar';
-import { CommentDrawer } from '@/features/events/components/comment-drawer';
-import { MediaCarousel } from '@/features/events/components/media-carousel';
-import type { FeedPost } from '@/features/events/types';
+import { Avatar } from '@/features/posts/components/avatar';
+import { CommentDrawer } from '@/features/posts/components/comment-drawer';
+import { MediaCarousel } from '@/features/posts/components/media-carousel';
+import type { FeedPost } from '@/features/posts/types';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
@@ -97,8 +97,6 @@ function FeedCardMedia({
     );
   }
 
-  // 4 media: clean 2×2 grid
-  // 5 media: same 2×2, 4th tile shows "+1" (5th is accessible via carousel)
   const showOverlay = mediaIds.length === 5;
 
   return (
