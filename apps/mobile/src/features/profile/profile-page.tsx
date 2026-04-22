@@ -1,8 +1,8 @@
-import ProfilePicture from '@/components/profile/profile-picture';
 import { Button, ButtonText } from '@/components/ui/button';
 import PostGrid from '@/components/ui/post-grid';
 import { Screen } from '@/components/ui/screen';
 import StatLabel from '@/components/ui/stat-label';
+import { Avatar } from '@/features/posts/components/avatar';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { Doc } from '@fomo/backend/convex/_generated/dataModel';
@@ -96,10 +96,13 @@ export function ProfilePage({
         contentContainerClassName="pb-8"
       >
         <View className="flex-row items-start px-4 pb-4 pt-2">
-          <ProfilePicture
-            imageSource={profile.user.avatarUrl ? { uri: profile.user.avatarUrl } : undefined}
-            fallbackLabel={profile.user.username}
-          />
+          <View>
+            <Avatar
+              name={profile.user.displayName || profile.user.username}
+              size={92}
+              source={profile.user.avatarUrl ? { uri: profile.user.avatarUrl } : undefined}
+            />
+          </View>
 
           <View className="ml-3 flex-1 pr-0">
             <View className="flex-row items-center justify-between">

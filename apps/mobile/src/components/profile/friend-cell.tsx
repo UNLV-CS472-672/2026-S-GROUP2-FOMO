@@ -1,4 +1,5 @@
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { Avatar } from '@/features/posts/components/avatar';
+import { Text, TouchableOpacity, View } from 'react-native';
 
 type FriendCellProps = {
   username: string;
@@ -16,16 +17,12 @@ export default function FriendCell({ username, displayName, avatarUrl, onPress }
       accessibilityRole={onPress ? 'button' : 'none'}
       accessibilityLabel={`${username}${displayName ? `, ${displayName}` : ''}`}
     >
-      <View className="mr-3 border-2 border-border p-[2px]">
-        {avatarUrl ? (
-          <Image source={{ uri: avatarUrl }} className="h-10 w-10" />
-        ) : (
-          <View className="h-10 w-10 items-center justify-center bg-primary-soft">
-            <Text className="text-lg font-bold text-muted-foreground">
-              {username.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-        )}
+      <View className="mr-3">
+        <Avatar
+          name={displayName || username}
+          size={40}
+          source={avatarUrl ? { uri: avatarUrl } : undefined}
+        />
       </View>
 
       <View className="flex-1">

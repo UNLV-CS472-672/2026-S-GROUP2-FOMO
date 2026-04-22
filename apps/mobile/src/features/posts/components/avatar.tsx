@@ -31,7 +31,9 @@ export function Avatar({ name, size = 36, color = '#94a3b8', source }: AvatarPro
       className="items-center justify-center rounded-full"
       style={{ width: size, height: size, backgroundColor: color }}
     >
-      <Text className="text-xs font-semibold text-white">{initials || '?'}</Text>
+      <Text style={{ fontSize: Math.max(12, size * 0.33), fontWeight: '600', color: '#fff' }}>
+        {initials || '?'}
+      </Text>
     </View>
   );
 }
