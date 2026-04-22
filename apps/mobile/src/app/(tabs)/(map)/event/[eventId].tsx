@@ -76,6 +76,7 @@ export default function EventPage() {
   const [headerCarouselOpen, setHeaderCarouselOpen] = useState(false);
   const [attendeeRowWidth, setAttendeeRowWidth] = useState(0);
   const [buttonsWidth, setButtonsWidth] = useState(0);
+  const [rightSideHeight, setRightSideHeight] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     if (!viewerAttendance) {
@@ -183,7 +184,8 @@ export default function EventPage() {
         {/* Event Header */}
         <View className="flex-row gap-3.5 p-4">
           <Pressable
-            className="h-[180px] w-[140px] overflow-hidden rounded-2xl border border-border bg-surface-muted"
+            className="w-35 overflow-hidden rounded-2xl border border-border bg-surface-muted"
+            style={rightSideHeight !== undefined ? { height: rightSideHeight } : { height: 180 }}
             onPress={() => eventImageUrl && setHeaderCarouselOpen(true)}
             disabled={!eventImageUrl}
           >
@@ -209,7 +211,10 @@ export default function EventPage() {
               </View>
             )}
           </Pressable>
-          <View className="flex-1 justify-between">
+          <View
+            className="flex-1 justify-between"
+            onLayout={(e) => setRightSideHeight(e.nativeEvent.layout.height)}
+          >
             <View className="gap-1.5">
               <Text className="text-lg font-bold text-foreground" numberOfLines={2}>
                 {event.name}

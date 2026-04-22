@@ -60,6 +60,11 @@ export async function openDirections(lat: number, lng: number, label: string) {
       return;
     }
 
+    if (actions.length === 1) {
+      await actions[0]();
+      return;
+    }
+
     ActionSheetIOS.showActionSheetWithOptions(
       {
         options,

@@ -1,7 +1,7 @@
 import { openDirections } from '@/features/map/utils/directions';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
-import { TouchableOpacity } from 'react-native';
+import { Pressable } from 'react-native';
 
 type NavigateButtonProps = {
   latitude: number;
@@ -13,14 +13,18 @@ export function NavigateButton({ latitude, longitude, label }: NavigateButtonPro
   const theme = useAppTheme();
 
   return (
-    <TouchableOpacity
-      className="h-12 w-12 items-center justify-center rounded-full border border-border bg-background"
-      activeOpacity={0.75}
+    <Pressable
+      className="h-12 w-12 items-center justify-center rounded-2xl"
       onPress={() => void openDirections(latitude, longitude, label)}
       accessibilityRole="button"
       accessibilityLabel="Get directions"
+      style={{
+        borderCurve: 'continuous',
+        borderWidth: 1,
+        borderColor: theme.tint,
+      }}
     >
-      <Ionicons name="navigate" size={24} color={theme.mutedText} />
-    </TouchableOpacity>
+      <Ionicons name="navigate" size={22} color={theme.tint} />
+    </Pressable>
   );
 }

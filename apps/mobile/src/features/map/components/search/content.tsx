@@ -108,7 +108,9 @@ export function SearchContent({
               </View>
 
               <View className="flex-1 gap-1">
-                <Text className="text-[15px] font-semibold text-foreground">{event.name}</Text>
+                <Text className="text-[15px] font-semibold text-foreground" numberOfLines={1}>
+                  {event.name}
+                </Text>
                 <Text className="text-[13px] text-muted-foreground" numberOfLines={1}>
                   {event.caption}
                 </Text>
