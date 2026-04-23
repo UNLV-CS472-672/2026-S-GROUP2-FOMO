@@ -2,13 +2,18 @@ import { v } from 'convex/values';
 
 import type { Doc, Id } from './_generated/dataModel';
 import { mutation, query, type QueryCtx } from './_generated/server';
-import { __backend_only_getAndAuthenticateCurrentConvexUser } from './auth';
+import {
+  __backend_only_getAndAuthenticateCurrentConvexUser,
+  __backend_only_guestOrAuthenticatedUser,
+} from './auth';
 
 export type SerializedComment = {
   id: Id<'comments'>;
   text: string;
   authorName: string;
   creationTime: number;
+  likes: number;
+  liked: boolean;
   replyAuthorName?: string;
   parentId?: Id<'comments'>;
   replies: SerializedComment[];
@@ -71,12 +76,25 @@ function normalizeThread(comments: SerializedComment[]): SerializedComment[] {
 }
 
 export async function getThreadedCommentsByPost(ctx: QueryCtx, postId: Doc<'posts'>['_id']) {
-  const comments = await ctx.db
-    .query('comments')
-    .withIndex('by_post', (q) => q.eq('postId', postId))
-    .collect();
+  const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
+  const viewerId = guestMode ? undefined : viewer._id;
+  const [comments, viewerLikes] = await Promise.all([
+    ctx.db
+      .query('comments')
+      .withIndex('by_post', (q) => q.eq('postId', postId))
+      .collect(),
+    viewerId
+      ? ctx.db
+          .query('likes')
+          .withIndex('by_userId_commentId', (q) => q.eq('userId', viewerId))
+          .collect()
+      : Promise.resolve([]),
+  ]);
 
   comments.sort((a, b) => a._creationTime - b._creationTime);
+  const likedCommentIds = new Set(
+    viewerLikes.flatMap((like) => (like.commentId ? [like.commentId] : []))
+  );
 
   const commentsWithAuthors = await Promise.all(
     comments.map(async (comment) => {
@@ -87,6 +105,8 @@ export async function getThreadedCommentsByPost(ctx: QueryCtx, postId: Doc<'post
         text: comment.text,
         authorName: commentAuthor?.displayName || commentAuthor?.username || 'Unknown user',
         creationTime: comment._creationTime,
+        likes: comment.likeCount ?? 0,
+        liked: likedCommentIds.has(comment._id),
         parentId: comment.parentId,
       };
     })

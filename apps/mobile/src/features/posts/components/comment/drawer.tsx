@@ -22,6 +22,7 @@ export function CommentDrawer({ open, onClose, post, readOnly }: CommentDrawerPr
   const theme = useAppTheme();
   const { commentCount, comments } = post;
   const createComment = useMutation(api.comments.createComment);
+  const toggleCommentLike = useMutation(api.likes.toggleCommentLike);
   const inputRef = useRef<any>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const commentPositionsRef = useRef<Record<string, number>>({});
@@ -117,7 +118,22 @@ export function CommentDrawer({ open, onClose, post, readOnly }: CommentDrawerPr
                     commentPositionsRef.current[comment.id] = event.nativeEvent.layout.y;
                   }}
                 >
-                  <CommentItem comment={comment} onReply={handleReply} />
+                  <CommentItem
+                    comment={comment}
+                    readOnly={readOnly}
+                    onReply={handleReply}
+                    onToggleLike={() => {
+                      if (readOnly) {
+                        return;
+                      }
+
+                      void toggleCommentLike({ commentId: comment.id as Id<'comments'> }).catch(
+                        (error) => {
+                          console.error('Failed to toggle comment like', error);
+                        }
+                      );
+                    }}
+                  />
                   {comment.replies.length > 0 ? (
                     <View className="gap-3 pl-11">
                       {comment.replies.map((reply) => (
@@ -127,7 +143,22 @@ export function CommentDrawer({ open, onClose, post, readOnly }: CommentDrawerPr
                             commentPositionsRef.current[reply.id] = event.nativeEvent.layout.y;
                           }}
                         >
-                          <CommentItem comment={reply} onReply={handleReply} />
+                          <CommentItem
+                            comment={reply}
+                            readOnly={readOnly}
+                            onReply={handleReply}
+                            onToggleLike={() => {
+                              if (readOnly) {
+                                return;
+                              }
+
+                              void toggleCommentLike({
+                                commentId: reply.id as Id<'comments'>,
+                              }).catch((error) => {
+                                console.error('Failed to toggle comment like', error);
+                              });
+                            }}
+                          />
                         </View>
                       ))}
                     </View>
