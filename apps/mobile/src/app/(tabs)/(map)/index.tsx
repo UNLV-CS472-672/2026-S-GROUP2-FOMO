@@ -24,6 +24,14 @@ export default function MapScreen() {
   const events: EventSummary[] = useQuery(api.events.queries.getEvents) ?? [];
   const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);
+
+  const savedCameraRef = useRef<{
+    centerCoordinate: [number, number];
+    zoomLevel: number;
+    heading: number;
+    pitch: number;
+  } | null>(null);
+
   const {
     centerCoordinate,
     hasResolvedLocation,
@@ -66,23 +74,42 @@ export default function MapScreen() {
     );
   }
 
+  // use saved one (might happen mostly for switching theme and preserving camera)
+  const initialCamera = savedCameraRef.current ?? {
+    centerCoordinate,
+    zoomLevel: DEFAULT_ZOOM_LEVEL,
+    heading: 0,
+    pitch: 0,
+  };
+
   return (
     <View className="absolute inset-0">
       <MapboxGL.MapView
+        key={isDark ? 'dark-map' : 'light-map'}
         style={StyleSheet.absoluteFill}
         styleURL={isDark ? MapboxGL.StyleURL.Dark : MapboxGL.StyleURL.Street}
         logoEnabled={false}
         attributionEnabled={false}
         scaleBarEnabled={false}
+        onCameraChanged={(state) => {
+          savedCameraRef.current = {
+            centerCoordinate: state.properties.center as [number, number],
+            zoomLevel: state.properties.zoom,
+            heading: state.properties.heading,
+            pitch: state.properties.pitch,
+          };
+        }}
       >
         <MapboxGL.Camera
           ref={cameraRef}
           defaultSettings={{
-            centerCoordinate,
-            zoomLevel: DEFAULT_ZOOM_LEVEL,
-            heading: 0,
+            centerCoordinate: initialCamera.centerCoordinate,
+            zoomLevel: initialCamera.zoomLevel,
+            heading: initialCamera.heading,
+            pitch: initialCamera.pitch,
           }}
         />
+
         {locationGranted && (
           <MapboxGL.LocationPuck
             puckBearing="heading"
