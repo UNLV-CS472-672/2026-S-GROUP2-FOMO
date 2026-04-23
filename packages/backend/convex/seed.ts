@@ -284,7 +284,6 @@ export const seedData = internalMutation({
             displayName: u.name,
             avatarUrl: '',
             bio: '',
-            tagIds: [],
           }))
       );
     }

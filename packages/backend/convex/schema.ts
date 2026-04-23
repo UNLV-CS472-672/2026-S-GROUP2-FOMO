@@ -16,7 +16,6 @@ const sharedEventFields = {
 export default defineSchema({
   users: defineTable({
     bio: v.string(), // clerk doesn't handle this
-    tagIds: v.array(v.id('tags')),
     // clerk handles below this
     clerkId: v.string(), // For Clerk integration
     username: v.string(), // should be unique and this is the main display/handle on frontend

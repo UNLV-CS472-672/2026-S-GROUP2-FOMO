@@ -101,7 +101,6 @@ export const ensureCurrentUser = mutation({
       displayName: usernameFromIdentity(identity),
       avatarUrl: '',
       bio: '',
-      tagIds: [], // TODO :: add w/ the cold start interests later
     });
   },
 });

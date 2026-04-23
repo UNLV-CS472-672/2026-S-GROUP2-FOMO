@@ -21,12 +21,21 @@ export function latLngToH3Index(lat: number, lng: number, resolution: number = 9
 }
 
 async function serializeEvent(ctx: QueryCtx, event: Doc<'events'>, recommendationScore?: number) {
-  const attendeeCount = await getAttendeeCount(ctx, event._id);
+  const [attendeeCount, eventTagLinks] = await Promise.all([
+    getAttendeeCount(ctx, event._id),
+    ctx.db
+      .query('eventTags')
+      .withIndex('by_event', (q) => q.eq('eventId', event._id))
+      .collect(),
+  ]);
+
+  const tags = await Promise.all(eventTagLinks.map(async (link) => await ctx.db.get(link.tagId)));
 
   return {
     id: event._id,
     name: event.name,
     caption: event.caption,
+    tags: tags.flatMap((tag) => (tag ? [tag.name] : [])),
     location: event.location,
     attendeeCount,
     startDate: event.startDate,

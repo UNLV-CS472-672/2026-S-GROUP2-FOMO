@@ -25,3 +25,65 @@ export function formatRelativeTime(timestamp: number, now: number = Date.now()):
 
   return `${Math.floor(elapsed / YEAR_MS)}y`;
 }
+
+// NOTE :: mainly to capitalize in js since tailwind/uniwind gives weird cutoff styling
+export function formatFilterLabel(label: string) {
+  return label
+    .split('&')
+    .map((segment) =>
+      segment
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
+    )
+    .join('&');
+}
+
+export function isEventLive(startDate: number, endDate: number, now: number) {
+  return startDate <= now && endDate >= now;
+}
+
+function isSameDay(timestamp: number, now: Date) {
+  const date = new Date(timestamp);
+
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+}
+
+export function getEventTimeLabel(startDate: number, endDate: number, now: number) {
+  if (isEventLive(startDate, endDate, now)) {
+    return 'Now';
+  }
+
+  const startDeltaMinutes = Math.round((startDate - now) / 60000);
+
+  if (startDeltaMinutes > 0 && startDeltaMinutes < 60) {
+    return `${startDeltaMinutes} min`;
+  }
+
+  const nowDate = new Date(now);
+
+  if (isSameDay(startDate, nowDate)) {
+    return new Date(startDate).toLocaleTimeString([], {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
+
+  const tomorrow = new Date(now);
+  tomorrow.setDate(nowDate.getDate() + 1);
+
+  if (isSameDay(startDate, tomorrow)) {
+    return 'Tomorrow';
+  }
+
+  return new Date(startDate).toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+  });
+}
