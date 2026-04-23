@@ -148,6 +148,7 @@ async function serializeProfileFeedPost(
   return {
     id: post._id,
     caption: post.caption ?? '',
+    creationTime: post._creationTime,
     authorName: author?.displayName || author?.username || 'Unknown user',
     authorUsername: author?.username ?? '',
     authorAvatarUrl: author?.avatarUrl || '',

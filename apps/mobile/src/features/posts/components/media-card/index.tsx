@@ -3,6 +3,7 @@ import { PostActions } from '@/features/posts/components/actions';
 import { Avatar } from '@/features/posts/components/avatar';
 import { MediaCarousel } from '@/features/posts/components/media-carousel';
 import type { FeedPost } from '@/features/posts/types';
+import { formatRelativeTime } from '@/lib/format';
 import { useRef, useState } from 'react';
 import {
   type NativeScrollEvent,
@@ -70,7 +71,9 @@ export function MediaCard({ post, readOnly, onToggleLike, onPressAuthor }: Media
             size={32}
             source={post.authorAvatarUrl ? { uri: post.authorAvatarUrl } : undefined}
           />
-          <Text className="text-[14px] font-semibold text-foreground">{post.authorName}</Text>
+          <View className="min-w-0 flex-1">
+            <Text className="text-[14px] font-semibold text-foreground">{post.authorName}</Text>
+          </View>
         </Pressable>
       ) : (
         <View className="flex-row items-center gap-2.5 px-3 py-2.5">
@@ -79,7 +82,12 @@ export function MediaCard({ post, readOnly, onToggleLike, onPressAuthor }: Media
             size={32}
             source={post.authorAvatarUrl ? { uri: post.authorAvatarUrl } : undefined}
           />
-          <Text className="text-[14px] font-semibold text-foreground">{post.authorName}</Text>
+          <View className="min-w-0 flex-1">
+            <Text className="text-[14px] font-semibold text-foreground">{post.authorName}</Text>
+            <Text className="text-[12px] text-muted-foreground">
+              {formatRelativeTime(post.creationTime)}
+            </Text>
+          </View>
         </View>
       )}
 
@@ -121,14 +129,20 @@ export function MediaCard({ post, readOnly, onToggleLike, onPressAuthor }: Media
       />
 
       {/* Caption */}
-      {post.caption ? (
-        <Text className="px-3 pb-3 pt-1.5 text-[14px] leading-5 text-foreground">
-          <Text className="font-semibold">{post.authorName} </Text>
-          {post.caption}
+      <View className="px-3 pb-3 pt-1.5">
+        {post.caption ? (
+          <Text className="text-[14px] leading-5 text-foreground">
+            <Text className="font-semibold">{post.authorName} </Text>
+            {post.caption}
+          </Text>
+        ) : (
+          <View className="pb-3" />
+        )}
+
+        <Text className="text-[12px] text-muted-foreground">
+          {formatRelativeTime(post.creationTime)}
         </Text>
-      ) : (
-        <View className="pb-3" />
-      )}
+      </View>
 
       {/* Divider */}
       <View className="h-px bg-border my-2.5" />

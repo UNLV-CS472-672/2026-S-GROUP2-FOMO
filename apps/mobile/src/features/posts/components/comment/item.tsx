@@ -1,5 +1,6 @@
 import { Avatar } from '@/features/posts/components/avatar';
 import { FeedComment } from '@/features/posts/types';
+import { formatRelativeTime } from '@/lib/format';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback } from 'react';
@@ -77,16 +78,21 @@ export function CommentItem({ comment, readOnly, onReply, onToggleLike }: Commen
                 ) : null}
                 {/* actual text */}
                 <Text className="text-sm leading-5 text-muted-foreground">{comment.text}</Text>
-                {/* below */}
-                <View className="flex-row items-center gap-1.5">
-                  {/* TODO :: timestamp */}
-                  {/* comments beside */}
-                  <Text
-                    className="mt-1 text-[12px] text-muted-foreground"
-                    style={{ fontVariant: ['tabular-nums'] }}
-                  >
-                    {comment.likes > 0 ? `${comment.likes} likes` : ''}
+                <View className="mt-1 flex-row items-center gap-1.5">
+                  <Text className="text-[12px] text-muted-foreground">
+                    {formatRelativeTime(comment.creationTime)}
                   </Text>
+                  {comment.likes > 0 ? (
+                    <>
+                      <Text className="text-[12px] text-muted-foreground">·</Text>
+                      <Text
+                        className="text-[12px] text-muted-foreground"
+                        style={{ fontVariant: ['tabular-nums'] }}
+                      >
+                        {comment.likes} {comment.likes === 1 ? 'like' : 'likes'}
+                      </Text>
+                    </>
+                  ) : null}
                 </View>
               </View>
             </View>
@@ -95,7 +101,7 @@ export function CommentItem({ comment, readOnly, onReply, onToggleLike }: Commen
       </GestureDetector>
       <Pressable
         onPress={onToggleLike}
-        className="w-6 items-center"
+        className="w-6 items-center self-center"
         hitSlop={8}
         disabled={readOnly}
         style={{ opacity: readOnly ? 0.5 : 1 }}

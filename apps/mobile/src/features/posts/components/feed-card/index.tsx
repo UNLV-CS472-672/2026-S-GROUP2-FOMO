@@ -2,6 +2,7 @@ import { PostActions } from '@/features/posts/components/actions';
 import { Avatar } from '@/features/posts/components/avatar';
 import { MediaCarousel } from '@/features/posts/components/media-carousel';
 import type { FeedPost } from '@/features/posts/types';
+import { formatRelativeTime } from '@/lib/format';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -59,7 +60,12 @@ export function FeedCard({
             size={36}
             source={post.authorAvatarUrl ? { uri: post.authorAvatarUrl } : undefined}
           />
-          <Text className="text-[15px] font-semibold text-foreground">{post.authorName}</Text>
+          <View className="min-w-0 flex-1 flex-row items-center gap-2">
+            <Text className="text-[15px] font-semibold text-foreground">{post.authorName}</Text>
+            <Text className="text-[12px] text-muted-foreground">
+              {formatRelativeTime(post.creationTime)}
+            </Text>
+          </View>
         </Pressable>
 
         <FeedCardMedia mediaIds={post.mediaIds} onPressMedia={setCarouselIndex} />
