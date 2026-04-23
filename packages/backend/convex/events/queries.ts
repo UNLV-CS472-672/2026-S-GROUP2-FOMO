@@ -144,8 +144,8 @@ export const getTopMediaPosts = query({
 });
 
 export const getEventFeed = query({
-  args: { eventId: v.id('events') },
-  handler: async (ctx, { eventId }) => {
+  args: { eventId: v.id('events'), sortBy: v.optional(v.literal('popular')) },
+  handler: async (ctx, { eventId, sortBy }) => {
     const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
     const posts = await ctx.db
       .query('posts')
@@ -153,8 +153,14 @@ export const getEventFeed = query({
       .order('desc')
       .collect();
 
-    return await Promise.all(
+    const serialized = await Promise.all(
       posts.map((post) => serializeEventFeedPost(ctx, post, guestMode ? undefined : viewer._id))
     );
+
+    if (sortBy === 'popular') {
+      serialized.sort((a, b) => b.likes - a.likes);
+    }
+
+    return serialized;
   },
 });

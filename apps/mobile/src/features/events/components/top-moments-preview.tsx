@@ -1,11 +1,10 @@
 import { Image } from '@/components/image';
 import { VideoThumbnail } from '@/components/video';
-import { MediaCarousel } from '@/features/posts/components/media-carousel';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
-import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 type EventMediaPost = {
@@ -18,6 +17,7 @@ type EventMediaPost = {
 
 type TopMomentsProps = {
   posts: EventMediaPost[];
+  eventId: Id<'events'>;
 };
 
 const H_PAD = 16;
@@ -36,10 +36,11 @@ function chunk<T>(arr: T[], size: number): T[][] {
 type EventMediaTileProps = {
   post: EventMediaPost;
   cell: number;
+  eventId: Id<'events'>;
 };
 
-function EventMediaTile({ post, cell }: EventMediaTileProps) {
-  const [carouselOpen, setCarouselOpen] = useState(false);
+function EventMediaTile({ post, cell, eventId }: EventMediaTileProps) {
+  const router = useRouter();
   const thumbnailId = post.mediaIds[0]!;
   const mediaUrl = useQuery(api.files.getUrl, thumbnailId ? { storageId: thumbnailId } : 'skip');
   const mediaMetadata = useQuery(
@@ -50,51 +51,48 @@ function EventMediaTile({ post, cell }: EventMediaTileProps) {
   const isVideo = mediaMetadata?.contentType?.startsWith('video/') ?? false;
 
   return (
-    <>
-      {carouselOpen && (
-        <MediaCarousel
-          mediaIds={post.mediaIds ?? []}
-          initialIndex={0}
-          onClose={() => setCarouselOpen(false)}
+    <Pressable
+      onPress={() => {
+        if (!post.mediaIds?.length) return;
+        router.push({
+          pathname: '/(tabs)/(map)/event/top-moments',
+          params: { eventId, initialPostId: post.id, sortBy: 'popular' },
+        });
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={`Open post by ${post.authorName}, ${post.likeCount} likes`}
+      className="overflow-hidden rounded-xl bg-surface-muted"
+      style={{ width: cell, height: cell }}
+    >
+      {isVideo ? (
+        <VideoThumbnail
+          uri={mediaUrl}
+          className="h-full w-full"
+          fallbackClassName="h-full w-full bg-black"
         />
+      ) : mediaTypeResolved && mediaUrl ? (
+        <Image source={mediaUrl} className="h-full w-full" contentFit="cover" />
+      ) : (
+        <View className="h-full w-full bg-surface-muted" />
       )}
-      <Pressable
-        onPress={() => post.mediaIds?.length && setCarouselOpen(true)}
-        accessibilityRole="button"
-        accessibilityLabel={`Open post by ${post.authorName}, ${post.likeCount} likes`}
-        className="overflow-hidden rounded-xl bg-surface-muted"
-        style={{ width: cell, height: cell }}
+      <View
+        className="absolute bottom-1 right-1 flex-row items-center gap-0.5 rounded-md px-1 py-0.5"
+        style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
+        pointerEvents="none"
       >
-        {isVideo ? (
-          <VideoThumbnail
-            uri={mediaUrl}
-            className="h-full w-full"
-            fallbackClassName="h-full w-full bg-black"
-          />
-        ) : mediaTypeResolved && mediaUrl ? (
-          <Image source={mediaUrl} className="h-full w-full" contentFit="cover" />
-        ) : (
-          <View className="h-full w-full bg-surface-muted" />
-        )}
-        <View
-          className="absolute bottom-1 right-1 flex-row items-center gap-0.5 rounded-md px-1 py-0.5"
-          style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
-          pointerEvents="none"
+        <Ionicons name="heart" size={11} color={post.liked ? '#FF4B6E' : '#fff'} />
+        <Text
+          className="text-[11px] font-semibold text-white"
+          style={{ fontVariant: ['tabular-nums'] }}
         >
-          <Ionicons name="heart" size={11} color={post.liked ? '#FF4B6E' : '#fff'} />
-          <Text
-            className="text-[11px] font-semibold text-white"
-            style={{ fontVariant: ['tabular-nums'] }}
-          >
-            {post.likeCount}
-          </Text>
-        </View>
-      </Pressable>
-    </>
+          {post.likeCount}
+        </Text>
+      </View>
+    </Pressable>
   );
 }
 
-export function TopMoments({ posts }: TopMomentsProps) {
+export function TopMoments({ posts, eventId }: TopMomentsProps) {
   const { width } = useWindowDimensions();
 
   if (posts.length === 0) return null;
@@ -114,7 +112,7 @@ export function TopMoments({ posts }: TopMomentsProps) {
         {rows.map((row, rowIndex) => (
           <View key={rowIndex} className="flex-row" style={{ gap: COL_GAP }}>
             {row.map((post) => (
-              <EventMediaTile key={post.id} post={post} cell={cell} />
+              <EventMediaTile key={post.id} post={post} cell={cell} eventId={eventId} />
             ))}
           </View>
         ))}

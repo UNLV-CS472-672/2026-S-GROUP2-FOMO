@@ -28,6 +28,7 @@
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
     "@rnmapbox/maps": "^10.2.10",
+    "@shopify/flash-list": "2.0.2",
     "clsx": "^2.1.1",
     "convex": "^1.32.0",
     "expo": "~54.0.33",

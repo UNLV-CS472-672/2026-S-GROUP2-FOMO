@@ -125,9 +125,10 @@ type MediaCardProps = {
   post: FeedPost;
   readOnly: boolean;
   onToggleLike: () => void;
+  onPressAuthor?: () => void;
 };
 
-export function MediaCard({ post, readOnly, onToggleLike }: MediaCardProps) {
+export function MediaCard({ post, readOnly, onToggleLike, onPressAuthor }: MediaCardProps) {
   const theme = useAppTheme();
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -174,14 +175,29 @@ export function MediaCard({ post, readOnly, onToggleLike }: MediaCardProps) {
       />
 
       {/* Author header */}
-      <View className="flex-row items-center gap-2.5 px-3 py-2.5">
-        <Avatar
-          name={post.authorName}
-          size={32}
-          source={post.authorAvatarUrl ? { uri: post.authorAvatarUrl } : undefined}
-        />
-        <Text className="text-[14px] font-semibold text-foreground">{post.authorName}</Text>
-      </View>
+      {onPressAuthor ? (
+        <Pressable
+          className="flex-row items-center gap-2.5 px-3 py-2.5"
+          onPress={onPressAuthor}
+          hitSlop={6}
+        >
+          <Avatar
+            name={post.authorName}
+            size={32}
+            source={post.authorAvatarUrl ? { uri: post.authorAvatarUrl } : undefined}
+          />
+          <Text className="text-[14px] font-semibold text-foreground">{post.authorName}</Text>
+        </Pressable>
+      ) : (
+        <View className="flex-row items-center gap-2.5 px-3 py-2.5">
+          <Avatar
+            name={post.authorName}
+            size={32}
+            source={post.authorAvatarUrl ? { uri: post.authorAvatarUrl } : undefined}
+          />
+          <Text className="text-[14px] font-semibold text-foreground">{post.authorName}</Text>
+        </View>
+      )}
 
       {/* Media swiper */}
       <Animated.ScrollView

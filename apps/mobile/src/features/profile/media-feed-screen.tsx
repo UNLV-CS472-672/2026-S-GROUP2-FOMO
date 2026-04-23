@@ -22,6 +22,7 @@ export function MediaFeedScreen() {
     api.users.getProfileFeed,
     userId ? { userId: userId as Id<'users'> } : 'skip'
   );
+  const mediaPosts = posts?.filter((post) => post.mediaIds.length > 0) ?? [];
 
   useEffect(() => {
     if (!posts || !initialPostId) return;
@@ -49,7 +50,7 @@ export function MediaFeedScreen() {
         className="flex-1"
         contentContainerStyle={{ paddingVertical: 0 }}
       >
-        {posts.map((post) => (
+        {mediaPosts.map((post) => (
           <View
             key={post.id}
             onLayout={(e) => {
