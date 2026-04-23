@@ -1,24 +1,7 @@
-import type { Id } from '@fomo/backend/convex/_generated/dataModel';
+import { api } from '@fomo/backend/convex/_generated/api';
+import { FunctionReturnType } from 'convex/server';
 
-export type FeedComment = {
-  id: string;
-  text: string;
-  authorName: string;
-  creationTime: number;
-  replyAuthorName?: string;
-  parentId?: string;
-  replies: FeedComment[];
-};
+type ProfileFeed = NonNullable<FunctionReturnType<typeof api.users.getProfileFeed>>;
 
-export type FeedPost = {
-  id: string;
-  authorName: string;
-  authorUsername: string;
-  authorAvatarUrl?: string;
-  caption: string;
-  likes: number;
-  liked: boolean;
-  mediaIds: Id<'_storage'>[];
-  commentCount: number;
-  comments: FeedComment[];
-};
+export type FeedPost = ProfileFeed[number];
+export type FeedComment = FeedPost['comments'][number];

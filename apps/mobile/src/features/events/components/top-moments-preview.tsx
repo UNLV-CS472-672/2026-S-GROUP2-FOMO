@@ -1,5 +1,6 @@
 import { Image } from '@/components/image';
 import { VideoThumbnail } from '@/components/video';
+import type { TopMediaPost } from '@/features/events/types';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
@@ -7,16 +8,8 @@ import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
 import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 
-type EventMediaPost = {
-  id: string;
-  authorName: string;
-  likeCount: number;
-  liked: boolean;
-  mediaIds: Id<'_storage'>[];
-};
-
 type TopMomentsProps = {
-  posts: EventMediaPost[];
+  posts: TopMediaPost[];
   eventId: Id<'events'>;
 };
 
@@ -34,7 +27,7 @@ function chunk<T>(arr: T[], size: number): T[][] {
 }
 
 type EventMediaTileProps = {
-  post: EventMediaPost;
+  post: TopMediaPost;
   cell: number;
   eventId: Id<'events'>;
 };

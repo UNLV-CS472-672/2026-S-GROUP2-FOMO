@@ -1,10 +1,10 @@
+import type { EventSummary } from '@/features/events/types';
 import { EventMarker } from '@/features/map/components/event-marker';
 import { RecenterButton } from '@/features/map/components/recenter-button';
 import { SearchDrawer } from '@/features/map/components/search';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { pointsToGeoJSON } from '@/features/map/utils/h3';
 import { api } from '@fomo/backend/convex/_generated/api';
-import type { Doc, Id } from '@fomo/backend/convex/_generated/dataModel';
 import { env } from '@fomo/env/mobile';
 import { useIsFocused } from '@react-navigation/native';
 import MapboxGL from '@rnmapbox/maps';
@@ -19,17 +19,9 @@ MapboxGL.setAccessToken(env.EXPO_PUBLIC_MAPBOX_TOKEN);
 
 const DEFAULT_ZOOM_LEVEL = 13;
 
-type MapEvent = {
-  id: Id<'events'>;
-  name: string;
-  location: Doc<'events'>['location'];
-  attendeeCount: number;
-  mediaId: Id<'_storage'> | null;
-};
-
 export default function MapScreen() {
   const { push } = useRouter();
-  const events = (useQuery(api.events.queries.getEvents) ?? []) as MapEvent[];
+  const events: EventSummary[] = useQuery(api.events.queries.getEvents) ?? [];
   const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const {

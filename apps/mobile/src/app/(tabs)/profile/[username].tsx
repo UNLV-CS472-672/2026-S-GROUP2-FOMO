@@ -15,19 +15,6 @@ export default function VisitProfileScreen() {
     profile ? { userId: profile.user._id } : 'skip'
   );
 
-  if (!username) {
-    return (
-      <>
-        <Stack.Screen options={{ title: screenTitle }} />
-        <ProfileStateScreen
-          message="Profile not found"
-          actionLabel="Go Back"
-          onPressAction={() => router.back()}
-        />
-      </>
-    );
-  }
-
   if (profile === undefined) {
     return (
       <>
@@ -37,7 +24,7 @@ export default function VisitProfileScreen() {
     );
   }
 
-  if (!profile) {
+  if (!username || !profile) {
     return (
       <>
         <Stack.Screen options={{ title: screenTitle }} />

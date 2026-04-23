@@ -17,7 +17,7 @@ import { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 type ProfilePageProps = {
-  profile: FunctionReturnType<typeof api.users.getCurrentProfile>;
+  profile: NonNullable<FunctionReturnType<typeof api.users.getCurrentProfile>>;
   feedPosts: FeedPost[];
   secondaryStat: {
     label: string;

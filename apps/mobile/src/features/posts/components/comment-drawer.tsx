@@ -22,13 +22,11 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 type ReplyTarget = { id: string; authorName: string } | null;
 
-type Comment = FeedComment;
-
 function CommentItem({
   comment,
   onReply,
 }: {
-  comment: Comment;
+  comment: FeedComment;
   onReply: (target: NonNullable<ReplyTarget>) => void;
 }) {
   const translateX = useSharedValue(0);
