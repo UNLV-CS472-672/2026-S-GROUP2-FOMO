@@ -65,7 +65,11 @@ export function CommentItem({ comment, readOnly, onReply, onToggleLike }: Commen
           </Animated.View>
           <Animated.View style={[rowStyle, { flex: 1 }]}>
             <View className="flex-row gap-2.5">
-              <Avatar name={comment.authorName} size={32} />
+              <Avatar
+                name={comment.authorName}
+                size={32}
+                source={comment.authorAvatarUrl ? { uri: comment.authorAvatarUrl } : undefined}
+              />
               <View className="min-w-0 flex-1">
                 <Text className="mb-0.5 text-[13px] font-semibold text-foreground">
                   {comment.authorName}

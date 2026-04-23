@@ -11,6 +11,7 @@ export type SerializedComment = {
   id: Id<'comments'>;
   text: string;
   authorName: string;
+  authorAvatarUrl: string;
   creationTime: number;
   likes: number;
   liked: boolean;
@@ -104,6 +105,7 @@ export async function getThreadedCommentsByPost(ctx: QueryCtx, postId: Doc<'post
         id: comment._id,
         text: comment.text,
         authorName: commentAuthor?.displayName || commentAuthor?.username || 'Unknown user',
+        authorAvatarUrl: commentAuthor?.avatarUrl || '',
         creationTime: comment._creationTime,
         likes: comment.likeCount ?? 0,
         liked: likedCommentIds.has(comment._id),
