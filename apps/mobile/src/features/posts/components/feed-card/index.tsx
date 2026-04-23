@@ -1,9 +1,7 @@
+import { PostActions } from '@/features/posts/components/actions';
 import { Avatar } from '@/features/posts/components/avatar';
-import { CommentDrawer } from '@/features/posts/components/comment/drawer';
 import { MediaCarousel } from '@/features/posts/components/media-carousel';
 import type { FeedPost } from '@/features/posts/types';
-import { useAppTheme } from '@/lib/use-app-theme';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -24,10 +22,8 @@ export function FeedCard({
   disableAuthorPress,
   onPressAuthor,
 }: FeedCardProps) {
-  const theme = useAppTheme();
   const router = useRouter();
   const [carouselIndex, setCarouselIndex] = useState<number | null>(null);
-  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
 
   return (
     <View
@@ -41,13 +37,6 @@ export function FeedCard({
           onClose={() => setCarouselIndex(null)}
         />
       )}
-
-      <CommentDrawer
-        open={isCommentsOpen}
-        onClose={() => setIsCommentsOpen(false)}
-        post={post}
-        readOnly={readOnly}
-      />
 
       <View className="gap-2.5">
         <Pressable
@@ -80,41 +69,12 @@ export function FeedCard({
         ) : null}
       </View>
 
-      <View className="ml-2 flex-row items-center gap-5 pt-0.5">
-        <Pressable
-          onPress={onToggleLike}
-          className="flex-row items-center gap-1.5"
-          hitSlop={8}
-          disabled={readOnly}
-          style={{ opacity: readOnly ? 0.5 : 1 }}
-        >
-          <Ionicons
-            name={post.liked ? 'heart' : 'heart-outline'}
-            size={20}
-            color={post.liked ? '#FF4B6E' : theme.mutedText}
-          />
-          <Text
-            className="text-[13px] text-muted-foreground"
-            style={{ fontVariant: ['tabular-nums'] }}
-          >
-            {post.likes}
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => setIsCommentsOpen(true)}
-          className="flex-row items-center gap-1.5"
-          hitSlop={8}
-        >
-          <Ionicons name="chatbubble-outline" size={18} color={theme.mutedText} />
-          <Text
-            className="text-[13px] text-muted-foreground"
-            style={{ fontVariant: ['tabular-nums'] }}
-          >
-            {post.commentCount}
-          </Text>
-        </Pressable>
-      </View>
+      <PostActions
+        post={post}
+        readOnly={readOnly}
+        onToggleLike={onToggleLike}
+        className="ml-2 pt-0.5"
+      />
     </View>
   );
 }

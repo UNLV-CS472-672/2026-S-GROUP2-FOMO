@@ -1,10 +1,8 @@
 import { Dots } from '@/components/ui/dots';
+import { PostActions } from '@/features/posts/components/actions';
 import { Avatar } from '@/features/posts/components/avatar';
-import { CommentDrawer } from '@/features/posts/components/comment/drawer';
 import { MediaCarousel } from '@/features/posts/components/media-carousel';
 import type { FeedPost } from '@/features/posts/types';
-import { useAppTheme } from '@/lib/use-app-theme';
-import { Ionicons } from '@expo/vector-icons';
 import { useRef, useState } from 'react';
 import {
   type NativeScrollEvent,
@@ -25,11 +23,9 @@ type MediaCardProps = {
 };
 
 export function MediaCard({ post, readOnly, onToggleLike, onPressAuthor }: MediaCardProps) {
-  const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const [activeIndex, setActiveIndex] = useState(0);
   const [carouselIndex, setCarouselIndex] = useState<number | null>(null);
-  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [mediaHeight, setMediaHeight] = useState(width);
   const mediaHeightSet = useRef(false);
   const scrollRef = useRef<Animated.ScrollView>(null);
@@ -61,13 +57,6 @@ export function MediaCard({ post, readOnly, onToggleLike, onPressAuthor }: Media
           onClose={() => setCarouselIndex(null)}
         />
       )}
-
-      <CommentDrawer
-        open={isCommentsOpen}
-        onClose={() => setIsCommentsOpen(false)}
-        post={post}
-        readOnly={readOnly}
-      />
 
       {/* Author header */}
       {onPressAuthor ? (
@@ -122,43 +111,14 @@ export function MediaCard({ post, readOnly, onToggleLike, onPressAuthor }: Media
       <Dots count={post.mediaIds.length} scrollX={scrollX} slideWidth={width} />
 
       {/* Actions */}
-      <View
-        className={`flex-row items-center gap-5 px-3 ${post.mediaIds.length > 1 ? 'pt-0' : 'pt-2'}`}
-      >
-        <Pressable
-          onPress={onToggleLike}
-          className="flex-row items-center gap-1.5"
-          hitSlop={8}
-          disabled={readOnly}
-          style={{ opacity: readOnly ? 0.5 : 1 }}
-        >
-          <Ionicons
-            name={post.liked ? 'heart' : 'heart-outline'}
-            size={24}
-            color={post.liked ? '#FF4B6E' : theme.mutedText}
-          />
-          <Text
-            className="text-[13px] text-muted-foreground"
-            style={{ fontVariant: ['tabular-nums'] }}
-          >
-            {post.likes}
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => setIsCommentsOpen(true)}
-          className="flex-row items-center gap-1.5"
-          hitSlop={8}
-        >
-          <Ionicons name="chatbubble-outline" size={22} color={theme.mutedText} />
-          <Text
-            className="text-[13px] text-muted-foreground"
-            style={{ fontVariant: ['tabular-nums'] }}
-          >
-            {post.commentCount}
-          </Text>
-        </Pressable>
-      </View>
+      <PostActions
+        post={post}
+        readOnly={readOnly}
+        onToggleLike={onToggleLike}
+        className={post.mediaIds.length > 1 ? 'px-3 pt-0' : 'px-3 pt-2'}
+        likeIconSize={24}
+        commentIconSize={22}
+      />
 
       {/* Caption */}
       {post.caption ? (
