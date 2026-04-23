@@ -107,39 +107,38 @@ export const getTopMediaPosts = query({
       .withIndex('by_event', (q) => q.eq('eventId', eventId))
       .collect();
 
-    const postsWithAuthors = await Promise.all(
-      posts.map(async (post) => {
-        const mediaIds = post.mediaIds ?? [];
+    const topPosts = posts
+      .filter((post) => (post.mediaIds?.length ?? 0) > 0)
+      .sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0) || b._creationTime - a._creationTime)
+      .slice(0, 3);
 
-        if (!mediaIds.length) {
-          return null;
-        }
-
-        const [author, likes] = await Promise.all([
+    return await Promise.all(
+      topPosts.map(async (post) => {
+        // check if the view has liked the post
+        const [author, like] = await Promise.all([
           ctx.db.get(post.authorId),
-          ctx.db
-            .query('likes')
-            .withIndex('by_postId', (q) => q.eq('postId', post._id))
-            .collect(),
+          guestMode
+            ? Promise.resolve(null)
+            : ctx.db
+                .query('likes')
+                .withIndex('by_userId_postId', (q) =>
+                  q.eq('userId', viewer._id).eq('postId', post._id)
+                )
+                .unique(),
         ]);
 
         return {
           id: post._id,
           caption: post.caption ?? '',
-          mediaIds,
+          mediaIds: post.mediaIds,
           likeCount: post.likeCount ?? 0,
-          liked: guestMode ? false : likes.some((like) => like.userId === viewer._id),
+          liked: like !== null,
           matchedTagCount: 0,
           creationTime: post._creationTime,
           authorName: author?.displayName || author?.username || 'Unknown user',
         };
       })
     );
-
-    return postsWithAuthors
-      .filter((post): post is NonNullable<typeof post> => post !== null)
-      .sort((a, b) => b.likeCount - a.likeCount || b.creationTime - a.creationTime)
-      .slice(0, 3);
   },
 });
 
