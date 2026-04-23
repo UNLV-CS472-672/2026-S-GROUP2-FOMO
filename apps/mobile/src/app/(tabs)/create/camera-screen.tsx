@@ -1,4 +1,4 @@
-import { LatestGalleryImage } from '@/components/create/latest-gallery-image';
+import { LatestGalleryImage } from '@/features/create/components/latest-gallery-image';
 import { useIsFocused } from '@react-navigation/native';
 import * as MediaLibrary from 'expo-media-library';
 import { useLocalSearchParams, useRouter } from 'expo-router';

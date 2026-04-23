@@ -1,70 +1,21 @@
-import { Image } from '@/components/image';
 import { Dots } from '@/components/ui/dots';
-import { VideoPlayer } from '@/components/video';
 import { Avatar } from '@/features/posts/components/avatar';
-import { CommentDrawer } from '@/features/posts/components/comment-drawer';
+import { CommentDrawer } from '@/features/posts/components/comment/drawer';
 import { MediaCarousel } from '@/features/posts/components/media-carousel';
 import type { FeedPost } from '@/features/posts/types';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
-import { api } from '@fomo/backend/convex/_generated/api';
-import type { Id } from '@fomo/backend/convex/_generated/dataModel';
-import { useQuery } from 'convex/react';
-import type { ImageLoadEventData } from 'expo-image';
 import { useRef, useState } from 'react';
 import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Pressable,
   Text,
-  TouchableOpacity,
   useWindowDimensions,
   View,
 } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
-
-type MediaItemProps = {
-  mediaId: Id<'_storage'>;
-  width: number;
-  height: number;
-  isActive: boolean;
-  onPress: () => void;
-  onNaturalSize?: (natW: number, natH: number) => void;
-};
-
-function MediaItem({ mediaId, width, height, isActive, onPress, onNaturalSize }: MediaItemProps) {
-  const mediaUrl = useQuery(api.files.getUrl, { storageId: mediaId });
-  const mediaMetadata = useQuery(api.files.getMetadata, { storageId: mediaId });
-  const isVideo = mediaMetadata?.contentType?.startsWith('video/') ?? false;
-  const mediaTypeResolved = mediaMetadata !== undefined;
-
-  function handleImageLoad(e: ImageLoadEventData) {
-    onNaturalSize?.(e.source.width, e.source.height);
-  }
-
-  return (
-    <TouchableOpacity activeOpacity={0.95} onPress={onPress} style={{ width, height }}>
-      <View style={{ width, height }} className="bg-black">
-        {isVideo ? (
-          <VideoPlayer
-            uri={mediaUrl}
-            className="h-full w-full"
-            contentFit="contain"
-            isActive={isActive}
-            showPlaybackToggle
-          />
-        ) : mediaTypeResolved && mediaUrl ? (
-          <Image
-            source={mediaUrl}
-            className="h-full w-full"
-            contentFit="contain"
-            onLoad={handleImageLoad}
-          />
-        ) : null}
-      </View>
-    </TouchableOpacity>
-  );
-}
+import { MediaItem } from './item';
 
 type MediaCardProps = {
   post: FeedPost;
@@ -220,7 +171,7 @@ export function MediaCard({ post, readOnly, onToggleLike, onPressAuthor }: Media
       )}
 
       {/* Divider */}
-      <View className="h-px bg-border" />
+      <View className="h-px bg-border my-2.5" />
     </View>
   );
 }

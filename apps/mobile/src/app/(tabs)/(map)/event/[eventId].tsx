@@ -5,7 +5,7 @@ import { Feed } from '@/features/events/components/feed';
 import { NavigateButton } from '@/features/events/components/navigate-button';
 import { RsvpButton } from '@/features/events/components/rsvp-button';
 import { RsvpSheet } from '@/features/events/components/rsvp-sheet';
-import { TopMoments } from '@/features/events/components/top-moments-preview';
+import { TopMoments } from '@/features/events/components/top-moments/preview';
 import type { AttendanceStatus, NotificationPref } from '@/features/events/types';
 import { Avatar } from '@/features/posts/components/avatar';
 import { MediaCarousel } from '@/features/posts/components/media-carousel';
