@@ -2,27 +2,20 @@ import { v } from 'convex/values';
 import { query } from './_generated/server';
 
 /**
- * Return a URL for a Convex storage file
+ * Return lightweight file data for a Convex storage file
  */
-export const getUrl = query({
+export const getFile = query({
   args: { storageId: v.id('_storage') },
   handler: async (ctx, args) => {
-    return await ctx.storage.getUrl(args.storageId);
-  },
-});
-
-/**
- * Return lightweight metadata for a Convex storage file
- */
-export const getMetadata = query({
-  args: { storageId: v.id('_storage') },
-  handler: async (ctx, args) => {
-    const metadata = await ctx.storage.getMetadata(args.storageId);
-
-    if (!metadata) return null;
+    const [url, metadata] = await Promise.all([
+      ctx.storage.getUrl(args.storageId),
+      ctx.storage.getMetadata(args.storageId),
+    ]);
 
     return {
-      contentType: metadata.contentType ?? null,
+      url,
+      contentType: metadata?.contentType ?? null,
+      isVideo: metadata?.contentType?.startsWith('video/') ?? false,
     };
   },
 });

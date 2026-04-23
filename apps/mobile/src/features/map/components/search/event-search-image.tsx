@@ -12,12 +12,12 @@ type EventSearchImageProps = {
 
 export function EventSearchImage({ mediaId }: EventSearchImageProps) {
   const theme = useAppTheme();
-  const eventImageUrl = useQuery(api.files.getUrl, mediaId ? { storageId: mediaId } : 'skip');
+  const file = useQuery(api.files.getFile, mediaId ? { storageId: mediaId } : 'skip');
 
   return (
     <View className="size-12 overflow-hidden rounded-2xl bg-primary/10">
-      {eventImageUrl ? (
-        <Image source={eventImageUrl} className="h-full w-full" contentFit="cover" />
+      {file?.url ? (
+        <Image source={file.url} className="h-full w-full" contentFit="cover" />
       ) : (
         <View className="h-full w-full items-center justify-center">
           <Icon name="place" size={22} color={theme.tint} />

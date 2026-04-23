@@ -13,17 +13,15 @@ type MediaTileProps = {
 };
 
 export function MediaTile({ mediaId, className, overlayLabel, onPress }: MediaTileProps) {
-  const mediaUrl = useQuery(api.files.getUrl, mediaId ? { storageId: mediaId } : 'skip');
-  const mediaMetadata = useQuery(api.files.getMetadata, mediaId ? { storageId: mediaId } : 'skip');
-  const mediaTypeResolved = mediaMetadata !== undefined;
-  const isVideo = mediaMetadata?.contentType?.startsWith('video/') ?? false;
+  const file = useQuery(api.files.getFile, mediaId ? { storageId: mediaId } : 'skip');
+  const mediaTypeResolved = file !== undefined;
 
   const inner = (
     <>
-      {isVideo ? (
-        <VideoPlayer uri={mediaUrl} className="h-full w-full bg-black" showPlaybackToggle />
-      ) : mediaTypeResolved && mediaUrl ? (
-        <Image source={mediaUrl} className="h-full w-full" contentFit="cover" />
+      {file?.isVideo ? (
+        <VideoPlayer uri={file?.url} className="h-full w-full bg-black" showPlaybackToggle />
+      ) : mediaTypeResolved && file?.url ? (
+        <Image source={file.url} className="h-full w-full" contentFit="cover" />
       ) : (
         <View className="h-full w-full bg-surface-muted" />
       )}

@@ -139,7 +139,7 @@ export function MediaCard({ post, readOnly, onToggleLike, onPressAuthor }: Media
           <View className="pb-3" />
         )}
 
-        <Text className="text-[12px] text-muted-foreground">
+        <Text className="text-[12px] text-muted-foreground mt-1">
           {formatRelativeTime(post.creationTime)}
         </Text>
       </View>

@@ -53,15 +53,13 @@ function CarouselSlide({
   dismissY: SharedValue<number>;
   dismissOpacity: SharedValue<number>;
 }) {
-  const mediaUrl = useQuery(api.files.getUrl, { storageId: mediaId });
-  const mediaMetadata = useQuery(api.files.getMetadata, { storageId: mediaId });
-  const mediaTypeResolved = mediaMetadata !== undefined;
-  const isVideo = mediaMetadata?.contentType?.startsWith('video/') ?? false;
+  const file = useQuery(api.files.getFile, { storageId: mediaId });
+  const mediaTypeResolved = file !== undefined;
 
-  const player = useVideoPlayer(isVideo ? (mediaUrl ?? null) : null);
+  const player = useVideoPlayer(file?.isVideo ? (file.url ?? null) : null);
 
   useEffect(() => {
-    if (!mediaUrl || !isVideo) return;
+    if (!file?.url || !file.isVideo) return;
     player.loop = true;
     player.muted = false;
     if (isActive) {
@@ -70,7 +68,7 @@ function CarouselSlide({
       player.pause();
       player.currentTime = 0;
     }
-  }, [isActive, isVideo, mediaUrl, player]);
+  }, [file?.isVideo, file?.url, isActive, player]);
 
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
@@ -187,7 +185,7 @@ function CarouselSlide({
     dismissPan,
     Gesture.Race(Gesture.Exclusive(doubleTap, singleTap), pan)
   );
-  const composed = isVideo ? dismissPan : imageGesture;
+  const composed = file?.isVideo ? dismissPan : imageGesture;
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -208,15 +206,15 @@ function CarouselSlide({
         <Animated.View
           style={[{ width, height, alignItems: 'center', justifyContent: 'center' }, animatedStyle]}
         >
-          {isVideo ? (
+          {file?.isVideo ? (
             <VideoView
               player={player}
               style={{ width, height }}
               contentFit="contain"
               nativeControls
             />
-          ) : mediaTypeResolved && mediaUrl ? (
-            <Image source={mediaUrl} style={{ width, height }} contentFit="contain" />
+          ) : mediaTypeResolved && file?.url ? (
+            <Image source={file.url} style={{ width, height }} contentFit="contain" />
           ) : (
             <View style={{ width, height, backgroundColor: 'black' }} />
           )}

@@ -66,8 +66,8 @@ export default function EventPage() {
     eventId ? { eventId } : 'skip'
   );
   const setViewerAttendance = useMutation(api.events.attendance.setViewerAttendance);
-  const eventImageUrl = useQuery(
-    api.files.getUrl,
+  const eventImage = useQuery(
+    api.files.getFile,
     event?.mediaId ? { storageId: event.mediaId } : 'skip'
   );
   const [attendance, setAttendance] = useState<AttendanceStatus>(null);
@@ -186,10 +186,10 @@ export default function EventPage() {
           <Pressable
             className="w-35 overflow-hidden rounded-2xl border border-border bg-surface-muted"
             style={rightSideHeight !== undefined ? { height: rightSideHeight } : { height: 180 }}
-            onPress={() => eventImageUrl && setHeaderCarouselOpen(true)}
-            disabled={!eventImageUrl}
+            onPress={() => eventImage?.url && setHeaderCarouselOpen(true)}
+            disabled={!eventImage?.url}
           >
-            {eventImageUrl ? (
+            {eventImage?.url ? (
               <>
                 {headerCarouselOpen && (
                   <MediaCarousel
@@ -198,7 +198,7 @@ export default function EventPage() {
                     onClose={() => setHeaderCarouselOpen(false)}
                   />
                 )}
-                <Image source={eventImageUrl} className="h-full w-full" contentFit="cover" />
+                <Image source={eventImage.url} className="h-full w-full" contentFit="cover" />
               </>
             ) : (
               <View

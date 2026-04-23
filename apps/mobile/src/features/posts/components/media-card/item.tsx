@@ -23,10 +23,8 @@ export function MediaItem({
   onPress,
   onNaturalSize,
 }: MediaItemProps) {
-  const mediaUrl = useQuery(api.files.getUrl, { storageId: mediaId });
-  const mediaMetadata = useQuery(api.files.getMetadata, { storageId: mediaId });
-  const isVideo = mediaMetadata?.contentType?.startsWith('video/') ?? false;
-  const mediaTypeResolved = mediaMetadata !== undefined;
+  const file = useQuery(api.files.getFile, { storageId: mediaId });
+  const mediaTypeResolved = file !== undefined;
 
   function handleImageLoad(e: ImageLoadEventData) {
     onNaturalSize?.(e.source.width, e.source.height);
@@ -35,17 +33,17 @@ export function MediaItem({
   return (
     <TouchableOpacity activeOpacity={0.95} onPress={onPress} style={{ width, height }}>
       <View style={{ width, height }} className="bg-black">
-        {isVideo ? (
+        {file?.isVideo ? (
           <VideoPlayer
-            uri={mediaUrl}
+            uri={file?.url}
             className="h-full w-full"
             contentFit="contain"
             isActive={isActive}
             showPlaybackToggle
           />
-        ) : mediaTypeResolved && mediaUrl ? (
+        ) : mediaTypeResolved && file?.url ? (
           <Image
-            source={mediaUrl}
+            source={file.url}
             className="h-full w-full"
             contentFit="contain"
             onLoad={handleImageLoad}

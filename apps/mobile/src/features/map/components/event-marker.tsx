@@ -31,7 +31,7 @@ export function EventMarker({
   maxWeight,
   onPress,
 }: EventMarkerProps) {
-  const eventImageUrl = useQuery(api.files.getUrl, mediaId ? { storageId: mediaId } : 'skip');
+  const file = useQuery(api.files.getFile, mediaId ? { storageId: mediaId } : 'skip');
 
   // normalize against actual min/max so the full range is always used
   const t = (weight - minWeight) / (maxWeight - minWeight || 1);
@@ -53,8 +53,8 @@ export function EventMarker({
             elevation: 10,
           }}
         >
-          {eventImageUrl ? (
-            <Image source={eventImageUrl} className="h-full w-full" contentFit="cover" />
+          {file?.url ? (
+            <Image source={file.url} className="h-full w-full" contentFit="cover" />
           ) : (
             <View className="h-full w-full items-center justify-center bg-primary/10 px-2">
               <Text className="text-lg font-bold uppercase text-foreground">

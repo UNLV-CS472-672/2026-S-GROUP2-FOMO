@@ -17,13 +17,8 @@ type EventMediaTileProps = {
 export function EventMediaTile({ post, cell, eventId }: EventMediaTileProps) {
   const router = useRouter();
   const thumbnailId = post.mediaIds[0]!;
-  const mediaUrl = useQuery(api.files.getUrl, thumbnailId ? { storageId: thumbnailId } : 'skip');
-  const mediaMetadata = useQuery(
-    api.files.getMetadata,
-    thumbnailId ? { storageId: thumbnailId } : 'skip'
-  );
-  const mediaTypeResolved = mediaMetadata !== undefined;
-  const isVideo = mediaMetadata?.contentType?.startsWith('video/') ?? false;
+  const file = useQuery(api.files.getFile, thumbnailId ? { storageId: thumbnailId } : 'skip');
+  const mediaTypeResolved = file !== undefined;
 
   return (
     <Pressable
@@ -39,14 +34,14 @@ export function EventMediaTile({ post, cell, eventId }: EventMediaTileProps) {
       className="overflow-hidden rounded-xl bg-surface-muted"
       style={{ width: cell, height: cell }}
     >
-      {isVideo ? (
+      {file?.isVideo ? (
         <VideoThumbnail
-          uri={mediaUrl}
+          uri={file?.url}
           className="h-full w-full"
           fallbackClassName="h-full w-full bg-black"
         />
-      ) : mediaTypeResolved && mediaUrl ? (
-        <Image source={mediaUrl} className="h-full w-full" contentFit="cover" />
+      ) : mediaTypeResolved && file?.url ? (
+        <Image source={file.url} className="h-full w-full" contentFit="cover" />
       ) : (
         <View className="h-full w-full bg-surface-muted" />
       )}

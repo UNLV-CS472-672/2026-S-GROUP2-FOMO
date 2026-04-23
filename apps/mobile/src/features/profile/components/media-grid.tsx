@@ -26,10 +26,8 @@ function MediaGridItem({
   onPress: () => void;
   size: number;
 }) {
-  const mediaUrl = useQuery(api.files.getUrl, { storageId: item.mediaId });
-  const mediaMetadata = useQuery(api.files.getMetadata, { storageId: item.mediaId });
-  const mediaTypeResolved = mediaMetadata !== undefined;
-  const isVideo = mediaMetadata?.contentType?.startsWith('video/') ?? false;
+  const file = useQuery(api.files.getFile, { storageId: item.mediaId });
+  const mediaTypeResolved = file !== undefined;
 
   return (
     <TouchableOpacity
@@ -37,14 +35,14 @@ function MediaGridItem({
       style={{ width: size, height: size }}
       className="bg-surface-muted"
     >
-      {isVideo ? (
+      {file?.isVideo ? (
         <VideoThumbnail
-          uri={mediaUrl}
+          uri={file?.url}
           className="h-full w-full"
           fallbackClassName="h-full w-full bg-surface-muted"
         />
-      ) : mediaTypeResolved && mediaUrl ? (
-        <Image source={mediaUrl} className="h-full w-full" contentFit="cover" />
+      ) : mediaTypeResolved && file?.url ? (
+        <Image source={file.url} className="h-full w-full" contentFit="cover" />
       ) : (
         <View className="h-full w-full bg-surface-muted" />
       )}
