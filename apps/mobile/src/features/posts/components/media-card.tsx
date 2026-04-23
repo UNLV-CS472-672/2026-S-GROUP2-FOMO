@@ -1,4 +1,5 @@
 import { Image } from '@/components/image';
+import { Dots } from '@/components/ui/dots';
 import { VideoPlayer } from '@/components/video';
 import { Avatar } from '@/features/posts/components/avatar';
 import { CommentDrawer } from '@/features/posts/components/comment-drawer';
@@ -10,7 +11,6 @@ import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import type { ImageLoadEventData } from 'expo-image';
-import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import {
   type NativeScrollEvent,
@@ -21,14 +21,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import type { SharedValue } from 'react-native-reanimated';
-import Animated, {
-  Extrapolation,
-  interpolate,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 
 type MediaItemProps = {
   mediaId: Id<'_storage'>;
@@ -73,54 +66,6 @@ function MediaItem({ mediaId, width, height, isActive, onPress, onNaturalSize }:
   );
 }
 
-function Dot({
-  index,
-  scrollX,
-  slideWidth,
-}: {
-  index: number;
-  scrollX: SharedValue<number>;
-  slideWidth: number;
-}) {
-  const animatedStyle = useAnimatedStyle(() => {
-    const progress = interpolate(
-      scrollX.value,
-      [(index - 1) * slideWidth, index * slideWidth, (index + 1) * slideWidth],
-      [0, 1, 0],
-      Extrapolation.CLAMP
-    );
-
-    return {
-      width: interpolate(progress, [0, 1], [6, 18]),
-      opacity: interpolate(progress, [0, 1], [0.3, 1]),
-    };
-  });
-
-  return (
-    <Animated.View className="rounded-full bg-primary" style={[{ height: 6 }, animatedStyle]} />
-  );
-}
-
-function DotIndicators({
-  count,
-  scrollX,
-  slideWidth,
-}: {
-  count: number;
-  scrollX: SharedValue<number>;
-  slideWidth: number;
-}) {
-  if (count <= 1) return null;
-
-  return (
-    <View className="flex-row justify-center gap-1.5 py-2">
-      {Array.from({ length: count }).map((_, i) => (
-        <Dot key={i} index={i} scrollX={scrollX} slideWidth={slideWidth} />
-      ))}
-    </View>
-  );
-}
-
 type MediaCardProps = {
   post: FeedPost;
   readOnly: boolean;
@@ -130,7 +75,6 @@ type MediaCardProps = {
 
 export function MediaCard({ post, readOnly, onToggleLike, onPressAuthor }: MediaCardProps) {
   const theme = useAppTheme();
-  const router = useRouter();
   const { width } = useWindowDimensions();
   const [activeIndex, setActiveIndex] = useState(0);
   const [carouselIndex, setCarouselIndex] = useState<number | null>(null);
@@ -224,7 +168,7 @@ export function MediaCard({ post, readOnly, onToggleLike, onPressAuthor }: Media
       </Animated.ScrollView>
 
       {/* Dot indicators */}
-      <DotIndicators count={post.mediaIds.length} scrollX={scrollX} slideWidth={width} />
+      <Dots count={post.mediaIds.length} scrollX={scrollX} slideWidth={width} />
 
       {/* Actions */}
       <View

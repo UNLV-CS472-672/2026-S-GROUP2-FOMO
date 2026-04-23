@@ -3,7 +3,7 @@ import { Screen } from '@/components/ui/screen';
 import { Avatar } from '@/features/posts/components/avatar';
 import { FeedCard } from '@/features/posts/components/feed-card';
 import type { FeedPost } from '@/features/posts/types';
-import PostGrid, { type GridMediaItem } from '@/features/profile/components/post-grid';
+import { MediaGrid, type GridMediaItem } from '@/features/profile/components/media-grid';
 import StatLabel from '@/features/profile/components/stat-label';
 import { useGuest } from '@/integrations/session/guest';
 import { useAppTheme } from '@/lib/use-app-theme';
@@ -232,7 +232,7 @@ export function ProfilePage({
             </View>
           )
         ) : mediaItems.length > 0 ? (
-          <PostGrid posts={mediaItems} onPressItem={handlePressGridItem} />
+          <MediaGrid posts={mediaItems} onPressItem={handlePressGridItem} />
         ) : (
           <View className="items-center justify-center py-8">
             <Text className="text-muted-foreground">No media posts yet</Text>

@@ -1,7 +1,7 @@
 import { AppHeaderBackButton } from '@/components/navigation/header-back-button';
 import { Stack } from 'expo-router';
 
-export default function EventLayout() {
+export default function EventProfileLayout() {
   return (
     <Stack
       screenOptions={{
@@ -10,26 +10,18 @@ export default function EventLayout() {
       }}
     >
       <Stack.Screen
-        name="[eventId]"
+        name="[username]"
         options={{
           headerShown: true,
-          title: 'Event Details',
+          title: 'Profile',
           headerLeft: () => <AppHeaderBackButton />,
         }}
       />
       <Stack.Screen
-        name="top-moments"
+        name="media-feed"
         options={{
           headerShown: true,
-          title: 'Top Moments',
-          headerLeft: () => <AppHeaderBackButton />,
-        }}
-      />
-      <Stack.Screen
-        name="attendees"
-        options={{
-          headerShown: true,
-          title: 'Attendees',
+          title: 'Posts',
           headerLeft: () => <AppHeaderBackButton />,
         }}
       />

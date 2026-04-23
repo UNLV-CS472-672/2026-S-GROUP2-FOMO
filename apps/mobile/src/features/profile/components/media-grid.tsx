@@ -2,8 +2,9 @@ import { Image } from '@/components/image';
 import { VideoThumbnail } from '@/components/video';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
+import { FlashList } from '@shopify/flash-list';
 import { useQuery } from 'convex/react';
-import { FlatList, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, useWindowDimensions, View } from 'react-native';
 
 export type GridMediaItem = {
   id: string;
@@ -11,19 +12,31 @@ export type GridMediaItem = {
   mediaId: Id<'_storage'>;
 };
 
-type PostGridProps = {
+type MediaGridProps = {
   posts: GridMediaItem[];
   onPressItem: (item: GridMediaItem) => void;
 };
 
-function MediaGridItem({ item, onPress }: { item: GridMediaItem; onPress: () => void }) {
+function MediaGridItem({
+  item,
+  onPress,
+  size,
+}: {
+  item: GridMediaItem;
+  onPress: () => void;
+  size: number;
+}) {
   const mediaUrl = useQuery(api.files.getUrl, { storageId: item.mediaId });
   const mediaMetadata = useQuery(api.files.getMetadata, { storageId: item.mediaId });
   const mediaTypeResolved = mediaMetadata !== undefined;
   const isVideo = mediaMetadata?.contentType?.startsWith('video/') ?? false;
 
   return (
-    <TouchableOpacity onPress={onPress} className="aspect-square w-1/3 bg-surface-muted">
+    <TouchableOpacity
+      onPress={onPress}
+      style={{ width: size, height: size }}
+      className="bg-surface-muted"
+    >
       {isVideo ? (
         <VideoThumbnail
           uri={mediaUrl}
@@ -39,20 +52,21 @@ function MediaGridItem({ item, onPress }: { item: GridMediaItem; onPress: () => 
   );
 }
 
-const PostGrid = ({ posts, onPressItem }: PostGridProps) => {
+export const MediaGrid = ({ posts, onPressItem }: MediaGridProps) => {
+  const { width } = useWindowDimensions();
+  const cellSize = Math.floor(width / 3);
+
   return (
-    <FlatList
+    <FlashList
       data={posts}
-      renderItem={({ item }) => <MediaGridItem item={item} onPress={() => onPressItem(item)} />}
+      renderItem={({ item }) => (
+        <MediaGridItem item={item} onPress={() => onPressItem(item)} size={cellSize} />
+      )}
       keyExtractor={(item) => item.id.toString()}
       numColumns={3}
       scrollEnabled={false}
-      initialNumToRender={6}
-      maxToRenderPerBatch={6}
-      windowSize={2}
-      removeClippedSubviews
+      extraData={cellSize}
       contentContainerStyle={{ paddingBottom: 100 }}
     />
   );
 };
-export default PostGrid;

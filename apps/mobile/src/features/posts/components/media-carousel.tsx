@@ -1,4 +1,5 @@
 import { Image } from '@/components/image';
+import { Dots } from '@/components/ui/dots';
 import type { FeedPost } from '@/features/posts/types';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
@@ -28,29 +29,6 @@ const DISMISS_THRESHOLD = 150;
 const DISMISS_VELOCITY = 1000;
 const MAX_MEDIA_ASPECT_RATIO = 1.25; // 4:5 portrait max, same as Instagram
 
-function Dot({
-  index,
-  scrollX,
-  slideWidth,
-}: {
-  index: number;
-  scrollX: SharedValue<number>;
-  slideWidth: number;
-}) {
-  const animatedStyle = useAnimatedStyle(() => {
-    const progress = interpolate(
-      scrollX.value,
-      [(index - 1) * slideWidth, index * slideWidth, (index + 1) * slideWidth],
-      [0, 1, 0],
-      Extrapolation.CLAMP
-    );
-    return {
-      width: interpolate(progress, [0, 1], [6, 18]),
-      opacity: interpolate(progress, [0, 1], [0.4, 1]),
-    };
-  });
-  return <Animated.View className="rounded-full bg-white" style={[{ height: 6 }, animatedStyle]} />;
-}
 const MAX_SCALE = 6;
 const DOUBLE_TAP_SCALE = 2.5;
 
@@ -327,11 +305,14 @@ export function MediaCarousel({
 
         {mediaIds.length > 1 && (
           <View style={{ position: 'absolute', bottom: insets.bottom, left: 0, right: 0 }}>
-            <View className="flex-row items-center justify-center gap-1.5 pb-4 pt-2">
-              {mediaIds.map((_, i) => (
-                <Dot key={i} index={i} scrollX={scrollX} slideWidth={width} />
-              ))}
-            </View>
+            <Dots
+              count={mediaIds.length}
+              scrollX={scrollX}
+              slideWidth={width}
+              activeColorClassName="bg-white"
+              inactiveOpacity={0.4}
+              className="flex-row items-center justify-center gap-1.5 pb-4 pt-2"
+            />
           </View>
         )}
       </BlurView>
