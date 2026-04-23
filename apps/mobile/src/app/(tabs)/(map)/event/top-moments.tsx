@@ -7,13 +7,12 @@ import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { FlashList } from '@shopify/flash-list';
 import { useMutation, useQuery } from 'convex/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 
 export default function TopMomentsScreen() {
-  const { eventId, initialPostId, sortBy } = useLocalSearchParams<{
+  const { eventId, initialPostId } = useLocalSearchParams<{
     eventId?: string;
     initialPostId?: string;
-    sortBy?: string;
   }>();
   const { isGuestMode } = useGuest();
   const router = useRouter();
@@ -21,10 +20,20 @@ export default function TopMomentsScreen() {
 
   const posts = useQuery(
     api.events.queries.getEventFeed,
-    eventId
-      ? { eventId: eventId as Id<'events'>, sortBy: sortBy === 'popular' ? 'popular' : undefined }
-      : 'skip'
+    eventId ? { eventId: eventId as Id<'events'>, sortBy: 'popular', mediaOnly: true } : 'skip'
   );
+
+  const initialOrderRef = useRef<string[] | null>(null);
+  const frozenPosts = useMemo(() => {
+    if (!posts) return null;
+    if (!initialOrderRef.current) {
+      initialOrderRef.current = posts.map((p) => p.id);
+    }
+    const orderMap = new Map(initialOrderRef.current.map((id, i) => [id, i]));
+    return [...posts].sort(
+      (a, b) => (orderMap.get(a.id) ?? Infinity) - (orderMap.get(b.id) ?? Infinity)
+    );
+  }, [posts]);
 
   const renderItem = useCallback(
     ({ item: post }: { item: FeedPost }) => (
@@ -51,21 +60,21 @@ export default function TopMomentsScreen() {
     [isGuestMode, togglePostLike, router]
   );
 
-  if (!posts) {
+  if (!frozenPosts) {
     return null;
   }
 
   const initialIndex = initialPostId
     ? Math.max(
         0,
-        posts.findIndex((p) => p.id === initialPostId)
+        frozenPosts.findIndex((p) => p.id === initialPostId)
       )
     : 0;
 
   return (
     <Screen className="flex-1">
       <FlashList
-        data={posts}
+        data={frozenPosts}
         renderItem={renderItem}
         keyExtractor={(post) => post.id}
         initialScrollIndex={initialIndex}

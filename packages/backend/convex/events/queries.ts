@@ -143,14 +143,22 @@ export const getTopMediaPosts = query({
 });
 
 export const getEventFeed = query({
-  args: { eventId: v.id('events'), sortBy: v.optional(v.literal('popular')) },
-  handler: async (ctx, { eventId, sortBy }) => {
+  args: {
+    eventId: v.id('events'),
+    sortBy: v.optional(v.literal('popular')),
+    mediaOnly: v.optional(v.boolean()),
+  },
+  handler: async (ctx, { eventId, sortBy, mediaOnly }) => {
     const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
     const posts = await ctx.db
       .query('posts')
       .withIndex('by_event', (q) => q.eq('eventId', eventId))
       .order('desc')
       .collect();
+
+    if (mediaOnly) {
+      posts.splice(0, posts.length, ...posts.filter((post) => (post.mediaIds?.length ?? 0) > 0));
+    }
 
     const serialized = await Promise.all(
       posts.map((post) => serializeEventFeedPost(ctx, post, guestMode ? undefined : viewer._id))

@@ -49,7 +49,7 @@ function EventMediaTile({ post, cell, eventId }: EventMediaTileProps) {
         if (!post.mediaIds?.length) return;
         router.push({
           pathname: '/(tabs)/(map)/event/top-moments',
-          params: { eventId, initialPostId: post.id, sortBy: 'popular' },
+          params: { eventId, initialPostId: post.id },
         });
       }}
       accessibilityRole="button"
