@@ -6,6 +6,8 @@ from numpy.typing import NDArray
 from convex import ConvexClient
 from dotenv import load_dotenv
 from typing import Optional, Any
+from datetime import datetime
+from pathlib import Path
 
 
 from models.twoTowerModel import UserTower, EventTower
@@ -23,6 +25,12 @@ def get_client() -> ConvexClient:
         raise RuntimeError("ConvexClient not initialized")
     return client
 
+def get_pretty_time() -> str:
+    now = datetime.now()
+    return f"[{now.strftime("%H:%M:%S %m/%d/%y")}]"
+
+def log(message: str) -> None:
+    print(f"{get_pretty_time()} {message}")
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -170,7 +178,10 @@ USERS = ["ALL"]
 UPDATE_DB = False
 
 if __name__ == "__main__":
-    main(USERS, UPDATE_DB, 'models/curr_model.pt')
+    log("Updating event recommendations...")
+    model_dir = os.path.join(Path(__file__).parent, "models", "curr_model.pt")
+    main(USERS, UPDATE_DB, model_dir)
+    log("Event recommendations updated.")
 
 """ 
 TODO: 
