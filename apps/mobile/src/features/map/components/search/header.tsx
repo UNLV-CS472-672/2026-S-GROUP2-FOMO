@@ -22,6 +22,7 @@ interface SearchHeaderProps {
   onChangeQuery: (value: string) => void;
   onCancel: () => void;
   onExpand: () => void;
+  onSubmitQuery: () => void;
   onVoiceSearch: () => void;
 }
 
@@ -34,6 +35,7 @@ export function SearchHeader({
   onChangeQuery,
   onCancel,
   onExpand,
+  onSubmitQuery,
   onVoiceSearch,
 }: SearchHeaderProps) {
   const expandedStateStart = SEARCH_DRAWER_STATE.expanded - 0.4;
@@ -97,6 +99,7 @@ export function SearchHeader({
                 onChangeQuery(value);
               }}
               onPressIn={onExpand}
+              onSubmitEditing={onSubmitQuery}
               placeholder="Search places, events, or vibes"
               placeholderTextColor={placeholderTextColor}
               className="flex-1 text-base text-foreground"
