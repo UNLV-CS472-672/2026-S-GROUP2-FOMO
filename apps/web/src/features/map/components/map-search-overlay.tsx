@@ -1,23 +1,27 @@
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { api } from '@fomo/backend/convex/_generated/api';
-import type { Doc } from '@fomo/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { MapPin, SearchIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-export type MapSearchEvent = Doc<'events'>;
+export type MapSearchEvent = {
+  id: string;
+  name: string;
+  organization: string;
+  description: string;
+  attendeeCount: number;
+  location: {
+    latitude: number;
+    longitude: number;
+    h3Index: string;
+  };
+  recommendationScore?: number;
+};
 
 type MapSearchOverlayProps = {
   onSelectEvent?: (event: MapSearchEvent) => void;
 };
-
-const resultDateFormatter = new Intl.DateTimeFormat(undefined, {
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-});
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -38,19 +42,29 @@ export function MapSearchOverlay({ onSelectEvent }: MapSearchOverlayProps) {
   const [query, setQuery] = useState('');
   const normalizedQuery = query.trim();
   const debouncedQuery = useDebouncedValue(normalizedQuery, 250);
-  const events = useQuery(
-    api.events.search,
-    open
-      ? {
-          query: debouncedQuery,
-          limit: 8,
-        }
-      : 'skip'
-  );
+  const events = useQuery(api.data_ml.events.getEvents, {});
+  const filteredEvents = useMemo(() => {
+    if (!events) {
+      return undefined;
+    }
+
+    const indexedEvents = events.slice(0, 8);
+    if (!debouncedQuery) {
+      return indexedEvents;
+    }
+
+    const normalizedSearch = debouncedQuery.toLowerCase();
+    return events
+      .filter((event) => {
+        const haystack = `${event.name} ${event.organization} ${event.description}`.toLowerCase();
+        return haystack.includes(normalizedSearch);
+      })
+      .slice(0, 8);
+  }, [debouncedQuery, events]);
   const duplicateEventNames = useMemo(() => {
     const nameCounts = new Map<string, number>();
 
-    for (const event of events ?? []) {
+    for (const event of filteredEvents ?? []) {
       const nameKey = event.name.trim().toLowerCase();
       nameCounts.set(nameKey, (nameCounts.get(nameKey) ?? 0) + 1);
     }
@@ -58,7 +72,7 @@ export function MapSearchOverlay({ onSelectEvent }: MapSearchOverlayProps) {
     return new Set(
       [...nameCounts.entries()].filter(([, count]) => count > 1).map(([name]) => name)
     );
-  }, [events]);
+  }, [filteredEvents]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -88,15 +102,15 @@ export function MapSearchOverlay({ onSelectEvent }: MapSearchOverlayProps) {
         onCloseAutoFocus={(event) => event.preventDefault()}
       >
         <div className="max-h-80 overflow-y-auto py-1">
-          {events === undefined ? (
+          {filteredEvents === undefined ? (
             <p className="px-3 py-3 text-sm text-muted-foreground">Loading events...</p>
-          ) : events.length > 0 ? (
-            events.map((event) => {
+          ) : filteredEvents.length > 0 ? (
+            filteredEvents.map((event) => {
               const showEventId = duplicateEventNames.has(event.name.trim().toLowerCase());
 
               return (
                 <button
-                  key={event._id}
+                  key={event.id}
                   type="button"
                   className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
                   onClick={() => {
@@ -111,11 +125,11 @@ export function MapSearchOverlay({ onSelectEvent }: MapSearchOverlayProps) {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{event.name}</p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {event.organization} - {resultDateFormatter.format(new Date(event.startDate))}
+                      {event.organization} - {event.attendeeCount} going
                     </p>
                     {showEventId ? (
                       <p className="truncate text-xs text-muted-foreground/70">
-                        Event ID {event._id.slice(-6)}
+                        Event ID {event.id.slice(-6)}
                       </p>
                     ) : null}
                   </div>
