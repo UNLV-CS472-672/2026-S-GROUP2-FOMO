@@ -14,7 +14,6 @@ function setup() {
 function makeUser(overrides: Record<string, unknown> = {}) {
   return {
     bio: '',
-    tagIds: [],
     clerkId: 'token_default',
     username: 'default',
     displayName: 'Default',
