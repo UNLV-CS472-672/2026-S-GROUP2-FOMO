@@ -25,12 +25,10 @@ def get_client() -> ConvexClient:
         raise RuntimeError("ConvexClient not initialized")
     return client
 
-def get_pretty_time() -> str:
-    now = datetime.now()
-    return f"[{now.strftime("%H:%M:%S %m/%d/%y")}]"
-
 def log(message: str) -> None:
-    print(f"{get_pretty_time()} {message}")
+    now = datetime.now()
+    pretty_time = f"[{now.strftime("%H:%M:%S %m/%d/%y")}]"
+    print(f"{pretty_time} {message}")
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
