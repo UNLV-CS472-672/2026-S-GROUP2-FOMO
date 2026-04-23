@@ -110,7 +110,7 @@ function FeedCardMedia({
     );
   }
 
-  const showOverlay = mediaIds.length === 5;
+  const showOverlay = mediaIds.length > 4;
 
   return (
     <View className="h-[240px] gap-2">
@@ -123,7 +123,7 @@ function FeedCardMedia({
         <MediaTile
           mediaId={mediaIds[3]!}
           className="flex-1"
-          overlayLabel={showOverlay ? '+1' : undefined}
+          overlayLabel={showOverlay ? `+${mediaIds.length - 4}` : undefined}
           onPress={() => onPressMedia(3)}
         />
       </View>

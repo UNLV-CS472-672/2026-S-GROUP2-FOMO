@@ -26,6 +26,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 const SPRING = { damping: 15, stiffness: 200 } as const;
 const DISMISS_THRESHOLD = 150;
 const DISMISS_VELOCITY = 1000;
+const MAX_MEDIA_ASPECT_RATIO = 1.25; // 4:5 portrait max, same as Instagram
 
 function Dot({
   index,
@@ -160,7 +161,7 @@ function CarouselSlide({
       if (e.translationY > DISMISS_THRESHOLD || e.velocityY > DISMISS_VELOCITY) {
         dismissOpacity.value = withTiming(0, { duration: 200 });
         dismissY.value = withTiming(
-          height,
+          height, // animate past screen bottom regardless of mediaHeight
           { duration: 280, easing: Easing.out(Easing.cubic) },
           (finished) => {
             if (finished) scheduleOnRN(onClose);
@@ -257,6 +258,7 @@ export function MediaCarousel({
   onClose: () => void;
 }) {
   const { width, height } = useWindowDimensions();
+  const mediaHeight = Math.min(height, Math.round(width * MAX_MEDIA_ASPECT_RATIO));
   const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isZoomed, setIsZoomed] = useState(false);
@@ -274,37 +276,39 @@ export function MediaCarousel({
     <Modal visible animationType="fade" transparent statusBarTranslucent onRequestClose={onClose}>
       <StatusBar barStyle="light-content" />
       <BlurView intensity={90} tint="dark" style={{ flex: 1 }}>
-        <Animated.FlatList
-          data={mediaIds}
-          horizontal
-          pagingEnabled
-          scrollEnabled={!isZoomed}
-          showsHorizontalScrollIndicator={false}
-          contentOffset={{ x: initialIndex * width, y: 0 }}
-          getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
-          onScroll={scrollHandler}
-          scrollEventThrottle={16}
-          style={{ flex: 1 }}
-          onMomentumScrollEnd={(e) => {
-            const newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
-            setCurrentIndex(newIndex);
-            setIsZoomed(false);
-          }}
-          renderItem={({ item, index }) => (
-            <CarouselSlide
-              mediaId={item}
-              width={width}
-              height={height}
-              isActive={index === currentIndex}
-              isZoomed={isZoomed}
-              onZoomed={setIsZoomed}
-              onClose={onClose}
-              dismissY={dismissY}
-              dismissOpacity={dismissOpacity}
-            />
-          )}
-          keyExtractor={(item, i) => `${item}-${i}`}
-        />
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <Animated.FlatList
+            data={mediaIds}
+            horizontal
+            pagingEnabled
+            scrollEnabled={!isZoomed}
+            showsHorizontalScrollIndicator={false}
+            contentOffset={{ x: initialIndex * width, y: 0 }}
+            getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+            onScroll={scrollHandler}
+            scrollEventThrottle={16}
+            style={{ flexGrow: 0 }}
+            onMomentumScrollEnd={(e) => {
+              const newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
+              setCurrentIndex(newIndex);
+              setIsZoomed(false);
+            }}
+            renderItem={({ item, index }) => (
+              <CarouselSlide
+                mediaId={item}
+                width={width}
+                height={mediaHeight}
+                isActive={index === currentIndex}
+                isZoomed={isZoomed}
+                onZoomed={setIsZoomed}
+                onClose={onClose}
+                dismissY={dismissY}
+                dismissOpacity={dismissOpacity}
+              />
+            )}
+            keyExtractor={(item, i) => `${item}-${i}`}
+          />
+        </View>
 
         <View style={{ position: 'absolute', left: 0, right: 0, top: insets.top }}>
           <View className="flex-row items-center justify-between px-4 py-2">

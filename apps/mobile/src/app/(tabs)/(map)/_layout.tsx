@@ -34,6 +34,14 @@ export default function MapLayout() {
           headerLeft: () => <AppHeaderBackButton />,
         }}
       />
+      <Stack.Screen
+        name="event/profile/media-feed"
+        options={{
+          headerShown: true,
+          title: 'Posts',
+          headerLeft: () => <AppHeaderBackButton />,
+        }}
+      />
     </Stack>
   );
 }

@@ -1,12 +1,10 @@
 import { ProfilePage, ProfileStateScreen } from '@/features/profile/profile-page';
-import { useUser } from '@clerk/expo';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { useQuery } from 'convex/react';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
 export default function EventProfileScreen() {
   const router = useRouter();
-  const { isSignedIn } = useUser();
   const { username: rawUsername } = useLocalSearchParams<{ username?: string | string[] }>();
   const username = Array.isArray(rawUsername) ? rawUsername[0] : rawUsername;
   const screenTitle = username ?? 'Profile';
@@ -16,9 +14,6 @@ export default function EventProfileScreen() {
     api.users.getProfileFeed,
     profile ? { userId: profile.user._id } : 'skip'
   );
-  const currentUser = useQuery(api.users.getCurrentProfile, isSignedIn ? {} : 'skip');
-
-  const isSelf = !!currentUser && currentUser.user.username === username;
 
   if (!username) {
     return (
@@ -67,7 +62,7 @@ export default function EventProfileScreen() {
         }}
         activityLabel="Recent Events"
         topPaddingClassName="pt-5"
-        // onPressSettings={isSelf ? () => router.push('/profile/settings') : undefined}
+        mediaFeedPathname="/(tabs)/(map)/event/profile/media-feed"
       />
     </>
   );

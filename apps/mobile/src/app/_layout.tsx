@@ -7,7 +7,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useConvexAuth } from 'convex/react';
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
@@ -15,7 +15,8 @@ import { useUniwind } from 'uniwind';
 import { AuthLoadingScreen } from '@/features/auth/components/auth-loading-screen';
 import ClerkProvider from '@/integrations/clerk/provider';
 import ConvexProvider from '@/integrations/convex/provider';
-import GuestProvider, { useGuest } from '@/integrations/session/provider';
+import GuestProvider, { useGuest } from '@/integrations/session/guest';
+import { UserProvider } from '@/integrations/session/user';
 
 function RootNavigator() {
   const { isLoaded: isClerkLoaded, isSignedIn: isClerkAuthenticated } = useClerkAuth();
@@ -75,8 +76,10 @@ export default function RootLayout() {
           <ClerkProvider>
             <ConvexProvider>
               <GuestProvider>
-                <RootNavigator />
-                <StatusBar style={isDark ? 'light' : 'dark'} />
+                <UserProvider>
+                  <RootNavigator />
+                  <StatusBar style={isDark ? 'light' : 'dark'} />
+                </UserProvider>
               </GuestProvider>
             </ConvexProvider>
           </ClerkProvider>

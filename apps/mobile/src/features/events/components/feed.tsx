@@ -1,6 +1,6 @@
 import { FeedCard } from '@/features/posts/components/feed-card';
-import { useGuest } from '@/integrations/session/provider';
-import { useUser } from '@clerk/expo';
+import { useGuest } from '@/integrations/session/guest';
+import { useUser } from '@/integrations/session/user';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
@@ -14,10 +14,9 @@ type FeedProps = {
 export function Feed({ eventId }: FeedProps) {
   const { isGuestMode } = useGuest();
   const router = useRouter();
-  const { isSignedIn } = useUser();
+  const currentUser = useUser();
   const posts = useQuery(api.events.queries.getEventFeed, { eventId });
   const togglePostLike = useMutation(api.likes.togglePostLike);
-  const currentUser = useQuery(api.users.getCurrentProfile, isSignedIn ? {} : 'skip');
 
   if (posts === undefined) {
     return (
@@ -38,7 +37,7 @@ export function Feed({ eventId }: FeedProps) {
             post={post}
             readOnly={isGuestMode}
             onPressAuthor={
-              currentUser?.user.username === post.authorUsername
+              currentUser?.username === post.authorUsername
                 ? () => router.push('/(tabs)/profile')
                 : undefined
             }

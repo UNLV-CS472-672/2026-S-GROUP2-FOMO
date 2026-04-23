@@ -1,7 +1,7 @@
 import { Screen } from '@/components/ui/screen';
 import { FriendCell } from '@/features/profile/components/friend-cell';
+import { useUser } from '@/integrations/session/user';
 import { useAppTheme } from '@/lib/use-app-theme';
-import { useUser } from '@clerk/expo';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
@@ -12,8 +12,7 @@ import { ScrollView, Text, TextInput, View } from 'react-native';
 export default function EventAttendeesPage() {
   const theme = useAppTheme();
   const router = useRouter();
-  const { isSignedIn } = useUser();
-  const currentUser = useQuery(api.users.getCurrentProfile, isSignedIn ? {} : 'skip');
+  const currentUser = useUser();
   const { eventId: rawEventId, eventName } = useLocalSearchParams<{
     eventId?: string | string[];
     eventName?: string | string[];
@@ -88,7 +87,7 @@ export default function EventAttendeesPage() {
                   displayName={attendee.name}
                   avatarUrl={attendee.avatarUrl ?? undefined}
                   onPress={() =>
-                    currentUser?.user.username === attendee.username
+                    currentUser?.username === attendee.username
                       ? router.push('/(tabs)/profile')
                       : router.push({
                           pathname: '/(tabs)/(map)/event/profile/[username]',

@@ -9,7 +9,7 @@ import { TopMoments } from '@/features/events/components/top-moments';
 import type { AttendanceStatus, NotificationPref } from '@/features/events/types';
 import { Avatar } from '@/features/posts/components/avatar';
 import { MediaCarousel } from '@/features/posts/components/media-carousel';
-import { useGuest } from '@/integrations/session/provider';
+import { useGuest } from '@/integrations/session/guest';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';

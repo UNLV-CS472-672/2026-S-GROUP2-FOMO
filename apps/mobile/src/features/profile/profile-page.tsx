@@ -5,31 +5,19 @@ import { FeedCard } from '@/features/posts/components/feed-card';
 import type { FeedPost } from '@/features/posts/types';
 import PostGrid, { type GridMediaItem } from '@/features/profile/components/post-grid';
 import StatLabel from '@/features/profile/components/stat-label';
-import { useGuest } from '@/integrations/session/provider';
+import { useGuest } from '@/integrations/session/guest';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
-import type { Doc, Id } from '@fomo/backend/convex/_generated/dataModel';
+import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useMutation } from 'convex/react';
+import { FunctionReturnType } from 'convex/server';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
-type ProfileData = {
-  user: {
-    username: string;
-    displayName?: string | null;
-    avatarUrl?: string | null;
-    bio?: string | null;
-  };
-  posts: Doc<'posts'>[];
-  stats: {
-    postCount: number;
-    eventCount: number;
-  };
-};
-
 type ProfilePageProps = {
-  profile: ProfileData;
+  profile: FunctionReturnType<typeof api.users.getCurrentProfile>;
   feedPosts: FeedPost[];
   secondaryStat: {
     label: string;
@@ -41,6 +29,7 @@ type ProfilePageProps = {
   onPressSettings?: () => void;
   topPaddingClassName?: string;
   bioFallback?: string;
+  mediaFeedPathname?: string;
 };
 
 type ProfileStateScreenProps = {
@@ -75,19 +64,29 @@ export function ProfilePage({
   onPressSettings,
   topPaddingClassName = 'pt-20',
   bioFallback,
+  mediaFeedPathname = '/profile/media-feed',
 }: ProfilePageProps) {
+  const userId = profile.user._id;
   const theme = useAppTheme();
+  const router = useRouter();
   const { isGuestMode } = useGuest();
   const togglePostLike = useMutation(api.likes.togglePostLike);
   const [activeTab, setActiveTab] = useState<'feed' | 'media'>('feed');
 
-  const mediaItems: GridMediaItem[] = feedPosts.flatMap((p) =>
-    p.mediaIds.map((mediaId) => ({
-      id: `${p.id}-${mediaId}`,
+  function handlePressGridItem(item: GridMediaItem) {
+    router.push({
+      pathname: mediaFeedPathname as never,
+      params: { userId, initialPostId: item.postId },
+    });
+  }
+
+  const mediaItems: GridMediaItem[] = feedPosts
+    .filter((p) => p.mediaIds.length > 0)
+    .map((p) => ({
+      id: p.id,
       postId: p.id,
-      mediaId: mediaId as Id<'_storage'>,
-    }))
-  );
+      mediaId: p.mediaIds[0] as Id<'_storage'>,
+    }));
   const profileBio = profile.user.bio ?? bioFallback;
 
   return (
@@ -146,11 +145,12 @@ export function ProfilePage({
           </View>
         </View>
 
-        <View className="mb-4 flex-row px-4">
-          <Button variant="tertiary" className="h-[82px] flex-1 rounded-none">
-            <ButtonText variant="tertiary">{activityLabel}</ButtonText>
-          </Button>
-        </View>
+        {/* TODO :: SEE WHAT TO DO HERE */}
+        {/* <View className="mb-4 flex-row px-4"> */}
+        {/*   <Button variant="tertiary" className="h-[82px] flex-1 rounded-none"> */}
+        {/*     <ButtonText variant="tertiary">{activityLabel}</ButtonText> */}
+        {/*   </Button> */}
+        {/* </View> */}
 
         <View className="flex-row border-y border-primary-soft-border">
           <TouchableOpacity
@@ -210,7 +210,7 @@ export function ProfilePage({
 
         {activeTab === 'feed' ? (
           feedPosts.length > 0 ? (
-            <View className="gap-3 pt-4 mx-2">
+            <View className="gap-3 pt-4 px-4">
               {feedPosts.map((post) => (
                 <FeedCard
                   key={post.id}
@@ -232,7 +232,7 @@ export function ProfilePage({
             </View>
           )
         ) : mediaItems.length > 0 ? (
-          <PostGrid posts={mediaItems} />
+          <PostGrid posts={mediaItems} onPressItem={handlePressGridItem} />
         ) : (
           <View className="items-center justify-center py-8">
             <Text className="text-muted-foreground">No media posts yet</Text>

@@ -1,6 +1,6 @@
 import { Button, ButtonText } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
-import { useGuest } from '@/integrations/session/provider';
+import { useGuest } from '@/integrations/session/guest';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';

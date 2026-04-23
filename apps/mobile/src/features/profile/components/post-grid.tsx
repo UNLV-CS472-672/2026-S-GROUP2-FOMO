@@ -3,7 +3,6 @@ import { VideoThumbnail } from '@/components/video';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
-import { useRouter } from 'expo-router';
 import { FlatList, TouchableOpacity, View } from 'react-native';
 
 export type GridMediaItem = {
@@ -14,25 +13,17 @@ export type GridMediaItem = {
 
 type PostGridProps = {
   posts: GridMediaItem[];
+  onPressItem: (item: GridMediaItem) => void;
 };
 
-function MediaGridItem({ item }: { item: GridMediaItem }) {
-  const router = useRouter();
+function MediaGridItem({ item, onPress }: { item: GridMediaItem; onPress: () => void }) {
   const mediaUrl = useQuery(api.files.getUrl, { storageId: item.mediaId });
   const mediaMetadata = useQuery(api.files.getMetadata, { storageId: item.mediaId });
   const mediaTypeResolved = mediaMetadata !== undefined;
   const isVideo = mediaMetadata?.contentType?.startsWith('video/') ?? false;
 
   return (
-    <TouchableOpacity
-      onPress={() =>
-        router.push({
-          pathname: '../profile/post-details',
-          params: { postId: item.postId },
-        })
-      }
-      className="aspect-square w-1/3 bg-surface-muted"
-    >
+    <TouchableOpacity onPress={onPress} className="aspect-square w-1/3 bg-surface-muted">
       {isVideo ? (
         <VideoThumbnail
           uri={mediaUrl}
@@ -48,11 +39,11 @@ function MediaGridItem({ item }: { item: GridMediaItem }) {
   );
 }
 
-const PostGrid = ({ posts }: PostGridProps) => {
+const PostGrid = ({ posts, onPressItem }: PostGridProps) => {
   return (
     <FlatList
       data={posts}
-      renderItem={({ item }) => <MediaGridItem item={item} />}
+      renderItem={({ item }) => <MediaGridItem item={item} onPress={() => onPressItem(item)} />}
       keyExtractor={(item) => item.id.toString()}
       numColumns={3}
       scrollEnabled={false}

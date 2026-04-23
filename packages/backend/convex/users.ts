@@ -72,6 +72,20 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
   };
 }
 
+export const getCurrentProfileMinimal = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    return {
+      id: user._id,
+      username: user.username,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
+      bio: user.bio,
+    };
+  },
+});
+
 export const getCurrentProfile = query({
   args: {},
   handler: async (ctx) => {
