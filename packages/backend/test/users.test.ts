@@ -146,8 +146,16 @@ describe('api.users', () => {
           endDate: 1500,
           location: { latitude: 1, longitude: 1, h3Index: 'h' },
         });
-        await ctx.db.insert('usersToEvents', { userId: uid, eventId: later });
-        await ctx.db.insert('usersToEvents', { userId: uid, eventId: earlier });
+        await ctx.db.insert('usersToEvents', {
+          userId: uid,
+          eventId: later,
+          interactionType: 'attended',
+        });
+        await ctx.db.insert('usersToEvents', {
+          userId: uid,
+          eventId: earlier,
+          interactionType: 'attended',
+        });
         return uid;
       });
 
@@ -173,7 +181,11 @@ describe('api.users', () => {
           endDate: 2,
           location: { latitude: 0, longitude: 0, h3Index: 'h' },
         });
-        await ctx.db.insert('usersToEvents', { userId: uid, eventId: eid });
+        await ctx.db.insert('usersToEvents', {
+          userId: uid,
+          eventId: eid,
+          interactionType: 'attended',
+        });
         await ctx.db.delete(eid);
         return uid;
       });
@@ -265,7 +277,11 @@ describe('api.users', () => {
           endDate: 6,
           location: { latitude: 0, longitude: 0, h3Index: 'h8' },
         });
-        await ctx.db.insert('usersToEvents', { userId: uid, eventId: eid });
+        await ctx.db.insert('usersToEvents', {
+          userId: uid,
+          eventId: eid,
+          interactionType: 'attended',
+        });
         await ctx.db.insert('friendRecs', {
           userId: uid,
           recs: [{ userId: other, score: 0.42 }],
