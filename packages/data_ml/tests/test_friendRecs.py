@@ -615,7 +615,7 @@ def test_get_all_user_ids_returns_list(mock_client: MagicMock) -> None:
     mock_client.query.return_value = ["u1", "u2"]
     result = get_all_user_ids()
     assert result == ["u1", "u2"]
-    mock_client.query.assert_called_once_with("data_ml/users:getAllUserIds", {})
+    mock_client.query.assert_called_once_with("data_ml/friend:getAllUserIds", {})
 
 # Should return an empty list when no users exist.
 def test_get_all_user_ids_returns_empty(mock_client: MagicMock) -> None:
