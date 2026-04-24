@@ -55,7 +55,7 @@ def join_user_events() -> pd.DataFrame:
     merged_df = attendance_df.merge(events_df, left_on="eventId", right_on="_id")
     merged_df = merged_df.rename(columns={"userId": "user_id", "name": "event"})
     merged_df = merged_df[["user_id", "eventId", "event"]]
-    
+
     return merged_df
 
 
@@ -128,22 +128,24 @@ def raw_matrix_postTags() -> pd.DataFrame:
     return pd.crosstab(merged_df["user_id"], merged_df["tag_name"])
 
 
+# Convert similarity matrix from raw matrices via cosine similarity
+def build_similarity_matrix(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return pd.DataFrame()
+    user_similarity_np = cosine_similarity(df)
+    return pd.DataFrame(user_similarity_np, index=df.index, columns=df.index)
 
-
-# Convert raw matrices into similarity matrices via cosine similarity.
-def similarity_score(df: pd.DataFrame, target_user_id: str) -> pd.DataFrame:
-    
-    if df.empty or target_user_id not in df.index:
-        other_users = df.index.difference([target_user_id])
+# Get user scores from the similarity matrix
+def get_user_scores(sim_matrix: pd.DataFrame, target_user_id: str) -> pd.DataFrame:
+    # Handle users with no data or empty matrices
+    if sim_matrix.empty or target_user_id not in sim_matrix.index:
+        other_users = sim_matrix.index.difference([target_user_id])
         return pd.DataFrame({"similarity_score": 0.0}, index=other_users)
 
-    user_similarity_np = cosine_similarity(df)
-    user_similarity_df = pd.DataFrame(user_similarity_np,     
-                                      index   = df.index,
-                                      columns = df.index)
-    similar_users = user_similarity_df[target_user_id].drop(target_user_id)
+    # Get the specific user's column and drop their own score
+    similar_users = sim_matrix[target_user_id].drop(target_user_id)
     return pd.DataFrame({"similarity_score": similar_users})
-        
+
 
 # Factors in all three similarity matrices, weighted, for a final table.
 def sim_scores_weighted(events: pd.DataFrame, event_tags: pd.DataFrame, post_tags:pd.DataFrame) -> pd.DataFrame:
@@ -155,12 +157,12 @@ def sim_scores_weighted(events: pd.DataFrame, event_tags: pd.DataFrame, post_tag
     return events.mul(EVENTS_WEIGHT) \
            .add(event_tags.mul(EVENT_TAGS_WEIGHT), fill_value = 0) \
            .add(post_tags.mul(POST_TAGS_WEIGHT), fill_value = 0) # Drops NaN values
-    
+
 
 
 # Send recommended friends to Convex server.
 def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> None:
- 
+
     # For user, sort similarity scores by highest.
     sim_scores = sim_scores.dropna(subset = ["similarity_score"])
     top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False)  
@@ -180,14 +182,14 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> N
     # Parse out any userIds that are already friends.
     top_sim_scores = [
         {"userId": friendId, "score": float(score)}
-        for friendId, score in top_sim_scores["similarity_score"].items() 
+        for friendId, score in top_sim_scores["similarity_score"].items()
         if friendId not in existing_friend_ids
     ]
 
     # If list is larger than rec_amt, truncate.
     # Total friend recs may be less than rec_amt, this is fine.
     top_sim_scores = top_sim_scores[:rec_amt]
-    
+
     # Add row if user doesn't have any recommended friends, if they do, update names if values changed.
     get_client().mutation(
         "data_ml/friendRecs:upsert",
@@ -201,27 +203,31 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> N
 def main_one_user(user: str, rec_amt: int, seed: bool) -> None:
 
     if seed:
-        get_client().mutation("seed:seed")    
-        
+        get_client().mutation("seed:seed")
+
     if not user_exists(user):
         raise Exception(f"\"{user}\" cannot be found in users.")
 
     raw_events_df          = raw_matrix_events()
     raw_eventTags_df       = raw_matrix_eventTags()
     raw_postTags_df        = raw_matrix_postTags()
-    
-    simscores_events_df    = similarity_score(raw_events_df, user)
-    simscores_eventTags_df = similarity_score(raw_eventTags_df, user)
-    simscores_postTags_df  = similarity_score(raw_postTags_df, user)
-    
+
+    matrix_events = build_similarity_matrix(raw_events_df)
+    matrix_eventTags = build_similarity_matrix(raw_eventTags_df)
+    matrix_postTags = build_similarity_matrix(raw_postTags_df)
+
+    simscores_events_df = get_user_scores(matrix_events, user)
+    simscores_eventTags_df = get_user_scores(matrix_eventTags, user)
+    simscores_postTags_df = get_user_scores(matrix_postTags, user)
+
     simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
-    
+
     upsert_friend_recs(simscores_weighted, user, rec_amt)
 
 
 # Generate friend recommendations for all users.
 def main_all_users(rec_amt: int, seed: bool) -> None:
-    
+
     if seed:
         get_client().mutation("seed:seed")
 
@@ -232,10 +238,14 @@ def main_all_users(rec_amt: int, seed: bool) -> None:
     raw_eventTags_df = raw_matrix_eventTags()
     raw_postTags_df = raw_matrix_postTags()
 
+    matrix_events = build_similarity_matrix(raw_events_df)
+    matrix_eventTags = build_similarity_matrix(raw_eventTags_df)
+    matrix_postTags = build_similarity_matrix(raw_postTags_df)
+
     for user_id in user_ids:
-        simscores_events_df = similarity_score(raw_events_df, user_id)
-        simscores_eventTags_df = similarity_score(raw_eventTags_df, user_id)
-        simscores_postTags_df = similarity_score(raw_postTags_df, user_id)
+        simscores_events_df = get_user_scores(matrix_events, user_id)
+        simscores_eventTags_df = get_user_scores(matrix_eventTags, user_id)
+        simscores_postTags_df = get_user_scores(matrix_postTags, user_id)
 
         simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
         upsert_friend_recs(simscores_weighted, user_id, rec_amt)
@@ -243,7 +253,7 @@ def main_all_users(rec_amt: int, seed: bool) -> None:
 
 
 USER     = "n17849zzm0xksq2x2wh0gpcqs584x1q6"  # By user_id, Claude
-REC_AMT  = 5         # friendRecs schema only currently supports 5. 
+REC_AMT  = 5         # friendRecs schema only currently supports 5.
 SEED     = False      # Dictates if fake data needs to be populated into Convex.
 
 if __name__ == "__main__":
