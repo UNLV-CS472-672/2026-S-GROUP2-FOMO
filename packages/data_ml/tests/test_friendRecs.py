@@ -8,6 +8,7 @@ from typing import Generator
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "friendRec"))
 from friendRecs import (
+    log,
     user_exists,
     join_user_events,
     raw_matrix_events,
@@ -103,6 +104,17 @@ def sample_score_df() -> pd.DataFrame:
 # ------------------------------
 #  user_exists()
 # ------------------------------
+
+class TestLog:
+    def test_log_prints_timestamped_message(self) -> None:
+        with patch("friendRecs.datetime") as mock_datetime, patch("friendRecs.print") as mock_print:
+            mock_now = MagicMock()
+            mock_now.strftime.return_value = "12:34:56 01/02/26"
+            mock_datetime.now.return_value = mock_now
+
+            log("hello world")
+
+        mock_print.assert_called_once_with("[12:34:56 01/02/26] hello world")
 
 # Should return true, since this fake data DOES exist in "users"
 def test_user_exists_returns_true(mock_client: MagicMock) -> None:

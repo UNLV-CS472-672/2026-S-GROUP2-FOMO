@@ -4,6 +4,7 @@ from typing import Optional
 from convex import ConvexClient
 from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
+from datetime import datetime
 
 load_dotenv()
 CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
@@ -17,8 +18,11 @@ def get_client() -> ConvexClient:
         raise RuntimeError("ConvexClient not initialized")
     return client
 
-
-
+def log(message: str) -> None:
+    now = datetime.now()
+    pretty_time = f"[{now.strftime("%H:%M:%S %m/%d/%y")}]"
+    print(f"{pretty_time} {message}")
+    
 # Checks if a userid exists in the "users" table.
 def user_exists(user_id: str) -> bool:
     return get_client().query("data_ml/users:userExists", {"userId": user_id}) is not None
@@ -249,5 +253,7 @@ REC_AMT  = 5         # friendRecs schema only currently supports 5.
 SEED     = False      # Dictates if fake data needs to be populated into Convex.
 
 if __name__ == "__main__":
+    log("Updating friend recommendations...")
     main_all_users(REC_AMT, SEED)
+    log("Friend recommendations updated.")
 
