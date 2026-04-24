@@ -1,46 +1,70 @@
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
+const sharedEventFields = {
+  name: v.string(),
+  caption: v.string(),
+  startDate: v.number(), // ms since epoch
+  endDate: v.number(), // ms since epoch
+  location: v.object({
+    latitude: v.number(),
+    longitude: v.number(),
+    h3Index: v.string(),
+  }),
+};
+
 export default defineSchema({
   users: defineTable({
-    name: v.string(),
-    clerkId: v.string(), // Clerk user id (`clerkId` JWT claim; Convex may still expose legacy `tokenIdentifier`)
+    bio: v.string(), // clerk doesn't handle this
+    // clerk handles below this
+    clerkId: v.string(), // For Clerk integration
+    username: v.string(), // should be unique and this is the main display/handle on frontend
+    displayName: v.string(), // display names that can be changed often/whenever? --- not sure if this will be a clerk value tbh
+    avatarUrl: v.string(), // should get from clerk
   })
     .index('by_clerkId', ['clerkId'])
-    .index('by_name', ['name']),
+    .index('by_username', ['username']),
 
   events: defineTable({
-    name: v.string(),
-    organization: v.string(),
-    description: v.string(),
-    startDate: v.number(), // ms since epoch
-    endDate: v.number(), // ms since epoch
-    location: v.object({
-      latitude: v.number(),
-      longitude: v.number(),
-      h3Index: v.string(),
-    }),
+    ...sharedEventFields,
+    mediaId: v.optional(v.id('_storage')),
+    hostIds: v.array(v.id('users')),
   })
     .index('by_startDate', ['startDate'])
     .index('by_endDate', ['endDate'])
     .index('by_startDate_endDate', ['startDate', 'endDate']),
 
+  externalEvents: defineTable({
+    ...sharedEventFields,
+    externalKey: v.string(),
+    organization: v.string(),
+  })
+    .index('by_externalKey', ['externalKey'])
+    .index('by_startDate', ['startDate'])
+    .index('by_endDate', ['endDate'])
+    .index('by_startDate_endDate', ['startDate', 'endDate']),
+
   posts: defineTable({
-    title: v.string(),
-    description: v.string(),
+    eventId: v.optional(v.id('events')),
+    caption: v.optional(v.string()), // necessary if no mediaIds
+    mediaIds: v.array(v.id('_storage')), // necessary if no caption
     authorId: v.id('users'),
     likeCount: v.optional(v.number()),
-  }).index('by_author', ['authorId']),
+  })
+    .index('by_author', ['authorId'])
+    .index('by_event', ['eventId']),
 
   comments: defineTable({
     postId: v.id('posts'),
     authorId: v.id('users'),
     text: v.string(),
     likeCount: v.optional(v.number()),
+    parentId: v.optional(v.id('comments')),
   })
     .index('by_post', ['postId'])
     .index('by_author', ['authorId'])
-    .index('by_post_author', ['postId', 'authorId']),
+    .index('by_post_author', ['postId', 'authorId'])
+    .index('by_parent', ['parentId']),
 
   tags: defineTable({
     name: v.string(),
@@ -53,9 +77,13 @@ export default defineSchema({
   // - etc ...
   //
 
-  usersToEvents: defineTable({
+  attendance: defineTable({
     userId: v.id('users'),
     eventId: v.id('events'),
+    status: v.optional(
+      v.union(v.literal('going'), v.literal('interested'), v.literal('uninterested'))
+    ),
+    notification: v.optional(v.union(v.literal('all'), v.literal('friends'), v.literal('none'))),
   })
     .index('by_userId', ['userId'])
     .index('by_event', ['eventId'])

@@ -61,11 +61,66 @@ export const getFriendRecs = query({
     const INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
 
     const isFresh = rec.updatedAt ? now - rec.updatedAt < INTERVAL : false;
+    const recommendedFriends = (
+      await Promise.all(
+        rec.recs.map(async (recommendation) => {
+          const friend = await ctx.db.get(recommendation.userId);
+
+          if (!friend) {
+            return null;
+          }
+
+          return {
+            id: friend._id,
+            username: friend.username,
+            displayName: friend.displayName,
+            avatarUrl: friend.avatarUrl,
+          };
+        })
+      )
+    ).filter((friend): friend is NonNullable<typeof friend> => friend !== null);
 
     return {
-      recs: rec.recs,
+      recs: recommendedFriends,
       isFresh,
       updatedAt: rec.updatedAt,
     };
+  },
+});
+
+export const getFriends = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    const [requested, received] = await Promise.all([
+      ctx.db
+        .query('friends')
+        .withIndex('by_requesterId', (q) => q.eq('requesterId', user._id))
+        .filter((q) => q.eq(q.field('status'), 'accepted'))
+        .collect(),
+      ctx.db
+        .query('friends')
+        .withIndex('by_recipientId', (q) => q.eq('recipientId', user._id))
+        .filter((q) => q.eq(q.field('status'), 'accepted'))
+        .collect(),
+    ]);
+
+    const friendIds = [
+      ...requested.map((friendship) => friendship.recipientId),
+      ...received.map((friendship) => friendship.requesterId),
+    ];
+
+    const friends = (await Promise.all(friendIds.map((friendId) => ctx.db.get(friendId)))).filter(
+      (friend): friend is NonNullable<typeof friend> => friend !== null
+    );
+
+    return friends
+      .map((friend) => ({
+        id: friend._id,
+        username: friend.username,
+        displayName: friend.displayName,
+        avatarUrl: friend.avatarUrl,
+      }))
+      .sort((a, b) => a.username.localeCompare(b.username));
   },
 });

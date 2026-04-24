@@ -5,8 +5,9 @@ export const getByUserId = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
     return await ctx.db
-      .query('usersToEvents')
+      .query('attendance')
       .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .filter((q) => q.eq(q.field('status'), 'going'))
       .collect();
   },
 });
@@ -47,6 +48,24 @@ export const upsertUserTagWeights = mutation({
   },
 });
 
+export const getUserTagWeights = query({
+  args: { userIDs: v.array(v.id('users')) },
+  handler: async (ctx, { userIDs }) => {
+    const results = await Promise.all(
+      userIDs.map(async (userID) => {
+        const doc = await ctx.db
+          .query('userTagWeights')
+          .withIndex('by_userId', (q) => q.eq('userId', userID))
+          .unique();
+
+        return doc?.weights ?? null;
+      })
+    );
+
+    return results;
+  },
+});
+
 export const getPreferredTagsByUserId = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
@@ -54,5 +73,16 @@ export const getPreferredTagsByUserId = query({
       .query('userPreferredTags')
       .withIndex('by_userId', (q) => q.eq('userId', userId))
       .unique();
+  },
+});
+
+export const getInteractionsByUserId = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    return await ctx.db
+      .query('attendance')
+      .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .collect();
+    // Returns: { userId, eventId, status }[]
   },
 });

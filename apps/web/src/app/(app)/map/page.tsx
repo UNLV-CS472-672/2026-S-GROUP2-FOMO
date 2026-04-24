@@ -19,7 +19,7 @@ export default function MapPage() {
   const router = useRouter();
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
   const { resolvedTheme } = useTheme();
-  const events = useQuery(api.data_ml.events.getEvents) ?? [];
+  const events = useQuery(api.events.queries.getEvents) ?? [];
   const mounted = useSyncExternalStore(
     emptySubscribe,
     () => true,

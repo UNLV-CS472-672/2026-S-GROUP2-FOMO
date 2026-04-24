@@ -1,4 +1,5 @@
-import { LatestGalleryImage } from '@/components/create/latest-gallery-image';
+import { Screen } from '@/components/ui/screen';
+import { LatestGalleryImage } from '@/features/create/components/latest-gallery-image';
 import { useIsFocused } from '@react-navigation/native';
 import * as MediaLibrary from 'expo-media-library';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -160,18 +161,17 @@ export default function CameraScreen() {
 
   if (!hasPermission) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center gap-3 bg-[#0b0b0b] px-6">
-        <Text className="text-center text-[28px] font-bold text-white">Camera access needed</Text>
-        <Text className="text-center text-base leading-[22px] text-zinc-300">
-          Enable camera permission to capture photos and videos.
-        </Text>
-        <Pressable
-          className="mt-2 rounded-full border border-white bg-zinc-800 px-[18px] py-[10px]"
-          onPress={requestPermission}
-        >
-          <Text className="font-semibold text-white">Allow Camera Access</Text>
-        </Pressable>
-      </SafeAreaView>
+      <Screen>
+        <View className="flex-1 items-center justify-center gap-3 px-6">
+          <Text className="text-center text-[28px] font-bold">Camera access needed</Text>
+          <Text className="text-center text-base leading-5.5">
+            Enable camera permission to capture photos and videos.
+          </Text>
+          <Pressable className="mt-2 rounded-full border px-4.5 py-2.5" onPress={requestPermission}>
+            <Text className="font-semibold">Allow Camera Access</Text>
+          </Pressable>
+        </View>
+      </Screen>
     );
   }
 

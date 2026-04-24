@@ -1,11 +1,17 @@
+import darkLogo from '@/assets/logos/fomo-dark.png';
+import lightLogo from '@/assets/logos/fomo-light.png';
+import { Image } from '@/components/image';
 import { Button, ButtonText } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
-import { useGuest } from '@/integrations/session/provider';
-import { Image } from 'expo-image';
+import { useGuest } from '@/integrations/session/guest';
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';
+import { useUniwind } from 'uniwind';
 
 export default function Welcome() {
+  const { theme } = useUniwind();
+  const isDark = theme === 'dark';
+  const logoSource = isDark ? darkLogo : lightLogo;
   const { enterGuestMode } = useGuest();
 
   const handleGuestMode = async () => {
@@ -20,11 +26,14 @@ export default function Welcome() {
   return (
     <Screen className="items-center justify-center">
       <View>
-        <Image source={require('@/assets/images/icon.png')} className="w-24 h-24 mt-4" />
-        <Text className="text-3xl font-medium text-foreground text-center">Welcome to</Text>
-        <Text className="text-[6rem] font-heading font-black text-foreground text-center">
-          fomo
+        <Text className="text-3xl font-bold text-foreground text-center font-heading">
+          Welcome to
         </Text>
+        <Image
+          source={logoSource}
+          style={{ width: 320, height: 160, marginTop: 20, alignSelf: 'center' }}
+          contentFit="contain"
+        />
       </View>
 
       <View className="mt-10 w-full flex px-12 gap-4">
