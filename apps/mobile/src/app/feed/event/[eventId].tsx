@@ -1,5 +1,6 @@
 import PostGrid from '@/components/ui/post-grid';
 import { Screen } from '@/components/ui/screen';
+import { NavigateButton } from '@/features/map/components/navigate-button';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
@@ -64,7 +65,7 @@ export default function EventDetails() {
     );
   }
 
-  if (!event) {
+  if (!eventDetail || !event) {
     return (
       <Screen className="items-center justify-center">
         <Stack.Screen options={{ title: 'Event Details' }} />
@@ -88,15 +89,22 @@ export default function EventDetails() {
               {event.description}
             </Text>
           </View>
-          <TouchableOpacity
-            className="h-12 w-12 items-center justify-center rounded-full border border-border bg-background"
-            activeOpacity={0.75}
-            onPress={() => {}}
-            accessibilityRole="button"
-            accessibilityLabel="Like post"
-          >
-            <Ionicons name="heart" size={24} color={theme.mutedText} />
-          </TouchableOpacity>
+          <View className="gap-3">
+            <TouchableOpacity
+              className="h-12 w-12 items-center justify-center rounded-full border border-border bg-background"
+              activeOpacity={0.75}
+              onPress={() => {}}
+              accessibilityRole="button"
+              accessibilityLabel="Like post"
+            >
+              <Ionicons name="heart" size={24} color={theme.mutedText} />
+            </TouchableOpacity>
+            <NavigateButton
+              latitude={eventDetail.location.latitude}
+              longitude={eventDetail.location.longitude}
+              label={eventDetail.name}
+            />
+          </View>
         </View>
 
         <View className="w-[60%] overflow-hidden rounded-2xl border border-border bg-background">
