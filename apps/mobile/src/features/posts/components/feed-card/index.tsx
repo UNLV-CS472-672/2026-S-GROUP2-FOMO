@@ -70,17 +70,20 @@ export function FeedCard({
               source={post.authorAvatarUrl ? { uri: post.authorAvatarUrl } : undefined}
             />
           </Pressable>
-          <View className="min-w-0 flex-1 gap-0.5">
-            <View className="flex-row items-center gap-2">
+          <View className="min-w-0 flex-1 flex-row items-center gap-2">
+            <View className="min-w-0 flex-1 gap-0.5">
               <Pressable hitSlop={4} disabled={disableAuthorPress} onPress={handlePressAuthor}>
                 <Text className="text-[15px] font-semibold text-foreground">{post.authorName}</Text>
               </Pressable>
+              {showEventLink && post.eventId && post.eventName ? (
+                <Pressable className="self-start" hitSlop={4} onPress={handlePressEvent}>
+                  <Text className="text-[12px] text-muted-foreground">{post.eventName}</Text>
+                </Pressable>
+              ) : null}
             </View>
-            {showEventLink && post.eventId && post.eventName ? (
-              <Pressable className="self-start" hitSlop={4} onPress={handlePressEvent}>
-                <Text className="text-[12px] text-muted-foreground">{post.eventName}</Text>
-              </Pressable>
-            ) : null}
+            <Text className="text-[12px] text-muted-foreground">
+              {formatRelativeTime(post.creationTime)}
+            </Text>
           </View>
         </View>
 
@@ -91,18 +94,12 @@ export function FeedCard({
         ) : null}
       </View>
 
-      <View className="flex flex-row justify-between items-center mx-2">
-        <PostActions
-          post={post}
-          readOnly={readOnly}
-          onToggleLike={onToggleLike}
-          className="pt-0.5"
-        />
-
-        <Text className="text-[12px] text-muted-foreground">
-          {formatRelativeTime(post.creationTime)}
-        </Text>
-      </View>
+      <PostActions
+        post={post}
+        readOnly={readOnly}
+        onToggleLike={onToggleLike}
+        className="ml-2 pt-0.5"
+      />
     </View>
   );
 }
