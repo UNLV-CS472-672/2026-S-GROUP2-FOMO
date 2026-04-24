@@ -13,6 +13,7 @@ from recommendEvent import (
     get_tag_info,
     get_user_features,
     get_event_features,
+    log,
     main,
     MAX_TAGS
 )
@@ -120,6 +121,18 @@ class TestGetTagInfo:
 
         assert num_tags == 0
         assert len(tag_id_to_idx) == 0
+
+
+class TestLog:
+    def test_log_prints_timestamped_message(self) -> None:
+        with patch("recommendEvent.datetime") as mock_datetime, patch("recommendEvent.print") as mock_print:
+            mock_now = MagicMock()
+            mock_now.strftime.return_value = "12:34:56 01/02/26"
+            mock_datetime.now.return_value = mock_now
+
+            log("hello world")
+
+        mock_print.assert_called_once_with("[12:34:56 01/02/26] hello world")
 
 
 class TestGetUserFeatures:
