@@ -9,11 +9,16 @@ function clerkIdFromIdentity(identity: ClerkIdentity): string {
 
 async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
   const identity = await ctx.auth.getUserIdentity();
+  console.log('identity', identity);
   if (!identity) {
     throw new Error('No Clerk identity found');
   }
 
   return identity as ClerkIdentity;
+}
+
+function usernameFromIdentity(identity: ClerkIdentity): string {
+  return identity.nickname ?? clerkIdFromIdentity(identity);
 }
 
 async function getConvexUserRowForIdentity(
@@ -61,7 +66,8 @@ type GuestOrAuthenticatedUserTuple =
   | readonly [user: null, guestMode: true];
 
 /**
- * `[user, guestMode]` from Convex auth only: no JWT ⇒ guest browse; signed in ⇒ user row + not guest.
+ * `[user, guestMode]` from Convex auth only. Until user rows are guaranteed to exist
+ * immediately after sign-in, missing Convex users fall back to guest browse.
  */
 export async function __backend_only_guestOrAuthenticatedUser(
   ctx: QueryCtx
@@ -72,7 +78,7 @@ export async function __backend_only_guestOrAuthenticatedUser(
   }
   const user = await getConvexUserRowForIdentity(ctx, identity);
   if (!user) {
-    throw new Error('No Convex user found for the current Clerk token');
+    return [null, true];
   }
   return [user, false];
 }
@@ -90,8 +96,11 @@ export const ensureCurrentUser = mutation({
 
     // New Clerk user: `clerkId` must match the stable id on `ctx.auth` (Clerk `clerkId` claim).
     return await ctx.db.insert('users', {
-      name: identity.nickname!,
       clerkId: clerkIdFromIdentity(identity),
+      username: usernameFromIdentity(identity),
+      displayName: usernameFromIdentity(identity),
+      avatarUrl: '',
+      bio: '',
     });
   },
 });

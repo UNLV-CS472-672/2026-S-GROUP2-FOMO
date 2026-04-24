@@ -1,11 +1,11 @@
 import { Button, ButtonText } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
-import { useGuest } from '@/integrations/session/provider';
+import { useGuest } from '@/integrations/session/guest';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Image } from 'expo-image';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 type PostParams = {
   mediaUri?: string | string[];
@@ -70,31 +70,46 @@ export default function CreatePostScreen() {
       >
         <Text className="text-2xl font-bold text-foreground">Create Post</Text>
 
-        <View
-          className={`overflow-hidden rounded-xl border border-border bg-background ${hasPhoto ? 'w-full' : 'h-56'}`}
-          style={hasPhoto ? { aspectRatio: imageAspectRatio } : undefined}
+        <Pressable
+          onPress={
+            hasPhoto
+              ? undefined
+              : () =>
+                  router.push({
+                    pathname: '/(tabs)/create/camera-screen',
+                    params: { returnTo: '/create/post' },
+                  })
+          }
         >
-          {hasPhoto ? (
-            <Image
-              source={{ uri: mediaUri }}
-              style={{ width: '100%', height: '100%' }}
-              contentFit="contain"
-              onLoad={(event) => {
-                const width = event.source.width;
-                const height = event.source.height;
-                if (width > 0 && height > 0) {
-                  setImageAspectRatio(width / height);
-                }
-              }}
-            />
-          ) : (
-            <View className="flex-1 items-center justify-center p-3">
-              <Text className="text-center text-base font-semibold text-muted-foreground">
-                Captured image
-              </Text>
-            </View>
-          )}
-        </View>
+          <View
+            className={`overflow-hidden rounded-xl border border-border bg-background ${hasPhoto ? 'w-full' : 'h-56'}`}
+            style={hasPhoto ? { aspectRatio: imageAspectRatio } : undefined}
+          >
+            {hasPhoto ? (
+              <Image
+                source={{ uri: mediaUri }}
+                style={{ width: '100%', height: '100%' }}
+                contentFit="contain"
+                onLoad={(event) => {
+                  const width = event.source.width;
+                  const height = event.source.height;
+                  if (width > 0 && height > 0) {
+                    setImageAspectRatio(width / height);
+                  }
+                }}
+              />
+            ) : (
+              <View className="flex-1 items-center justify-center gap-1 p-3">
+                <Text className="text-center text-base font-semibold text-muted-foreground">
+                  Add Photo or Video
+                </Text>
+                <Text className="text-center text-sm text-muted-foreground">
+                  Tap to open camera
+                </Text>
+              </View>
+            )}
+          </View>
+        </Pressable>
 
         <View className="rounded-xl border border-border bg-background px-4 py-3">
           <TextInput

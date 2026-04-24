@@ -1,6 +1,6 @@
 import { Button, ButtonText } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
-import { useGuest } from '@/integrations/session/provider';
+import { useGuest } from '@/integrations/session/guest';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Image } from 'expo-image';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
