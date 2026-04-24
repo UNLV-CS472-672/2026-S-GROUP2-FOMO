@@ -8,6 +8,8 @@ from typing import Generator
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "friendRec"))
 from friendRecs import (
+    get_client,
+    get_all_user_ids,
     log,
     user_exists,
     join_user_events,
@@ -553,3 +555,44 @@ def test_main_all_users_upserts_for_each_user(mock_main_all_users_dependencies: 
     )
     called_user_ids = [call_args[0][1] for call_args in mock_main_all_users_dependencies["upsert_friend_recs"].call_args_list]
     assert called_user_ids == user_ids
+    
+# ------------------------------
+#  get_client()
+# ------------------------------
+
+# Should raise RuntimeError when the module-level client is None.
+def test_get_client_raises_when_client_is_none() -> None:
+    with patch("friendRecs.client", None):
+        with pytest.raises(RuntimeError, match="ConvexClient not initialized"):
+            get_client()
+
+
+# ------------------------------
+#  get_all_user_ids()
+# ------------------------------
+
+# Should return the list of all user IDs returned by Convex.
+def test_get_all_user_ids_returns_list(mock_client: MagicMock) -> None:
+    mock_client.query.return_value = ["u1", "u2"]
+    result = get_all_user_ids()
+    assert result == ["u1", "u2"]
+    mock_client.query.assert_called_once_with("data_ml/users:getAllUserIds", {})
+
+# Should return an empty list when no users exist.
+def test_get_all_user_ids_returns_empty(mock_client: MagicMock) -> None:
+    mock_client.query.return_value = []
+    result = get_all_user_ids()
+    assert result == []
+
+
+# ------------------------------
+#  main_all_users()
+# ------------------------------
+
+# Should raise when a user ID from get_all_user_ids doesn't exist in "users".
+def test_main_all_users_raises_if_user_not_found(
+    mock_main_all_users_dependencies: dict[str, MagicMock],
+) -> None:
+    mock_main_all_users_dependencies["user_exists"].return_value = False
+    with pytest.raises(Exception, match="cannot be found in users"):
+        main_all_users(5, False)
