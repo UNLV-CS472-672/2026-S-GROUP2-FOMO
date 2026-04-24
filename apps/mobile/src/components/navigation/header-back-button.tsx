@@ -23,8 +23,6 @@ export function AppHeaderBackButton({ onPress }: AppHeaderBackButtonProps) {
 
         if (router.canGoBack()) {
           router.back();
-        } else {
-          router.replace('/(tabs)/profile');
         }
       }}
     />
