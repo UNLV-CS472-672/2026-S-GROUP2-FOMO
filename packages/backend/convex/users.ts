@@ -2,7 +2,11 @@ import { v } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
 import { query, QueryCtx } from './_generated/server';
-import { __backend_only_getAndAuthenticateCurrentConvexUser } from './auth';
+import {
+  __backend_only_getAndAuthenticateCurrentConvexUser,
+  __backend_only_guestOrAuthenticatedUser,
+} from './auth';
+import { getThreadedCommentsByPost } from './comments';
 
 async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
   const [posts, comments, userEventLinks, friendRecs] = await Promise.all([
@@ -15,7 +19,7 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
       .withIndex('by_author', (q) => q.eq('authorId', user._id))
       .collect(),
     ctx.db
-      .query('usersToEvents')
+      .query('attendance')
       .withIndex('by_userId', (q) => q.eq('userId', user._id))
       .collect(),
     ctx.db
@@ -25,7 +29,7 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
   ]);
 
   const events = (
-    await Promise.all(userEventLinks.map((link: Doc<'usersToEvents'>) => ctx.db.get(link.eventId)))
+    await Promise.all(userEventLinks.map((link: Doc<'attendance'>) => ctx.db.get(link.eventId)))
   ).filter((event: Doc<'events'> | null): event is Doc<'events'> => event !== null);
 
   const recommendedUsers = friendRecs
@@ -68,6 +72,20 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
   };
 }
 
+export const getCurrentProfileMinimal = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    return {
+      id: user._id,
+      username: user.username,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
+      bio: user.bio,
+    };
+  },
+});
+
 export const getCurrentProfile = query({
   args: {},
   handler: async (ctx) => {
@@ -91,14 +109,14 @@ export const getProfileById = query({
   },
 });
 
-export const getProfileByName = query({
+export const getProfileByUsername = query({
   args: {
-    name: v.string(),
+    username: v.string(),
   },
-  handler: async (ctx, { name }) => {
+  handler: async (ctx, { username }) => {
     const user = await ctx.db
       .query('users')
-      .withIndex('by_name', (q) => q.eq('name', name))
+      .withIndex('by_username', (q) => q.eq('username', username))
       .first();
 
     if (!user) {
@@ -106,5 +124,55 @@ export const getProfileByName = query({
     }
 
     return await buildProfile(ctx, user);
+  },
+});
+
+function countComments(comments: Awaited<ReturnType<typeof getThreadedCommentsByPost>>): number {
+  return comments.reduce((total, comment) => total + 1 + countComments(comment.replies), 0);
+}
+
+async function serializeProfileFeedPost(
+  ctx: QueryCtx,
+  post: Doc<'posts'>,
+  viewerId?: Doc<'users'>['_id']
+) {
+  const [author, comments, likes] = await Promise.all([
+    ctx.db.get(post.authorId),
+    getThreadedCommentsByPost(ctx, post._id),
+    ctx.db
+      .query('likes')
+      .withIndex('by_postId', (q) => q.eq('postId', post._id))
+      .collect(),
+  ]);
+
+  return {
+    id: post._id,
+    caption: post.caption ?? '',
+    creationTime: post._creationTime,
+    authorName: author?.displayName || author?.username || 'Unknown user',
+    authorUsername: author?.username ?? '',
+    authorAvatarUrl: author?.avatarUrl || '',
+    likes: post.likeCount ?? likes.length,
+    liked: viewerId ? likes.some((like) => like.userId === viewerId) : false,
+    mediaIds: post.mediaIds ?? [],
+    commentCount: countComments(comments),
+    comments,
+  };
+}
+
+export const getProfileFeed = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
+
+    const posts = await ctx.db
+      .query('posts')
+      .withIndex('by_author', (q) => q.eq('authorId', userId))
+      .order('desc')
+      .collect();
+
+    return await Promise.all(
+      posts.map((post) => serializeProfileFeedPost(ctx, post, guestMode ? undefined : viewer._id))
+    );
   },
 });
