@@ -27,12 +27,6 @@ def log(message: str) -> None:
 def user_exists(user_id: str) -> bool:
     return get_client().query("data_ml/users:userExists", {"userId": user_id}) is not None
 
-# Get all unique userIds that have at least one row in "usersToEvents"
-def get_user_ids_with_event_attendance() -> list[str]:
-    # Cast to a list[str] to satisfy myPy since Convex returns Any.
-    user_ids: list[str] = get_client().query("data_ml/usersToEvents:getUserIdsWithEventAttendance",{})
-    return user_ids
-
 # Get all userIds that exist in "users"
 def get_all_user_ids() -> list[str]:
     user_ids: list[str] = get_client().query("data_ml/users:getAllUserIds", {})

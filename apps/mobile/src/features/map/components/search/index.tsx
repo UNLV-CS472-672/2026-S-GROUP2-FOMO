@@ -5,6 +5,7 @@ import {
 } from '@/features/map/components/search/constants';
 import { SearchContent } from '@/features/map/components/search/content';
 import { SearchHeader } from '@/features/map/components/search/header';
+import { useRecentSearches } from '@/features/map/hooks/use-recent-searches';
 import { useVoiceSearch } from '@/features/map/hooks/use-voice-search';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { useEffect, useRef, useState } from 'react';
@@ -28,6 +29,7 @@ export function SearchDrawer({
   const [sheetIndex, setSheetIndex] = useState<number>(SEARCH_DRAWER_STATE.collapsed);
   const [query, setQuery] = useState('');
   const inputRef = useRef<TextInput>(null);
+  const { recentSearches, addRecentSearch } = useRecentSearches();
   const { isListening, stopVoiceSearch, toggleVoiceSearch } = useVoiceSearch({
     onTranscript: setQuery,
     onExpand: () => setSheetIndex(SEARCH_DRAWER_STATE.expanded),
@@ -73,13 +75,16 @@ export function SearchDrawer({
           setSheetIndex(SEARCH_DRAWER_STATE.collapsed);
         }}
         onExpand={() => setSheetIndex(SEARCH_DRAWER_STATE.expanded)}
+        onSubmitQuery={() => void addRecentSearch({ type: 'query', label: query })}
         onVoiceSearch={toggleVoiceSearch}
       />
 
       <SearchContent
         query={query}
+        recentSearches={recentSearches}
         onChangeQuery={setQuery}
         onExpand={() => setSheetIndex(SEARCH_DRAWER_STATE.expanded)}
+        onSaveRecentSearch={(value) => void addRecentSearch(value)}
         onSelectEvent={onSelectEvent}
       />
     </Drawer>

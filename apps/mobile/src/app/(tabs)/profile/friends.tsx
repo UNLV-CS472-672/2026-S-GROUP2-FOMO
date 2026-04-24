@@ -1,59 +1,47 @@
-import { friends, type Friend } from '@/app/(tabs)/profile/friends-data';
-import FriendCell from '@/components/profile/friend-cell';
 import { Screen } from '@/components/ui/screen';
+import { FriendCell } from '@/features/profile/components/friend-cell';
 import { useAppTheme } from '@/lib/use-app-theme';
+import { useUser } from '@clerk/expo';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { useQuery } from 'convex/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-type FriendRec = { userId: string; score: number };
-
 /** Friends UI from this screen; embed in profile or use via {@link FriendsScreen}. */
 export function FriendsScreenContent() {
   const router = useRouter();
   const params = useLocalSearchParams<{ source?: string | string[] }>();
   const theme = useAppTheme();
+  const { isSignedIn } = useUser();
   const [searchText, setSearchText] = useState('');
   const [isRecommendedCollapsed, setIsRecommendedCollapsed] = useState(false);
   const source = Array.isArray(params.source) ? params.source[0] : params.source;
-  const showRecommendedFriends = source !== 'visit-friend-profile';
+  const showRecommendedFriends = source !== 'profile-visit';
 
-  const friendRecResult = useQuery(api.data_ml.friends.getFriendRecs);
+  const friendRecResult = useQuery(api.data_ml.friends.getFriendRecs, isSignedIn ? {} : 'skip');
+  const friendsResult = useQuery(api.data_ml.friends.getFriends, isSignedIn ? {} : 'skip');
 
-  const recommendedFriends = useMemo<Friend[]>(
-    () =>
-      (friendRecResult?.recs ?? []).map((rec) => ({
-        id: rec.userId,
-        username: rec.userId,
-        realName: `Score: ${rec.score.toFixed(2)}`,
-        imageSource: require('@/assets/images/icon.png'),
-        posts: {
-          all: [],
-          recent: [],
-          tagged: [],
-        },
-      })),
-    [friendRecResult]
-  );
+  const recommendedFriends = friendRecResult?.recs ?? [];
 
   const filteredRecommended = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     return recommendedFriends.filter(
-      (f) => f.username.toLowerCase().includes(q) || f.realName?.toLowerCase().includes(q)
+      (friend) =>
+        friend.username.toLowerCase().includes(q) || friend.displayName?.toLowerCase().includes(q)
     );
   }, [recommendedFriends, searchText]);
 
   const filteredFriends = useMemo(() => {
     const q = searchText.trim().toLowerCase();
-    return friends.filter(
-      (f) => f.username.toLowerCase().includes(q) || f.realName?.toLowerCase().includes(q)
+    return (friendsResult ?? []).filter(
+      (friend) =>
+        friend.username.toLowerCase().includes(q) || friend.displayName?.toLowerCase().includes(q)
     );
-  }, [friends, searchText]);
+  }, [friendsResult, searchText]);
 
-  const handleFriendPress = (friendId: string) => {
-    router.push({ pathname: '/profile/visit-friend-profile', params: { id: friendId } });
+  const handleFriendPress = (friendId: string, username: string) => {
+    router.push({ pathname: '/profile/[username]', params: { id: friendId, username } });
   };
 
   return (
@@ -92,9 +80,9 @@ export function FriendsScreenContent() {
                   <FriendCell
                     key={f.id}
                     username={f.username}
-                    realName={f.realName}
-                    imageSource={f.imageSource}
-                    onPress={() => handleFriendPress(f.id)}
+                    displayName={f.displayName}
+                    avatarUrl={f.avatarUrl}
+                    onPress={() => handleFriendPress(String(f.id), f.username)}
                   />
                 ))
               ) : (
@@ -118,9 +106,9 @@ export function FriendsScreenContent() {
               <FriendCell
                 key={f.id}
                 username={f.username}
-                realName={f.realName}
-                imageSource={f.imageSource}
-                onPress={() => handleFriendPress(f.id)}
+                displayName={f.displayName}
+                avatarUrl={f.avatarUrl}
+                onPress={() => handleFriendPress(String(f.id), f.username)}
               />
             ))
           ) : (

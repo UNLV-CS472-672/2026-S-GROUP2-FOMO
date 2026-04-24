@@ -2,20 +2,21 @@ import '@/global.css';
 
 import { useAuth as useClerkAuth } from '@clerk/expo';
 import { navigationThemeColors } from '@fomo/theme/native';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useConvexAuth } from 'convex/react';
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
 
-import { AppHeaderBackButton } from '@/components/navigation/header-back-button';
 import { AuthLoadingScreen } from '@/features/auth/components/auth-loading-screen';
 import ClerkProvider from '@/integrations/clerk/provider';
 import ConvexProvider from '@/integrations/convex/provider';
-import GuestProvider, { useGuest } from '@/integrations/session/provider';
+import GuestProvider, { useGuest } from '@/integrations/session/guest';
+import { UserProvider } from '@/integrations/session/user';
 
 function RootNavigator() {
   const { isLoaded: isClerkLoaded, isSignedIn: isClerkAuthenticated } = useClerkAuth();
@@ -36,7 +37,7 @@ function RootNavigator() {
     );
   }
 
-  const isAuthenticatedRouteAllowed = segments[0] === '(tabs)' || segments[0] === 'feed';
+  const isAuthenticatedRouteAllowed = segments[0] === '(tabs)';
   if (isAuthenticated && !isAuthenticatedRouteAllowed) {
     return <Redirect href="/(tabs)/(map)" />;
   }
@@ -50,15 +51,6 @@ function RootNavigator() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen
-        name="feed/event/[eventId]"
-        options={{
-          presentation: 'modal',
-          headerShown: true,
-          title: 'Event Details',
-          headerLeft: () => <AppHeaderBackButton />,
-        }}
-      />
     </Stack>
   );
 }
@@ -79,16 +71,20 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={navigationTheme}>
-        <ClerkProvider>
-          <ConvexProvider>
-            <GuestProvider>
-              <RootNavigator />
-              <StatusBar style={isDark ? 'light' : 'dark'} />
-            </GuestProvider>
-          </ConvexProvider>
-        </ClerkProvider>
-      </ThemeProvider>
+      <BottomSheetModalProvider>
+        <ThemeProvider value={navigationTheme}>
+          <ClerkProvider>
+            <ConvexProvider>
+              <GuestProvider>
+                <UserProvider>
+                  <RootNavigator />
+                  <StatusBar style={isDark ? 'light' : 'dark'} />
+                </UserProvider>
+              </GuestProvider>
+            </ConvexProvider>
+          </ClerkProvider>
+        </ThemeProvider>
+      </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );
 }

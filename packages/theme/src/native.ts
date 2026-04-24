@@ -1,3 +1,4 @@
+import { coralPalette } from './palette';
 import { brandSemanticColors, surfaceTheme } from './semantic';
 
 export const nativeTheme = {
@@ -15,9 +16,9 @@ export const nativeTheme = {
     tint: brandSemanticColors.primary,
     tintForeground: brandSemanticColors.primaryForeground,
     tintHover: brandSemanticColors.primaryHover,
-    primarySoft: brandSemanticColors.primarySoft,
-    primarySoftBorder: brandSemanticColors.primarySoftBorder,
-    primaryText: brandSemanticColors.primaryText,
+    primarySoft: coralPalette[950],
+    primarySoftBorder: coralPalette[800],
+    primaryText: coralPalette[300],
   },
 } as const;
 

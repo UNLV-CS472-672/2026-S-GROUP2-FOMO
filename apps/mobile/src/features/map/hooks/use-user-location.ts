@@ -3,12 +3,11 @@ import { useEffect, useState } from 'react';
 
 type Coordinates = [number, number];
 
-// Las Vegas Coords
-const FALLBACK_COORDS: Coordinates = [-115.1398, 36.1699];
-
 export function useUserLocation() {
   const [userCoords, setUserCoords] = useState<Coordinates | null>(null);
   const [locationGranted, setLocationGranted] = useState(false);
+  const [isResolvingLocation, setIsResolvingLocation] = useState(true);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -19,7 +18,8 @@ export function useUserLocation() {
         if (cancelled) return;
 
         if (status !== 'granted') {
-          setUserCoords(FALLBACK_COORDS);
+          setLocationError('Location access is required to use the map.');
+          setIsResolvingLocation(false);
           return;
         }
 
@@ -31,9 +31,11 @@ export function useUserLocation() {
 
         if (cancelled) return;
         setUserCoords([position.coords.longitude, position.coords.latitude]);
+        setIsResolvingLocation(false);
       } catch {
         if (!cancelled) {
-          setUserCoords(FALLBACK_COORDS);
+          setLocationError('Unable to determine your location.');
+          setIsResolvingLocation(false);
         }
       }
     }
@@ -45,8 +47,10 @@ export function useUserLocation() {
   }, []);
 
   return {
-    centerCoordinate: userCoords ?? FALLBACK_COORDS,
+    centerCoordinate: userCoords,
     hasResolvedLocation: userCoords !== null,
+    isResolvingLocation,
+    locationError,
     locationGranted,
   };
 }

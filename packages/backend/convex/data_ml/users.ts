@@ -22,11 +22,11 @@ export const getAllUserIds = query({
   },
 });
 
-// Given a "userId", return "name".
+// Given a "userId", return the display name.
 export const getNameById = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
-    return user?.name ?? null;
+    return user?.displayName ?? null;
   },
 });

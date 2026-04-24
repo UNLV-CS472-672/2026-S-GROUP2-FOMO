@@ -1,15 +1,13 @@
 import { useRouter } from 'expo-router';
 import { ScrollView, Text } from 'react-native';
 
-import { GuestMode } from '@/components/profile/guest-mode';
 import { Button, ButtonText } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { Authenticated, GuestOnly } from '@/features/auth/components/auth-gate';
+import { GuestMode } from '@/features/profile/components/guest-mode';
 
 export default function CreateScreen() {
   const { push } = useRouter();
-
-  //hiiiiiii
 
   return (
     <Screen>
@@ -52,7 +50,7 @@ export default function CreateScreen() {
             variant="secondary"
             size="lg"
             className="items-start text-xl font-semibold"
-            onPress={() => push('/create/camera-screen')}
+            onPress={() => push('/create/post')}
           >
             <ButtonText variant="secondary" className="text-xl">
               Create Post

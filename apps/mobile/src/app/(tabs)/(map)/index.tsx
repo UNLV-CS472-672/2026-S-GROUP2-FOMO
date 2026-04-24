@@ -1,3 +1,4 @@
+import type { EventSummary } from '@/features/events/types';
 import { EventMarker } from '@/features/map/components/event-marker';
 import { RecenterButton } from '@/features/map/components/recenter-button';
 import { SearchDrawer } from '@/features/map/components/search';
@@ -9,8 +10,8 @@ import { useIsFocused } from '@react-navigation/native';
 import MapboxGL from '@rnmapbox/maps';
 import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useRef } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
 
@@ -18,20 +19,26 @@ MapboxGL.setAccessToken(env.EXPO_PUBLIC_MAPBOX_TOKEN);
 
 const DEFAULT_ZOOM_LEVEL = 13;
 
-// hardcoded from feed
-const EVENT_IMAGES = [
-  require('@/assets/images/rigrig.jpg'),
-  require('@/assets/images/jonah-mog.png'),
-  require('@/assets/images/git-learning-class.png'),
-  require('@/assets/images/rate-my-date.jpg'),
-];
-
 export default function MapScreen() {
   const { push } = useRouter();
-  const events = useQuery(api.data_ml.events.getEvents) ?? [];
+  const events: EventSummary[] = useQuery(api.events.queries.getEvents) ?? [];
   const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);
-  const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
+
+  const savedCameraRef = useRef<{
+    centerCoordinate: [number, number];
+    zoomLevel: number;
+    heading: number;
+    pitch: number;
+  } | null>(null);
+
+  const {
+    centerCoordinate,
+    hasResolvedLocation,
+    isResolvingLocation,
+    locationError,
+    locationGranted,
+  } = useUserLocation();
   const { theme } = useUniwind();
   const isDark = theme === 'dark';
   const drawerAnimatedIndex = useSharedValue(0);
@@ -49,37 +56,60 @@ export default function MapScreen() {
   const maxWeight =
     events.length === 0 ? 1 : Math.max(...events.map((event) => event.attendeeCount));
 
-  useEffect(() => {
-    if (!hasResolvedLocation) return;
-
-    cameraRef.current?.setCamera({
-      centerCoordinate,
-      zoomLevel: DEFAULT_ZOOM_LEVEL,
-      heading: 0,
-      animationMode: 'flyTo',
-      animationDuration: 1200,
-    });
-  }, [centerCoordinate, hasResolvedLocation]);
-
   // TODO: Add a map toggle to size icons by recommendation score or popularity.
+
+  if (!centerCoordinate) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        {isResolvingLocation ? (
+          <>
+            <ActivityIndicator />
+          </>
+        ) : (
+          <Text className="text-center text-foreground">
+            {locationError ?? 'Location access is required to use the map.'}
+          </Text>
+        )}
+      </View>
+    );
+  }
+
+  // use saved one (might happen mostly for switching theme and preserving camera)
+  const initialCamera = savedCameraRef.current ?? {
+    centerCoordinate,
+    zoomLevel: DEFAULT_ZOOM_LEVEL,
+    heading: 0,
+    pitch: 0,
+  };
 
   return (
     <View className="absolute inset-0">
       <MapboxGL.MapView
+        key={isDark ? 'dark-map' : 'light-map'}
         style={StyleSheet.absoluteFill}
         styleURL={isDark ? MapboxGL.StyleURL.Dark : MapboxGL.StyleURL.Street}
         logoEnabled={false}
         attributionEnabled={false}
         scaleBarEnabled={false}
+        onCameraChanged={(state) => {
+          savedCameraRef.current = {
+            centerCoordinate: state.properties.center as [number, number],
+            zoomLevel: state.properties.zoom,
+            heading: state.properties.heading,
+            pitch: state.properties.pitch,
+          };
+        }}
       >
         <MapboxGL.Camera
           ref={cameraRef}
           defaultSettings={{
-            centerCoordinate,
-            zoomLevel: DEFAULT_ZOOM_LEVEL,
-            heading: 0,
+            centerCoordinate: initialCamera.centerCoordinate,
+            zoomLevel: initialCamera.zoomLevel,
+            heading: initialCamera.heading,
+            pitch: initialCamera.pitch,
           }}
         />
+
         {locationGranted && (
           <MapboxGL.LocationPuck
             puckBearing="heading"
@@ -88,18 +118,19 @@ export default function MapScreen() {
           />
         )}
 
-        {events.map((event, i) => (
+        {events.map((event) => (
           <EventMarker
             key={event.id}
             id={event.id}
             coordinate={[event.location.longitude, event.location.latitude]}
-            image={EVENT_IMAGES[i % EVENT_IMAGES.length]}
+            label={event.name}
+            mediaId={event.mediaId}
             weight={event.attendeeCount}
             minWeight={minWeight}
             maxWeight={maxWeight}
             onPress={() =>
               push({
-                pathname: '/feed/event/[eventId]',
+                pathname: '/(tabs)/(map)/event/[eventId]',
                 params: { eventId: event.id },
               })
             }
@@ -135,7 +166,7 @@ export default function MapScreen() {
       </MapboxGL.MapView>
 
       <SearchDrawer
-        onSelectEvent={(eventId) => push(`/feed/event/${eventId}`)}
+        onSelectEvent={(eventId) => push(`/(tabs)/(map)/event/${eventId}`)}
         animatedIndex={drawerAnimatedIndex}
         animatedPosition={drawerAnimatedPosition}
         isFocused={isFocused}

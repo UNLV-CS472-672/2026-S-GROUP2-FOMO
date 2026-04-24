@@ -1,7 +1,7 @@
 import { useConvexAuth } from 'convex/react';
 import type { ReactNode } from 'react';
 
-import { useGuest } from '@/integrations/session/provider';
+import { useGuest } from '@/integrations/session/guest';
 
 type AuthGateProps = {
   children: ReactNode;
