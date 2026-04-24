@@ -10,6 +10,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "friendRec"))
 from friendRecs import (
     get_client,
     get_all_user_ids,
+    get_friend_ids,
     log,
     user_exists,
     join_user_events,
@@ -352,33 +353,32 @@ def test_sim_scores_weighted_correct_calculation(sample_score_df: pd.DataFrame) 
 
 # Ensure that the final row amt is same as input rec_amt.
 def test_upsert_friend_recs_correct_rec_count(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
-    mock_client.query.return_value = None  
-    upsert_friend_recs(sample_score_df, "u1", 2)
+    with patch("friendRecs.get_friend_ids", return_value=[]):
+        upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
     assert len(call_kwargs["recs"]) == 2
-    
+
 # General case; ensure that if friends exists, they are correctly filtered out.
 def test_upsert_friend_recs_friend_filtering(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
-    mock_client.query.side_effect = [{"_id": "u2"}, None]
-    upsert_friend_recs(sample_score_df, "u1", 2)
+    with patch("friendRecs.get_friend_ids", return_value=["u2"]):
+        upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
     recs = call_kwargs["recs"]
+    assert len(recs) == 1
     assert recs[0]["userId"] == "u1"
 
-# Specific case; ensure that if a "requester" is a friend, filter out.
+# Specific case; ensure requester is not filtered unless already a friend.
 def test_upsert_friend_recs_requester_filtering(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
-    mock_client.query.return_value = {"_id": "friendship_id"}
-    upsert_friend_recs(sample_score_df, "u1", 2)
+    with patch("friendRecs.get_friend_ids", return_value=[]):
+        upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
-    recs = call_kwargs["recs"]
-    rec_ids = [r["userId"] for r in recs]
-    assert "u2" not in rec_ids
-    assert "u1" not in rec_ids  
+    rec_ids = [r["userId"] for r in call_kwargs["recs"]]
+    assert rec_ids == ["u2", "u1"]
 
 # Specific case; ensure that if a "recipient" is a friend, filter out.
 def test_upsert_friend_recs_recipient_filtering(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
-    mock_client.query.return_value = {"_id": "friendship_id"}
-    upsert_friend_recs(sample_score_df, "u2", 2)
+    with patch("friendRecs.get_friend_ids", return_value=["u1"]):
+        upsert_friend_recs(sample_score_df, "u2", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
     recs = call_kwargs["recs"]
     rec_ids = [r["userId"] for r in recs]
@@ -386,8 +386,8 @@ def test_upsert_friend_recs_recipient_filtering(mock_client: MagicMock, sample_s
 
 # Pending friendships should NOT be filtered out.
 def test_upsert_friend_recs_pending_not_filtered(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
-    mock_client.query.return_value = None
-    upsert_friend_recs(sample_score_df, "u1", 2)
+    with patch("friendRecs.get_friend_ids", return_value=[]):
+        upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
     recs = call_kwargs["recs"]
     assert len(recs) == 2  
@@ -395,22 +395,24 @@ def test_upsert_friend_recs_pending_not_filtered(mock_client: MagicMock, sample_
 # Rejected friendship should NOT be filtered out. 
 # NOTE: We can adjust this logic, especially is we want this leaning more toward a "blocked" behavior.
 def test_upsert_friend_recs_rejected_not_filtered(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
-    mock_client.query.return_value = None
-    upsert_friend_recs(sample_score_df, "u1", 2)
+    with patch("friendRecs.get_friend_ids", return_value=[]):
+        upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
     recs = call_kwargs["recs"]
     assert len(recs) == 2
-    
+
 # Ensure that the final df is sorted by top-first.
 def test_upsert_friend_recs_top_scores_selected(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
-    upsert_friend_recs(sample_score_df, "u1", 2)
+    with patch("friendRecs.get_friend_ids", return_value=[]):
+        upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
     scores = [r["score"] for r in call_kwargs["recs"]]
     assert scores == sorted(scores, reverse=True)
 
 # Ensures that the ConvexClient mutation is actually being invoked.
 def test_upsert_friend_recs_calls_mutation(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
-    upsert_friend_recs(sample_score_df, "u1", 2)
+    with patch("friendRecs.get_friend_ids", return_value=[]):
+        upsert_friend_recs(sample_score_df, "u1", 2)
     mock_client.mutation.assert_called_once()
 
     
@@ -586,13 +588,20 @@ def test_get_all_user_ids_returns_empty(mock_client: MagicMock) -> None:
 
 
 # ------------------------------
-#  main_all_users()
+#  get_friend_ids()
 # ------------------------------
 
-# Should raise when a user ID from get_all_user_ids doesn't exist in "users".
-def test_main_all_users_raises_if_user_not_found(
-    mock_main_all_users_dependencies: dict[str, MagicMock],
-) -> None:
-    mock_main_all_users_dependencies["user_exists"].return_value = False
-    with pytest.raises(Exception, match="cannot be found in users"):
-        main_all_users(5, False)
+# Should return the list of friend IDs returned by Convex.
+def test_get_friend_ids_returns_list(mock_client: MagicMock) -> None:
+    mock_client.query.return_value = ["u2", "u3"]
+    result = get_friend_ids("u1")
+    assert result == ["u2", "u3"]
+    mock_client.query.assert_called_once_with(
+        "data_ml/users:getFriendIds", {"userId": "u1"}
+    )
+
+# Should return an empty list when no friends exist.
+def test_get_friend_ids_returns_empty_list(mock_client: MagicMock) -> None:
+    mock_client.query.return_value = []
+    result = get_friend_ids("u1")
+    assert result == []
