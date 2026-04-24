@@ -14,6 +14,7 @@ type FeedCardProps = {
   onToggleLike: () => void;
   disableAuthorPress?: boolean;
   onPressAuthor?: () => void;
+  showEventLink?: boolean;
 };
 
 export function FeedCard({
@@ -22,9 +23,30 @@ export function FeedCard({
   onToggleLike,
   disableAuthorPress,
   onPressAuthor,
+  showEventLink = false,
 }: FeedCardProps) {
   const router = useRouter();
   const [carouselIndex, setCarouselIndex] = useState<number | null>(null);
+
+  function handlePressAuthor() {
+    if (onPressAuthor) {
+      onPressAuthor();
+    } else if (post.authorUsername) {
+      router.push({
+        pathname: '/(tabs)/(map)/event/profile/[username]',
+        params: { username: post.authorUsername },
+      });
+    }
+  }
+
+  function handlePressEvent() {
+    if (!post.eventId) return;
+
+    router.push({
+      pathname: '/(tabs)/(map)/event/[eventId]',
+      params: { eventId: post.eventId },
+    });
+  }
 
   return (
     <View
@@ -40,33 +62,27 @@ export function FeedCard({
       )}
 
       <View className="gap-2.5">
-        <Pressable
-          className="flex-row items-center gap-2.5"
-          hitSlop={4}
-          disabled={disableAuthorPress}
-          onPress={() => {
-            if (onPressAuthor) {
-              onPressAuthor();
-            } else if (post.authorUsername) {
-              router.push({
-                pathname: '/(tabs)/(map)/event/profile/[username]',
-                params: { username: post.authorUsername },
-              });
-            }
-          }}
-        >
-          <Avatar
-            name={post.authorName}
-            size={36}
-            source={post.authorAvatarUrl ? { uri: post.authorAvatarUrl } : undefined}
-          />
-          <View className="min-w-0 flex-1 flex-row items-center gap-2">
-            <Text className="text-[15px] font-semibold text-foreground">{post.authorName}</Text>
-            <Text className="text-[12px] text-muted-foreground">
-              {formatRelativeTime(post.creationTime)}
-            </Text>
+        <View className="flex-row items-center gap-2.5">
+          <Pressable hitSlop={4} disabled={disableAuthorPress} onPress={handlePressAuthor}>
+            <Avatar
+              name={post.authorName}
+              size={36}
+              source={post.authorAvatarUrl ? { uri: post.authorAvatarUrl } : undefined}
+            />
+          </Pressable>
+          <View className="min-w-0 flex-1 gap-0.5">
+            <View className="flex-row items-center gap-2">
+              <Pressable hitSlop={4} disabled={disableAuthorPress} onPress={handlePressAuthor}>
+                <Text className="text-[15px] font-semibold text-foreground">{post.authorName}</Text>
+              </Pressable>
+            </View>
+            {showEventLink && post.eventId && post.eventName ? (
+              <Pressable className="self-start" hitSlop={4} onPress={handlePressEvent}>
+                <Text className="text-[12px] text-muted-foreground">{post.eventName}</Text>
+              </Pressable>
+            ) : null}
           </View>
-        </Pressable>
+        </View>
 
         <FeedCardMedia mediaIds={post.mediaIds} onPressMedia={setCarouselIndex} />
 
@@ -75,12 +91,18 @@ export function FeedCard({
         ) : null}
       </View>
 
-      <PostActions
-        post={post}
-        readOnly={readOnly}
-        onToggleLike={onToggleLike}
-        className="ml-2 pt-0.5"
-      />
+      <View className="flex flex-row justify-between items-center mx-2">
+        <PostActions
+          post={post}
+          readOnly={readOnly}
+          onToggleLike={onToggleLike}
+          className="pt-0.5"
+        />
+
+        <Text className="text-[12px] text-muted-foreground">
+          {formatRelativeTime(post.creationTime)}
+        </Text>
+      </View>
     </View>
   );
 }
