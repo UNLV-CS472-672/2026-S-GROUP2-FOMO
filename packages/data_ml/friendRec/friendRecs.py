@@ -4,6 +4,7 @@ from typing import Optional
 from convex import ConvexClient
 from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
+from datetime import datetime
 
 load_dotenv()
 CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
@@ -38,31 +39,28 @@ def get_friend_ids(user_id: str) -> list[str]:
     return friend_ids
 
 
-
-# Combines "usersToEvents" and "events" into a single dataframe.
+# Combines "attendance" and "events" into a single dataframe.
 def join_user_events() -> pd.DataFrame:
 
-    # Store "usersToEvents" and "events" into dataframes.
-    usersToEvents_data = get_client().query("data_ml/universal:queryAll", {"table_name": "usersToEvents"})
-    usersToEvents_df = pd.json_normalize(usersToEvents_data)
-    usersToEvents_df = usersToEvents_df[["eventId", "userId"]]
+    # Store "attendance" and "events" into dataframes.
+    attendance_data = get_client().query("data_ml/universal:queryAll", {"table_name": "attendance"})
+    attendance_df = pd.json_normalize(attendance_data)
+    attendance_df = attendance_df[["eventId", "userId"]]
 
     events_data = get_client().query("data_ml/universal:queryAll", {"table_name": "events"})
     events_df = pd.json_normalize(events_data)
     events_df = events_df[["_id", "name"]]
 
-    # Join "usersToEvents" and "events" table.
-    merged_df = usersToEvents_df.merge(events_df, left_on="eventId", right_on="_id")
+    # Join "attendance" and "events" table.
+    merged_df = attendance_df.merge(events_df, left_on="eventId", right_on="_id")
     merged_df = merged_df.rename(columns={"userId": "user_id", "name": "event"})
     merged_df = merged_df[["user_id", "eventId", "event"]]
     
     return merged_df
 
 
-
 # Raw data for all users and their attended events.
 def raw_matrix_events() -> pd.DataFrame:
-
     # For each cell, 1 = attended and 0 = not attended.
     merged_df = join_user_events()
     return pd.crosstab(merged_df["user_id"], merged_df["event"])
@@ -70,8 +68,7 @@ def raw_matrix_events() -> pd.DataFrame:
 
 # Raw data for all users and accumulated event tags.
 def raw_matrix_eventTags() -> pd.DataFrame:
-
-    # Join "usersToEvents" and "events" dataframes.
+    # Join "attendance" and "events" dataframes.
     user_events_df = join_user_events()
 
     # Join "events" and "tags" dataframes.
@@ -85,7 +82,6 @@ def raw_matrix_eventTags() -> pd.DataFrame:
 
     event_tags_df = pd.merge(left = eventTags_df, right = tags_df, left_on = "tagId", right_on = "_id")
     event_tags_df = event_tags_df[["eventId", "tagId", "name"]]
-
 
     # Join newly made "user_events" and "event_tags" dataframes.
     merged_df = pd.merge(left = user_events_df, right = event_tags_df, left_on = "eventId", right_on = "eventId")
