@@ -35,7 +35,7 @@ def get_all_user_ids() -> list[str]:
 
 # Get all accepted friend userIds for a user.
 def get_friend_ids(user_id: str) -> list[str]:
-    friend_ids: list[str] = get_client().query("data_ml/users:getFriendIds", {"userId": user_id})
+    friend_ids: list[str] = get_client().query("data_ml/friends:getFriendIds", {"userId": user_id})
     return friend_ids
 
 
