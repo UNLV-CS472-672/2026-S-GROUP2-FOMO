@@ -13,7 +13,7 @@ type CreateModePanelProps = {
   isTagMenuOpen: boolean;
   setIsTagMenuOpen: Dispatch<SetStateAction<boolean>>;
   allTags: { id: string; name: string }[];
-  openCamera: (mode: CreateMode) => void;
+  openCamera: () => void;
 };
 
 export function CreateModePanel({
@@ -59,7 +59,7 @@ export function CreateModePanel({
           <Text className="text-[13px] font-semibold tracking-wide text-muted-foreground">
             MEDIA
           </Text>
-          <Pressable onPress={hasPhoto ? undefined : () => openCamera(mode)}>
+          <Pressable onPress={hasPhoto ? undefined : openCamera}>
             <View
               className="overflow-hidden rounded-2xl border border-muted bg-surface"
               style={{ height: mediaHeight, borderCurve: 'continuous' }}

@@ -17,8 +17,10 @@ type DrawerProps = {
   backdropAppearsOnIndex?: number;
   backdropDisappearsOnIndex?: number;
   enablePanDownToClose?: boolean;
+  showHandle?: boolean;
   animatedIndex?: SharedValue<number>;
   animatedPosition?: SharedValue<number>;
+  bottomInset?: number | undefined;
 };
 
 export function Drawer({
@@ -29,13 +31,20 @@ export function Drawer({
   backdropAppearsOnIndex = 1,
   backdropDisappearsOnIndex = 0,
   enablePanDownToClose = false,
+  showHandle = true,
   animatedIndex,
   animatedPosition,
 }: DrawerProps) {
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const hasMountedRef = useRef(false);
   const theme = useAppTheme();
 
   useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+
     if (index < 0) {
       bottomSheetRef.current?.close();
     } else {
@@ -67,6 +76,7 @@ export function Drawer({
     <BottomSheet
       ref={bottomSheetRef}
       index={index}
+      animateOnMount={false}
       snapPoints={snapPoints}
       enablePanDownToClose={enablePanDownToClose}
       enableDynamicSizing={false}
@@ -77,7 +87,10 @@ export function Drawer({
       onChange={handleChange}
       animatedIndex={animatedIndex}
       animatedPosition={animatedPosition}
-      handleIndicatorStyle={{ backgroundColor: theme.mutedText, width: 40 }}
+      handleComponent={showHandle ? undefined : () => null}
+      handleIndicatorStyle={
+        showHandle ? { backgroundColor: theme.mutedText, width: 40 } : undefined
+      }
       backgroundStyle={{ backgroundColor: theme.surface, borderRadius: 40 }}
     >
       {children}

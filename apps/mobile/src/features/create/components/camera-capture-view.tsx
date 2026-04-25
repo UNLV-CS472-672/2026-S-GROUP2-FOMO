@@ -1,30 +1,33 @@
 import { Screen } from '@/components/ui/screen';
 import { LatestGalleryImage } from '@/features/create/components/latest-gallery-image';
-import { useIsFocused } from '@react-navigation/native';
-import * as MediaLibrary from 'expo-media-library';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import type { CreateMode } from '@/features/create/types';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 
 type CaptureType = 'photo' | 'video';
 type CameraFacing = 'front' | 'back';
 
-type CameraParams = {
-  returnTo?: string | string[];
+type CreateCameraCaptureViewProps = {
+  mode: CreateMode;
+  isActive: boolean;
+  onRequestClose: () => void;
+  showPermissionFallbackAsScreen?: boolean;
+  retakeDestination?: 'back' | 'create-drawer';
 };
 
-function getStringParam(value: string | string[] | undefined) {
-  if (Array.isArray(value)) return value[0];
-  return value;
-}
-
-export default function CameraScreen() {
+export function CreateCameraCaptureView({
+  mode,
+  isActive,
+  onRequestClose,
+  showPermissionFallbackAsScreen = false,
+  retakeDestination = 'back',
+}: CreateCameraCaptureViewProps) {
   const router = useRouter();
-  const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<CameraParams>();
   const cameraRef = useRef<Camera>(null);
   const { hasPermission, requestPermission } = useCameraPermission();
 
@@ -33,15 +36,12 @@ export default function CameraScreen() {
   const [isBusy, setIsBusy] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [flash, setFlash] = useState<'on' | 'off'>('off');
-  const [torch, setTorch] = useState<'on' | 'off'>('off');
   const [microphonePermission, setMicrophonePermission] = useState<
     'granted' | 'denied' | 'not-determined' | 'restricted'
   >('not-determined');
 
   const device = useCameraDevice(cameraFacing);
-  const returnTo =
-    getStringParam(params.returnTo) === '/create/event' ? '/create/event' : '/create/post';
-  const isEventCaptureFlow = returnTo === '/create/event';
+  const isEventCaptureFlow = mode === 'event';
 
   useEffect(() => {
     if (isEventCaptureFlow) {
@@ -54,33 +54,15 @@ export default function CameraScreen() {
   }, []);
 
   const openPreview = (mediaUri: string, mediaType: CaptureType) => {
-    router.replace({
-      pathname: '/create/post-preview' as never,
+    router.push({
+      pathname: '/create/media-preview' as never,
       params: {
         mediaUri,
         mediaType,
-        returnTo,
+        mode,
+        retakeDest: retakeDestination,
       } as never,
     });
-  };
-
-  const autoSaveCapturedMedia = async (mediaPath: string) => {
-    const mediaUri = mediaPath.startsWith('file://') ? mediaPath : `file://${mediaPath}`;
-
-    try {
-      const currentPermission = await MediaLibrary.getPermissionsAsync();
-      const permission = currentPermission.granted
-        ? currentPermission
-        : await MediaLibrary.requestPermissionsAsync();
-
-      if (!permission.granted) {
-        return;
-      }
-
-      await MediaLibrary.saveToLibraryAsync(mediaUri);
-    } catch {
-      // Ignore save errors to avoid interrupting capture flow.
-    }
   };
 
   const handleTakePhoto = async () => {
@@ -93,7 +75,6 @@ export default function CameraScreen() {
         enableShutterSound: false,
       });
       if (photo?.path) {
-        void autoSaveCapturedMedia(photo.path);
         openPreview(photo.path, 'photo');
       }
     } catch {
@@ -128,7 +109,6 @@ export default function CameraScreen() {
         setIsRecording(false);
         setIsBusy(false);
         if (video.path) {
-          void autoSaveCapturedMedia(video.path);
           openPreview(video.path, 'video');
         }
       },
@@ -160,77 +140,73 @@ export default function CameraScreen() {
   };
 
   if (!hasPermission) {
-    return (
-      <Screen>
-        <View className="flex-1 items-center justify-center gap-3 px-6">
-          <Text className="text-center text-[28px] font-bold">Camera access needed</Text>
-          <Text className="text-center text-base leading-5.5">
-            Enable camera permission to capture photos and videos.
-          </Text>
-          <Pressable className="mt-2 rounded-full border px-4.5 py-2.5" onPress={requestPermission}>
-            <Text className="font-semibold">Allow Camera Access</Text>
-          </Pressable>
-        </View>
-      </Screen>
+    const permissionBody = (
+      <View className="flex-1 items-center justify-center gap-3 px-6">
+        <Text className="text-center text-[28px] font-bold text-white">Camera access needed</Text>
+        <Text className="text-center text-base leading-5.5 text-white/80">
+          Enable camera permission to capture photos and videos.
+        </Text>
+        <Pressable
+          className="mt-2 rounded-full border border-white/40 px-4.5 py-2.5"
+          onPress={requestPermission}
+        >
+          <Text className="font-semibold text-white">Allow Camera Access</Text>
+        </Pressable>
+      </View>
     );
+
+    if (showPermissionFallbackAsScreen) {
+      return <Screen className="bg-black">{permissionBody}</Screen>;
+    }
+
+    return <View className="flex-1 bg-black">{permissionBody}</View>;
   }
 
-  if (!device) {
-    return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-black">
-        <ActivityIndicator color="#fff" />
-      </SafeAreaView>
-    );
-  }
+  // if (!device) {
+  //   return (
+  //     <View className="flex-1 items-center justify-center bg-background">
+  //       <ActivityIndicator />
+  //     </View>
+  //   );
+  // }
 
   return (
     <View className="flex-1 bg-black">
-      <Camera
-        ref={cameraRef}
-        style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
-        device={device}
-        isActive={isFocused}
-        photo
-        video
-        audio
-        torch={torch}
-      />
+      {device && (
+        <Camera
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          device={device}
+          isActive={isActive}
+          photo
+          video
+          audio
+        />
+      )}
 
       <SafeAreaView style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}>
-        <View className="flex-row items-start justify-between gap-3 px-[14px] pt-[14px]">
-          <Pressable
-            className="rounded-full border border-white/40 bg-black/40 px-3 py-2"
-            onPress={() => router.back()}
-          >
-            <Text className="text-[13px] font-semibold text-white">Close</Text>
+        {/* Top bar: close left, flash + torch right */}
+        <View className="flex-row items-center justify-between px-[14px] pt-[14px]">
+          <Pressable onPress={onRequestClose} hitSlop={12} className="rounded-full bg-black/50 p-2">
+            <Ionicons name="close" size={22} color="white" />
           </Pressable>
 
-          <View className="flex-row flex-wrap justify-end gap-2">
+          <View className="flex-row gap-2">
             <Pressable
-              className="rounded-full border border-white/40 bg-black/40 px-3 py-2"
+              hitSlop={8}
+              className="rounded-full bg-black/50 p-2"
               onPress={() => setFlash((v) => (v === 'off' ? 'on' : 'off'))}
             >
-              <Text className="text-[13px] font-semibold text-white">
-                {flash === 'on' ? 'Flash On' : 'Flash Off'}
-              </Text>
-            </Pressable>
-            <Pressable
-              className="rounded-full border border-white/40 bg-black/40 px-3 py-2"
-              onPress={() => setTorch((v) => (v === 'off' ? 'on' : 'off'))}
-            >
-              <Text className="text-[13px] font-semibold text-white">
-                {torch === 'on' ? 'Torch On' : 'Torch Off'}
-              </Text>
-            </Pressable>
-            <Pressable
-              className="rounded-full border border-white/40 bg-black/40 px-3 py-2"
-              onPress={() => setCameraFacing((v) => (v === 'back' ? 'front' : 'back'))}
-            >
-              <Text className="text-[13px] font-semibold text-white">Flip</Text>
+              <Ionicons
+                name={flash === 'on' ? 'flash' : 'flash-off'}
+                size={22}
+                color={flash === 'on' ? '#facc15' : 'white'}
+              />
             </Pressable>
           </View>
         </View>
 
+        {/* Bottom controls */}
         <View className="absolute left-0 right-0 gap-[18px]" style={{ bottom: insets.bottom + 28 }}>
           {!isEventCaptureFlow && (
             <View
@@ -273,19 +249,16 @@ export default function CameraScreen() {
             </View>
           )}
 
-          <View className="items-center">
-            <View className="absolute right-7 top-[16px]">
-              <LatestGalleryImage
-                onPress={() => {
-                  router.push({
-                    pathname: '/create/gallery' as never,
-                    params: {
-                      returnTo,
-                    } as never,
-                  });
-                }}
-              />
-            </View>
+          {/* Gallery left | Shutter center | Flip right */}
+          <View className="flex-row items-center justify-between px-7">
+            <LatestGalleryImage
+              onPress={() => {
+                router.push({
+                  pathname: '/create/gallery' as never,
+                  params: { mode } as never,
+                });
+              }}
+            />
 
             <Pressable
               accessibilityRole="button"
@@ -303,6 +276,14 @@ export default function CameraScreen() {
               <View
                 className={`${captureType === 'video' ? 'bg-red-500' : 'bg-white'} ${isRecording ? 'h-[34px] w-[34px] rounded-lg' : captureType === 'video' ? 'h-[54px] w-[54px] rounded-[13px]' : 'h-[54px] w-[54px] rounded-full'}`}
               />
+            </Pressable>
+
+            <Pressable
+              hitSlop={8}
+              className="rounded-full bg-black/50 p-2.5"
+              onPress={() => setCameraFacing((v) => (v === 'back' ? 'front' : 'back'))}
+            >
+              <Ionicons name="camera-reverse-outline" size={28} color="white" />
             </Pressable>
           </View>
         </View>

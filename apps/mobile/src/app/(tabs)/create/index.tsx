@@ -16,7 +16,7 @@ import { api } from '@fomo/backend/convex/_generated/api';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useIsFocused } from '@react-navigation/native';
 import { useQuery } from 'convex/react';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
@@ -33,7 +33,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 export default function CreateScreen() {
-  const router = useRouter();
   const params = useLocalSearchParams<CreateParams>();
   const tabBarHeight = useBottomTabBarHeight();
   const isFocused = useIsFocused();
@@ -156,20 +155,9 @@ export default function CreateScreen() {
     [selectedMode]
   );
 
-  const openCamera = useCallback(
-    (mode: CreateMode) => {
-      if (mode === 'event') {
-        setDrawerIndex(1);
-        return;
-      }
-
-      router.push({
-        pathname: '/(tabs)/create/camera-screen',
-        params: { mode },
-      });
-    },
-    [router]
-  );
+  const openCamera = useCallback(() => {
+    setDrawerIndex(1);
+  }, []);
 
   const handleDrawerChange = useCallback((nextIndex: number) => {
     setDrawerIndex(Math.max(nextIndex, 0));
