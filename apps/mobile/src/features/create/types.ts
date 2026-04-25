@@ -1,0 +1,23 @@
+export type CreateMode = 'post' | 'event';
+
+export type CreateParams = {
+  mode?: string | string[];
+  mediaUri?: string | string[];
+  mediaType?: string | string[];
+};
+
+export type CreateMedia = {
+  uri: string;
+  type: string | undefined;
+};
+
+export type CreateModeValues = {
+  description: string;
+  tags: string[];
+  media: CreateMedia;
+};
+
+export type CreateFormValues = {
+  post: CreateModeValues;
+  event: CreateModeValues;
+};
