@@ -1,6 +1,6 @@
 import { Screen } from '@/components/ui/screen';
 import { Authenticated, GuestOnly } from '@/features/auth/components/auth-gate';
-import { CreateCameraDrawer } from '@/features/create/components/camera-drawer';
+import { CreateCameraDrawer } from '@/features/create/components/camera/drawer';
 import { CreateModePanel } from '@/features/create/components/mode-panel';
 import { CreateModeToggle } from '@/features/create/components/mode-toggle';
 import { CreateSubmitButton } from '@/features/create/components/submit-button';

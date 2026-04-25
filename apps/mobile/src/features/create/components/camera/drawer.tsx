@@ -1,5 +1,5 @@
 import { Drawer } from '@/components/ui/drawer';
-import { CreateCameraCaptureView } from '@/features/create/components/camera-capture-view';
+import { CreateCameraCaptureView } from '@/features/create/components/camera/view';
 import {
   CREATE_CAMERA_CROSSFADE_END,
   CREATE_CAMERA_CROSSFADE_START,
@@ -113,7 +113,6 @@ export function CreateCameraDrawer({
       animatedIndex={animatedIndex}
       animatedPosition={animatedPosition}
       onChange={onChange}
-      // backgroundStyle={{ backgroundColor: 'transparent', borderRadius: 40 }}
     >
       <View
         className="flex-1 overflow-hidden"
@@ -141,7 +140,9 @@ export function CreateCameraDrawer({
           style={hintStyle}
         >
           <View className="items-center">
+            {/* HACK: manual handle so it's not included once fully expanded   */}
             <View className="mt-[9.5px] h-1 w-10 rounded-full light:bg-[#786860] dark:bg-[#baa99f]" />
+
             <Text className="mt-8 text-[12px] font-semibold uppercase tracking-[0.8px] text-muted-foreground">
               Swipe up to open camera
             </Text>
