@@ -13,7 +13,7 @@ export function useCreateForm(selectedMode: CreateMode, onMediaReceived: () => v
 
   const { control, handleSubmit, setValue } = useForm<CreateFormValues>({
     defaultValues: {
-      post: { description: '', tags: [], media: { uri: '', type: undefined } },
+      post: { description: '', tags: [], media: { uri: '', type: undefined }, eventId: undefined },
       event: { description: '', tags: [], media: { uri: '', type: undefined } },
     },
   });

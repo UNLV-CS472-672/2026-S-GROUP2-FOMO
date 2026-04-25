@@ -17,7 +17,11 @@ export type CreateModeValues = {
   media: CreateMedia;
 };
 
+export type PostModeValues = CreateModeValues & {
+  eventId?: string;
+};
+
 export type CreateFormValues = {
-  post: CreateModeValues;
+  post: PostModeValues;
   event: CreateModeValues;
 };

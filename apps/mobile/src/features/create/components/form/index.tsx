@@ -1,4 +1,5 @@
 import { DescriptionField } from '@/features/create/components/form/description-field';
+import { EventField } from '@/features/create/components/form/event-field';
 import { MediaField } from '@/features/create/components/form/media-field';
 import { TagsField } from '@/features/create/components/form/tags-field';
 import type { CreateFormValues, CreateMedia, CreateMode } from '@/features/create/types';
@@ -40,6 +41,7 @@ export function CreateForm({
       {shouldShowMediaSection ? (
         <MediaField mode={mode} media={media} mediaHeight={mediaHeight} openCamera={openCamera} />
       ) : null}
+      {mode === 'post' ? <EventField control={control} setValue={setValue} /> : null}
       <DescriptionField control={control} mode={mode} />
       <TagsField
         control={control}
