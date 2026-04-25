@@ -59,7 +59,7 @@ export function CreateModePanel({
           <Text className="text-[13px] font-semibold tracking-wide text-muted-foreground">
             MEDIA
           </Text>
-          <Pressable onPress={hasPhoto ? undefined : openCamera}>
+          <Pressable onPress={hasPhoto ? undefined : openCamera} className="rounded-2xl shadow-md">
             <View
               className="overflow-hidden rounded-2xl border border-muted bg-surface"
               style={{ height: mediaHeight, borderCurve: 'continuous' }}
@@ -91,7 +91,7 @@ export function CreateModePanel({
         <Text className="text-[13px] font-semibold tracking-wide text-muted-foreground">
           DETAILS
         </Text>
-        <View className="h-32 rounded-2xl border border-muted bg-surface px-4 py-3.5">
+        <View className="h-32 rounded-2xl border border-muted bg-surface px-4 py-3.5 shadow-md">
           <TextInput
             placeholder={isEventMode ? 'What should people know?' : 'What do you want to share?'}
             placeholderTextColor="#8B8B8B"
@@ -110,7 +110,7 @@ export function CreateModePanel({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Choose tags"
-            className="rounded-2xl border border-muted bg-surface px-4 py-3.5"
+            className="rounded-2xl border border-muted bg-surface px-4 py-3.5 shadow-md"
             onPress={() => setIsTagMenuOpen((currentValue) => !currentValue)}
           >
             <View className="flex-row items-center justify-between">
@@ -133,7 +133,7 @@ export function CreateModePanel({
           </Pressable>
 
           {isTagMenuOpen ? (
-            <View className="rounded-2xl border border-muted bg-surface px-3 pt-3">
+            <View className="rounded-2xl border border-muted bg-surface p-3 shadow-md">
               {allTags.length ? (
                 <View className="flex-row flex-wrap gap-2">
                   {allTags.map((tag) => {

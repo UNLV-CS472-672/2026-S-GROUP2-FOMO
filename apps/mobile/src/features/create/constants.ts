@@ -12,3 +12,5 @@ export const CREATE_CAMERA_WARMUP_THRESHOLD = 0.02;
 // Starting late (0.55) gives the camera pipeline ~53% of drawer travel to warm up.
 export const CREATE_CAMERA_CROSSFADE_START = 0.25;
 export const CREATE_CAMERA_CROSSFADE_END = 0.5;
+
+export const CREATE_DRAWER_SNAP_POINTS = ['20.5%', '100%'];
