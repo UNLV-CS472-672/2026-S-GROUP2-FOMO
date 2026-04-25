@@ -1,5 +1,6 @@
 import type { EventSummary } from '@/features/events/types';
 import { EventMarker } from '@/features/map/components/event-marker';
+import { FeedTabs, type FeedMode } from '@/features/map/components/feed-tabs';
 import { RecenterButton } from '@/features/map/components/recenter-button';
 import { SearchDrawer } from '@/features/map/components/search';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
@@ -10,7 +11,7 @@ import { useIsFocused } from '@react-navigation/native';
 import MapboxGL from '@rnmapbox/maps';
 import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
-import { useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
@@ -24,6 +25,15 @@ export default function MapScreen() {
   const events: EventSummary[] = useQuery(api.events.queries.getEvents) ?? [];
   const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);
+  const [feedMode, setFeedMode] = useState<FeedMode>('foryou');
+
+  // Fallback to popular since there is no convex query for event recs right now
+  const visibleEvents = useMemo(() => {
+    if (feedMode === 'popular') {
+      return [...events].sort((a, b) => b.attendeeCount - a.attendeeCount);
+    }
+    return events;
+  }, [events, feedMode]);
 
   const savedCameraRef = useRef<{
     centerCoordinate: [number, number];
@@ -56,7 +66,7 @@ export default function MapScreen() {
   const maxWeight =
     events.length === 0 ? 1 : Math.max(...events.map((event) => event.attendeeCount));
 
-  // TODO: Add a map toggle to size icons by recommendation score or popularity.
+  // TODO: Scale events for you tab
 
   if (!centerCoordinate) {
     return (
@@ -118,7 +128,7 @@ export default function MapScreen() {
           />
         )}
 
-        {events.map((event) => (
+        {visibleEvents.map((event) => (
           <EventMarker
             key={event.id}
             id={event.id}
@@ -186,6 +196,8 @@ export default function MapScreen() {
           })
         }
       />
+
+      <FeedTabs value={feedMode} onChange={setFeedMode} />
     </View>
   );
 }
