@@ -5,6 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 
@@ -39,6 +45,32 @@ export function CreateCameraCaptureView({
   const [microphonePermission, setMicrophonePermission] = useState<
     'granted' | 'denied' | 'not-determined' | 'restricted'
   >('not-determined');
+
+  const photoTabX = useSharedValue(0);
+  const photoTabW = useSharedValue(0);
+  const videoTabX = useSharedValue(0);
+  const videoTabW = useSharedValue(0);
+  const captureTypeProgress = useSharedValue(0);
+
+  const pillStyle = useAnimatedStyle(() => ({
+    width: photoTabW.value + (videoTabW.value - photoTabW.value) * captureTypeProgress.value,
+    transform: [
+      {
+        translateX:
+          photoTabX.value + (videoTabX.value - photoTabX.value) * captureTypeProgress.value,
+      },
+    ],
+    opacity: photoTabW.value > 0 ? 1 : 0,
+  }));
+
+  const handleSetCaptureType = (type: CaptureType) => {
+    if (isRecording) return;
+    setCaptureType(type);
+    captureTypeProgress.value = withTiming(type === 'video' ? 1 : 0, {
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+    });
+  };
 
   const device = useCameraDevice(cameraFacing);
   const isEventCaptureFlow = mode === 'event';
@@ -209,38 +241,43 @@ export function CreateCameraCaptureView({
         {/* Bottom controls */}
         <View className="absolute left-0 right-0 gap-[18px]" style={{ bottom: insets.bottom + 28 }}>
           {!isEventCaptureFlow && (
-            <View
-              className="self-center rounded-full border border-white/30 bg-black/50 p-[3px]"
-              style={{ flexDirection: 'row', alignItems: 'center' }}
-            >
+            <View className="flex-row self-center rounded-full border border-border bg-surface/50 p-[3px]">
+              <Animated.View
+                pointerEvents="none"
+                className="absolute bottom-[3px] left-0 top-[3px] rounded-full bg-primary"
+                style={pillStyle}
+              />
               <Pressable
-                className={`rounded-full px-4 py-2 ${captureType === 'photo' ? 'bg-white' : ''}`}
-                style={{ marginRight: 4 }}
-                onPress={() => {
-                  if (!isRecording) setCaptureType('photo');
+                className="rounded-full px-4 py-2"
+                onLayout={(e) => {
+                  photoTabX.value = e.nativeEvent.layout.x;
+                  photoTabW.value = e.nativeEvent.layout.width;
                 }}
+                onPress={() => handleSetCaptureType('photo')}
               >
                 <Text
                   className={
                     captureType === 'photo'
-                      ? 'font-semibold text-black'
-                      : 'font-semibold text-white'
+                      ? 'font-semibold text-primary-foreground'
+                      : 'font-semibold text-muted-foreground'
                   }
                 >
                   Photo
                 </Text>
               </Pressable>
               <Pressable
-                className={`rounded-full px-4 py-2 ${captureType === 'video' ? 'bg-white' : ''}`}
-                onPress={() => {
-                  if (!isRecording) setCaptureType('video');
+                className="rounded-full px-4 py-2"
+                onLayout={(e) => {
+                  videoTabX.value = e.nativeEvent.layout.x;
+                  videoTabW.value = e.nativeEvent.layout.width;
                 }}
+                onPress={() => handleSetCaptureType('video')}
               >
                 <Text
                   className={
                     captureType === 'video'
-                      ? 'font-semibold text-black'
-                      : 'font-semibold text-white'
+                      ? 'font-semibold text-primary-foreground'
+                      : 'font-semibold text-muted-foreground'
                   }
                 >
                   Video
