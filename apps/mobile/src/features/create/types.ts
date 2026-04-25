@@ -21,7 +21,11 @@ export type PostModeValues = CreateModeValues & {
   eventId?: string;
 };
 
+export type EventModeValues = CreateModeValues & {
+  name: string;
+};
+
 export type CreateFormValues = {
   post: PostModeValues;
-  event: CreateModeValues;
+  event: EventModeValues;
 };

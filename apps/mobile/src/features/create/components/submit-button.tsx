@@ -3,7 +3,8 @@ import {
   CREATE_CAMERA_CROSSFADE_END,
   CREATE_CAMERA_CROSSFADE_START,
 } from '@/features/create/constants';
-import { Pressable } from 'react-native';
+import { useAppTheme } from '@/lib/use-app-theme';
+import { ActivityIndicator, Pressable } from 'react-native';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -20,6 +21,7 @@ type CreateSubmitButtonProps = {
   animatedIndex: SharedValue<number>;
   animatedPosition: SharedValue<number>;
   onPress: () => void;
+  disabled?: boolean;
 };
 
 export function CreateSubmitButton({
@@ -27,8 +29,10 @@ export function CreateSubmitButton({
   animatedIndex,
   animatedPosition,
   onPress,
+  disabled = false,
 }: CreateSubmitButtonProps) {
   const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
 
   const animatedStyle = useAnimatedStyle(() => {
     const top = Math.max(
@@ -54,10 +58,18 @@ export function CreateSubmitButton({
         accessibilityRole="button"
         className="size-12 items-center justify-center rounded-full bg-card shadow-sm"
         hitSlop={10}
-        style={({ pressed }) => [pressed && { opacity: 0.9, transform: [{ scale: 0.96 }] }]}
+        disabled={disabled}
+        style={({ pressed }) => [
+          pressed && { opacity: 0.9, transform: [{ scale: 0.96 }] },
+          disabled && { opacity: 0.5 },
+        ]}
         onPress={onPress}
       >
-        <Icon name={isEventMode ? 'event-available' : 'add'} size={20} className="text-primary" />
+        {disabled ? (
+          <ActivityIndicator size="small" color={theme.tint} />
+        ) : (
+          <Icon name={isEventMode ? 'event-available' : 'add'} size={20} className="text-primary" />
+        )}
       </Pressable>
     </Animated.View>
   );

@@ -1,6 +1,7 @@
 import { DescriptionField } from '@/features/create/components/form/description-field';
 import { EventField } from '@/features/create/components/form/event-field';
 import { MediaField } from '@/features/create/components/form/media-field';
+import { NameField } from '@/features/create/components/form/name-field';
 import { TagsField } from '@/features/create/components/form/tags-field';
 import type { CreateFormValues, CreateMedia, CreateMode } from '@/features/create/types';
 import type { Dispatch, SetStateAction } from 'react';
@@ -11,6 +12,8 @@ type CreateFormProps = {
   control: Control<CreateFormValues>;
   setValue: UseFormSetValue<CreateFormValues>;
   mode: CreateMode;
+  /** When false, fields skip validation (both panels stay mounted for the mode swipe). */
+  formActive: boolean;
   mediaHeight: number;
   isTagMenuOpen: boolean;
   setIsTagMenuOpen: Dispatch<SetStateAction<boolean>>;
@@ -22,6 +25,7 @@ export function CreateForm({
   control,
   setValue,
   mode,
+  formActive,
   mediaHeight,
   isTagMenuOpen,
   setIsTagMenuOpen,
@@ -41,8 +45,11 @@ export function CreateForm({
       {shouldShowMediaSection ? (
         <MediaField mode={mode} media={media} mediaHeight={mediaHeight} openCamera={openCamera} />
       ) : null}
-      {mode === 'post' ? <EventField control={control} setValue={setValue} /> : null}
-      <DescriptionField control={control} mode={mode} />
+      {mode === 'event' ? <NameField control={control} formActive={formActive} /> : null}
+      {mode === 'post' ? (
+        <EventField control={control} setValue={setValue} formActive={formActive} />
+      ) : null}
+      <DescriptionField control={control} mode={mode} formActive={formActive} />
       <TagsField
         control={control}
         setValue={setValue}

@@ -42,10 +42,8 @@ export default function CreateScreen() {
     handleCloseDrawer,
   } = useCreateDrawer();
 
-  const { control, setValue, onSubmit, allTags, isTagMenuOpen, setIsTagMenuOpen } = useCreateForm(
-    selectedMode,
-    handleCloseDrawer
-  );
+  const { control, setValue, onSubmit, allTags, isTagMenuOpen, setIsTagMenuOpen, isSubmitting } =
+    useCreateForm(selectedMode, handleCloseDrawer);
 
   return (
     <Screen>
@@ -81,6 +79,7 @@ export default function CreateScreen() {
                     control={control}
                     setValue={setValue}
                     mode="post"
+                    formActive={!isEventMode}
                     mediaHeight={mediaHeight}
                     isTagMenuOpen={!isEventMode && isTagMenuOpen}
                     setIsTagMenuOpen={setIsTagMenuOpen}
@@ -94,6 +93,7 @@ export default function CreateScreen() {
                     control={control}
                     setValue={setValue}
                     mode="event"
+                    formActive={isEventMode}
                     mediaHeight={mediaHeight}
                     isTagMenuOpen={isEventMode && isTagMenuOpen}
                     setIsTagMenuOpen={setIsTagMenuOpen}
@@ -122,6 +122,7 @@ export default function CreateScreen() {
           animatedIndex={drawerAnimatedIndex}
           animatedPosition={drawerAnimatedPosition}
           onPress={onSubmit}
+          disabled={isSubmitting}
         />
       </Authenticated>
     </Screen>

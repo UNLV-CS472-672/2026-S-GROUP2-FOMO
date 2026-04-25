@@ -7,13 +7,15 @@ import { Text, TextInput, View } from 'react-native';
 type DescriptionFieldProps = {
   control: Control<CreateFormValues>;
   mode: CreateMode;
+  formActive: boolean;
 };
 
-export function DescriptionField({ control, mode }: DescriptionFieldProps) {
+export function DescriptionField({ control, mode, formActive }: DescriptionFieldProps) {
   const isEventMode = mode === 'event';
   const { field, fieldState } = useController({
     control,
     name: isEventMode ? 'event.description' : 'post.description',
+    disabled: !formActive,
     rules: {
       validate: (value, formValues) => {
         if (!isEventMode && !formValues.post.media.uri && !value.trim()) {
@@ -43,6 +45,7 @@ export function DescriptionField({ control, mode }: DescriptionFieldProps) {
           className="flex-1 text-[15px] text-foreground"
           value={field.value}
           onChangeText={field.onChange}
+          editable={!field.disabled}
         />
       </View>
       {hasError ? (
