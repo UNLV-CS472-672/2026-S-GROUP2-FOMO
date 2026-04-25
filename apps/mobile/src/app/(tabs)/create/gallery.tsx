@@ -6,7 +6,7 @@ import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type GalleryParams = {
-  returnTo?: string | string[];
+  mode?: string | string[];
 };
 
 type PhotoAsset = MediaLibrary.Asset;
@@ -29,9 +29,9 @@ export default function CreateGalleryScreen() {
   const [endCursor, setEndCursor] = useState<string | null>(null);
   const [hasNextPage, setHasNextPage] = useState(true);
 
-  const returnTo = useMemo(() => {
-    return getStringParam(params.returnTo) === '/create/event' ? '/create/event' : '/create/post';
-  }, [params.returnTo]);
+  const mode = useMemo(() => {
+    return getStringParam(params.mode) === 'event' ? 'event' : 'post';
+  }, [params.mode]);
 
   const ensurePermission = useCallback(async () => {
     setIsCheckingPermission(true);
@@ -87,9 +87,10 @@ export default function CreateGalleryScreen() {
     const info = await MediaLibrary.getAssetInfoAsync(asset.id);
     const mediaUri = info.localUri ?? asset.uri;
 
-    router.replace({
-      pathname: returnTo as never,
+    router.push({
+      pathname: '/create/media-preview' as never,
       params: {
+        mode,
         mediaUri,
         mediaType: 'photo',
       } as never,

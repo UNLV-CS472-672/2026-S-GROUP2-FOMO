@@ -12,38 +12,21 @@ export default function CreateLayout() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen
-        name="event"
-        options={{
-          presentation: 'modal',
-          title: 'Create Event',
-        }}
-      />
-      <Stack.Screen
-        name="post"
-        options={{
-          presentation: 'modal',
-          title: 'Create Post',
-        }}
-      />
-      <Stack.Screen
-        name="camera-screen"
-        options={{
-          presentation: 'fullScreenModal',
-          title: 'Camera',
-        }}
-      />
-      <Stack.Screen
         name="gallery"
         options={{
-          presentation: 'fullScreenModal',
+          presentation: 'modal',
           title: 'Gallery',
+          animation: 'slide_from_bottom',
+          animationDuration: 280,
         }}
       />
       <Stack.Screen
-        name="post-preview"
+        name="media-preview"
         options={{
           presentation: 'fullScreenModal',
           title: 'Preview',
+          animation: 'slide_from_bottom',
+          animationDuration: 280,
         }}
       />
     </Stack>
