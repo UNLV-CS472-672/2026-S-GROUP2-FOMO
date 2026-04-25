@@ -1,4 +1,5 @@
 import type { CreateMode } from '@/features/create/types';
+import * as MediaLibrary from 'expo-media-library';
 import { type RefObject, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import type { CameraDevice } from 'react-native-vision-camera';
@@ -32,12 +33,27 @@ export function useCapture({ mode, cameraRef, device, flash, onPreview }: UseCap
     setMicrophonePermission(Camera.getMicrophonePermissionStatus());
   }, []);
 
+  const autoSave = async (path: string) => {
+    const uri = path.startsWith('file://') ? path : `file://${path}`;
+    try {
+      const current = await MediaLibrary.getPermissionsAsync();
+      const permission = current.granted ? current : await MediaLibrary.requestPermissionsAsync();
+      if (!permission.granted) return;
+      await MediaLibrary.saveToLibraryAsync(uri);
+    } catch {
+      // Ignore save errors to avoid interrupting capture flow.
+    }
+  };
+
   const takePhoto = async () => {
     if (!cameraRef.current || isBusy || !device) return;
     setIsBusy(true);
     try {
       const photo = await cameraRef.current.takePhoto({ flash, enableShutterSound: false });
-      if (photo?.path) onPreview(photo.path, 'photo');
+      if (photo?.path) {
+        void autoSave(photo.path);
+        onPreview(photo.path, 'photo');
+      }
     } catch {
       Alert.alert('Capture failed', 'Unable to take photo. Please try again.');
     } finally {
@@ -64,7 +80,10 @@ export function useCapture({ mode, cameraRef, device, flash, onPreview }: UseCap
       onRecordingFinished: (video) => {
         setIsRecording(false);
         setIsBusy(false);
-        if (video.path) onPreview(video.path, 'video');
+        if (video.path) {
+          void autoSave(video.path);
+          onPreview(video.path, 'video');
+        }
       },
       onRecordingError: () => {
         setIsRecording(false);
