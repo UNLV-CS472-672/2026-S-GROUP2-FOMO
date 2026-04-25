@@ -1,7 +1,7 @@
 import { Screen } from '@/components/ui/screen';
 import { Authenticated, GuestOnly } from '@/features/auth/components/auth-gate';
 import { CreateCameraDrawer } from '@/features/create/components/camera/drawer';
-import { CreateModePanel } from '@/features/create/components/mode-panel';
+import { CreateForm } from '@/features/create/components/form';
 import { CreateModeToggle } from '@/features/create/components/mode-toggle';
 import { CreateSubmitButton } from '@/features/create/components/submit-button';
 import { CREATE_DRAWER_SNAP_POINTS } from '@/features/create/constants';
@@ -77,7 +77,7 @@ export default function CreateScreen() {
                 style={[contentTrackStyle, { width: contentWidth * 2 }]}
               >
                 <Animated.View style={[{ width: contentWidth }, postPanelStyle]}>
-                  <CreateModePanel
+                  <CreateForm
                     control={control}
                     setValue={setValue}
                     mode="post"
@@ -90,7 +90,7 @@ export default function CreateScreen() {
                 </Animated.View>
 
                 <Animated.View style={[{ width: contentWidth }, eventPanelStyle]}>
-                  <CreateModePanel
+                  <CreateForm
                     control={control}
                     setValue={setValue}
                     mode="event"
