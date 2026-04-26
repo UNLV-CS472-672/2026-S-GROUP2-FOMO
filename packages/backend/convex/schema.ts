@@ -146,4 +146,9 @@ export default defineSchema({
     .index('by_commentId', ['commentId'])
     .index('by_userId_postId', ['userId', 'postId'])
     .index('by_userId_commentId', ['userId', 'commentId']),
+
+  eventRecs: defineTable({
+    userId: v.id('users'),
+    eventIds: v.array(v.id('events')),
+  }).index('by_userId', ['userId']),
 });
