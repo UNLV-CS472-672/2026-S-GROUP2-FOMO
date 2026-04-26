@@ -80,8 +80,8 @@ def sample_interactions() -> Dict[str, List[Dict[str, Any]]]:
     """Sample user-event interactions"""
     return {
         "user1": [
-            {"eventId": "event1", "interactionType": "attended"},
-            {"eventId": "event2", "interactionType": "blocked"},
+            {"eventId": "event1", "status": "going"},
+            {"eventId": "event2", "status": "uninterested"},
         ],
         "user2": []
     }
