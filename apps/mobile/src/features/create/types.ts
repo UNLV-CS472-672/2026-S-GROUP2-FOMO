@@ -23,6 +23,8 @@ export type PostModeValues = CreateModeValues & {
 
 export type EventModeValues = CreateModeValues & {
   name: string;
+  startDate: number;
+  endDate: number;
 };
 
 export type CreateFormValues = {

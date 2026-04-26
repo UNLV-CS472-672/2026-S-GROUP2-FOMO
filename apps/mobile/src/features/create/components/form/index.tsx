@@ -1,3 +1,4 @@
+import { DatetimeField } from '@/features/create/components/form/datetime/field';
 import { DescriptionField } from '@/features/create/components/form/description-field';
 import { EventField } from '@/features/create/components/form/event-field';
 import { MediaField } from '@/features/create/components/form/media-field';
@@ -46,6 +47,7 @@ export function CreateForm({
         <MediaField mode={mode} media={media} mediaHeight={mediaHeight} openCamera={openCamera} />
       ) : null}
       {mode === 'event' ? <NameField control={control} formActive={formActive} /> : null}
+      {mode === 'event' ? <DatetimeField control={control} formActive={formActive} /> : null}
       {mode === 'post' ? (
         <EventField control={control} setValue={setValue} formActive={formActive} />
       ) : null}

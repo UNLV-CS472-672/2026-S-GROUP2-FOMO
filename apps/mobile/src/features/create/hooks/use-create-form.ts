@@ -40,7 +40,22 @@ export function useCreateForm(selectedMode: CreateMode, onMediaReceived: () => v
   const { control, handleSubmit, setValue, reset } = useForm<CreateFormValues>({
     defaultValues: {
       post: { description: '', tags: [], media: { uri: '', type: undefined }, eventId: undefined },
-      event: { name: '', description: '', tags: [], media: { uri: '', type: undefined } },
+      event: {
+        name: '',
+        description: '',
+        tags: [],
+        media: { uri: '', type: undefined },
+        startDate: (() => {
+          const d = new Date();
+          d.setHours(20, 0, 0, 0);
+          return d.getTime();
+        })(),
+        endDate: (() => {
+          const d = new Date();
+          d.setHours(22, 0, 0, 0);
+          return d.getTime();
+        })(),
+      },
     },
   });
 
@@ -93,7 +108,6 @@ export function useCreateForm(selectedMode: CreateMode, onMediaReceived: () => v
         });
       } else {
         const eventValues = values.event;
-        const now = Date.now();
         const location = (await getDeviceLocation()) ?? {
           latitude: 0,
           longitude: 0,
@@ -102,8 +116,8 @@ export function useCreateForm(selectedMode: CreateMode, onMediaReceived: () => v
         eventId = await createEvent({
           name: eventValues.name.trim(),
           caption: eventValues.description.trim(),
-          startDate: now,
-          endDate: now + 3 * 60 * 60 * 1000,
+          startDate: eventValues.startDate,
+          endDate: eventValues.endDate,
           location,
           mediaId: storageId,
           tagIds,
