@@ -10,13 +10,15 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "friendRec"))
 from friendRecs import (
     get_client,
     get_all_user_ids,
+    get_friend_ids,
     log,
     user_exists,
     join_user_events,
     raw_matrix_events,
     raw_matrix_eventTags,
     raw_matrix_postTags,
-    similarity_score,
+    build_similarity_matrix,
+    get_user_scores,
     sim_scores_weighted,
     upsert_friend_recs,
     main_one_user,
@@ -280,35 +282,55 @@ def test_raw_matrix_postTags_columns_are_tags(mock_client: MagicMock, sample_use
 
 
 # ------------------------------
-#  similarity_score()
+#  build_similarity_matrix() / get_user_scores()
 # ------------------------------
 
 # Ensure that the return value is a pandas df.
-def test_similarity_score_returns_dataframe(sample_similarity_df: pd.DataFrame) -> None:
-    result = similarity_score(sample_similarity_df, "u1")
+def test_build_similarity_matrix_returns_dataframe(sample_similarity_df: pd.DataFrame) -> None:
+    result = build_similarity_matrix(sample_similarity_df)
     assert isinstance(result, pd.DataFrame)
-            
-# Ensure that the df row index are users.
-def test_similarity_scores_values_rows_are_users(sample_similarity_df: pd.DataFrame) -> None:
-    result = similarity_score(sample_similarity_df, "u1")
+
+# Ensure that the matrix row index are users.
+def test_build_similarity_matrix_values_rows_are_users(sample_similarity_df: pd.DataFrame) -> None:
+    result = build_similarity_matrix(sample_similarity_df)
     assert "u2" in result.index
     assert "u3" in result.index
-    
-# Ensure that df should be one column, similarity_score (shape = [?, 1]). 
-def test_similarity_scores_values_col_is_similarity_score(sample_similarity_df: pd.DataFrame) -> None:
-    result = similarity_score(sample_similarity_df, "u1")
+
+# Ensure that the matrix should be square.
+def test_build_similarity_matrix_is_square(sample_similarity_df: pd.DataFrame) -> None:
+    result = build_similarity_matrix(sample_similarity_df)
+    assert result.shape[0] == result.shape[1]
+
+# Ensure that an empty dataframe returns an empty dataframe.
+def test_build_similarity_matrix_empty_returns_empty_dataframe() -> None:
+    result = build_similarity_matrix(pd.DataFrame())
+    assert result.empty
+
+# Ensure that the df should be one column, similarity_score (shape = [?, 1]). 
+def test_get_user_scores_columns_are_similarity_score(sample_similarity_df: pd.DataFrame) -> None:
+    sim_matrix = build_similarity_matrix(sample_similarity_df)
+    result = get_user_scores(sim_matrix, "u1")
     assert result.shape[1] == 1
     assert result.columns[0] == "similarity_score"
 
+# Ensure that the df row index are users.
+def test_get_user_scores_rows_are_users(sample_similarity_df: pd.DataFrame) -> None:
+    sim_matrix = build_similarity_matrix(sample_similarity_df)
+    result = get_user_scores(sim_matrix, "u1")
+    assert "u2" in result.index
+    assert "u3" in result.index
+
 # Users with no events/posts should return a zero-filled df.
-def test_similarity_score_missing_user_returns_zeros(sample_similarity_df: pd.DataFrame) -> None:
-    result = similarity_score(sample_similarity_df, "seed|gorilla-sushi")
+def test_get_user_scores_missing_user_returns_zeros(sample_similarity_df: pd.DataFrame) -> None:
+    sim_matrix = build_similarity_matrix(sample_similarity_df)
+    result = get_user_scores(sim_matrix, "seed|gorilla-sushi")
     assert isinstance(result, pd.DataFrame)
     assert (result["similarity_score"] == 0.0).all()
-        
+
 # df should not contain the user inputted.
-def test_similarity_score_excludes_self(sample_similarity_df: pd.DataFrame) -> None:
-    result = similarity_score(sample_similarity_df, "u1")
+def test_get_user_scores_excludes_self(sample_similarity_df: pd.DataFrame) -> None:
+    sim_matrix = build_similarity_matrix(sample_similarity_df)
+    result = get_user_scores(sim_matrix, "u1")
     assert "u1" not in result.index
     
     
@@ -352,33 +374,32 @@ def test_sim_scores_weighted_correct_calculation(sample_score_df: pd.DataFrame) 
 
 # Ensure that the final row amt is same as input rec_amt.
 def test_upsert_friend_recs_correct_rec_count(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
-    mock_client.query.return_value = None  
-    upsert_friend_recs(sample_score_df, "u1", 2)
+    with patch("friendRecs.get_friend_ids", return_value=[]):
+        upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
     assert len(call_kwargs["recs"]) == 2
-    
+
 # General case; ensure that if friends exists, they are correctly filtered out.
 def test_upsert_friend_recs_friend_filtering(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
-    mock_client.query.side_effect = [{"_id": "u2"}, None]
-    upsert_friend_recs(sample_score_df, "u1", 2)
+    with patch("friendRecs.get_friend_ids", return_value=["u2"]):
+        upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
     recs = call_kwargs["recs"]
+    assert len(recs) == 1
     assert recs[0]["userId"] == "u1"
 
-# Specific case; ensure that if a "requester" is a friend, filter out.
+# Specific case; ensure requester is not filtered unless already a friend.
 def test_upsert_friend_recs_requester_filtering(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
-    mock_client.query.return_value = {"_id": "friendship_id"}
-    upsert_friend_recs(sample_score_df, "u1", 2)
+    with patch("friendRecs.get_friend_ids", return_value=[]):
+        upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
-    recs = call_kwargs["recs"]
-    rec_ids = [r["userId"] for r in recs]
-    assert "u2" not in rec_ids
-    assert "u1" not in rec_ids  
+    rec_ids = [r["userId"] for r in call_kwargs["recs"]]
+    assert rec_ids == ["u2", "u1"]
 
 # Specific case; ensure that if a "recipient" is a friend, filter out.
 def test_upsert_friend_recs_recipient_filtering(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
-    mock_client.query.return_value = {"_id": "friendship_id"}
-    upsert_friend_recs(sample_score_df, "u2", 2)
+    with patch("friendRecs.get_friend_ids", return_value=["u1"]):
+        upsert_friend_recs(sample_score_df, "u2", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
     recs = call_kwargs["recs"]
     rec_ids = [r["userId"] for r in recs]
@@ -386,8 +407,8 @@ def test_upsert_friend_recs_recipient_filtering(mock_client: MagicMock, sample_s
 
 # Pending friendships should NOT be filtered out.
 def test_upsert_friend_recs_pending_not_filtered(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
-    mock_client.query.return_value = None
-    upsert_friend_recs(sample_score_df, "u1", 2)
+    with patch("friendRecs.get_friend_ids", return_value=[]):
+        upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
     recs = call_kwargs["recs"]
     assert len(recs) == 2  
@@ -395,22 +416,24 @@ def test_upsert_friend_recs_pending_not_filtered(mock_client: MagicMock, sample_
 # Rejected friendship should NOT be filtered out. 
 # NOTE: We can adjust this logic, especially is we want this leaning more toward a "blocked" behavior.
 def test_upsert_friend_recs_rejected_not_filtered(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
-    mock_client.query.return_value = None
-    upsert_friend_recs(sample_score_df, "u1", 2)
+    with patch("friendRecs.get_friend_ids", return_value=[]):
+        upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
     recs = call_kwargs["recs"]
     assert len(recs) == 2
-    
+
 # Ensure that the final df is sorted by top-first.
 def test_upsert_friend_recs_top_scores_selected(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
-    upsert_friend_recs(sample_score_df, "u1", 2)
+    with patch("friendRecs.get_friend_ids", return_value=[]):
+        upsert_friend_recs(sample_score_df, "u1", 2)
     call_kwargs = mock_client.mutation.call_args[0][1]
     scores = [r["score"] for r in call_kwargs["recs"]]
     assert scores == sorted(scores, reverse=True)
 
 # Ensures that the ConvexClient mutation is actually being invoked.
 def test_upsert_friend_recs_calls_mutation(mock_client: MagicMock, sample_score_df: pd.DataFrame) -> None:
-    upsert_friend_recs(sample_score_df, "u1", 2)
+    with patch("friendRecs.get_friend_ids", return_value=[]):
+        upsert_friend_recs(sample_score_df, "u1", 2)
     mock_client.mutation.assert_called_once()
 
     
@@ -427,7 +450,8 @@ def mock_main_dependencies(mock_client: MagicMock) -> Generator[dict[str, MagicM
          patch("friendRecs.raw_matrix_events")    as mock_raw_events, \
          patch("friendRecs.raw_matrix_eventTags") as mock_raw_event_tags, \
          patch("friendRecs.raw_matrix_postTags")  as mock_raw_post_tags, \
-         patch("friendRecs.similarity_score")     as mock_sim_score, \
+         patch("friendRecs.build_similarity_matrix") as mock_build_matrix, \
+         patch("friendRecs.get_user_scores")       as mock_get_user_scores, \
          patch("friendRecs.sim_scores_weighted")  as mock_weighted, \
          patch("friendRecs.upsert_friend_recs")   as mock_upsert:
 
@@ -435,7 +459,8 @@ def mock_main_dependencies(mock_client: MagicMock) -> Generator[dict[str, MagicM
         mock_raw_events.return_value     = MagicMock()
         mock_raw_event_tags.return_value = MagicMock()
         mock_raw_post_tags.return_value  = MagicMock()
-        mock_sim_score.return_value      = MagicMock()
+        mock_build_matrix.return_value   = MagicMock()
+        mock_get_user_scores.return_value = MagicMock()
         mock_weighted.return_value       = MagicMock()
 
         yield {
@@ -443,7 +468,8 @@ def mock_main_dependencies(mock_client: MagicMock) -> Generator[dict[str, MagicM
             "raw_matrix_events":    mock_raw_events,
             "raw_matrix_eventTags": mock_raw_event_tags,
             "raw_matrix_postTags":  mock_raw_post_tags,
-            "similarity_score":     mock_sim_score,
+            "build_similarity_matrix": mock_build_matrix,
+            "get_user_scores":     mock_get_user_scores,
             "sim_scores_weighted":  mock_weighted,
             "upsert_friend_recs":   mock_upsert,
             "client":               mock_client,
@@ -497,7 +523,8 @@ def mock_main_all_users_dependencies(
          patch("friendRecs.raw_matrix_events") as mock_raw_events, \
          patch("friendRecs.raw_matrix_eventTags") as mock_raw_event_tags, \
          patch("friendRecs.raw_matrix_postTags") as mock_raw_post_tags, \
-         patch("friendRecs.similarity_score") as mock_sim_score, \
+         patch("friendRecs.build_similarity_matrix") as mock_build_matrix, \
+         patch("friendRecs.get_user_scores") as mock_get_user_scores, \
          patch("friendRecs.sim_scores_weighted") as mock_weighted, \
          patch("friendRecs.upsert_friend_recs") as mock_upsert:
 
@@ -506,7 +533,8 @@ def mock_main_all_users_dependencies(
         mock_raw_events.return_value = MagicMock()
         mock_raw_event_tags.return_value = MagicMock()
         mock_raw_post_tags.return_value = MagicMock()
-        mock_sim_score.return_value = MagicMock()
+        mock_build_matrix.return_value = MagicMock()
+        mock_get_user_scores.return_value = MagicMock()
         mock_weighted.return_value = MagicMock()
 
         yield {
@@ -516,7 +544,8 @@ def mock_main_all_users_dependencies(
             "raw_matrix_events": mock_raw_events,
             "raw_matrix_eventTags": mock_raw_event_tags,
             "raw_matrix_postTags": mock_raw_post_tags,
-            "similarity_score": mock_sim_score,
+            "build_similarity_matrix": mock_build_matrix,
+            "get_user_scores": mock_get_user_scores,
             "sim_scores_weighted": mock_weighted,
             "upsert_friend_recs": mock_upsert,
             "client": mock_client,
@@ -534,14 +563,24 @@ def test_main_all_users_builds_raw_matrices_once(mock_main_all_users_dependencie
     mock_main_all_users_dependencies["raw_matrix_eventTags"].assert_called_once()
     mock_main_all_users_dependencies["raw_matrix_postTags"].assert_called_once()
 
-# Ensure similarity_score() is called 3 times per user.
-def test_main_all_users_calls_similarity_for_each_user_and_each_modality(
+# Ensure build_similarity_matrix() is called once per modality.
+def test_main_all_users_builds_similarity_matrices_once(
+    mock_main_all_users_dependencies: dict[str, MagicMock],
+) -> None:
+    main_all_users(5, False)
+    assert (
+        mock_main_all_users_dependencies["build_similarity_matrix"].call_count
+        == 3
+    )
+
+# Ensure get_user_scores() is called 3 times per user.
+def test_main_all_users_calls_get_user_scores_for_each_user_and_each_modality(
     mock_main_all_users_dependencies: dict[str, MagicMock],
 ) -> None:
     user_ids = mock_main_all_users_dependencies["user_ids"]
     main_all_users(5, False)
     assert (
-        mock_main_all_users_dependencies["similarity_score"].call_count
+        mock_main_all_users_dependencies["get_user_scores"].call_count
         == 3 * len(user_ids)
     )
 
@@ -586,13 +625,20 @@ def test_get_all_user_ids_returns_empty(mock_client: MagicMock) -> None:
 
 
 # ------------------------------
-#  main_all_users()
+#  get_friend_ids()
 # ------------------------------
 
-# Should raise when a user ID from get_all_user_ids doesn't exist in "users".
-def test_main_all_users_raises_if_user_not_found(
-    mock_main_all_users_dependencies: dict[str, MagicMock],
-) -> None:
-    mock_main_all_users_dependencies["user_exists"].return_value = False
-    with pytest.raises(Exception, match="cannot be found in users"):
-        main_all_users(5, False)
+# Should return the list of friend IDs returned by Convex.
+def test_get_friend_ids_returns_list(mock_client: MagicMock) -> None:
+    mock_client.query.return_value = ["u2", "u3"]
+    result = get_friend_ids("u1")
+    assert result == ["u2", "u3"]
+    mock_client.query.assert_called_once_with(
+        "data_ml/friends:getFriendIds", {"userId": "u1"}
+    )
+
+# Should return an empty list when no friends exist.
+def test_get_friend_ids_returns_empty_list(mock_client: MagicMock) -> None:
+    mock_client.query.return_value = []
+    result = get_friend_ids("u1")
+    assert result == []
