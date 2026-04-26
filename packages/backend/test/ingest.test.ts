@@ -30,7 +30,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('api.eventsIngest', () => {
+describe('api.events.ingest', () => {
   describe('upsertNormalizedEvents', () => {
     it('inserts new rows, patches same-name matches, and leaves exact matches unchanged', async () => {
       const t = setup();
@@ -63,7 +63,7 @@ describe('api.eventsIngest', () => {
         });
       });
 
-      const result = await t.mutation(internal.eventsIngest.upsertNormalizedEvents, {
+      const result = await t.mutation(internal.events.ingest.upsertNormalizedEvents, {
         events: [
           {
             name: 'Brand New',
@@ -262,7 +262,7 @@ describe('api.eventsIngest', () => {
 
       vi.stubGlobal('fetch', fetchMock);
 
-      const result = await t.action(api.eventsIngest.syncTicketmasterLasVegas, {
+      const result = await t.action(api.events.ingest.syncTicketmasterLasVegas, {
         eventCount: 2,
         dryRun: true,
         category: ' concerts ',
@@ -354,7 +354,7 @@ describe('api.eventsIngest', () => {
         })
       );
 
-      const result = await t.action(api.eventsIngest.syncTicketmasterLasVegas, {
+      const result = await t.action(api.events.ingest.syncTicketmasterLasVegas, {
         eventCount: 1,
       });
 
@@ -408,7 +408,7 @@ describe('api.eventsIngest', () => {
         })
       );
 
-      const result = await t.action(api.eventsIngest.syncTicketmasterLasVegas, {
+      const result = await t.action(api.events.ingest.syncTicketmasterLasVegas, {
         dryRun: true,
         eventCount: 3,
       });
@@ -450,7 +450,7 @@ describe('api.eventsIngest', () => {
       );
 
       await expect(
-        t.action(api.eventsIngest.syncTicketmasterLasVegas, {
+        t.action(api.events.ingest.syncTicketmasterLasVegas, {
           eventCount: 1,
           category: 'custom-segment',
         })
