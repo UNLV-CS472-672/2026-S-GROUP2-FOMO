@@ -32,14 +32,15 @@ afterEach(() => {
 
 describe('api.events.ingest', () => {
   describe('upsertNormalizedEvents', () => {
-    it('inserts new rows, patches same-name matches, and leaves exact matches unchanged', async () => {
+    it('inserts new rows, leaves exact matches unchanged, and treats changed organizations as new records', async () => {
       const t = setup();
 
       await t.run(async (ctx) => {
-        await ctx.db.insert('events', {
+        await ctx.db.insert('externalEvents', {
+          externalKey: 'exact match::exact venue::200',
           name: 'Exact Match',
           organization: 'Exact Venue',
-          description: 'Stable description',
+          caption: 'Stable description',
           startDate: 200,
           endDate: 260,
           location: {
@@ -49,10 +50,11 @@ describe('api.events.ingest', () => {
           },
         });
 
-        await ctx.db.insert('events', {
+        await ctx.db.insert('externalEvents', {
+          externalKey: 'same name::old venue::300',
           name: 'Same Name',
           organization: 'Old Venue',
-          description: 'Outdated description',
+          caption: 'Outdated description',
           startDate: 300,
           endDate: 360,
           location: {
@@ -105,29 +107,42 @@ describe('api.events.ingest', () => {
       });
 
       expect(result).toEqual({
-        inserted: 1,
-        updated: 1,
+        inserted: 2,
+        updated: 0,
         unchanged: 1,
       });
 
       const events = await t.run(async (ctx) => {
-        return await ctx.db.query('events').collect();
+        return await ctx.db.query('externalEvents').collect();
       });
 
-      expect(events).toHaveLength(3);
+      expect(events).toHaveLength(4);
       expect(events.find((event) => event.name === 'Brand New')).toMatchObject({
         organization: 'New Venue',
-        description: 'Fresh description',
+        caption: 'Fresh description',
         startDate: 100,
       });
       expect(events.find((event) => event.name === 'Exact Match')).toMatchObject({
         organization: 'Exact Venue',
-        description: 'Stable description',
+        caption: 'Stable description',
         endDate: 260,
       });
-      expect(events.find((event) => event.name === 'Same Name')).toMatchObject({
+      expect(
+        events.find((event) => event.name === 'Same Name' && event.organization === 'Old Venue')
+      ).toMatchObject({
+        caption: 'Outdated description',
+        endDate: 360,
+        location: {
+          latitude: 36.2,
+          longitude: -115.2,
+          h3Index: 'old-h3',
+        },
+      });
+      expect(
+        events.find((event) => event.name === 'Same Name' && event.organization === 'Updated Venue')
+      ).toMatchObject({
         organization: 'Updated Venue',
-        description: 'Updated description',
+        caption: 'Updated description',
         endDate: 390,
         location: {
           latitude: 36.25,
@@ -273,7 +288,7 @@ describe('api.events.ingest', () => {
         categoryFilter: 'Music',
         pagesProcessed: 1,
         fetchedCount: 4,
-        consideredCount: 3,
+        consideredCount: 2,
         normalizedCount: 2,
         targetEventCount: 2,
         searchPageSize: 100,
@@ -287,18 +302,19 @@ describe('api.events.ingest', () => {
         endDate: Date.parse('2026-05-01T02:00:00Z'),
       });
       expect(result.preview[1]).toMatchObject({
-        name: 'Beta',
-        organization: 'Venue Two',
-        description: 'Beta from event details',
-        endDate: Date.parse('2026-06-10T21:15:00Z'),
+        name: 'Alpha',
+        organization: 'Venue One',
+        description: 'Other attraction description',
+        startDate: Date.parse('2026-05-01T08:00:00Z'),
+        endDate: Date.parse('2026-05-01T10:00:00Z'),
       });
 
       const storedEvents = await t.run(async (ctx) => {
-        return await ctx.db.query('events').collect();
+        return await ctx.db.query('externalEvents').collect();
       });
 
       expect(storedEvents).toEqual([]);
-      expect(fetchMock).toHaveBeenCalledTimes(5);
+      expect(fetchMock).toHaveBeenCalledTimes(4);
     });
 
     it('inserts a fallback description when both event and attraction lookups fail', async () => {
@@ -369,14 +385,14 @@ describe('api.events.ingest', () => {
       });
 
       const events = await t.run(async (ctx) => {
-        return await ctx.db.query('events').collect();
+        return await ctx.db.query('externalEvents').collect();
       });
 
       expect(events).toHaveLength(1);
       expect(events[0]).toMatchObject({
         name: 'Fallback Event',
         organization: 'Fallback Arena',
-        description: 'No description available.',
+        caption: 'No description available.',
         startDate: Date.parse('2026-05-01T20:00:00Z'),
         endDate: Date.parse('2026-05-01T22:00:00Z'),
       });
