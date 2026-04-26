@@ -1,5 +1,6 @@
 'use client';
 
+import { FeedTabs, type FeedMode } from '@/features/map/components/feed-tabs';
 import { MapSurface } from '@/features/map/components/map-surface';
 import { RecenterButton } from '@/features/map/components/recenter-button';
 import { useMapboxEventMap } from '@/features/map/hooks/use-mapbox-event-map';
@@ -10,7 +11,7 @@ import { env } from '@fomo/env/web';
 import { useQuery } from 'convex/react';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
-import { useMemo, useSyncExternalStore } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 
 const MAPBOX_TOKEN = env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
 const emptySubscribe = () => () => {};
@@ -20,6 +21,7 @@ export default function MapPage() {
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
   const { resolvedTheme } = useTheme();
   const events = useQuery(api.events.queries.getEvents) ?? [];
+  const [feedMode, setFeedMode] = useState<FeedMode>('foryou');
   const mounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -27,6 +29,14 @@ export default function MapPage() {
   );
 
   const isDark = mounted && resolvedTheme === 'dark';
+
+  // Fall back on popular waiting for event recs to be pushed onto convex
+  const visibleEvents = useMemo(() => {
+    if (feedMode === 'popular') {
+      return [...events].sort((a, b) => b.attendeeCount - a.attendeeCount);
+    }
+    return events;
+  }, [events, feedMode]);
 
   const heatmapGeoJSON = useMemo(
     () =>
@@ -42,7 +52,7 @@ export default function MapPage() {
 
   const { loadError, mapContainerRef, mapReady, recenterMap } = useMapboxEventMap({
     centerCoordinate,
-    events,
+    events: visibleEvents,
     hasResolvedLocation,
     heatmapGeoJSON,
     isDark,
@@ -74,6 +84,8 @@ export default function MapPage() {
       />
 
       <RecenterButton disabled={!locationGranted} onClick={recenterMap} />
+
+      <FeedTabs value={feedMode} onChange={setFeedMode} />
     </>
   );
 }
