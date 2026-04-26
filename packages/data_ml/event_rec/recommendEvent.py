@@ -178,7 +178,7 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
 USERS = ["ALL"]
 UPDATE_DB = True
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     log("Updating event recommendations...")
     model_dir = os.path.join(Path(__file__).parent, "models", "curr_model.pt")
     main(USERS, UPDATE_DB, model_dir)
@@ -196,5 +196,4 @@ TODO:
                  some weights if a user hasn't attended an event with said tag for the past X events.
                  Idk how to really do that with a running weight adjustment though
     3. (recommendEvent.py) Need to fix day_norm, hour_norm, and is_free fields in get_event_features. Commented "FIX:" at the spot
-    4. (recommendEvent.py) Need to push recs to DB
 """
