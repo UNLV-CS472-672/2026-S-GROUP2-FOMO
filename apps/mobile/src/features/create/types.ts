@@ -4,25 +4,29 @@ export type CreateParams = {
   mode?: string | string[];
   mediaUri?: string | string[];
   mediaType?: string | string[];
+  /** JSON-stringified `CreateMediaItem[]` for post editing flows. */
+  postMedia?: string | string[];
 };
 
-export type CreateMedia = {
+export type CreateMediaItem = {
   uri: string;
   type: string | undefined;
 };
 
-export type CreateModeValues = {
+export type PostModeValues = {
   description: string;
   tags: string[];
-  media: CreateMedia;
-};
-
-export type PostModeValues = CreateModeValues & {
+  /** Posts can have multiple photos/videos. */
+  media: CreateMediaItem[];
   eventId?: string;
 };
 
-export type EventModeValues = CreateModeValues & {
+export type EventModeValues = {
   name: string;
+  description: string;
+  tags: string[];
+  /** Events always have a single cover photo. */
+  media: CreateMediaItem;
   startDate: number;
   endDate: number;
 };

@@ -3,6 +3,7 @@ import { useCreateContext } from '@/features/create/context';
 import { getModeParam, getStringParam, toFileUri } from '@/features/create/utils';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useWatch } from 'react-hook-form';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -17,7 +18,8 @@ export default function PostPreviewScreen() {
   const params = useLocalSearchParams<PostPreviewParams>();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const { setValue, handleCloseDrawer } = useCreateContext();
+  const { control, setValue, handleCloseDrawer } = useCreateContext();
+  const currentPostMedia = useWatch({ control, name: 'post.media' });
 
   const mediaUriParam = getStringParam(params.mediaUri);
   const mediaTypeParam = getStringParam(params.mediaType);
@@ -33,11 +35,19 @@ export default function PostPreviewScreen() {
 
   const handleUseMedia = () => {
     if (!mediaUri) return;
-    setValue(
-      mode === 'event' ? 'event.media' : 'post.media',
-      { uri: mediaUri, type: mediaType },
-      { shouldDirty: true, shouldValidate: true }
-    );
+    if (mode === 'event') {
+      setValue(
+        'event.media',
+        { uri: mediaUri, type: mediaType },
+        { shouldDirty: true, shouldValidate: true }
+      );
+    } else {
+      const existing = Array.isArray(currentPostMedia) ? currentPostMedia : [];
+      setValue('post.media', [...existing, { uri: mediaUri, type: mediaType }], {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
     handleCloseDrawer();
     router.dismissTo({ pathname: '/(tabs)/create' as never });
   };

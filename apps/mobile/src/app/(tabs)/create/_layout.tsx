@@ -31,6 +31,15 @@ export default function CreateLayout() {
             animationDuration: 280,
           }}
         />
+        <Stack.Screen
+          name="manage-media"
+          options={{
+            presentation: 'modal',
+            title: 'Manage media',
+            animation: 'slide_from_bottom',
+            animationDuration: 280,
+          }}
+        />
       </Stack>
     </CreateProvider>
   );

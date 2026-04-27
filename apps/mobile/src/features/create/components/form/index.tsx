@@ -5,11 +5,17 @@ import { MediaField } from '@/features/create/components/form/media-field';
 import { NameField } from '@/features/create/components/form/name-field';
 import { TagsField } from '@/features/create/components/form/tags-field';
 import { useCreateContext } from '@/features/create/context';
-import type { CreateMedia, CreateMode } from '@/features/create/types';
+import type { CreateMediaItem, CreateMode } from '@/features/create/types';
 import { useController, useWatch } from 'react-hook-form';
 import { View } from 'react-native';
 
-export function CreateForm({ mode }: { mode: CreateMode }) {
+export function CreateForm({
+  mode,
+  openManagePostMedia,
+}: {
+  mode: CreateMode;
+  openManagePostMedia?: (items: CreateMediaItem[]) => void;
+}) {
   const {
     control,
     setValue,
@@ -22,13 +28,10 @@ export function CreateForm({ mode }: { mode: CreateMode }) {
   } = useCreateContext();
 
   const formActive = mode === 'event' ? isEventMode : !isEventMode;
-  const mediaFieldName = mode === 'event' ? 'event.media' : 'post.media';
-  const media = (useWatch({ control, name: mediaFieldName }) ?? {
-    uri: '',
-    type: undefined,
-  }) as CreateMedia;
-  const hasPhoto = !!media.uri && media.type !== 'video';
-  const shouldShowMediaSection = mode === 'event' || hasPhoto;
+  const eventMedia = useWatch({ control, name: 'event.media' }) as CreateMediaItem | undefined;
+  const postMedia = useWatch({ control, name: 'post.media' }) as CreateMediaItem[] | undefined;
+  const shouldShowMediaSection =
+    mode === 'event' || (mode === 'post' && (postMedia?.length ?? 0) > 0);
 
   const {
     fieldState: { error: eventMediaUriError },
@@ -44,23 +47,29 @@ export function CreateForm({ mode }: { mode: CreateMode }) {
       {shouldShowMediaSection ? (
         <MediaField
           mode={mode}
-          media={media}
+          media={
+            mode === 'event' ? (eventMedia ?? { uri: '', type: undefined }) : (postMedia ?? [])
+          }
           mediaHeight={mediaHeight}
           openCamera={openCamera}
-          clearMedia={() => {
-            if (mode === 'event') {
-              setValue(
-                'event.media',
-                { uri: '', type: undefined },
-                { shouldDirty: true, shouldValidate: true }
-              );
-            } else {
-              setValue(
-                'post.media',
-                { uri: '', type: undefined },
-                { shouldDirty: true, shouldValidate: true }
-              );
-            }
+          openManage={() => {
+            if (mode !== 'post') return;
+            openManagePostMedia?.(postMedia ?? []);
+          }}
+          clearMedia={() =>
+            mode === 'event'
+              ? setValue(
+                  'event.media',
+                  { uri: '', type: undefined },
+                  { shouldDirty: true, shouldValidate: true }
+                )
+              : setValue('post.media', [], { shouldDirty: true, shouldValidate: true })
+          }
+          removePostMediaAtIndex={(index) => {
+            if (mode !== 'post') return;
+            const next = Array.isArray(postMedia) ? postMedia.slice() : [];
+            next.splice(index, 1);
+            setValue('post.media', next, { shouldDirty: true, shouldValidate: true });
           }}
           errorMessage={mode === 'event' ? eventMediaUriError?.message : undefined}
         />

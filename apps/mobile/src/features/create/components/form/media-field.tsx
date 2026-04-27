@@ -1,14 +1,122 @@
 import { Icon } from '@/components/icon';
-import type { CreateMedia, CreateMode } from '@/features/create/types';
+import { MediaMosaic } from '@/components/media/media-mosaic';
+import type { CreateMediaItem, CreateMode } from '@/features/create/types';
 import { Image } from 'expo-image';
 import { Pressable, Text, View } from 'react-native';
 
+function PostMediaTile({
+  item,
+  overlayLabel,
+  onRemove,
+}: {
+  item: CreateMediaItem;
+  overlayLabel?: string;
+  onRemove?: () => void;
+}) {
+  const isVideo = item.type === 'video';
+  return (
+    <View
+      className="flex-1 overflow-hidden rounded-2xl border border-border bg-muted"
+      style={{ borderCurve: 'continuous' }}
+    >
+      {!isVideo ? (
+        <Image
+          source={{ uri: item.uri }}
+          style={{ width: '100%', height: '100%' }}
+          contentFit="cover"
+        />
+      ) : (
+        <View className="flex-1 items-center justify-center bg-black/85">
+          <Icon name="play-arrow" size={34} className="text-white" />
+        </View>
+      )}
+
+      {overlayLabel ? (
+        <View className="absolute inset-0 items-center justify-center bg-black/55">
+          <Text className="text-[22px] font-bold text-white">{overlayLabel}</Text>
+        </View>
+      ) : null}
+
+      {onRemove ? (
+        <Pressable
+          onPress={onRemove}
+          hitSlop={10}
+          className="absolute right-1.5 top-1.5 items-center justify-center rounded-full bg-background/80 p-1.5"
+          accessibilityRole="button"
+          accessibilityLabel="Remove media"
+        >
+          <Icon name="close" size={14} className="text-foreground" />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+function PostMediaPreviewGrid({
+  items,
+  onRemoveAtIndex,
+}: {
+  items: CreateMediaItem[];
+  onRemoveAtIndex?: (index: number) => void;
+}) {
+  if (items.length === 0) return null;
+
+  if (items.length === 1) {
+    const item = items[0]!;
+    const isVideo = item.type === 'video';
+    return (
+      <View className="flex-1">
+        {!isVideo ? (
+          <Image
+            source={{ uri: item.uri }}
+            style={{ width: '100%', height: '100%' }}
+            contentFit="cover"
+          />
+        ) : (
+          <View className="flex-1 items-center justify-center bg-black">
+            <Icon name="play-arrow" size={54} className="text-white" />
+            <Text className="mt-2 text-[13px] font-semibold text-white/80">Video</Text>
+          </View>
+        )}
+
+        {onRemoveAtIndex ? (
+          <Pressable
+            onPress={() => onRemoveAtIndex(0)}
+            hitSlop={10}
+            className="absolute right-3 top-3 items-center justify-center rounded-full bg-background/80 p-2"
+            accessibilityRole="button"
+            accessibilityLabel="Remove media"
+          >
+            <Icon name="close" size={16} className="text-foreground" />
+          </Pressable>
+        ) : null}
+      </View>
+    );
+  }
+
+  return (
+    <MediaMosaic
+      items={items}
+      className="flex-1 p-2"
+      renderItem={({ item, index, overlayLabel }) => (
+        <PostMediaTile
+          item={item}
+          overlayLabel={overlayLabel}
+          onRemove={onRemoveAtIndex ? () => onRemoveAtIndex(index) : undefined}
+        />
+      )}
+    />
+  );
+}
+
 type MediaFieldProps = {
   mode: CreateMode;
-  media: CreateMedia;
+  media: CreateMediaItem | CreateMediaItem[];
   mediaHeight: number;
   openCamera: () => void;
+  openManage?: () => void;
   clearMedia: () => void;
+  removePostMediaAtIndex?: (index: number) => void;
   errorMessage?: string;
 };
 
@@ -17,52 +125,109 @@ export function MediaField({
   media,
   mediaHeight,
   openCamera,
+  openManage,
   clearMedia,
+  removePostMediaAtIndex,
   errorMessage,
 }: MediaFieldProps) {
   const isEventMode = mode === 'event';
-  const hasPhoto = !!media.uri && media.type !== 'video';
+  const postItems = Array.isArray(media) ? media : [];
+  const eventItem = !Array.isArray(media) ? media : { uri: '', type: undefined };
+  const hasEventPhoto = !!eventItem.uri && eventItem.type !== 'video';
   const hasError = !!errorMessage;
 
   return (
     <View className="gap-2">
-      <Text className="text-[13px] font-semibold tracking-wide text-muted-foreground">MEDIA</Text>
-      <Pressable onPress={hasPhoto ? undefined : openCamera} className="rounded-2xl shadow-md">
+      <View className="flex-row items-center justify-between">
+        <Text className="text-[13px] font-semibold tracking-wide text-muted-foreground">MEDIA</Text>
+        {!isEventMode && postItems.length > 0 ? (
+          <Pressable
+            onPress={openCamera}
+            className="flex-row items-center gap-1"
+            accessibilityRole="button"
+            accessibilityLabel="Add more media"
+          >
+            <Icon name="add" size={16} className="text-muted-foreground" />
+            <Text className="text-[13px] font-semibold text-muted-foreground">Add more</Text>
+          </Pressable>
+        ) : null}
+      </View>
+      {isEventMode ? (
+        <Pressable
+          onPress={hasEventPhoto ? undefined : openCamera}
+          className="rounded-2xl shadow-md"
+        >
+          <View
+            className={`overflow-hidden rounded-2xl border bg-surface ${hasError ? 'border-destructive' : 'border-muted'}`}
+            style={{ height: mediaHeight, borderCurve: 'continuous' }}
+          >
+            {hasEventPhoto ? (
+              <>
+                <Image
+                  source={{ uri: eventItem.uri }}
+                  style={{ width: '100%', height: '100%' }}
+                  contentFit="cover"
+                />
+                <Pressable
+                  onPress={clearMedia}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel="Remove image"
+                  className="absolute right-3 top-3 items-center justify-center rounded-full bg-background/80 p-2"
+                >
+                  <Icon name="close" size={16} className="text-foreground" />
+                </Pressable>
+              </>
+            ) : (
+              <View className="flex-1 items-center justify-center gap-2 p-6">
+                <Text className="text-center text-[15px] font-semibold text-muted-foreground">
+                  Add event cover
+                </Text>
+                <Text className="text-center text-[13px] leading-5 text-muted-foreground">
+                  Tap to capture a cover image for the event
+                </Text>
+              </View>
+            )}
+          </View>
+        </Pressable>
+      ) : (
         <View
-          className={`overflow-hidden rounded-2xl border bg-surface ${hasError ? 'border-destructive' : 'border-muted'}`}
+          className={`overflow-hidden rounded-2xl border bg-surface shadow-md ${hasError ? 'border-destructive' : 'border-muted'}`}
           style={{ height: mediaHeight, borderCurve: 'continuous' }}
         >
-          {hasPhoto ? (
+          {postItems.length > 0 ? (
             <>
-              <Image
-                source={{ uri: media.uri }}
-                style={{ width: '100%', height: '100%' }}
-                contentFit="cover"
-              />
-              <Pressable
-                onPress={clearMedia}
-                hitSlop={10}
-                accessibilityRole="button"
-                accessibilityLabel="Remove image"
-                className="absolute right-3 top-3 items-center justify-center rounded-full bg-background/80 p-2"
-              >
-                <Icon name="close" size={16} className="text-foreground" />
-              </Pressable>
+              {postItems.length >= 2 && openManage ? (
+                <Pressable
+                  onPress={openManage}
+                  className="flex-1"
+                  accessibilityRole="button"
+                  accessibilityLabel="Manage media"
+                >
+                  <PostMediaPreviewGrid
+                    items={postItems}
+                    onRemoveAtIndex={removePostMediaAtIndex}
+                  />
+                </Pressable>
+              ) : (
+                <PostMediaPreviewGrid items={postItems} onRemoveAtIndex={removePostMediaAtIndex} />
+              )}
             </>
           ) : (
-            <View className="flex-1 items-center justify-center gap-2 p-6">
+            <Pressable
+              onPress={openCamera}
+              className="flex-1 items-center justify-center gap-2 p-6"
+            >
               <Text className="text-center text-[15px] font-semibold text-muted-foreground">
-                {isEventMode ? 'Add event cover' : 'Add photo or video'}
+                Add photo or video
               </Text>
               <Text className="text-center text-[13px] leading-5 text-muted-foreground">
-                {isEventMode
-                  ? 'Tap to capture a cover image for the event'
-                  : 'Tap to capture something for your post'}
+                Tap to capture something for your post
               </Text>
-            </View>
+            </Pressable>
           )}
         </View>
-      </Pressable>
+      )}
       {hasError ? (
         <Text className="text-[12px] text-destructive" accessibilityRole="alert">
           {errorMessage}

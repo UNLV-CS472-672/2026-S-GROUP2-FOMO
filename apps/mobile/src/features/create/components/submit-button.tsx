@@ -68,7 +68,11 @@ export function CreateSubmitButton({
         {disabled ? (
           <ActivityIndicator size="small" color={theme.tint} />
         ) : (
-          <Icon name={isEventMode ? 'event-available' : 'add'} size={20} className="text-primary" />
+          <Icon
+            name={isEventMode ? 'event-available' : 'add'}
+            size={isEventMode ? 20 : 25}
+            className="text-primary"
+          />
         )}
       </Pressable>
     </Animated.View>

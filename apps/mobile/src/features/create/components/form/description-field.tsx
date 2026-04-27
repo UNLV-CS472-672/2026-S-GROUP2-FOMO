@@ -18,7 +18,11 @@ export function DescriptionField({ control, mode, formActive }: DescriptionField
     disabled: !formActive,
     rules: {
       validate: (value, formValues) => {
-        if (!isEventMode && !formValues.post.media.uri && !value.trim()) {
+        if (
+          !isEventMode &&
+          (!formValues.post.media || formValues.post.media.length === 0) &&
+          !value.trim()
+        ) {
           return 'Add a caption or attach a photo/video.';
         }
         return true;

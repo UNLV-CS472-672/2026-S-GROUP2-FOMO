@@ -11,6 +11,13 @@ import { useForm } from 'react-hook-form';
 import { Alert } from 'react-native';
 
 const H3_RESOLUTION = 9;
+/** WGS84 coordinates rounded for storage (~1 cm precision; avoids float noise from GPS). */
+const LOCATION_COORDINATE_DECIMALS = 7;
+
+function roundGeographicCoordinate(value: number): number {
+  const factor = 10 ** LOCATION_COORDINATE_DECIMALS;
+  return Math.round(value * factor) / factor;
+}
 
 async function getDeviceLocation() {
   try {
@@ -19,7 +26,8 @@ async function getDeviceLocation() {
     const position = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced,
     });
-    const { latitude, longitude } = position.coords;
+    const latitude = roundGeographicCoordinate(position.coords.latitude);
+    const longitude = roundGeographicCoordinate(position.coords.longitude);
     const h3Index = latLngToCell(latitude, longitude, H3_RESOLUTION);
     return { latitude, longitude, h3Index };
   } catch {
@@ -37,7 +45,7 @@ export function useCreateForm(selectedMode: CreateMode) {
 
   const { control, handleSubmit, setValue, reset } = useForm<CreateFormValues>({
     defaultValues: {
-      post: { description: '', tags: [], media: { uri: '', type: undefined }, eventId: undefined },
+      post: { description: '', tags: [], media: [], eventId: undefined },
       event: {
         name: '',
         description: '',
@@ -71,22 +79,25 @@ export function useCreateForm(selectedMode: CreateMode) {
         return found ? [found.id as Id<'tags'>] : [];
       });
 
-      let storageId: Id<'_storage'> | undefined;
-      if (activeValues.media.uri) {
-        storageId = await uploadMedia(
-          activeValues.media.uri,
-          activeValues.media.type === 'video' ? 'video/mp4' : 'image/jpeg'
-        );
-      }
-
       let eventId: Id<'events'>;
       if (selectedMode === 'post') {
         const postValues = values.post;
         eventId = postValues.eventId as Id<'events'>;
         const caption = postValues.description.trim() || undefined;
+
+        const mediaIds: Id<'_storage'>[] = [];
+        for (const item of postValues.media) {
+          if (!item?.uri) continue;
+          const storageId = await uploadMedia(
+            item.uri,
+            item.type === 'video' ? 'video/mp4' : 'image/jpeg'
+          );
+          mediaIds.push(storageId);
+        }
+
         await createPost({
           caption,
-          mediaIds: storageId ? [storageId] : [],
+          mediaIds,
           eventId,
           tagIds,
         });
@@ -97,6 +108,14 @@ export function useCreateForm(selectedMode: CreateMode) {
           longitude: 0,
           h3Index: latLngToCell(0, 0, H3_RESOLUTION),
         };
+        let storageId: Id<'_storage'> | undefined;
+        if (eventValues.media.uri) {
+          storageId = await uploadMedia(
+            eventValues.media.uri,
+            eventValues.media.type === 'video' ? 'video/mp4' : 'image/jpeg'
+          );
+        }
+
         eventId = await createEvent({
           name: eventValues.name.trim(),
           caption: eventValues.description.trim(),
