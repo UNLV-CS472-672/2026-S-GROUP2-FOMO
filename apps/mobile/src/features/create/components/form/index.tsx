@@ -64,9 +64,7 @@ export function CreateForm({
                 )
               : clearPostMedia()
           }
-          removePostMediaAtIndex={
-            mode === 'post' ? (index) => removePostMedia(index) : undefined
-          }
+          removePostMediaAtIndex={mode === 'post' ? (index) => removePostMedia(index) : undefined}
           errorMessage={mode === 'event' ? eventMediaUriError?.message : undefined}
         />
       ) : null}

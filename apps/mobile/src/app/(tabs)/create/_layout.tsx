@@ -18,6 +18,7 @@ export default function CreateLayout() {
           options={{
             presentation: 'modal',
             title: 'Gallery',
+            headerShown: true,
             animation: 'slide_from_bottom',
             animationDuration: 280,
           }}

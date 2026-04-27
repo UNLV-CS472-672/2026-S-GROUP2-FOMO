@@ -7,12 +7,12 @@ import type { CreateMediaItem } from '@/features/create/types';
 import { Image } from 'expo-image';
 import { useNavigation, useRouter } from 'expo-router';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useWatch } from 'react-hook-form';
 import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import DraggableFlatList, {
   ScaleDecorator,
   type RenderItemParams,
 } from 'react-native-draggable-flatlist';
-import { useWatch } from 'react-hook-form';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -105,32 +105,46 @@ export default function ManageMediaScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { control, replacePostMedia } = useCreateContext();
-  const currentPostMedia = useWatch({ control, name: 'post.media' }) as CreateMediaItem[] | undefined;
+  const { control, removePostMedia, replacePostMedia } = useCreateContext();
+  const currentPostMedia = useWatch({ control, name: 'post.media' }) as
+    | CreateMediaItem[]
+    | undefined;
 
-  const [items, setItems] = useState<MediaRow[]>(() =>
-    (currentPostMedia ?? []).map((item, index) => ({
-      ...item,
-      key: `${item.uri}::${index}`,
-    }))
-  );
+  // Stable key assignment: each unique (uri, occurrence-index) gets a persistent id so
+  // DraggableFlatList can animate across context re-renders without key churn.
+  const keyCounterRef = useRef(0);
+  const keyMapRef = useRef(new Map<string, string>());
+
+  const items = useMemo<MediaRow[]>(() => {
+    const seen = new Map<string, number>();
+    return (currentPostMedia ?? []).map((item) => {
+      const n = seen.get(item.uri) ?? 0;
+      seen.set(item.uri, n + 1);
+      const slot = `${item.uri}::${n}`;
+      if (!keyMapRef.current.has(slot)) {
+        keyMapRef.current.set(slot, String(++keyCounterRef.current));
+      }
+      return { ...item, key: keyMapRef.current.get(slot)! };
+    });
+  }, [currentPostMedia]);
+
   const [previewKey, setPreviewKey] = useState<string | null>(items[0]?.key ?? null);
 
-  const previewIndex = useMemo(() => {
-    const idx = items.findIndex((item) => item.key === previewKey);
-    return idx >= 0 ? idx : 0;
-  }, [items, previewKey]);
+  // Derive the active key during render — no effect needed.
+  const activePreviewKey = items.some((item) => item.key === previewKey)
+    ? previewKey
+    : (items[0]?.key ?? null);
 
-  const handleDone = useCallback(() => {
-    replacePostMedia(items.map(({ uri, type }) => ({ uri, type })));
-    router.back();
-  }, [items, replacePostMedia, router]);
+  const previewIndex = useMemo(() => {
+    const idx = items.findIndex((item) => item.key === activePreviewKey);
+    return idx >= 0 ? idx : 0;
+  }, [items, activePreviewKey]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
         <Pressable
-          onPress={handleDone}
+          onPress={() => router.back()}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="Done"
@@ -139,43 +153,56 @@ export default function ManageMediaScreen() {
         </Pressable>
       ),
     });
-  }, [handleDone, navigation]);
+  }, [navigation, router]);
 
   const handleRemove = useCallback(
     (key: string) => {
-      setItems((prev) => {
-        const next = prev.filter((item) => item.key !== key);
-
-        if (key === previewKey) {
-          const oldIdx = prev.findIndex((item) => item.key === key);
-          const newIdx = Math.min(oldIdx, next.length - 1);
-          setPreviewKey(next[newIdx]?.key ?? null);
-        }
-
-        return next;
+      const idx = items.findIndex((item) => item.key === key);
+      if (idx < 0) return;
+      setPreviewKey((prev) => {
+        if (prev !== key) return prev;
+        const fallback = items[Math.min(idx, items.length - 2)];
+        return fallback?.key !== key ? (fallback?.key ?? null) : null;
       });
+      removePostMedia(idx);
     },
-    [previewKey]
+    [items, removePostMedia]
   );
 
-  const handleDragEnd = useCallback(({ data }: { data: MediaRow[] }) => {
-    setItems(data);
-  }, []);
+  const handleDragEnd = useCallback(
+    ({ data }: { data: MediaRow[] }) => {
+      replacePostMedia(data.map(({ uri, type }) => ({ uri, type })));
+    },
+    [replacePostMedia]
+  );
+
+  const openGalleryToReplace = useCallback(
+    (key: string) => {
+      const replaceIdx = items.findIndex((row) => row.key === key);
+      if (replaceIdx < 0) return;
+      router.push({
+        pathname: '/create/gallery' as never,
+        params: { mode: 'post', replaceIndex: String(replaceIdx) } as never,
+      });
+    },
+    [items, router]
+  );
 
   const renderItem = useCallback(
     ({ item, drag, isActive }: RenderItemParams<MediaRow>) => {
       const displayIndex = items.findIndex((row) => row.key === item.key);
       const labelIndex = displayIndex >= 0 ? displayIndex + 1 : 1;
       const isVideo = item.type === 'video';
+      const isSelected = item.key === activePreviewKey;
 
       return (
-        <ScaleDecorator activeScale={0.97}>
+        <ScaleDecorator activeScale={0.95}>
           <Pressable
             onLongPress={drag}
             delayLongPress={150}
             onPress={() => setPreviewKey(item.key)}
             className={`mx-4 flex-row items-center gap-3 rounded-2xl border-2 p-2 ${
-              isActive ? 'border-primary/40 bg-primary/5' : 'border-transparent bg-surface'
+              isActive ? 'border-primary/40 bg-primary/5 my-2' : 'border-transparent bg-surface'
             }`}
             style={{
               borderCurve: 'continuous',
@@ -184,15 +211,29 @@ export default function ManageMediaScreen() {
             accessibilityRole="button"
             accessibilityLabel={`Media ${labelIndex}, hold to reorder`}
           >
-            <Text className="text-xs font-bold text-foreground">{labelIndex}</Text>
+            <Icon
+              name="drag-handle"
+              size={24}
+              className={isActive ? 'text-primary' : 'text-muted-foreground/50'}
+            />
+
+            <View
+              className={`min-h-7 min-w-7 items-center justify-center rounded-full px-1 ${
+                isSelected ? 'bg-primary' : 'bg-transparent'
+              }`}
+            >
+              <Text
+                className={`text-xs font-bold ${
+                  isSelected ? 'text-primary-foreground' : 'text-foreground'
+                }`}
+              >
+                {labelIndex}
+              </Text>
+            </View>
 
             <View
               className="overflow-hidden rounded-xl bg-muted"
-              style={{
-                width: 64,
-                height: 64,
-                borderCurve: 'continuous',
-              }}
+              style={{ width: 64, height: 64, borderCurve: 'continuous' }}
             >
               {isVideo ? (
                 <View className="h-full w-full">
@@ -218,26 +259,30 @@ export default function ManageMediaScreen() {
 
             <View className="flex-1" />
 
-            <Icon
-              name="drag-handle"
-              size={20}
-              className={isActive ? 'text-primary' : 'text-muted-foreground/50'}
-            />
+            <Pressable
+              onPress={() => openGalleryToReplace(item.key)}
+              hitSlop={6}
+              className="h-10 w-10 items-center justify-center rounded-full bg-primary/10"
+              accessibilityRole="button"
+              accessibilityLabel={`Replace media ${labelIndex} from library`}
+            >
+              <Icon name="photo-library" size={20} className="text-primary" />
+            </Pressable>
 
             <Pressable
               onPress={() => handleRemove(item.key)}
               hitSlop={6}
-              className="h-7 w-7 items-center justify-center rounded-full bg-destructive/10"
+              className="h-10 w-10 items-center justify-center rounded-full bg-destructive/10"
               accessibilityRole="button"
               accessibilityLabel={`Remove media ${labelIndex}`}
             >
-              <Icon name="close" size={14} className="text-destructive" />
+              <Icon name="close" size={20} className="text-destructive" />
             </Pressable>
           </Pressable>
         </ScaleDecorator>
       );
     },
-    [handleRemove, items]
+    [handleRemove, openGalleryToReplace, items, activePreviewKey]
   );
 
   const handleChangePreviewIndex = useCallback(
@@ -265,8 +310,7 @@ export default function ManageMediaScreen() {
           containerStyle={{ flex: 1 }}
           contentContainerStyle={{
             paddingTop: 12,
-            paddingBottom: 24,
-            rowGap: 6,
+            rowGap: 12,
           }}
           onDragEnd={handleDragEnd}
           renderItem={renderItem}

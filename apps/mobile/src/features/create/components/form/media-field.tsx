@@ -3,7 +3,12 @@ import { MediaMosaic } from '@/components/media/media-mosaic';
 import { VideoThumbnail } from '@/components/video/video-thumbnail';
 import type { CreateMediaItem, CreateMode } from '@/features/create/types';
 import { Image } from 'expo-image';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View, type ViewStyle } from 'react-native';
+
+const removePostMediaButtonStyle: ViewStyle = {
+  zIndex: 2,
+  elevation: 6,
+};
 
 function PostMediaTile({
   item,
@@ -53,6 +58,7 @@ function PostMediaTile({
         <Pressable
           onPress={onRemove}
           hitSlop={10}
+          style={removePostMediaButtonStyle}
           className="absolute right-1.5 top-1.5 items-center justify-center rounded-full bg-background/80 p-1.5"
           accessibilityRole="button"
           accessibilityLabel="Remove media"
@@ -77,15 +83,16 @@ function PostMediaPreviewGrid({
     const item = items[0]!;
     const isVideo = item.type === 'video';
     return (
-      <View className="flex-1">
+      <View className="flex-1" pointerEvents="box-none">
         {!isVideo ? (
           <Image
             source={{ uri: item.uri }}
             style={{ width: '100%', height: '100%' }}
             contentFit="cover"
+            pointerEvents="none"
           />
         ) : (
-          <View className="h-full w-full">
+          <View className="h-full w-full" pointerEvents="none">
             <VideoThumbnail
               uri={item.uri}
               className="h-full w-full"
@@ -105,6 +112,7 @@ function PostMediaPreviewGrid({
           <Pressable
             onPress={() => onRemoveAtIndex(0)}
             hitSlop={10}
+            style={removePostMediaButtonStyle}
             className="absolute right-3 top-3 items-center justify-center rounded-full bg-background/80 p-2"
             accessibilityRole="button"
             accessibilityLabel="Remove media"

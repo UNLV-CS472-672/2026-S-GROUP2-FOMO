@@ -7,7 +7,7 @@ import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { latLngToCell } from 'h3-js';
 import { useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { Alert } from 'react-native';
 
 const H3_RESOLUTION = 9;
@@ -65,8 +65,17 @@ export function useCreateForm(selectedMode: CreateMode) {
     },
   });
 
-  const { append: appendPostMedia, remove: removePostMedia, replace: replacePostMedia } =
-    useFieldArray({ control, name: 'post.media' });
+  const {
+    append: appendPostMedia,
+    remove: removePostMedia,
+    replace: replacePostMedia,
+  } = useFieldArray({ control, name: 'post.media' });
+
+  const watchedPostMedia = useWatch({ control, name: 'post.media' });
+  const watchedEventMedia = useWatch({ control, name: 'event.media' });
+
+  const hasEventCoverMedia = !!watchedEventMedia?.uri && watchedEventMedia.type !== 'video';
+  const hasPostMediaWithUri = (watchedPostMedia ?? []).some((m) => !!m?.uri);
 
   const [isTagMenuOpen, setIsTagMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -149,5 +158,7 @@ export function useCreateForm(selectedMode: CreateMode) {
     isTagMenuOpen,
     setIsTagMenuOpen,
     isSubmitting,
+    hasEventCoverMedia,
+    hasPostMediaWithUri,
   };
 }

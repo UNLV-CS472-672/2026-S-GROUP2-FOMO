@@ -4,11 +4,20 @@ import { LatestGalleryImage } from '@/features/create/components/latest-gallery-
 import { useCapture } from '@/features/create/hooks/use-capture';
 import type { CreateMode } from '@/features/create/types';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  AppState,
+  Linking,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
+import { Camera, type CameraPermissionStatus, useCameraDevice } from 'react-native-vision-camera';
 
 type CreateCameraCaptureViewProps = {
   mode: CreateMode;
@@ -24,7 +33,54 @@ export function CreateCameraCaptureView({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const cameraRef = useRef<Camera>(null);
-  const { hasPermission, requestPermission } = useCameraPermission();
+
+  const [cameraPermission, setCameraPermission] = useState<CameraPermissionStatus>(() =>
+    Camera.getCameraPermissionStatus()
+  );
+  const [isRequestingCameraPermission, setIsRequestingCameraPermission] = useState(false);
+
+  const refreshCameraPermission = useCallback(() => {
+    setCameraPermission(Camera.getCameraPermissionStatus());
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshCameraPermission();
+    }, [refreshCameraPermission])
+  );
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        refreshCameraPermission();
+      }
+    });
+    return () => sub.remove();
+  }, [refreshCameraPermission]);
+
+  const hasPermission = cameraPermission === 'granted';
+  const mustOpenSettingsForCamera =
+    cameraPermission === 'denied' || cameraPermission === 'restricted';
+
+  const requestCameraAccess = useCallback(async () => {
+    setIsRequestingCameraPermission(true);
+    try {
+      const status = Camera.getCameraPermissionStatus();
+      if (status === 'granted') {
+        refreshCameraPermission();
+        return;
+      }
+      if (status === 'not-determined') {
+        await Camera.requestCameraPermission();
+        refreshCameraPermission();
+        return;
+      }
+      await Linking.openSettings();
+      refreshCameraPermission();
+    } finally {
+      setIsRequestingCameraPermission(false);
+    }
+  }, [refreshCameraPermission]);
 
   const [cameraFacing, setCameraFacing] = useState<'front' | 'back'>('back');
   const [flash, setFlash] = useState<'on' | 'off'>('off');
@@ -49,11 +105,22 @@ export function CreateCameraCaptureView({
             Enable camera permission to capture photos and videos.
           </Text>
           <Pressable
-            className="mt-2 rounded-full border border-white/40 px-4.5 py-2.5"
-            onPress={requestPermission}
+            className="mt-2 min-h-[48px] flex-row items-center justify-center gap-2 rounded-full border border-white/40 px-4.5 py-2.5"
+            disabled={isRequestingCameraPermission}
+            onPress={() => {
+              void requestCameraAccess();
+            }}
           >
-            <Text className="font-semibold text-white">Allow Camera Access</Text>
+            {isRequestingCameraPermission ? <ActivityIndicator color="#fff" /> : null}
+            <Text className="font-semibold text-white">
+              {mustOpenSettingsForCamera ? 'Open Settings' : 'Allow Camera Access'}
+            </Text>
           </Pressable>
+          {mustOpenSettingsForCamera ? (
+            <Text className="mt-1 max-w-sm text-center text-sm text-white/70">
+              Camera access is off for this app. Open Settings, enable Camera, then return here.
+            </Text>
+          ) : null}
         </View>
       </View>
     );

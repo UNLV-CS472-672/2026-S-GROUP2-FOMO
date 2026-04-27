@@ -38,7 +38,11 @@ export default function CreateScreen() {
     onSubmit,
     isTagMenuOpen,
     isSubmitting,
+    hasEventCoverMedia,
+    hasPostMediaWithUri,
   } = useCreateContext();
+
+  const drawerHasExistingMedia = isEventMode ? hasEventCoverMedia : hasPostMediaWithUri;
 
   const openManagePostMedia = () => {
     router.push({ pathname: '/create/manage-media' as never });
@@ -89,6 +93,7 @@ export default function CreateScreen() {
           drawerIndex={drawerIndex}
           drawerSnapPoints={CREATE_DRAWER_SNAP_POINTS}
           mode={selectedMode}
+          hasExistingMedia={drawerHasExistingMedia}
           isParentFocused={isFocused}
           animatedIndex={drawerAnimatedIndex}
           animatedPosition={drawerAnimatedPosition}

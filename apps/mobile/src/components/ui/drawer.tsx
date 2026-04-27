@@ -5,9 +5,29 @@ import BottomSheet, {
   type BottomSheetBackdropProps,
   type BottomSheetFooterProps,
 } from '@gorhom/bottom-sheet';
-import { useCallback, useEffect, useRef, type FC, type ReactNode } from 'react';
-import { Keyboard } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, type FC, type ReactNode } from 'react';
+import { Keyboard, Platform, type ViewStyle } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
+
+/** Upward shadow so the sheet’s top edge reads above the backdrop (iOS: offset; Android: elevation). */
+function drawerSheetBackgroundStyle(surfaceColor: string): ViewStyle {
+  return {
+    backgroundColor: surfaceColor,
+    borderRadius: 40,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: -8 },
+        shadowOpacity: 0.22,
+        shadowRadius: 18,
+      },
+      android: {
+        elevation: 20,
+      },
+      default: {},
+    }),
+  };
+}
 
 type DrawerProps = {
   children: ReactNode;
@@ -38,6 +58,10 @@ export function Drawer({
   const bottomSheetRef = useRef<BottomSheet>(null);
   const hasMountedRef = useRef(false);
   const theme = useAppTheme();
+  const sheetBackgroundStyle = useMemo(
+    () => drawerSheetBackgroundStyle(theme.surface),
+    [theme.surface]
+  );
 
   useEffect(() => {
     if (!hasMountedRef.current) {
@@ -91,7 +115,7 @@ export function Drawer({
       handleIndicatorStyle={
         showHandle ? { backgroundColor: theme.mutedText, width: 40 } : undefined
       }
-      backgroundStyle={{ backgroundColor: theme.surface, borderRadius: 40 }}
+      backgroundStyle={sheetBackgroundStyle}
     >
       {children}
     </BottomSheet>
@@ -146,6 +170,10 @@ export function DrawerModal({
 }: DrawerModalProps) {
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const theme = useAppTheme();
+  const sheetBackgroundStyle = useMemo(
+    () => drawerSheetBackgroundStyle(theme.surface),
+    [theme.surface]
+  );
 
   const dismissKeyboardWhenClosing = useCallback(
     (_fromIndex: number, toIndex: number, _fromPosition: number, _toPosition: number) => {
@@ -196,7 +224,7 @@ export function DrawerModal({
       bottomInset={bottomInset}
       enableBlurKeyboardOnGesture={enableBlurKeyboardOnGesture}
       handleIndicatorStyle={{ backgroundColor: theme.mutedText, width: 40 }}
-      backgroundStyle={{ backgroundColor: theme.surface, borderRadius: 40 }}
+      backgroundStyle={sheetBackgroundStyle}
     >
       {children}
     </BottomSheetModal>

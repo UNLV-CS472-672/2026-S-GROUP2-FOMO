@@ -19,10 +19,29 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
+type CameraDrawerHint = { title: string; caption: string };
+
+function getCameraDrawerHint(mode: CreateMode, hasExistingMedia: boolean): CameraDrawerHint {
+  const caption = 'Swipe up to open the camera';
+
+  if (mode === 'event') {
+    if (hasExistingMedia) {
+      return { title: 'Replace your cover photo', caption };
+    }
+    return { title: 'Add a cover photo for your event', caption };
+  }
+
+  if (hasExistingMedia) {
+    return { title: 'Add another photo or video', caption };
+  }
+  return { title: 'Add a photo or video to your post', caption };
+}
+
 type CreateCameraDrawerProps = {
   drawerIndex: number;
   drawerSnapPoints: string[];
   mode: CreateMode;
+  hasExistingMedia: boolean;
   isParentFocused: boolean;
   animatedIndex: SharedValue<number>;
   animatedPosition: SharedValue<number>;
@@ -34,12 +53,15 @@ export function CreateCameraDrawer({
   drawerIndex,
   drawerSnapPoints,
   mode,
+  hasExistingMedia,
   isParentFocused,
   animatedIndex,
   animatedPosition,
   onChange,
   onClose,
 }: CreateCameraDrawerProps) {
+  const { title, caption } = getCameraDrawerHint(mode, hasExistingMedia);
+
   const isCameraWarmedUp = useSharedValue(false);
   const tabBarHeight = useBottomTabBarHeight();
   // Worklet-side tracker so we can guard scheduleOnRN without reading React state.
@@ -138,12 +160,18 @@ export function CreateCameraDrawer({
           pointerEvents="none"
           style={hintStyle}
         >
-          <View className="items-center">
+          <View className="items-center px-6">
             {/* HACK: manual handle so it's not included once fully expanded   */}
             <View className="mt-[9.5px] h-1 w-10 rounded-full light:bg-[#786860] dark:bg-[#baa99f]" />
 
-            <Text className="mt-8 text-[12px] font-semibold uppercase tracking-[0.8px] text-muted-foreground">
-              Swipe up to open camera
+            <Text
+              className="mt-7 max-w-[300px] text-center text-[18px] font-semibold leading-6 text-foreground"
+              accessibilityRole="header"
+            >
+              {title}
+            </Text>
+            <Text className="mt-2.5 max-w-[280px] text-center text-[13px] leading-[18px] text-muted-foreground">
+              {caption}
             </Text>
           </View>
         </Animated.View>
