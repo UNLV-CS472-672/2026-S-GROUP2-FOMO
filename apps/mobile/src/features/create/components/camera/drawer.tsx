@@ -19,22 +19,18 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-type CameraDrawerHint = { title: string; caption: string };
-
-function getCameraDrawerHint(mode: CreateMode, hasExistingMedia: boolean): CameraDrawerHint {
-  const caption = 'Swipe up to open the camera';
-
+function getCameraDrawerTitle(mode: CreateMode, hasExistingMedia: boolean): string {
   if (mode === 'event') {
     if (hasExistingMedia) {
-      return { title: 'Replace your cover photo', caption };
+      return 'Replace your cover photo';
     }
-    return { title: 'Add a cover photo for your event', caption };
+    return 'Add a cover photo for your event';
   }
 
   if (hasExistingMedia) {
-    return { title: 'Add another photo or video', caption };
+    return 'Add another photo or video';
   }
-  return { title: 'Add a photo or video to your post', caption };
+  return 'Add a photo or video to your post';
 }
 
 type CreateCameraDrawerProps = {
@@ -60,7 +56,7 @@ export function CreateCameraDrawer({
   onChange,
   onClose,
 }: CreateCameraDrawerProps) {
-  const { title, caption } = getCameraDrawerHint(mode, hasExistingMedia);
+  const title = getCameraDrawerTitle(mode, hasExistingMedia);
 
   const isCameraWarmedUp = useSharedValue(false);
   const tabBarHeight = useBottomTabBarHeight();
@@ -163,15 +159,15 @@ export function CreateCameraDrawer({
           <View className="items-center px-6">
             {/* HACK: manual handle so it's not included once fully expanded   */}
             <View className="mt-[9.5px] h-1 w-10 rounded-full light:bg-[#786860] dark:bg-[#baa99f]" />
-
+            {/* Title + Caption */}
             <Text
-              className="mt-7 max-w-[300px] text-center text-[18px] font-semibold leading-6 text-foreground"
+              className="mt-4 max-w-75 text-center text-[18px] font-medium leading-6 text-foreground"
               accessibilityRole="header"
             >
               {title}
             </Text>
-            <Text className="mt-2.5 max-w-[280px] text-center text-[13px] leading-[18px] text-muted-foreground">
-              {caption}
+            <Text className="mt-4 text-[12px] font-semibold uppercase tracking-[0.8px] text-muted-foreground">
+              Swipe up to open camera
             </Text>
           </View>
         </Animated.View>
