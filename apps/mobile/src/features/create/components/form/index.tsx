@@ -6,6 +6,7 @@ import { NameField } from '@/features/create/components/form/name-field';
 import { TagsField } from '@/features/create/components/form/tags-field';
 import { useCreateContext } from '@/features/create/context';
 import type { CreateMediaItem, CreateMode } from '@/features/create/types';
+import { useCallback } from 'react';
 import { useController, useWatch } from 'react-hook-form';
 import { View } from 'react-native';
 
@@ -44,6 +45,23 @@ export function CreateForm({
     rules: mode === 'event' ? { required: 'Add a cover image for the event.' } : undefined,
   });
 
+  const clearMedia = useCallback(() => {
+    if (mode === 'event') {
+      setValue(
+        'event.media',
+        { uri: '', type: undefined },
+        { shouldDirty: true, shouldValidate: true }
+      );
+    } else {
+      clearPostMedia();
+    }
+  }, [mode, setValue, clearPostMedia]);
+
+  const removePostMediaAtIndex = useCallback(
+    (index: number) => removePostMedia(index),
+    [removePostMedia]
+  );
+
   return (
     <View className="gap-4 pt-1">
       {shouldShowMediaSection ? (
@@ -55,16 +73,8 @@ export function CreateForm({
           mediaHeight={mediaHeight}
           openCamera={openCamera}
           openManage={mode === 'post' ? openManagePostMedia : undefined}
-          clearMedia={() =>
-            mode === 'event'
-              ? setValue(
-                  'event.media',
-                  { uri: '', type: undefined },
-                  { shouldDirty: true, shouldValidate: true }
-                )
-              : clearPostMedia()
-          }
-          removePostMediaAtIndex={mode === 'post' ? (index) => removePostMedia(index) : undefined}
+          clearMedia={clearMedia}
+          removePostMediaAtIndex={mode === 'post' ? removePostMediaAtIndex : undefined}
           errorMessage={mode === 'event' ? eventMediaUriError?.message : undefined}
         />
       ) : null}

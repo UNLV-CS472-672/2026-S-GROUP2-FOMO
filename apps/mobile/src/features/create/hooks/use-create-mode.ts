@@ -1,7 +1,7 @@
 import type { CreateMode, CreateParams } from '@/features/create/types';
 import { getModeParam } from '@/features/create/utils';
 import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { Gesture } from 'react-native-gesture-handler';
 import {
@@ -55,12 +55,16 @@ export function useCreateMode() {
     [selectedMode, setMode]
   );
 
-  const modeSwipeGesture = Gesture.Pan()
-    .activeOffsetX([-30, 30])
-    .failOffsetY([-20, 20])
-    .onEnd((event) => {
-      scheduleOnRN(switchModeFromSwipe, event.translationX, event.velocityX);
-    });
+  const modeSwipeGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-30, 30])
+        .failOffsetY([-20, 20])
+        .onEnd((event) => {
+          scheduleOnRN(switchModeFromSwipe, event.translationX, event.velocityX);
+        }),
+    [switchModeFromSwipe]
+  );
 
   const contentTrackStyle = useAnimatedStyle(
     () => ({ transform: [{ translateX: -contentWidth * modeProgress.value }] }),

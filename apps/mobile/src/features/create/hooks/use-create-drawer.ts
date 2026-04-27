@@ -21,16 +21,6 @@ export function useCreateDrawer() {
     setTabBarHidden(drawerIndex > 0);
   }, [drawerIndex]);
 
-  useEffect(() => {
-    if (!isFocused && drawerIndex === 0) {
-      setTabBarHidden(false);
-      return;
-    }
-    if (!isFocused && drawerIndex > 0) {
-      setTabBarHidden(true);
-    }
-  }, [drawerIndex, isFocused]);
-
   useAnimatedReaction(
     () => drawerAnimatedIndex.value,
     (currentIndex) => {

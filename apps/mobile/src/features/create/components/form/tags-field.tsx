@@ -1,8 +1,9 @@
 import { Icon } from '@/components/icon';
 import type { CreateFormValues, CreateMode } from '@/features/create/types';
 import type { Dispatch, SetStateAction } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useWatch, type Control, type UseFormSetValue } from 'react-hook-form';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 type TagsFieldProps = {
   control: Control<CreateFormValues>;
@@ -23,61 +24,118 @@ export function TagsField({
 }: TagsFieldProps) {
   const tagsFieldName = mode === 'event' ? 'event.tags' : 'post.tags';
   const tags = useWatch({ control, name: tagsFieldName }) ?? [];
+  const [search, setSearch] = useState('');
+  const inputRef = useRef<TextInput>(null);
 
-  const toggleTag = (tagName: string) => {
-    setValue(
-      tagsFieldName,
-      tags.includes(tagName)
-        ? tags.filter((currentTag) => currentTag !== tagName)
-        : [...tags, tagName],
-      { shouldDirty: true }
-    );
-  };
+  const filteredTags = useMemo(() => {
+    const trimmed = search.trim().toLowerCase();
+    return trimmed ? allTags.filter((t) => t.name.toLowerCase().includes(trimmed)) : allTags;
+  }, [allTags, search]);
+
+  const toggleTag = useCallback(
+    (tagName: string) => {
+      setValue(
+        tagsFieldName,
+        tags.includes(tagName) ? tags.filter((t) => t !== tagName) : [...tags, tagName],
+        { shouldDirty: true }
+      );
+    },
+    [setValue, tagsFieldName, tags]
+  );
+
+  const open = useCallback(() => {
+    setIsTagMenuOpen(true);
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }, [setIsTagMenuOpen]);
+
+  const close = useCallback(() => {
+    setIsTagMenuOpen(false);
+    setSearch('');
+    inputRef.current?.blur();
+  }, [setIsTagMenuOpen]);
 
   return (
     <View className="gap-2">
       <Text className="text-[13px] font-semibold tracking-wide text-muted-foreground">TAGS</Text>
-      <View className="gap-2">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Choose tags"
-          className="rounded-2xl border border-muted bg-surface px-4 py-3.5 shadow-md"
-          onPress={() => setIsTagMenuOpen((current) => !current)}
-        >
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1 gap-1 pr-3">
-              <Text className="text-[13px] font-semibold tracking-wide text-muted-foreground">
-                {tags.length ? `${tags.length} selected` : 'Choose from existing tags'}
-              </Text>
-              <Text
-                className={`text-[15px] ${tags.length ? 'text-foreground' : 'text-muted-foreground'}`}
-              >
-                {tags.length ? tags.join(', ') : 'Tap to browse and select tags.'}
-              </Text>
-            </View>
-            <Icon
-              name={isTagMenuOpen ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-              size={20}
-              className="text-muted-foreground"
+      <View className="overflow-hidden rounded-2xl border border-muted bg-surface shadow-md">
+        {/* Collapsed trigger — shows selected tags or placeholder */}
+        {!isTagMenuOpen ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Choose tags"
+            className="flex-row items-center gap-2 px-4 py-3"
+            onPress={open}
+          >
+            <Icon name="label" size={18} className="text-muted-foreground" />
+            {tags.length > 0 ? (
+              <>
+                <Text className="flex-1 text-[15px] text-foreground" numberOfLines={1}>
+                  {tags.join(', ')}
+                </Text>
+                <View className="min-w-[22px] items-center justify-center rounded-full bg-primary px-1.5 py-0.5">
+                  <Text className="text-[11px] font-bold text-primary-foreground">
+                    {tags.length}
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <Text className="flex-1 text-[15px] text-muted-foreground">Add tags...</Text>
+            )}
+            <Icon name="keyboard-arrow-down" size={20} className="text-muted-foreground" />
+          </Pressable>
+        ) : (
+          /* Search input row — shown when open */
+          <View className="flex-row items-center gap-2 px-4 py-3">
+            <Icon name="search" size={18} className="text-muted-foreground" />
+            <TextInput
+              ref={inputRef}
+              className="flex-1 text-[15px] text-foreground"
+              placeholder="Search tags..."
+              placeholderTextColor="#8B8B8B"
+              value={search}
+              onChangeText={setSearch}
+              returnKeyType="done"
+              onSubmitEditing={close}
             />
+            {search.length > 0 ? (
+              <Pressable hitSlop={8} onPress={() => setSearch('')}>
+                <Icon name="close" size={18} className="text-muted-foreground" />
+              </Pressable>
+            ) : (
+              <Pressable hitSlop={8} onPress={close}>
+                <Icon name="keyboard-arrow-up" size={20} className="text-muted-foreground" />
+              </Pressable>
+            )}
           </View>
-        </Pressable>
+        )}
 
+        {/* Tag chips */}
         {isTagMenuOpen ? (
-          <View className="rounded-2xl border border-muted bg-surface p-3 shadow-md">
-            {allTags.length ? (
+          <View className="border-t border-muted p-3">
+            {allTags.length === 0 ? (
+              <Text className="text-[13px] text-muted-foreground">Loading tags...</Text>
+            ) : filteredTags.length === 0 ? (
+              <Text className="text-[13px] text-muted-foreground">No tags found.</Text>
+            ) : (
               <View className="flex-row flex-wrap gap-2">
-                {allTags.map((tag) => {
+                {filteredTags.map((tag) => {
                   const isSelected = tags.includes(tag.name);
                   return (
                     <Pressable
                       key={tag.id}
                       accessibilityRole="button"
-                      className={`flex-row items-center gap-1 rounded-full border px-3 py-2 ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}
+                      className={`flex-row items-center gap-1.5 rounded-full border px-3 py-2 ${
+                        isSelected ? 'border-primary bg-primary' : 'border-border bg-background'
+                      }`}
                       onPress={() => toggleTag(tag.name)}
                     >
+                      {isSelected ? (
+                        <Icon name="check" size={12} className="text-primary-foreground" />
+                      ) : null}
                       <Text
-                        className={`text-[13px] font-medium ${isSelected ? 'text-primary-foreground' : 'text-foreground'}`}
+                        className={`text-[13px] font-medium ${
+                          isSelected ? 'text-primary-foreground' : 'text-foreground'
+                        }`}
                       >
                         {tag.name}
                       </Text>
@@ -85,8 +143,6 @@ export function TagsField({
                   );
                 })}
               </View>
-            ) : (
-              <Text className="text-[13px] text-muted-foreground">Loading tags...</Text>
             )}
           </View>
         ) : null}
