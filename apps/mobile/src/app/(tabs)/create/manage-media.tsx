@@ -1,178 +1,285 @@
 import { Icon } from '@/components/icon';
+import { Dots } from '@/components/ui/dots';
 import { Screen } from '@/components/ui/screen';
+import { VideoThumbnail } from '@/components/video/video-thumbnail';
+import { useCreateContext } from '@/features/create/context';
 import type { CreateMediaItem } from '@/features/create/types';
-import { getStringParam } from '@/features/create/utils';
 import { Image } from 'expo-image';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { useNavigation, useRouter } from 'expo-router';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import DraggableFlatList, {
   ScaleDecorator,
   type RenderItemParams,
 } from 'react-native-draggable-flatlist';
+import { useWatch } from 'react-hook-form';
+import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-type ManageMediaParams = {
-  postMedia?: string | string[];
-};
 
 type MediaRow = CreateMediaItem & { key: string };
 
-function parsePostMediaParam(value: string | undefined): MediaRow[] {
-  if (!value) return [];
-  try {
-    const decoded = decodeURIComponent(value);
-    const parsed = JSON.parse(decoded) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter((v): v is { uri: string; type?: string | undefined } => {
-        return (
-          typeof v === 'object' &&
-          v !== null &&
-          'uri' in v &&
-          typeof (v as { uri?: unknown }).uri === 'string'
-        );
-      })
-      .map((v, index) => ({
-        key: `${v.uri}::${index}`,
-        uri: v.uri,
-        type: typeof v.type === 'string' ? v.type : undefined,
-      }));
-  } catch {
-    return [];
-  }
+function PreviewCarousel({
+  items,
+  activeIndex,
+  onChangeIndex,
+}: {
+  items: MediaRow[];
+  activeIndex: number;
+  onChangeIndex: (i: number) => void;
+}) {
+  const { width } = useWindowDimensions();
+  const previewHeight = width * 0.75;
+  const scrollRef = useRef<Animated.ScrollView>(null);
+  const scrollX = useSharedValue(0);
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      scrollX.value = e.contentOffset.x;
+    },
+  });
+
+  useLayoutEffect(() => {
+    scrollRef.current?.scrollTo({
+      x: activeIndex * width,
+      animated: true,
+    });
+  }, [activeIndex, width]);
+
+  return (
+    <View>
+      <Animated.ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={scrollHandler}
+        onMomentumScrollEnd={(e) => {
+          const i = Math.round(e.nativeEvent.contentOffset.x / width);
+          if (i !== activeIndex) onChangeIndex(i);
+        }}
+        scrollEnabled={items.length > 1}
+      >
+        {items.map((item) => {
+          const isVideo = item.type === 'video';
+
+          return (
+            <View
+              key={item.key}
+              className="items-center justify-center bg-black"
+              style={{ width, height: previewHeight }}
+            >
+              {isVideo ? (
+                <View className="h-full w-full">
+                  <VideoThumbnail
+                    uri={item.uri}
+                    className="h-full w-full"
+                    maxWidth={width}
+                    maxHeight={previewHeight}
+                    fallbackClassName="h-full w-full bg-zinc-900"
+                  />
+                  <View className="pointer-events-none absolute inset-0 items-center justify-center">
+                    <View className="rounded-full bg-black/40 p-2">
+                      <Icon name="play-arrow" size={24} className="text-white" />
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: item.uri }}
+                  style={{ width: '100%', height: '100%' }}
+                  contentFit="contain"
+                />
+              )}
+            </View>
+          );
+        })}
+      </Animated.ScrollView>
+
+      {items.length > 1 && <Dots count={items.length} scrollX={scrollX} slideWidth={width} />}
+    </View>
+  );
 }
 
 export default function ManageMediaScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<ManageMediaParams>();
-  const initial = useMemo(
-    () => parsePostMediaParam(getStringParam(params.postMedia)),
-    [params.postMedia]
-  );
-  const [items, setItems] = useState<MediaRow[]>(initial);
+  const { control, replacePostMedia } = useCreateContext();
+  const currentPostMedia = useWatch({ control, name: 'post.media' }) as CreateMediaItem[] | undefined;
 
-  const handleDone = () => {
-    const payload: CreateMediaItem[] = items.map(({ uri, type }) => ({ uri, type }));
-    router.dismissTo({
-      pathname: '/(tabs)/create' as never,
-      params: {
-        mode: 'post',
-        postMedia: encodeURIComponent(JSON.stringify(payload)),
-      } as never,
+  const [items, setItems] = useState<MediaRow[]>(() =>
+    (currentPostMedia ?? []).map((item, index) => ({
+      ...item,
+      key: `${item.uri}::${index}`,
+    }))
+  );
+  const [previewKey, setPreviewKey] = useState<string | null>(items[0]?.key ?? null);
+
+  const previewIndex = useMemo(() => {
+    const idx = items.findIndex((item) => item.key === previewKey);
+    return idx >= 0 ? idx : 0;
+  }, [items, previewKey]);
+
+  const handleDone = useCallback(() => {
+    replacePostMedia(items.map(({ uri, type }) => ({ uri, type })));
+    router.back();
+  }, [items, replacePostMedia, router]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          onPress={handleDone}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Done"
+        >
+          <Text className="px-2 text-base font-bold text-primary">Done</Text>
+        </Pressable>
+      ),
     });
-  };
+  }, [handleDone, navigation]);
+
+  const handleRemove = useCallback(
+    (key: string) => {
+      setItems((prev) => {
+        const next = prev.filter((item) => item.key !== key);
+
+        if (key === previewKey) {
+          const oldIdx = prev.findIndex((item) => item.key === key);
+          const newIdx = Math.min(oldIdx, next.length - 1);
+          setPreviewKey(next[newIdx]?.key ?? null);
+        }
+
+        return next;
+      });
+    },
+    [previewKey]
+  );
+
+  const handleDragEnd = useCallback(({ data }: { data: MediaRow[] }) => {
+    setItems(data);
+  }, []);
+
+  const renderItem = useCallback(
+    ({ item, drag, isActive }: RenderItemParams<MediaRow>) => {
+      const displayIndex = items.findIndex((row) => row.key === item.key);
+      const labelIndex = displayIndex >= 0 ? displayIndex + 1 : 1;
+      const isVideo = item.type === 'video';
+
+      return (
+        <ScaleDecorator activeScale={0.97}>
+          <Pressable
+            onLongPress={drag}
+            delayLongPress={150}
+            onPress={() => setPreviewKey(item.key)}
+            className={`mx-4 flex-row items-center gap-3 rounded-2xl border-2 p-2 ${
+              isActive ? 'border-primary/40 bg-primary/5' : 'border-transparent bg-surface'
+            }`}
+            style={{
+              borderCurve: 'continuous',
+              opacity: isActive ? 0.9 : 1,
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Media ${labelIndex}, hold to reorder`}
+          >
+            <Text className="text-xs font-bold text-foreground">{labelIndex}</Text>
+
+            <View
+              className="overflow-hidden rounded-xl bg-muted"
+              style={{
+                width: 64,
+                height: 64,
+                borderCurve: 'continuous',
+              }}
+            >
+              {isVideo ? (
+                <View className="h-full w-full">
+                  <VideoThumbnail
+                    uri={item.uri}
+                    className="h-full w-full"
+                    maxWidth={160}
+                    maxHeight={160}
+                    fallbackClassName="h-full w-full bg-zinc-900"
+                  />
+                  <View className="pointer-events-none absolute bottom-0.5 left-0.5">
+                    <Icon name="videocam" size={12} className="text-white" />
+                  </View>
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: item.uri }}
+                  style={{ width: '100%', height: '100%' }}
+                  contentFit="cover"
+                />
+              )}
+            </View>
+
+            <View className="flex-1" />
+
+            <Icon
+              name="drag-handle"
+              size={20}
+              className={isActive ? 'text-primary' : 'text-muted-foreground/50'}
+            />
+
+            <Pressable
+              onPress={() => handleRemove(item.key)}
+              hitSlop={6}
+              className="h-7 w-7 items-center justify-center rounded-full bg-destructive/10"
+              accessibilityRole="button"
+              accessibilityLabel={`Remove media ${labelIndex}`}
+            >
+              <Icon name="close" size={14} className="text-destructive" />
+            </Pressable>
+          </Pressable>
+        </ScaleDecorator>
+      );
+    },
+    [handleRemove, items]
+  );
+
+  const handleChangePreviewIndex = useCallback(
+    (i: number) => {
+      setPreviewKey(items[i]?.key ?? null);
+    },
+    [items]
+  );
 
   return (
     <Screen className="flex-1">
-      <View
-        className="flex-1 pt-8"
-        style={{
-          paddingBottom: Math.max(insets.bottom, 8),
-        }}
-      >
-        <View className="flex-row items-center px-4 pb-1">
-          <View className="w-20 items-start">
-            <Pressable
-              className="rounded-full bg-surface px-3 py-2"
-              onPress={() => router.back()}
-              accessibilityRole="button"
-              accessibilityLabel="Back"
-            >
-              <Text className="text-[15px] font-semibold text-foreground">Back</Text>
-            </Pressable>
-          </View>
-          <View className="min-w-0 flex-1 items-center px-1">
-            <Text className="text-center text-base font-semibold text-foreground" numberOfLines={1}>
-              Manage media
-            </Text>
-          </View>
-          <View className="w-20 items-end justify-center">
-            <Pressable onPress={handleDone} accessibilityRole="button" accessibilityLabel="Done">
-              <Text className="text-base font-bold text-primary">Done</Text>
-            </Pressable>
-          </View>
-        </View>
+      <View className="flex-1" style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
+        {items.length > 0 && (
+          <PreviewCarousel
+            items={items}
+            activeIndex={previewIndex}
+            onChangeIndex={handleChangePreviewIndex}
+          />
+        )}
 
         <DraggableFlatList
           data={items}
           keyExtractor={(item) => item.key}
-          activationDistance={12}
+          activationDistance={10}
           containerStyle={{ flex: 1 }}
-          contentContainerClassName="p-3 pb-6"
-          contentContainerStyle={{ rowGap: 8 }}
-          onDragEnd={({ data }) => setItems(data)}
-          renderItem={({ item, getIndex, drag, isActive }: RenderItemParams<MediaRow>) => {
-            const index = getIndex() ?? 0;
-            const isVideo = item.type === 'video';
-            return (
-              <ScaleDecorator activeScale={0.98}>
-                <Pressable
-                  onLongPress={drag}
-                  delayLongPress={150}
-                  className={`flex-row items-center gap-3 rounded-2xl border px-3 py-1 my-1.5 ${
-                    isActive ? 'border-primary/40 bg-muted' : 'border-border bg-surface'
-                  }`}
-                >
-                  <Pressable
-                    onLongPress={drag}
-                    delayLongPress={0}
-                    className="items-center justify-center "
-                    accessibilityRole="button"
-                    accessibilityLabel="Drag handle"
-                  >
-                    <Icon name="drag-handle" size={22} className="text-muted-foreground" />
-                  </Pressable>
-
-                  <View
-                    className="overflow-hidden rounded-xl border border-border bg-muted"
-                    style={{ width: 74, height: 74, borderCurve: 'continuous' }}
-                  >
-                    {!isVideo ? (
-                      <Image
-                        source={{ uri: item.uri }}
-                        style={{ width: '100%', height: '100%' }}
-                        contentFit="cover"
-                      />
-                    ) : (
-                      <View className="flex-1 items-center justify-center bg-black/80">
-                        <Icon name="play-arrow" size={32} className="text-white" />
-                      </View>
-                    )}
-                  </View>
-
-                  <View className="min-w-0 flex-1 gap-2 flex-row justify-between items-center">
-                    <Text className="text-[15px] font-semibold text-foreground">
-                      {isVideo ? 'Video' : 'Photo'} {index + 1}
-                    </Text>
-
-                    <View className="flex-row items-center">
-                      <Pressable
-                        onPress={() =>
-                          setItems((prev) => {
-                            const next = prev.slice();
-                            next.splice(index, 1);
-                            return next;
-                          })
-                        }
-                        className="ml-auto flex-row items-center gap-1 rounded-full bg-foreground/5 p-2"
-                        accessibilityRole="button"
-                        accessibilityLabel={`Remove media ${index + 1}`}
-                      >
-                        <Icon name="close" size={18} />
-                      </Pressable>
-                    </View>
-                  </View>
-                </Pressable>
-              </ScaleDecorator>
-            );
+          contentContainerStyle={{
+            paddingTop: 12,
+            paddingBottom: 24,
+            rowGap: 6,
           }}
+          onDragEnd={handleDragEnd}
+          renderItem={renderItem}
           ListEmptyComponent={
-            <View className="items-center justify-center px-6 py-12">
-              <Text className="text-center text-2xl font-bold text-foreground">No media</Text>
-              <Text className="mt-2 text-center text-[15px] leading-6 text-muted-foreground">
-                Go back and tap "Add more" to attach photos or videos.
+            <View className="items-center justify-center px-8 py-16">
+              <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-muted">
+                <Icon name="image" size={24} className="text-muted-foreground" />
+              </View>
+              <Text className="text-center text-base font-semibold text-foreground">
+                No media yet
+              </Text>
+              <Text className="mt-1 text-center text-sm text-muted-foreground">
+                Go back to add photos or videos.
               </Text>
             </View>
           }

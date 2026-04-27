@@ -1,3 +1,5 @@
+import { Icon } from '@/components/icon';
+import { VideoThumbnail } from '@/components/video/video-thumbnail';
 import { Image } from 'expo-image';
 import * as MediaLibrary from 'expo-media-library';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -9,9 +11,20 @@ type GalleryParams = {
   mode?: string | string[];
 };
 
-type PhotoAsset = MediaLibrary.Asset;
+type GalleryAsset = MediaLibrary.Asset;
 
 const PAGE_SIZE = 60;
+
+const POST_GALLERY_MEDIA_TYPES: MediaLibrary.MediaTypeValue[] = [
+  MediaLibrary.MediaType.photo,
+  MediaLibrary.MediaType.video,
+];
+
+const EVENT_GALLERY_MEDIA_TYPES: MediaLibrary.MediaTypeValue[] = [MediaLibrary.MediaType.photo];
+
+function isVideoAsset(asset: MediaLibrary.Asset) {
+  return asset.mediaType === MediaLibrary.MediaType.video;
+}
 
 function getStringParam(value: string | string[] | undefined) {
   if (Array.isArray(value)) return value[0];
@@ -25,13 +38,18 @@ export default function CreateGalleryScreen() {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [isCheckingPermission, setIsCheckingPermission] = useState(true);
   const [isLoadingAssets, setIsLoadingAssets] = useState(false);
-  const [assets, setAssets] = useState<PhotoAsset[]>([]);
+  const [assets, setAssets] = useState<GalleryAsset[]>([]);
   const [endCursor, setEndCursor] = useState<string | null>(null);
   const [hasNextPage, setHasNextPage] = useState(true);
 
   const mode = useMemo(() => {
     return getStringParam(params.mode) === 'event' ? 'event' : 'post';
   }, [params.mode]);
+
+  const mediaTypesForQuery = useMemo(
+    () => (mode === 'event' ? EVENT_GALLERY_MEDIA_TYPES : POST_GALLERY_MEDIA_TYPES),
+    [mode]
+  );
 
   const ensurePermission = useCallback(async () => {
     setIsCheckingPermission(true);
@@ -42,30 +60,33 @@ export default function CreateGalleryScreen() {
     return next.granted;
   }, []);
 
-  const loadPage = useCallback(async (after?: string) => {
-    setIsLoadingAssets(true);
+  const loadPage = useCallback(
+    async (after?: string) => {
+      setIsLoadingAssets(true);
 
-    const page = await MediaLibrary.getAssetsAsync({
-      first: PAGE_SIZE,
-      after,
-      mediaType: MediaLibrary.MediaType.photo,
-      sortBy: [MediaLibrary.SortBy.creationTime],
-    });
-
-    if (after) {
-      setAssets((prev) => {
-        const seen = new Set(prev.map((asset) => asset.id));
-        const nextItems = page.assets.filter((asset) => !seen.has(asset.id));
-        return [...prev, ...nextItems];
+      const page = await MediaLibrary.getAssetsAsync({
+        first: PAGE_SIZE,
+        after,
+        mediaType: mediaTypesForQuery,
+        sortBy: [MediaLibrary.SortBy.creationTime],
       });
-    } else {
-      setAssets(page.assets);
-    }
 
-    setEndCursor(page.endCursor ?? null);
-    setHasNextPage(page.hasNextPage);
-    setIsLoadingAssets(false);
-  }, []);
+      if (after) {
+        setAssets((prev) => {
+          const seen = new Set(prev.map((asset) => asset.id));
+          const nextItems = page.assets.filter((asset) => !seen.has(asset.id));
+          return [...prev, ...nextItems];
+        });
+      } else {
+        setAssets(page.assets);
+      }
+
+      setEndCursor(page.endCursor ?? null);
+      setHasNextPage(page.hasNextPage);
+      setIsLoadingAssets(false);
+    },
+    [mediaTypesForQuery]
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -83,16 +104,17 @@ export default function CreateGalleryScreen() {
     };
   }, [ensurePermission, loadPage]);
 
-  const handleSelectAsset = async (asset: PhotoAsset) => {
+  const handleSelectAsset = async (asset: GalleryAsset) => {
     const info = await MediaLibrary.getAssetInfoAsync(asset.id);
     const mediaUri = info.localUri ?? asset.uri;
+    const mediaType = isVideoAsset(asset) ? 'video' : 'photo';
 
     router.push({
       pathname: '/create/media-preview' as never,
       params: {
         mode,
         mediaUri,
-        mediaType: 'photo',
+        mediaType,
       } as never,
     });
   };
@@ -115,7 +137,9 @@ export default function CreateGalleryScreen() {
       <SafeAreaView className="flex-1 items-center justify-center gap-3 bg-[#090909] px-6">
         <Text className="text-center text-[28px] font-bold text-white">Gallery access needed</Text>
         <Text className="text-center text-base leading-6 text-zinc-300">
-          Allow photo access so you can pick images from your device.
+          {mode === 'event'
+            ? 'Allow access to your photo library so you can pick a cover image from your device.'
+            : 'Allow access to your library so you can pick photos and videos from your device.'}
         </Text>
         <Pressable
           className="mt-2 rounded-full border border-white/30 bg-zinc-800 px-5 py-3"
@@ -127,7 +151,7 @@ export default function CreateGalleryScreen() {
             });
           }}
         >
-          <Text className="font-semibold text-white">Allow Photo Access</Text>
+          <Text className="font-semibold text-white">Allow Library Access</Text>
         </Pressable>
         <Pressable className="rounded-full px-5 py-3" onPress={() => router.back()}>
           <Text className="font-semibold text-zinc-300">Back</Text>
@@ -160,25 +184,47 @@ export default function CreateGalleryScreen() {
         ListEmptyComponent={
           <View className="items-center justify-center px-6 py-12">
             <Text className="text-center text-base text-zinc-300">
-              No photos found in your gallery.
+              {mode === 'event'
+                ? 'No photos found in your gallery.'
+                : 'No photos or videos found in your gallery.'}
             </Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <Pressable
-            className="mb-1.5 flex-1 overflow-hidden rounded-lg border border-white/10"
-            style={{ aspectRatio: 1 }}
-            onPress={() => {
-              void handleSelectAsset(item);
-            }}
-          >
-            <Image
-              source={{ uri: item.uri }}
-              style={{ width: '100%', height: '100%' }}
-              contentFit="cover"
-            />
-          </Pressable>
-        )}
+        renderItem={({ item }) => {
+          const isVideo = isVideoAsset(item);
+          return (
+            <Pressable
+              className="mb-1.5 flex-1 overflow-hidden rounded-lg border border-white/10"
+              style={{ aspectRatio: 1 }}
+              onPress={() => {
+                void handleSelectAsset(item);
+              }}
+            >
+              {isVideo ? (
+                <View className="h-full w-full">
+                  <VideoThumbnail
+                    uri={item.uri}
+                    className="h-full w-full"
+                    maxWidth={360}
+                    maxHeight={360}
+                    fallbackClassName="h-full w-full bg-zinc-900"
+                  />
+                  <View className="pointer-events-none absolute inset-0 items-center justify-center">
+                    <View className="rounded-full bg-black/55 p-2">
+                      <Icon name="play-arrow" size={28} className="text-white" />
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: item.uri }}
+                  style={{ width: '100%', height: '100%' }}
+                  contentFit="cover"
+                />
+              )}
+            </Pressable>
+          );
+        }}
         ListFooterComponent={
           isLoadingAssets && assets.length > 0 ? (
             <View className="py-4">

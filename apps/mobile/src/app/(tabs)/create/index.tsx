@@ -6,7 +6,6 @@ import { CreateModeToggle } from '@/features/create/components/mode-toggle';
 import { CreateSubmitButton } from '@/features/create/components/submit-button';
 import { CREATE_DRAWER_SNAP_POINTS } from '@/features/create/constants';
 import { useCreateContext } from '@/features/create/context';
-import type { CreateMediaItem } from '@/features/create/types';
 import { GuestMode } from '@/features/profile/components/guest-mode';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useRouter } from 'expo-router';
@@ -41,14 +40,8 @@ export default function CreateScreen() {
     isSubmitting,
   } = useCreateContext();
 
-  const openManagePostMedia = (items: CreateMediaItem[]) => {
-    router.push({
-      pathname: '/create/manage-media' as never,
-      params: {
-        mode: 'post',
-        postMedia: encodeURIComponent(JSON.stringify(items)),
-      },
-    });
+  const openManagePostMedia = () => {
+    router.push({ pathname: '/create/manage-media' as never });
   };
 
   return (

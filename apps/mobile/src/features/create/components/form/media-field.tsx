@@ -1,5 +1,6 @@
 import { Icon } from '@/components/icon';
 import { MediaMosaic } from '@/components/media/media-mosaic';
+import { VideoThumbnail } from '@/components/video/video-thumbnail';
 import type { CreateMediaItem, CreateMode } from '@/features/create/types';
 import { Image } from 'expo-image';
 import { Pressable, Text, View } from 'react-native';
@@ -26,8 +27,19 @@ function PostMediaTile({
           contentFit="cover"
         />
       ) : (
-        <View className="flex-1 items-center justify-center bg-black/85">
-          <Icon name="play-arrow" size={34} className="text-white" />
+        <View className="h-full w-full">
+          <VideoThumbnail
+            uri={item.uri}
+            className="h-full w-full"
+            maxWidth={512}
+            maxHeight={512}
+            fallbackClassName="h-full w-full bg-zinc-900"
+          />
+          <View className="pointer-events-none absolute inset-0 items-center justify-center">
+            <View className="rounded-full bg-black/50 p-2">
+              <Icon name="play-arrow" size={28} className="text-white" />
+            </View>
+          </View>
         </View>
       )}
 
@@ -73,9 +85,19 @@ function PostMediaPreviewGrid({
             contentFit="cover"
           />
         ) : (
-          <View className="flex-1 items-center justify-center bg-black">
-            <Icon name="play-arrow" size={54} className="text-white" />
-            <Text className="mt-2 text-[13px] font-semibold text-white/80">Video</Text>
+          <View className="h-full w-full">
+            <VideoThumbnail
+              uri={item.uri}
+              className="h-full w-full"
+              maxWidth={720}
+              maxHeight={720}
+              fallbackClassName="h-full w-full bg-zinc-900"
+            />
+            <View className="pointer-events-none absolute inset-0 items-center justify-center">
+              <View className="rounded-full bg-black/50 p-3">
+                <Icon name="play-arrow" size={40} className="text-white" />
+              </View>
+            </View>
           </View>
         )}
 

@@ -36,6 +36,7 @@ export default function CreateLayout() {
           options={{
             presentation: 'modal',
             title: 'Manage media',
+            headerShown: true,
             animation: 'slide_from_bottom',
             animationDuration: 280,
           }}

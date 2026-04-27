@@ -14,11 +14,13 @@ export function CreateForm({
   openManagePostMedia,
 }: {
   mode: CreateMode;
-  openManagePostMedia?: (items: CreateMediaItem[]) => void;
+  openManagePostMedia?: () => void;
 }) {
   const {
     control,
     setValue,
+    removePostMedia,
+    clearPostMedia,
     isEventMode,
     mediaHeight,
     isTagMenuOpen,
@@ -52,10 +54,7 @@ export function CreateForm({
           }
           mediaHeight={mediaHeight}
           openCamera={openCamera}
-          openManage={() => {
-            if (mode !== 'post') return;
-            openManagePostMedia?.(postMedia ?? []);
-          }}
+          openManage={mode === 'post' ? openManagePostMedia : undefined}
           clearMedia={() =>
             mode === 'event'
               ? setValue(
@@ -63,14 +62,11 @@ export function CreateForm({
                   { uri: '', type: undefined },
                   { shouldDirty: true, shouldValidate: true }
                 )
-              : setValue('post.media', [], { shouldDirty: true, shouldValidate: true })
+              : clearPostMedia()
           }
-          removePostMediaAtIndex={(index) => {
-            if (mode !== 'post') return;
-            const next = Array.isArray(postMedia) ? postMedia.slice() : [];
-            next.splice(index, 1);
-            setValue('post.media', next, { shouldDirty: true, shouldValidate: true });
-          }}
+          removePostMediaAtIndex={
+            mode === 'post' ? (index) => removePostMedia(index) : undefined
+          }
           errorMessage={mode === 'event' ? eventMediaUriError?.message : undefined}
         />
       ) : null}

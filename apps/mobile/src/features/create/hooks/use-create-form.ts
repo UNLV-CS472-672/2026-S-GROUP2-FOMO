@@ -7,7 +7,7 @@ import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { latLngToCell } from 'h3-js';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useFieldArray, useForm } from 'react-hook-form';
 import { Alert } from 'react-native';
 
 const H3_RESOLUTION = 9;
@@ -65,6 +65,9 @@ export function useCreateForm(selectedMode: CreateMode) {
     },
   });
 
+  const { append: appendPostMedia, remove: removePostMedia, replace: replacePostMedia } =
+    useFieldArray({ control, name: 'post.media' });
+
   const [isTagMenuOpen, setIsTagMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -85,8 +88,9 @@ export function useCreateForm(selectedMode: CreateMode) {
         eventId = postValues.eventId as Id<'events'>;
         const caption = postValues.description.trim() || undefined;
 
+        const mediaItems = Array.isArray(postValues.media) ? postValues.media : [];
         const mediaIds: Id<'_storage'>[] = [];
-        for (const item of postValues.media) {
+        for (const item of mediaItems) {
           if (!item?.uri) continue;
           const storageId = await uploadMedia(
             item.uri,
@@ -95,12 +99,7 @@ export function useCreateForm(selectedMode: CreateMode) {
           mediaIds.push(storageId);
         }
 
-        await createPost({
-          caption,
-          mediaIds,
-          eventId,
-          tagIds,
-        });
+        await createPost({ caption, mediaIds, eventId, tagIds });
       } else {
         const eventValues = values.event;
         const location = (await getDeviceLocation()) ?? {
@@ -141,6 +140,10 @@ export function useCreateForm(selectedMode: CreateMode) {
   return {
     control,
     setValue,
+    appendPostMedia,
+    removePostMedia,
+    replacePostMedia,
+    clearPostMedia: () => replacePostMedia([]),
     onSubmit,
     allTags,
     isTagMenuOpen,
