@@ -124,3 +124,27 @@ export const getFriends = query({
       .sort((a, b) => a.username.localeCompare(b.username));
   },
 });
+
+// Given a userId, return all accepted friend ids in either direction.
+export const getFriendIds = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    const [requestedFriends, receivedFriends] = await Promise.all([
+      ctx.db
+        .query('friends')
+        .withIndex('by_requesterId', (q) => q.eq('requesterId', userId))
+        .filter((q) => q.eq(q.field('status'), 'accepted'))
+        .collect(),
+      ctx.db
+        .query('friends')
+        .withIndex('by_recipientId', (q) => q.eq('recipientId', userId))
+        .filter((q) => q.eq(q.field('status'), 'accepted'))
+        .collect(),
+    ]);
+
+    return [
+      ...requestedFriends.map((friend) => friend.recipientId),
+      ...receivedFriends.map((friend) => friend.requesterId),
+    ];
+  },
+});

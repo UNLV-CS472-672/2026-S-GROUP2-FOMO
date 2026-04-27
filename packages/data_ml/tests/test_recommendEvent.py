@@ -40,8 +40,8 @@ def sample_tags() -> List[Dict[str, Any]]:
 def sample_users() -> List[Dict[str, Any]]:
     """Sample user data"""
     return [
-        {"_id": "user1", "name": "Alice"},
-        {"_id": "user2", "name": "Bob"},
+        {"_id": "user1", "username": "Alice"},
+        {"_id": "user2", "username": "Bob"},
     ]
 
 
@@ -80,8 +80,8 @@ def sample_interactions() -> Dict[str, List[Dict[str, Any]]]:
     """Sample user-event interactions"""
     return {
         "user1": [
-            {"eventId": "event1", "interactionType": "attended"},
-            {"eventId": "event2", "interactionType": "blocked"},
+            {"eventId": "event1", "status": "going"},
+            {"eventId": "event2", "status": "uninterested"},
         ],
         "user2": []
     }
@@ -337,6 +337,22 @@ class TestGetEventFeatures:
 
         assert event_features[1, num_tags + 3] == 1.0
 
+class TestGetClient:
+    """Tests for get_client function"""
+
+    def test_get_client_raises_when_not_initialized(self) -> None:
+        """get_client raises RuntimeError when module-level client is None"""
+        import recommendEvent
+        with patch.object(recommendEvent, "client", None):
+            with pytest.raises(RuntimeError, match="ConvexClient not initialized"):
+                recommendEvent.get_client()
+
+    def test_get_client_returns_client_when_initialized(self) -> None:
+        """get_client returns the module-level client when set"""
+        import recommendEvent
+        mock_client = MagicMock()
+        with patch.object(recommendEvent, "client", mock_client):
+            assert recommendEvent.get_client() is mock_client
 
 class TestMain:
     """Integration tests for main function"""
@@ -540,6 +556,76 @@ class TestMain:
         }
 
         main(["user1"], update_db=False, model_path="dummy.pt", k=10)
+
+    @patch('recommendEvent.get_client')
+    @patch('recommendEvent.torch.load')
+    @patch('recommendEvent.UserTower')
+    @patch('recommendEvent.EventTower')
+    def test_main_writes_to_convex_when_update_db_true(
+            self,
+            mock_event_tower: MagicMock,
+            mock_user_tower: MagicMock,
+            mock_torch_load: MagicMock,
+            mock_get_client: MagicMock,
+            mock_convex_client: Mock,
+            sample_tags: List[Dict[str, Any]],
+            sample_users: List[Dict[str, Any]],
+            sample_events: List[Dict[str, Any]],
+            sample_event_tags: Dict[str, List[Dict[str, Any]]],
+            sample_interactions: Dict[str, List[Dict[str, Any]]],
+    ) -> None:
+        """Test that main calls upsertEventRecs when update_db=True"""
+        mock_get_client.return_value = mock_convex_client
+
+        def query_side_effect(query_name: str, params: Dict[str, Any]) -> List[Any]:
+            if query_name == "data_ml/universal:queryAll":
+                if params["table_name"] == "tags":
+                    return sample_tags
+                elif params["table_name"] == "users":
+                    return sample_users
+                elif params["table_name"] == "events":
+                    return sample_events
+            elif query_name == "data_ml/eventRec:getUserTagWeights":
+                num_tags = len(sample_tags)
+                return [np.random.rand(3 * num_tags).tolist() for _ in params["userIDs"]]
+            elif query_name == "data_ml/eventRec:getByEventId":
+                return sample_event_tags.get(params["eventId"], [])
+            elif query_name == "data_ml/eventRec:getInteractionsByUserId":
+                return sample_interactions.get(params["userId"], [])
+            return []
+
+        mock_convex_client.query.side_effect = query_side_effect
+
+        mock_user_instance = MagicMock()
+        mock_event_instance = MagicMock()
+        mock_user_instance.side_effect = lambda x: torch.randn(x.shape[0], 64)
+        mock_event_instance.side_effect = lambda x: torch.randn(x.shape[0], 64)
+        mock_user_instance.eval.return_value = mock_user_instance
+        mock_event_instance.eval.return_value = mock_event_instance
+        mock_user_instance.to.return_value = mock_user_instance
+        mock_event_instance.to.return_value = mock_event_instance
+        mock_user_instance.load_state_dict = MagicMock()
+        mock_event_instance.load_state_dict = MagicMock()
+        mock_user_tower.return_value = mock_user_instance
+        mock_event_tower.return_value = mock_event_instance
+        mock_torch_load.return_value = {'user_tower': {}, 'event_tower': {}}
+
+        main(["user1", "user2"], update_db=True, model_path="dummy.pt", k=2)
+
+        # Verify the mutation was called for each user
+        mutation_calls = [
+            call for call in mock_convex_client.mutation.call_args_list
+            if call.args[0] == "data_ml/eventRec:upsertEventRecs"
+        ]
+        assert len(mutation_calls) == 2
+
+        # Verify each call has the right shape
+        for call in mutation_calls:
+            args = call.args[1]
+            assert "userId" in args
+            assert "eventIds" in args
+            assert isinstance(args["eventIds"], list)
+            assert len(args["eventIds"]) == 2  # k=2
 
 
 if __name__ == "__main__":

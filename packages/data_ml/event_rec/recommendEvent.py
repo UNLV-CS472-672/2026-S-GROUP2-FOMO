@@ -132,7 +132,7 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
     # Hard mask blocked events so they can never surface in recommendations.
     for i, user_id in enumerate(users):
         interactions = client.query("data_ml/eventRec:getInteractionsByUserId", {"userId": user_id})
-        blocked_ids = {r["eventId"] for r in interactions if r["interactionType"] == "blocked"}
+        blocked_ids = {r["eventId"] for r in interactions if r["status"] == "uninterested"}
         for j, eid in enumerate(event_ids):
             if eid in blocked_ids:
                 scores[i, j] = -1.0
@@ -141,20 +141,24 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
     top_scores, top_indices = torch.topk(scores, k=k, dim=1)
 
     # Build recommendations
-    recommendations: dict[str, list[dict[str, float]]] = {}
+    recommendations: dict[str, list[tuple[str, float]]] = {}
     for i, user_id in enumerate(users):
         recommendations[user_id] = [
-            {event_ids[event_idx]: top_scores[i][rank].item()}
+            (event_ids[event_idx], top_scores[i][rank].item())
             for rank, event_idx in enumerate(top_indices[i].tolist())
         ]
 
     # Write to Convex / Print
     if update_db:
-        pass
+        for user_id, recs in recommendations.items():
+            event_ids_ranked = [event_id for event_id, _ in recs]
+            client.mutation("data_ml/eventRec:upsertEventRecs", {"userId": user_id, "eventIds": event_ids_ranked})
+
+        print(f"Updated {len(recommendations)} users in Convex with {k} recs each.")
     else:
         all_users_rows = client.query("data_ml/universal:queryAll", {"table_name": "users"})
         all_events_rows = client.query("data_ml/universal:queryAll", {"table_name": "events"})
-        user_name = {row["_id"]: row["name"] for row in all_users_rows}
+        user_name = {row["_id"]: row["username"] for row in all_users_rows}
         event_name = {row["_id"]: row["name"] for row in all_events_rows}
 
         for user_id, user_n in user_name.items():
@@ -167,15 +171,14 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
 
         for user_id in users:
             print(f"\n{user_name.get(user_id, user_id)}:")
-            for rank, rec in enumerate(recommendations[user_id], start=1):
-                event_id, score = next(iter(rec.items()))
-                print(f"  {rank}. {event_name.get(event_id, event_id)}: {score:.4f}")
+            for rank, (event_id, score) in enumerate(recommendations[user_id]):
+                print(f"  {rank + 1}. {event_name.get(event_id, event_id)}: {score:.4f}")
 
 
 USERS = ["ALL"]
-UPDATE_DB = False
+UPDATE_DB = True
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     log("Updating event recommendations...")
     model_dir = os.path.join(Path(__file__).parent, "models", "curr_model.pt")
     main(USERS, UPDATE_DB, model_dir)
@@ -193,5 +196,4 @@ TODO:
                  some weights if a user hasn't attended an event with said tag for the past X events.
                  Idk how to really do that with a running weight adjustment though
     3. (recommendEvent.py) Need to fix day_norm, hour_norm, and is_free fields in get_event_features. Commented "FIX:" at the spot
-    4. (recommendEvent.py) Need to push recs to DB
 """
