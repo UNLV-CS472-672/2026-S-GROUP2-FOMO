@@ -1,4 +1,6 @@
 import { VideoPlayer } from '@/components/video/video-player';
+import { useCreateContext } from '@/features/create/context';
+import { getModeParam, getStringParam, toFileUri } from '@/features/create/utils';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
@@ -8,54 +10,36 @@ type PostPreviewParams = {
   mediaUri?: string | string[];
   mediaType?: 'photo' | 'video' | string | string[];
   mode?: string | string[];
-  retakeDest?: string | string[];
 };
-
-function getStringParam(value: string | string[] | undefined) {
-  if (Array.isArray(value)) return value[0];
-  return value;
-}
-
-function toFileUri(uri: string) {
-  if (uri.startsWith('file://')) return uri;
-  return `file://${uri}`;
-}
 
 export default function PostPreviewScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<PostPreviewParams>();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
+  const { setValue, handleCloseDrawer } = useCreateContext();
 
   const mediaUriParam = getStringParam(params.mediaUri);
   const mediaTypeParam = getStringParam(params.mediaType);
-  const modeParam = getStringParam(params.mode);
-  const retakeDest = getStringParam(params.retakeDest);
 
   const mediaUri = mediaUriParam ? toFileUri(mediaUriParam) : '';
   const mediaType = mediaTypeParam === 'video' ? 'video' : 'photo';
-  const mode = modeParam === 'event' ? 'event' : 'post';
+  const mode = getModeParam(params.mode);
   const mediaHeight = Math.max(260, Math.min(height * 0.62, 560));
 
   const handleRetake = () => {
-    if (retakeDest === 'create-drawer') {
-      router.back();
-    } else {
-      router.back();
-    }
+    router.back();
   };
 
   const handleUseMedia = () => {
     if (!mediaUri) return;
-
-    router.dismissTo({
-      pathname: '/(tabs)/create' as never,
-      params: {
-        mode,
-        mediaUri,
-        mediaType,
-      } as never,
-    });
+    setValue(
+      mode === 'event' ? 'event.media' : 'post.media',
+      { uri: mediaUri, type: mediaType },
+      { shouldDirty: true, shouldValidate: true }
+    );
+    handleCloseDrawer();
+    router.dismissTo({ pathname: '/(tabs)/create' as never });
   };
 
   return (

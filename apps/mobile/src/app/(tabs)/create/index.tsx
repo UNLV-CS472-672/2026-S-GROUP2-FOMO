@@ -5,9 +5,7 @@ import { CreateForm } from '@/features/create/components/form';
 import { CreateModeToggle } from '@/features/create/components/mode-toggle';
 import { CreateSubmitButton } from '@/features/create/components/submit-button';
 import { CREATE_DRAWER_SNAP_POINTS } from '@/features/create/constants';
-import { useCreateDrawer } from '@/features/create/hooks/use-create-drawer';
-import { useCreateForm } from '@/features/create/hooks/use-create-form';
-import { useCreateMode } from '@/features/create/hooks/use-create-mode';
+import { useCreateContext } from '@/features/create/context';
 import { GuestMode } from '@/features/profile/components/guest-mode';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { ScrollView, View } from 'react-native';
@@ -23,27 +21,22 @@ export default function CreateScreen() {
     selectedMode,
     isEventMode,
     modeProgress,
-    mediaHeight,
     contentWidth,
     setMode,
     modeSwipeGesture,
     contentTrackStyle,
     postPanelStyle,
     eventPanelStyle,
-  } = useCreateMode();
-
-  const {
     isFocused,
     drawerIndex,
     drawerAnimatedIndex,
     drawerAnimatedPosition,
-    openCamera,
     handleDrawerChange,
     handleCloseDrawer,
-  } = useCreateDrawer();
-
-  const { control, setValue, onSubmit, allTags, isTagMenuOpen, setIsTagMenuOpen, isSubmitting } =
-    useCreateForm(selectedMode, handleCloseDrawer);
+    onSubmit,
+    isTagMenuOpen,
+    isSubmitting,
+  } = useCreateContext();
 
   return (
     <Screen>
@@ -75,31 +68,11 @@ export default function CreateScreen() {
                 style={[contentTrackStyle, { width: contentWidth * 2 }]}
               >
                 <Animated.View style={[{ width: contentWidth }, postPanelStyle]}>
-                  <CreateForm
-                    control={control}
-                    setValue={setValue}
-                    mode="post"
-                    formActive={!isEventMode}
-                    mediaHeight={mediaHeight}
-                    isTagMenuOpen={!isEventMode && isTagMenuOpen}
-                    setIsTagMenuOpen={setIsTagMenuOpen}
-                    allTags={allTags}
-                    openCamera={openCamera}
-                  />
+                  <CreateForm mode="post" />
                 </Animated.View>
 
                 <Animated.View style={[{ width: contentWidth }, eventPanelStyle]}>
-                  <CreateForm
-                    control={control}
-                    setValue={setValue}
-                    mode="event"
-                    formActive={isEventMode}
-                    mediaHeight={mediaHeight}
-                    isTagMenuOpen={isEventMode && isTagMenuOpen}
-                    setIsTagMenuOpen={setIsTagMenuOpen}
-                    allTags={allTags}
-                    openCamera={openCamera}
-                  />
+                  <CreateForm mode="event" />
                 </Animated.View>
               </Animated.View>
             </ScrollView>

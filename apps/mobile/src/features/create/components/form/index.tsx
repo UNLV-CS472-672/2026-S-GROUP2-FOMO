@@ -4,35 +4,24 @@ import { EventField } from '@/features/create/components/form/event-field';
 import { MediaField } from '@/features/create/components/form/media-field';
 import { NameField } from '@/features/create/components/form/name-field';
 import { TagsField } from '@/features/create/components/form/tags-field';
-import type { CreateFormValues, CreateMedia, CreateMode } from '@/features/create/types';
-import type { Dispatch, SetStateAction } from 'react';
-import { useController, useWatch, type Control, type UseFormSetValue } from 'react-hook-form';
+import { useCreateContext } from '@/features/create/context';
+import type { CreateMedia, CreateMode } from '@/features/create/types';
+import { useController, useWatch } from 'react-hook-form';
 import { View } from 'react-native';
 
-type CreateFormProps = {
-  control: Control<CreateFormValues>;
-  setValue: UseFormSetValue<CreateFormValues>;
-  mode: CreateMode;
-  /** When false, fields skip validation (both panels stay mounted for the mode swipe). */
-  formActive: boolean;
-  mediaHeight: number;
-  isTagMenuOpen: boolean;
-  setIsTagMenuOpen: Dispatch<SetStateAction<boolean>>;
-  allTags: { id: string; name: string }[];
-  openCamera: () => void;
-};
+export function CreateForm({ mode }: { mode: CreateMode }) {
+  const {
+    control,
+    setValue,
+    isEventMode,
+    mediaHeight,
+    isTagMenuOpen,
+    setIsTagMenuOpen,
+    allTags,
+    openCamera,
+  } = useCreateContext();
 
-export function CreateForm({
-  control,
-  setValue,
-  mode,
-  formActive,
-  mediaHeight,
-  isTagMenuOpen,
-  setIsTagMenuOpen,
-  allTags,
-  openCamera,
-}: CreateFormProps) {
+  const formActive = mode === 'event' ? isEventMode : !isEventMode;
   const mediaFieldName = mode === 'event' ? 'event.media' : 'post.media';
   const media = (useWatch({ control, name: mediaFieldName }) ?? {
     uri: '',

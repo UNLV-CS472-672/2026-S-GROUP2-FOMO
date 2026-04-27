@@ -130,7 +130,6 @@ export function CreateCameraDrawer({
             mode={mode}
             isActive={isParentFocused && isCameraActive}
             onRequestClose={onClose}
-            retakeDestination="create-drawer"
           />
         </Animated.View>
 

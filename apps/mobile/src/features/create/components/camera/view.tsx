@@ -14,14 +14,12 @@ type CreateCameraCaptureViewProps = {
   mode: CreateMode;
   isActive: boolean;
   onRequestClose: () => void;
-  retakeDestination?: 'back' | 'create-drawer';
 };
 
 export function CreateCameraCaptureView({
   mode,
   isActive,
   onRequestClose,
-  retakeDestination = 'back',
 }: CreateCameraCaptureViewProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -35,7 +33,7 @@ export function CreateCameraCaptureView({
   const openPreview = (mediaUri: string, mediaType: 'photo' | 'video') => {
     router.push({
       pathname: '/create/media-preview' as never,
-      params: { mediaUri, mediaType, mode, retakeDest: retakeDestination } as never,
+      params: { mediaUri, mediaType, mode } as never,
     });
   };
 

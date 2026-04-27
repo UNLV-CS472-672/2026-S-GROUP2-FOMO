@@ -1,13 +1,12 @@
 import { useUploadMedia } from '@/features/create/hooks/use-upload-media';
-import type { CreateFormValues, CreateMode, CreateParams } from '@/features/create/types';
-import { getModeParam, getStringParam, toFileUri } from '@/features/create/utils';
+import type { CreateFormValues, CreateMode } from '@/features/create/types';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
 import * as Location from 'expo-location';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { latLngToCell } from 'h3-js';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Alert } from 'react-native';
 
@@ -28,8 +27,7 @@ async function getDeviceLocation() {
   }
 }
 
-export function useCreateForm(selectedMode: CreateMode, onMediaReceived: () => void) {
-  const params = useLocalSearchParams<CreateParams>();
+export function useCreateForm(selectedMode: CreateMode) {
   const router = useRouter();
   const allTags = useQuery(api.tags.getAllTags) ?? [];
 
@@ -61,20 +59,6 @@ export function useCreateForm(selectedMode: CreateMode, onMediaReceived: () => v
 
   const [isTagMenuOpen, setIsTagMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const mediaUriParam = getStringParam(params.mediaUri);
-  const mediaTypeParam = getStringParam(params.mediaType);
-  const incomingMode = getModeParam(params.mode);
-
-  useEffect(() => {
-    if (!mediaUriParam) return;
-    setValue(
-      incomingMode === 'event' ? 'event.media' : 'post.media',
-      { uri: toFileUri(mediaUriParam), type: mediaTypeParam },
-      { shouldDirty: true, shouldValidate: true }
-    );
-    onMediaReceived();
-  }, [incomingMode, mediaTypeParam, mediaUriParam, onMediaReceived, setValue]);
 
   const onSubmit = handleSubmit(async (values) => {
     if (isSubmitting) return;
