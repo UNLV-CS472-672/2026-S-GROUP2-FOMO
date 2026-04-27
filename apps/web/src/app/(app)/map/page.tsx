@@ -6,6 +6,7 @@ import { RecenterButton } from '@/features/map/components/recenter-button';
 import { useMapboxEventMap } from '@/features/map/hooks/use-mapbox-event-map';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { pointsToGeoJSON } from '@/features/map/utils/h3';
+import { useUser } from '@clerk/nextjs';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { env } from '@fomo/env/web';
 import { useQuery } from 'convex/react';
@@ -20,7 +21,12 @@ export default function MapPage() {
   const router = useRouter();
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
   const { resolvedTheme } = useTheme();
+  const { isSignedIn } = useUser();
   const events = useQuery(api.events.queries.getEvents) ?? [];
+  const eventRecs = useQuery(
+    api.data_ml.eventRec.getCurrentUserEventRecs,
+    isSignedIn ? {} : 'skip'
+  );
   const [feedMode, setFeedMode] = useState<FeedMode>('foryou');
   const mounted = useSyncExternalStore(
     emptySubscribe,
@@ -30,29 +36,55 @@ export default function MapPage() {
 
   const isDark = mounted && resolvedTheme === 'dark';
 
-  // Fall back on popular waiting for event recs to be pushed onto convex
+  // 'popular' sorts by attendance (objective). 'foryou' uses the Two-Tower top-K recs in
+  // rank order (index 0 = #1 rec); we use array order rather than score because the model's
+  // probabilities aren't comparable across users (PR #140). Falls back to the full event
+  // list when recs haven't been computed for this user yet.
   const visibleEvents = useMemo(() => {
     if (feedMode === 'popular') {
       return [...events].sort((a, b) => b.attendeeCount - a.attendeeCount);
     }
+    if (eventRecs && eventRecs.length > 0) {
+      const eventById = new Map(events.map((event) => [event.id, event]));
+      return eventRecs
+        .map((rec) => eventById.get(rec.eventId))
+        .filter((event): event is NonNullable<typeof event> => event !== undefined);
+    }
     return events;
-  }, [events, feedMode]);
+  }, [events, eventRecs, feedMode]);
+
+  // In 'foryou' with recs, weight by inverse rank (#1 rec = K, #K = 1) so visual scale is
+  // comparable across users — model probabilities aren't (PR #140). Otherwise use attendance.
+  const eventWeights = useMemo(() => {
+    if (feedMode === 'foryou' && eventRecs && eventRecs.length > 0) {
+      const k = eventRecs.length;
+      return new Map<string, number>(eventRecs.map((rec, index) => [rec.eventId, k - index]));
+    }
+    return new Map<string, number>(events.map((event) => [event.id, event.attendeeCount]));
+  }, [events, eventRecs, feedMode]);
 
   const heatmapGeoJSON = useMemo(
     () =>
       pointsToGeoJSON(
-        events.map((e) => ({
+        visibleEvents.map((e) => ({
           longitude: e.location.longitude,
           latitude: e.location.latitude,
-          weight: e.attendeeCount,
+          weight: eventWeights.get(e.id) ?? 0,
         }))
       ),
-    [events]
+    [eventWeights, visibleEvents]
+  );
+
+  // The hook scales markers from `attendeeCount`; in 'foryou' we override it with the
+  // rank-based weight so #1 rec is biggest, #K smallest.
+  const weightedVisibleEvents = useMemo(
+    () => visibleEvents.map((e) => ({ ...e, attendeeCount: eventWeights.get(e.id) ?? 0 })),
+    [visibleEvents, eventWeights]
   );
 
   const { loadError, mapContainerRef, mapReady, recenterMap } = useMapboxEventMap({
     centerCoordinate,
-    events: visibleEvents,
+    events: weightedVisibleEvents,
     hasResolvedLocation,
     heatmapGeoJSON,
     isDark,
