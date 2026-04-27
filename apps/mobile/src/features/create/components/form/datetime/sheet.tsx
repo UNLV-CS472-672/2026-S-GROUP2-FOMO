@@ -1,5 +1,6 @@
 import { AnimatedTabs } from '@/components/navigation/animated-tabs';
 import { DrawerModal } from '@/components/ui/drawer';
+import { formatDateTime } from '@/lib/format';
 import { BottomSheetFlatList, BottomSheetFlatListMethods } from '@gorhom/bottom-sheet';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -9,28 +10,6 @@ import { Calendar } from './calendar';
 type TimeSlot = { label: string; hour: number; minute: number };
 const SLOT_H = 45;
 const ALL_TIME_SLOTS = makeTimeSlots();
-
-export function formatDateTime(ts: number): string {
-  const d = new Date(ts || Date.now());
-  const h = d.getHours();
-  const hour12 = h % 12 || 12;
-  const time = `${hour12}:${String(d.getMinutes()).padStart(2, '0')}${h < 12 ? 'am' : 'pm'}`;
-  return `${getDateLabel(ts)} · ${time}`;
-}
-
-export function getDateLabel(ts: number): string {
-  const date = new Date(ts || Date.now());
-  date.setHours(0, 0, 0, 0);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const diff = Math.round((date.getTime() - today.getTime()) / 86_400_000);
-
-  if (diff === 0) return 'Today';
-  if (diff === 1) return 'Tomorrow';
-  if (diff >= 2 && diff <= 6) return date.toLocaleDateString('en-US', { weekday: 'long' });
-  if (diff === 7) return `Next ${date.toLocaleDateString('en-US', { weekday: 'long' })}`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
 
 function makeTimeSlots(): TimeSlot[] {
   const slots: TimeSlot[] = [];
@@ -95,11 +74,12 @@ export function DateTimePickerSheet({
     if (!open) return;
 
     setEditing('start');
+    tabProgress.value = 0;
 
     const d = new Date(startTs || Date.now());
     setViewYear(d.getFullYear());
     setViewMonth(d.getMonth());
-  }, [open, startTs]);
+  }, [open, startTs, tabProgress]);
 
   const selectedSlotIndex = useMemo(() => {
     let bestIdx = 0;

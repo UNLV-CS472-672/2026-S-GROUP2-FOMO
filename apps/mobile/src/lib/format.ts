@@ -4,6 +4,39 @@ const DAY_MS = 24 * HOUR_MS;
 const WEEK_MS = 7 * DAY_MS;
 const YEAR_MS = 365 * DAY_MS;
 
+export function getDateLabel(ts: number, now: number = Date.now()): string {
+  const date = new Date(ts || now);
+  date.setHours(0, 0, 0, 0);
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const diff = Math.round((date.getTime() - today.getTime()) / 86_400_000);
+
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff >= 2 && diff <= 6) return date.toLocaleDateString('en-US', { weekday: 'long' });
+  if (diff === 7) return `Next ${date.toLocaleDateString('en-US', { weekday: 'long' })}`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+export function formatTime(ts: number): string {
+  const d = new Date(ts || Date.now());
+  const h = d.getHours();
+  const hour12 = h % 12 || 12;
+  return `${hour12}:${String(d.getMinutes()).padStart(2, '0')}${h < 12 ? 'am' : 'pm'}`;
+}
+
+export function formatDateTime(ts: number, now: number = Date.now()): string {
+  return `${getDateLabel(ts, now)} · ${formatTime(ts)}`;
+}
+
+export function formatDateTimeRange(
+  startTs: number,
+  endTs: number,
+  now: number = Date.now()
+): string {
+  return `${formatDateTime(startTs, now)} — ${formatDateTime(endTs, now)}`;
+}
+
 export function formatRelativeTime(timestamp: number, now: number = Date.now()): string {
   const elapsed = Math.max(now - timestamp, 0);
 

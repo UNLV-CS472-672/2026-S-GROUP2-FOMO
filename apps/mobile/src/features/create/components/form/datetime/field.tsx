@@ -1,9 +1,10 @@
 import { Icon } from '@/components/icon';
 import type { CreateFormValues } from '@/features/create/types';
+import { formatDateTime } from '@/lib/format';
 import { useState } from 'react';
 import { useController, type Control } from 'react-hook-form';
 import { Pressable, Text, View } from 'react-native';
-import { DateTimePickerSheet, formatDateTime } from './sheet';
+import { DateTimePickerSheet } from './sheet';
 
 type DatetimeFieldProps = {
   control: Control<CreateFormValues>;
@@ -46,10 +47,10 @@ export function DatetimeField({ control, formActive }: DatetimeFieldProps) {
         <View className="flex-row items-center justify-between gap-3">
           <View className="flex-1 gap-0.5">
             <Text className="text-[15px] font-medium text-foreground" numberOfLines={1}>
-              {formatDateTime(startField.value as number)} —
+              {formatDateTime(startField.value)} —
             </Text>
             <Text className="text-[15px] font-medium text-foreground" numberOfLines={1}>
-              {formatDateTime(endField.value as number)}
+              {formatDateTime(endField.value)}
             </Text>
           </View>
           <Icon name="keyboard-arrow-down" size={20} className="text-muted-foreground" />

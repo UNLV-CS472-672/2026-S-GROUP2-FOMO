@@ -71,7 +71,7 @@ export function useCreateForm(selectedMode: CreateMode, onMediaReceived: () => v
     setValue(
       incomingMode === 'event' ? 'event.media' : 'post.media',
       { uri: toFileUri(mediaUriParam), type: mediaTypeParam },
-      { shouldDirty: true }
+      { shouldDirty: true, shouldValidate: true }
     );
     onMediaReceived();
   }, [incomingMode, mediaTypeParam, mediaUriParam, onMediaReceived, setValue]);

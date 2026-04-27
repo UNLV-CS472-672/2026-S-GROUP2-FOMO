@@ -6,7 +6,7 @@ import { NameField } from '@/features/create/components/form/name-field';
 import { TagsField } from '@/features/create/components/form/tags-field';
 import type { CreateFormValues, CreateMedia, CreateMode } from '@/features/create/types';
 import type { Dispatch, SetStateAction } from 'react';
-import { useWatch, type Control, type UseFormSetValue } from 'react-hook-form';
+import { useController, useWatch, type Control, type UseFormSetValue } from 'react-hook-form';
 import { View } from 'react-native';
 
 type CreateFormProps = {
@@ -41,10 +41,40 @@ export function CreateForm({
   const hasPhoto = !!media.uri && media.type !== 'video';
   const shouldShowMediaSection = mode === 'event' || hasPhoto;
 
+  const {
+    fieldState: { error: eventMediaUriError },
+  } = useController({
+    control,
+    name: 'event.media.uri',
+    disabled: !formActive || mode !== 'event',
+    rules: mode === 'event' ? { required: 'Add a cover image for the event.' } : undefined,
+  });
+
   return (
     <View className="gap-4 pt-1">
       {shouldShowMediaSection ? (
-        <MediaField mode={mode} media={media} mediaHeight={mediaHeight} openCamera={openCamera} />
+        <MediaField
+          mode={mode}
+          media={media}
+          mediaHeight={mediaHeight}
+          openCamera={openCamera}
+          clearMedia={() => {
+            if (mode === 'event') {
+              setValue(
+                'event.media',
+                { uri: '', type: undefined },
+                { shouldDirty: true, shouldValidate: true }
+              );
+            } else {
+              setValue(
+                'post.media',
+                { uri: '', type: undefined },
+                { shouldDirty: true, shouldValidate: true }
+              );
+            }
+          }}
+          errorMessage={mode === 'event' ? eventMediaUriError?.message : undefined}
+        />
       ) : null}
       {mode === 'event' ? <NameField control={control} formActive={formActive} /> : null}
       {mode === 'event' ? <DatetimeField control={control} formActive={formActive} /> : null}
