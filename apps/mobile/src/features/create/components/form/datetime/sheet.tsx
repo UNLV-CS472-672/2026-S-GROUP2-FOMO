@@ -1,8 +1,9 @@
+import { AnimatedTabs } from '@/components/navigation/animated-tabs';
 import { DrawerModal } from '@/components/ui/drawer';
 import { BottomSheetFlatList, BottomSheetFlatListMethods } from '@gorhom/bottom-sheet';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useSharedValue, withTiming } from 'react-native-reanimated';
 import { Calendar } from './calendar';
 
 type TimeSlot = { label: string; hour: number; minute: number };
@@ -75,7 +76,6 @@ export function DateTimePickerSheet({
 }) {
   const listRef = useRef<BottomSheetFlatListMethods>(null);
   const [editing, setEditing] = useState<'start' | 'end'>('start');
-  const [tabContainerWidth, setTabContainerWidth] = useState(0);
   const tabProgress = useSharedValue(0);
 
   const today = useMemo(() => {
@@ -149,16 +149,6 @@ export function DateTimePickerSheet({
     setViewMonth(d.getMonth());
   };
 
-  const tabIndicatorStyle = useAnimatedStyle(() => {
-    const inset = 6;
-    const segmentWidth = tabContainerWidth > 0 ? (tabContainerWidth - inset * 2) / 2 : 0;
-    return {
-      width: segmentWidth,
-      transform: [{ translateX: segmentWidth * tabProgress.value }],
-      opacity: segmentWidth > 0 ? 1 : 0,
-    };
-  }, [tabContainerWidth]);
-
   const handleDayPress = (day: number) => {
     const newTs = applyDayToTs(viewYear, viewMonth, day, activeTs);
 
@@ -209,36 +199,63 @@ export function DateTimePickerSheet({
         </Pressable>
       </View>
 
-      <View
-        className="mx-4 mb-4 flex-row rounded-2xl border border-border bg-surface p-1.5"
-        onLayout={(e) => setTabContainerWidth(e.nativeEvent.layout.width)}
-      >
-        <Animated.View
-          pointerEvents="none"
-          className="absolute bottom-1.5 left-1.5 top-1.5 rounded-xl bg-primary"
-          style={tabIndicatorStyle}
-        />
-        {(['start', 'end'] as const).map((tab) => {
-          const ts = tab === 'start' ? startTs : endTs;
-          const active = editing === tab;
-
-          return (
-            <Pressable key={tab} onPress={() => handleTabChange(tab)} className="flex-1 px-4 py-3">
-              <Text
-                className={`text-[11px] font-semibold tracking-wide ${active ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
-              >
-                {tab === 'start' ? 'START' : 'END'}
-              </Text>
-              <Text
-                className={`mt-0.5 text-[14px] font-semibold ${active ? 'text-primary-foreground' : 'text-muted-foreground'}`}
-                numberOfLines={1}
-              >
-                {formatDateTime(ts)}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <AnimatedTabs
+        variant="equal"
+        tabs={[
+          {
+            key: 'start',
+            onPress: () => handleTabChange('start'),
+            render: (active) => (
+              <>
+                <Text
+                  className={`text-[11px] font-semibold tracking-wide ${
+                    active ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                  }`}
+                >
+                  START
+                </Text>
+                <Text
+                  className={`mt-0.5 text-[14px] font-semibold ${
+                    active ? 'text-primary-foreground' : 'text-muted-foreground'
+                  }`}
+                  numberOfLines={1}
+                >
+                  {formatDateTime(startTs)}
+                </Text>
+              </>
+            ),
+          },
+          {
+            key: 'end',
+            onPress: () => handleTabChange('end'),
+            render: (active) => (
+              <>
+                <Text
+                  className={`text-[11px] font-semibold tracking-wide ${
+                    active ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                  }`}
+                >
+                  END
+                </Text>
+                <Text
+                  className={`mt-0.5 text-[14px] font-semibold ${
+                    active ? 'text-primary-foreground' : 'text-muted-foreground'
+                  }`}
+                  numberOfLines={1}
+                >
+                  {formatDateTime(endTs)}
+                </Text>
+              </>
+            ),
+          },
+        ]}
+        activeKey={editing}
+        progress={tabProgress}
+        containerClassName="mx-4 mb-4 flex-row rounded-2xl border border-border bg-surface p-1.5"
+        indicatorClassName="absolute bottom-1.5 top-1.5 rounded-xl bg-primary"
+        indicatorInset={6}
+        tabClassName="flex-1 px-4 py-3"
+      />
 
       <Calendar
         viewYear={viewYear}
