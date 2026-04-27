@@ -24,6 +24,7 @@ type GalleryParams = {
   mode?: string | string[];
   /** When set, picking an asset returns to manage-media and replaces this index (no JSON payload). */
   replaceIndex?: string | string[];
+  returnTo?: string | string[];
 };
 
 type GalleryAsset = MediaLibrary.Asset;
@@ -78,6 +79,7 @@ export default function CreateGalleryScreen() {
 
   const replaceIndex = useMemo(() => getStringParam(params.replaceIndex), [params.replaceIndex]);
   const isReplaceFlow = mode === 'post' && replaceIndex != null && replaceIndex !== '';
+  const returnTo = useMemo(() => getStringParam(params.returnTo), [params.returnTo]);
 
   const mediaTypesForQuery = useMemo(
     () => (mode === 'event' ? EVENT_GALLERY_MEDIA_TYPES : POST_GALLERY_MEDIA_TYPES),
@@ -223,8 +225,8 @@ export default function CreateGalleryScreen() {
     }
 
     router.push({
-      pathname: '/create/media-preview' as never,
-      params: { mode, mediaUri, mediaType } as never,
+      pathname: '/create/media-preview',
+      params: { mode, mediaUri, mediaType, ...(returnTo ? { returnTo } : {}) },
     });
   };
 

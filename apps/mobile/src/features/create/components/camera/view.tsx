@@ -88,8 +88,8 @@ export function CreateCameraCaptureView({
 
   const openPreview = (mediaUri: string, mediaType: 'photo' | 'video') => {
     router.push({
-      pathname: '/create/media-preview' as never,
-      params: { mediaUri, mediaType, mode } as never,
+      pathname: '/create/media-preview',
+      params: { mediaUri, mediaType, mode },
     });
   };
 
@@ -174,8 +174,8 @@ export function CreateCameraCaptureView({
             <LatestGalleryImage
               onPress={() =>
                 router.push({
-                  pathname: '/create/gallery' as never,
-                  params: { mode } as never,
+                  pathname: '/create/gallery',
+                  params: { mode },
                 })
               }
             />

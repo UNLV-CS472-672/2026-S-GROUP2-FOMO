@@ -226,23 +226,14 @@ export function MediaField({
           style={{ height: mediaHeight, borderCurve: 'continuous' }}
         >
           {postItems.length > 0 ? (
-            <>
-              {postItems.length >= 2 && openManage ? (
-                <Pressable
-                  onPress={openManage}
-                  className="flex-1"
-                  accessibilityRole="button"
-                  accessibilityLabel="Manage media"
-                >
-                  <PostMediaPreviewGrid
-                    items={postItems}
-                    onRemoveAtIndex={removePostMediaAtIndex}
-                  />
-                </Pressable>
-              ) : (
-                <PostMediaPreviewGrid items={postItems} onRemoveAtIndex={removePostMediaAtIndex} />
-              )}
-            </>
+            <Pressable
+              onPress={openManage}
+              className="flex-1"
+              accessibilityRole="button"
+              accessibilityLabel="Manage media"
+            >
+              <PostMediaPreviewGrid items={postItems} onRemoveAtIndex={removePostMediaAtIndex} />
+            </Pressable>
           ) : (
             <Pressable
               onPress={openCamera}

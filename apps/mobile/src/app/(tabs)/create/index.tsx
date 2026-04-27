@@ -45,7 +45,7 @@ export default function CreateScreen() {
   const drawerHasExistingMedia = isEventMode ? hasEventCoverMedia : hasPostMediaWithUri;
 
   const openManagePostMedia = () => {
-    router.push({ pathname: '/create/manage-media' as never });
+    router.push({ pathname: '/create/manage-media' });
   };
 
   return (

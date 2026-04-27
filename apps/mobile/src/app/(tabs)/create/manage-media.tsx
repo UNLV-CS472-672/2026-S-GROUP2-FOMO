@@ -5,7 +5,7 @@ import { VideoThumbnail } from '@/components/video/video-thumbnail';
 import { useCreateContext } from '@/features/create/context';
 import type { CreateMediaItem } from '@/features/create/types';
 import { Image } from 'expo-image';
-import { useNavigation, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useWatch } from 'react-hook-form';
 import { Pressable, Text, useWindowDimensions, View } from 'react-native';
@@ -103,7 +103,6 @@ function PreviewCarousel({
 
 export default function ManageMediaScreen() {
   const router = useRouter();
-  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { control, removePostMedia, replacePostMedia } = useCreateContext();
   const currentPostMedia = useWatch({ control, name: 'post.media' }) as
@@ -140,21 +139,6 @@ export default function ManageMediaScreen() {
     return idx >= 0 ? idx : 0;
   }, [items, activePreviewKey]);
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel="Done"
-        >
-          <Text className="px-2 text-base font-bold text-primary">Done</Text>
-        </Pressable>
-      ),
-    });
-  }, [navigation, router]);
-
   const handleRemove = useCallback(
     (key: string) => {
       const idx = items.findIndex((item) => item.key === key);
@@ -181,8 +165,8 @@ export default function ManageMediaScreen() {
       const replaceIdx = items.findIndex((row) => row.key === key);
       if (replaceIdx < 0) return;
       router.push({
-        pathname: '/create/gallery' as never,
-        params: { mode: 'post', replaceIndex: String(replaceIdx) } as never,
+        pathname: '/create/gallery',
+        params: { mode: 'post', replaceIndex: String(replaceIdx) },
       });
     },
     [items, router]
@@ -292,6 +276,13 @@ export default function ManageMediaScreen() {
     [items]
   );
 
+  const openGalleryToAdd = useCallback(() => {
+    router.push({
+      pathname: '/create/gallery',
+      params: { mode: 'post', returnTo: 'manage-media' },
+    });
+  }, [router]);
+
   return (
     <Screen className="flex-1">
       <View className="flex-1" style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
@@ -311,6 +302,7 @@ export default function ManageMediaScreen() {
           contentContainerStyle={{
             paddingTop: 12,
             rowGap: 12,
+            paddingBottom: 72,
           }}
           onDragEnd={handleDragEnd}
           renderItem={renderItem}
@@ -328,6 +320,20 @@ export default function ManageMediaScreen() {
             </View>
           }
         />
+
+        <Pressable
+          onPress={openGalleryToAdd}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Add more media from library"
+          className="absolute right-5 size-12 items-center justify-center rounded-full bg-card shadow-sm"
+          style={({ pressed }) => [
+            { bottom: Math.max(insets.bottom, 8) + 12 },
+            pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] },
+          ]}
+        >
+          <Icon name="add-photo-alternate" size={22} className="text-primary" />
+        </Pressable>
       </View>
     </Screen>
   );

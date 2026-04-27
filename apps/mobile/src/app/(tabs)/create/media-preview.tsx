@@ -11,6 +11,7 @@ type PostPreviewParams = {
   mediaUri?: string | string[];
   mediaType?: 'photo' | 'video' | string | string[];
   mode?: string | string[];
+  returnTo?: string | string[];
 };
 
 export default function PostPreviewScreen() {
@@ -27,6 +28,7 @@ export default function PostPreviewScreen() {
   const mediaUri = mediaUriParam ? toFileUri(mediaUriParam) : '';
   const mediaType = mediaTypeParam === 'video' ? 'video' : 'photo';
   const mode = getModeParam(params.mode);
+  const returnTo = getStringParam(params.returnTo);
   const mediaHeight = Math.max(260, Math.min(height * 0.62, 560));
 
   const handleRetake = () => {
@@ -48,8 +50,12 @@ export default function PostPreviewScreen() {
         shouldValidate: true,
       });
     }
-    handleCloseDrawer();
-    router.dismissTo({ pathname: '/(tabs)/create' as never });
+    if (returnTo === 'manage-media') {
+      router.dismissTo({ pathname: '/(tabs)/create/manage-media' });
+    } else {
+      handleCloseDrawer();
+      router.dismissTo({ pathname: '/(tabs)/create' });
+    }
   };
 
   return (
