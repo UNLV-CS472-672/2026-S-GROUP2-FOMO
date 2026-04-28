@@ -6,11 +6,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   slug: 'fomo',
   version: '1.0.0',
   orientation: 'portrait',
-  icon: './assets/images/icon.png',
+  icon: './assets/logos/icon.png',
   scheme: 'fomo',
   userInterfaceStyle: 'automatic',
   platforms: ['ios', 'android'],
   ios: {
+    icon: {
+      light: './assets/logos/icon-ios-light.png',
+      dark: './assets/logos/icon-ios-dark.png',
+      tinted: './assets/logos/icon-ios-tinted.png',
+    },
     supportsTablet: true,
     bundleIdentifier: 'com.fomo.mobile',
     infoPlist: {
@@ -29,10 +34,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
-      foregroundImage: './assets/images/android-icon-foreground.png',
-      backgroundImage: './assets/images/android-icon-background.png',
-      monochromeImage: './assets/images/android-icon-monochrome.png',
+      backgroundColor: '#fffdfb',
+      foregroundImage: './assets/logos/android-icon-foreground.png',
+      backgroundImage: './assets/logos/android-icon-background.png',
+      monochromeImage: './assets/logos/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,
     package: 'com.fomo.mobile',
@@ -54,11 +59,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-splash-screen',
       {
-        image: './assets/images/splash-icon.png',
+        image: './assets/logos/splash-icon.png',
         imageWidth: 200,
         resizeMode: 'contain',
-        backgroundColor: '#ffffff',
-        dark: { backgroundColor: '#000000' },
+        backgroundColor: '#fffdfb',
+        dark: { backgroundColor: '#181311' },
       },
     ],
     [
