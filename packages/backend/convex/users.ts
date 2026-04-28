@@ -28,9 +28,11 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
       .first(),
   ]);
 
+  type AttendedEvent = Doc<'events'> | Doc<'externalEvents'>;
+
   const events = (
     await Promise.all(userEventLinks.map((link: Doc<'attendance'>) => ctx.db.get(link.eventId)))
-  ).filter((event: Doc<'events'> | null): event is Doc<'events'> => event !== null);
+  ).filter((event): event is AttendedEvent => event !== null);
 
   const recommendedUsers = friendRecs
     ? (
