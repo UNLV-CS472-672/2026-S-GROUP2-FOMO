@@ -63,7 +63,7 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
     comments: comments.sort(
       (a: Doc<'comments'>, b: Doc<'comments'>) => b._creationTime - a._creationTime
     ),
-    events: events.sort((a: Doc<'events'>, b: Doc<'events'>) => a.startDate - b.startDate),
+    events: events.sort((a, b) => a.startDate - b.startDate),
     stats: {
       postCount: posts.length,
       commentCount: comments.length,
