@@ -1,13 +1,52 @@
-import { useRouter } from 'expo-router';
-import { ScrollView, Text } from 'react-native';
-
-import { Button, ButtonText } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { Authenticated, GuestOnly } from '@/features/auth/components/auth-gate';
+import { CreateCameraDrawer } from '@/features/create/components/camera/drawer';
+import { CreateForm } from '@/features/create/components/form';
+import { CreateModeToggle } from '@/features/create/components/mode-toggle';
+import { CreateSubmitButton } from '@/features/create/components/submit-button';
+import { CREATE_DRAWER_SNAP_POINTS } from '@/features/create/constants';
+import { useCreateContext } from '@/features/create/context';
 import { GuestMode } from '@/features/profile/components/guest-mode';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useRouter } from 'expo-router';
+import { ScrollView, View } from 'react-native';
+import { GestureDetector } from 'react-native-gesture-handler';
+import Animated from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CreateScreen() {
-  const { push } = useRouter();
+  const router = useRouter();
+  const tabBarHeight = useBottomTabBarHeight();
+  const insets = useSafeAreaInsets();
+
+  const {
+    selectedMode,
+    isEventMode,
+    modeProgress,
+    contentWidth,
+    setMode,
+    modeSwipeGesture,
+    contentTrackStyle,
+    postPanelStyle,
+    eventPanelStyle,
+    isFocused,
+    drawerIndex,
+    drawerAnimatedIndex,
+    drawerAnimatedPosition,
+    handleDrawerChange,
+    handleCloseDrawer,
+    onSubmit,
+    isTagMenuOpen,
+    isSubmitting,
+    hasEventCoverMedia,
+    hasPostMediaWithUri,
+  } = useCreateContext();
+
+  const drawerHasExistingMedia = isEventMode ? hasEventCoverMedia : hasPostMediaWithUri;
+
+  const openManagePostMedia = () => {
+    router.push({ pathname: '/create/manage-media' });
+  };
 
   return (
     <Screen>
@@ -16,50 +55,59 @@ export default function CreateScreen() {
       </GuestOnly>
 
       <Authenticated>
-        <ScrollView
-          className="flex-1 gap-3"
-          contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={{
-            flexGrow: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 24,
-            rowGap: 12,
-          }}
-        >
-          <Text className="text-[30px] font-bold leading-8 text-foreground">Create</Text>
-          <Text className="text-base leading-6 text-foreground">
-            Choose what you want to publish.
-          </Text>
+        <GestureDetector gesture={modeSwipeGesture}>
+          <View className="flex-1 bg-surface-muted">
+            <CreateModeToggle
+              selectedMode={selectedMode}
+              modeProgress={modeProgress}
+              topInset={insets.top}
+              onSelectMode={setMode}
+            />
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{
+                paddingBottom: tabBarHeight + (isTagMenuOpen ? 220 : 176),
+                paddingHorizontal: 16,
+                rowGap: 18,
+              }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <Animated.View
+                className="flex-row items-start"
+                style={[contentTrackStyle, { width: contentWidth * 2 }]}
+              >
+                <Animated.View style={[{ width: contentWidth }, postPanelStyle]}>
+                  <CreateForm mode="post" openManagePostMedia={openManagePostMedia} />
+                </Animated.View>
 
-          <Button
-            variant="secondary"
-            size="lg"
-            className="items-start text-xl font-semibold"
-            onPress={() => push('/create/event')}
-          >
-            <ButtonText variant="secondary" className="text-xl">
-              Create Event
-            </ButtonText>
-            <ButtonText className="mt-1 text-base leading-6 text-foreground">
-              Host an event with location, time, and details.
-            </ButtonText>
-          </Button>
+                <Animated.View style={[{ width: contentWidth }, eventPanelStyle]}>
+                  <CreateForm mode="event" />
+                </Animated.View>
+              </Animated.View>
+            </ScrollView>
+          </View>
+        </GestureDetector>
 
-          <Button
-            variant="secondary"
-            size="lg"
-            className="items-start text-xl font-semibold"
-            onPress={() => push('/create/post')}
-          >
-            <ButtonText variant="secondary" className="text-xl">
-              Create Post
-            </ButtonText>
-            <ButtonText className="mt-1 text-base leading-6 text-foreground">
-              Share an update, photo, or thought with the community.
-            </ButtonText>
-          </Button>
-        </ScrollView>
+        <CreateCameraDrawer
+          drawerIndex={drawerIndex}
+          drawerSnapPoints={CREATE_DRAWER_SNAP_POINTS}
+          mode={selectedMode}
+          hasExistingMedia={drawerHasExistingMedia}
+          isParentFocused={isFocused}
+          animatedIndex={drawerAnimatedIndex}
+          animatedPosition={drawerAnimatedPosition}
+          onChange={handleDrawerChange}
+          onClose={handleCloseDrawer}
+        />
+
+        <CreateSubmitButton
+          isEventMode={isEventMode}
+          animatedIndex={drawerAnimatedIndex}
+          animatedPosition={drawerAnimatedPosition}
+          onPress={onSubmit}
+          disabled={isSubmitting}
+        />
       </Authenticated>
     </Screen>
   );
