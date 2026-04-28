@@ -8,14 +8,15 @@ import { View } from 'react-native';
 
 type EventSearchImageProps = {
   mediaId: Id<'_storage'> | null;
+  className?: string;
 };
 
-export function EventSearchImage({ mediaId }: EventSearchImageProps) {
+export function EventSearchImage({ mediaId, className }: EventSearchImageProps) {
   const theme = useAppTheme();
   const file = useQuery(api.files.getFile, mediaId ? { storageId: mediaId } : 'skip');
 
   return (
-    <View className="size-12 overflow-hidden rounded-2xl bg-primary/10">
+    <View className={className ?? 'size-12 overflow-hidden rounded-2xl bg-primary/10'}>
       {file?.url ? (
         <Image source={file.url} className="h-full w-full" contentFit="cover" />
       ) : (

@@ -3,9 +3,11 @@ import { SEARCH_DRAWER_STATE } from '@/features/map/components/search/constants'
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { type RefObject } from 'react';
 import { Platform, Pressable, View } from 'react-native';
+import { Pressable as GHPressable } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
   interpolate,
+  useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -76,6 +78,16 @@ export function SearchHeader({
     };
   });
 
+  const cancelAnimatedProps = useAnimatedProps(() => {
+    const cancelProgress = interpolate(
+      resolvedAnimatedIndex.value,
+      [expandedStateStart, SEARCH_DRAWER_STATE.expanded],
+      [0, 1],
+      Extrapolation.CLAMP
+    );
+    return { pointerEvents: cancelProgress > 0.5 ? 'auto' : 'none' } as any;
+  });
+
   const micBadgeAnimatedStyle = useAnimatedStyle(() => ({
     opacity: interpolate(listeningPulse.value, [0, 1], [0.45, 1], Extrapolation.CLAMP),
     transform: [
@@ -106,22 +118,23 @@ export function SearchHeader({
               accessibilityLabel="Search events or places"
             />
             {query.length > 0 ? (
-              <Pressable
+              <GHPressable
                 accessibilityRole="button"
                 accessibilityLabel="Clear search"
-                className="items-center justify-center rounded-full "
                 hitSlop={8}
                 onPress={() => onChangeQuery('')}
               >
                 <Icon name="close" size={20} className="text-muted-foreground" />
-              </Pressable>
+              </GHPressable>
             ) : (
-              <Pressable
+              <GHPressable
                 accessibilityRole="button"
                 accessibilityLabel={isListening ? 'Stop voice search' : 'Voice search'}
-                className="items-center justify-center rounded-full"
                 hitSlop={8}
-                onPress={onVoiceSearch}
+                onPress={() => {
+                  onExpand();
+                  onVoiceSearch();
+                }}
               >
                 <Animated.View style={micBadgeAnimatedStyle}>
                   <Icon
@@ -130,14 +143,14 @@ export function SearchHeader({
                     className={isListening ? 'text-primary' : 'text-muted-foreground'}
                   />
                 </Animated.View>
-              </Pressable>
+              </GHPressable>
             )}
           </View>
         </View>
       </Animated.View>
 
-      <View className="absolute right-0 top-1/2 -translate-y-1/2">
-        <Animated.View style={progress}>
+      <View className="absolute right-0 top-1/2 -translate-y-1/2" pointerEvents="box-none">
+        <Animated.View style={progress} animatedProps={cancelAnimatedProps}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Cancel search"
