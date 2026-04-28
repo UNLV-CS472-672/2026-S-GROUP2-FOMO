@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
-import { query } from './_generated/server';
+
+import { query } from '../_generated/server';
 
 const DEFAULT_LIMIT = 8;
 const MAX_LIMIT = 25;
