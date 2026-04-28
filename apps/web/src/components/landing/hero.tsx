@@ -71,19 +71,24 @@ export function Hero() {
         }}
         className="flex items-center gap-3"
       >
-        <Button size="lg" className="text-xl px-4 py-6" asChild>
-          <a href="/map">Try it out</a>
-        </Button>
         <Show when="signed-out">
+          <Button size="lg" className="text-xl px-4 py-6" asChild>
+            <a href="/map">Try it out</a>
+          </Button>
           <SignUpButton mode="modal">
             <Button size="lg" variant="outline" className="text-xl px-4 py-6">
               Get started
             </Button>
           </SignUpButton>
         </Show>
+
         <Show when="signed-in">
+          <Button size="lg" asChild className="text-xl px-4 py-6">
+            <a href="/map">Nearby you</a>
+          </Button>
+
           <Button size="lg" asChild variant="outline" className="text-xl px-4 py-6">
-            <a href="/events/create">Get started</a>
+            <a href="/events/create">Create event</a>
           </Button>
         </Show>
       </motion.div>
