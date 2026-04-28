@@ -116,22 +116,6 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index('by_userId', ['userId']),
 
-  // Top-K event recommendations per user, written by the Two-Tower model
-  // (recommendEvent.py — see PR #140). Order is rank-significant: index 0 is
-  // the user's #1 rec. `score` is the model's probability, but probabilities
-  // are not comparable across users (one user's #1 may be 60%, another's 95%),
-  // so consumers should use array order, not score, for visual scaling.
-  eventRecs: defineTable({
-    userId: v.id('users'),
-    recs: v.array(
-      v.object({
-        eventId: v.id('events'),
-        score: v.number(),
-      })
-    ),
-    updatedAt: v.number(),
-  }).index('by_userId', ['userId']),
-
   friends: defineTable({
     requesterId: v.id('users'),
     recipientId: v.id('users'),
@@ -162,4 +146,9 @@ export default defineSchema({
     .index('by_commentId', ['commentId'])
     .index('by_userId_postId', ['userId', 'postId'])
     .index('by_userId_commentId', ['userId', 'commentId']),
+
+  eventRecs: defineTable({
+    userId: v.id('users'),
+    eventIds: v.array(v.id('events')),
+  }).index('by_userId', ['userId']),
 });

@@ -44,7 +44,7 @@ export default function MapScreen() {
     if (eventRecs && eventRecs.length > 0) {
       const eventById = new Map(events.map((event) => [event.id, event]));
       return eventRecs
-        .map((rec) => eventById.get(rec.eventId))
+        .map((id) => eventById.get(id))
         .filter((event): event is EventSummary => event !== undefined);
     }
     return events;
@@ -74,7 +74,7 @@ export default function MapScreen() {
   const eventWeights = useMemo(() => {
     if (feedMode === 'foryou' && eventRecs && eventRecs.length > 0) {
       const k = eventRecs.length;
-      return new Map(eventRecs.map((rec, index) => [rec.eventId, k - index]));
+      return new Map(eventRecs.map((id, index) => [id, k - index]));
     }
     return new Map(events.map((event) => [event.id, event.attendeeCount]));
   }, [events, eventRecs, feedMode]);

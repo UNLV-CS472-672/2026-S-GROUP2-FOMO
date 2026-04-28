@@ -47,7 +47,7 @@ export default function MapPage() {
     if (eventRecs && eventRecs.length > 0) {
       const eventById = new Map(events.map((event) => [event.id, event]));
       return eventRecs
-        .map((rec) => eventById.get(rec.eventId))
+        .map((id) => eventById.get(id))
         .filter((event): event is NonNullable<typeof event> => event !== undefined);
     }
     return events;
@@ -58,7 +58,7 @@ export default function MapPage() {
   const eventWeights = useMemo(() => {
     if (feedMode === 'foryou' && eventRecs && eventRecs.length > 0) {
       const k = eventRecs.length;
-      return new Map<string, number>(eventRecs.map((rec, index) => [rec.eventId, k - index]));
+      return new Map<string, number>(eventRecs.map((id, index) => [id, k - index]));
     }
     return new Map<string, number>(events.map((event) => [event.id, event.attendeeCount]));
   }, [events, eventRecs, feedMode]);
