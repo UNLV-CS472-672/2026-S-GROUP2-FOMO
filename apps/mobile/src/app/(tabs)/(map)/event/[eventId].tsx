@@ -10,6 +10,7 @@ import type { AttendanceStatus, NotificationPref } from '@/features/events/types
 import { Avatar } from '@/features/posts/components/avatar';
 import { MediaCarousel } from '@/features/posts/components/media-carousel';
 import { useGuest } from '@/integrations/session/guest';
+import { formatDateTimeRange } from '@/lib/format';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
@@ -22,27 +23,6 @@ const AVATAR_STEP = 32; // minus 8px overlap
 const BUBBLE_W = 44; // min-w-10 + 2px border each side
 const BUBBLE_STEP = 36; // minus 8px overlap
 const ROW_GAP = 10; // gap-2.5
-
-function formatEventDateRange(startDate: number, endDate: number) {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-
-  const date = start.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-  const startTime = start.toLocaleTimeString(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-  const endTime = end.toLocaleTimeString(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-
-  return `${date} • ${startTime} - ${endTime}`;
-}
 
 export default function EventPage() {
   const { isGuestMode } = useGuest();
@@ -220,7 +200,7 @@ export default function EventPage() {
                 {event.name}
               </Text>
               <Text className="text-sm text-muted-foreground">
-                {formatEventDateRange(event.startDate, event.endDate)}
+                {formatDateTimeRange(event.startDate, event.endDate)}
               </Text>
               <Text className="mt-1 text-sm leading-4 text-foreground" numberOfLines={4}>
                 {event.caption}

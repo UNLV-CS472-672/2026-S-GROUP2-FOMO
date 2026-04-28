@@ -5,9 +5,29 @@ import BottomSheet, {
   type BottomSheetBackdropProps,
   type BottomSheetFooterProps,
 } from '@gorhom/bottom-sheet';
-import { useCallback, useEffect, useRef, type FC, type ReactNode } from 'react';
-import { Keyboard } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, type FC, type ReactNode } from 'react';
+import { Keyboard, Platform, type ViewStyle } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
+
+/** Upward shadow so the sheet’s top edge reads above the backdrop (iOS: offset; Android: elevation). */
+function drawerSheetBackgroundStyle(surfaceColor: string): ViewStyle {
+  return {
+    backgroundColor: surfaceColor,
+    borderRadius: 40,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: -8 },
+        shadowOpacity: 0.22,
+        shadowRadius: 18,
+      },
+      android: {
+        elevation: 20,
+      },
+      default: {},
+    }),
+  };
+}
 
 type DrawerProps = {
   children: ReactNode;
@@ -17,8 +37,10 @@ type DrawerProps = {
   backdropAppearsOnIndex?: number;
   backdropDisappearsOnIndex?: number;
   enablePanDownToClose?: boolean;
+  showHandle?: boolean;
   animatedIndex?: SharedValue<number>;
   animatedPosition?: SharedValue<number>;
+  bottomInset?: number | undefined;
 };
 
 export function Drawer({
@@ -29,13 +51,24 @@ export function Drawer({
   backdropAppearsOnIndex = 1,
   backdropDisappearsOnIndex = 0,
   enablePanDownToClose = false,
+  showHandle = true,
   animatedIndex,
   animatedPosition,
 }: DrawerProps) {
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const hasMountedRef = useRef(false);
   const theme = useAppTheme();
+  const sheetBackgroundStyle = useMemo(
+    () => drawerSheetBackgroundStyle(theme.surface),
+    [theme.surface]
+  );
 
   useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+
     if (index < 0) {
       bottomSheetRef.current?.close();
     } else {
@@ -67,6 +100,7 @@ export function Drawer({
     <BottomSheet
       ref={bottomSheetRef}
       index={index}
+      animateOnMount={false}
       snapPoints={snapPoints}
       enablePanDownToClose={enablePanDownToClose}
       enableDynamicSizing={false}
@@ -77,8 +111,11 @@ export function Drawer({
       onChange={handleChange}
       animatedIndex={animatedIndex}
       animatedPosition={animatedPosition}
-      handleIndicatorStyle={{ backgroundColor: theme.mutedText, width: 40 }}
-      backgroundStyle={{ backgroundColor: theme.surface, borderRadius: 40 }}
+      handleComponent={showHandle ? undefined : () => null}
+      handleIndicatorStyle={
+        showHandle ? { backgroundColor: theme.mutedText, width: 40 } : undefined
+      }
+      backgroundStyle={sheetBackgroundStyle}
     >
       {children}
     </BottomSheet>
@@ -133,6 +170,10 @@ export function DrawerModal({
 }: DrawerModalProps) {
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const theme = useAppTheme();
+  const sheetBackgroundStyle = useMemo(
+    () => drawerSheetBackgroundStyle(theme.surface),
+    [theme.surface]
+  );
 
   const dismissKeyboardWhenClosing = useCallback(
     (_fromIndex: number, toIndex: number, _fromPosition: number, _toPosition: number) => {
@@ -183,7 +224,7 @@ export function DrawerModal({
       bottomInset={bottomInset}
       enableBlurKeyboardOnGesture={enableBlurKeyboardOnGesture}
       handleIndicatorStyle={{ backgroundColor: theme.mutedText, width: 40 }}
-      backgroundStyle={{ backgroundColor: theme.surface, borderRadius: 40 }}
+      backgroundStyle={sheetBackgroundStyle}
     >
       {children}
     </BottomSheetModal>
