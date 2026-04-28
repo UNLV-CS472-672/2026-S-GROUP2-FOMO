@@ -36,13 +36,11 @@ type SuggestionRaw = {
 export async function retrieveCoordinates(
   mapboxId: string,
   sessionToken: string,
-  accessToken: string,
-  permanent: boolean = false // IMPORTANT NOTE!!! Set to 'true' whenever we deploy.
+  accessToken: string
 ): Promise<Coordinates | null> {
   const params = new URLSearchParams({
     access_token: accessToken,
     session_token: sessionToken,
-    permanent: String(permanent),
   });
 
   const res = await fetch(`${RETRIEVE_URL}/${mapboxId}?${params}`);
@@ -59,8 +57,7 @@ export async function geocode(
   query: string,
   accessToken: string,
   sessionToken: string,
-  proximity?: Coordinates,
-  permanent: boolean = false // IMPORTANT NOTE!!! Set to 'true' whenever we deploy.
+  proximity?: Coordinates
 ): Promise<GeocodingResult[]> {
   const params = new URLSearchParams({
     q: query,
@@ -69,7 +66,6 @@ export async function geocode(
     types: 'poi,address,place',
     limit: '5',
     language: 'en',
-    permanent: String(permanent),
   });
 
   if (proximity) {
