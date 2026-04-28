@@ -32,7 +32,7 @@ export function Header() {
           </Show>
           <Show when="signed-out">
             <>
-              <SignInButton mode="modal" forceRedirectUrl="/" fallbackRedirectUrl="/">
+              <SignInButton mode="modal" forceRedirectUrl="/map" fallbackRedirectUrl="/map">
                 <Button variant="ghost" size={'lg'}>
                   Sign in
                 </Button>
