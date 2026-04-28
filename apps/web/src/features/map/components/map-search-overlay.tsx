@@ -1,40 +1,19 @@
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
+import { useDebouncedValue } from '@/features/map/hooks/use-debounced-value';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { useQuery } from 'convex/react';
+import type { FunctionReturnType } from 'convex/server';
 import { MapPin, SearchIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
-export type MapSearchEvent = {
-  id: string;
-  name: string;
-  caption: string;
-  attendeeCount: number;
-  location: {
-    latitude: number;
-    longitude: number;
-    h3Index: string;
-  };
-  recommendationScore?: number;
-};
+type Events = NonNullable<FunctionReturnType<typeof api.events.queries.getEvents>>;
+export type MapSearchEvent = Events[number];
 
 type MapSearchOverlayProps = {
   onSelectEvent?: (event: MapSearchEvent) => void;
 };
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setDebouncedValue(value), delayMs);
-
-    return () => {
-      window.clearTimeout(timeout);
-    };
-  }, [delayMs, value]);
-
-  return debouncedValue;
-}
 
 export function MapSearchOverlay({ onSelectEvent }: MapSearchOverlayProps) {
   const [open, setOpen] = useState(false);
@@ -108,10 +87,11 @@ export function MapSearchOverlay({ onSelectEvent }: MapSearchOverlayProps) {
               const showEventId = duplicateEventNames.has(event.name.trim().toLowerCase());
 
               return (
-                <button
+                <Button
                   key={event.id}
                   type="button"
-                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
+                  variant="ghost"
+                  className="h-auto w-full justify-start gap-3 rounded-none px-3 py-2.5 text-left whitespace-normal hover:bg-muted/60"
                   onClick={() => {
                     setQuery(event.name);
                     setOpen(false);
@@ -132,7 +112,7 @@ export function MapSearchOverlay({ onSelectEvent }: MapSearchOverlayProps) {
                       </p>
                     ) : null}
                   </div>
-                </button>
+                </Button>
               );
             })
           ) : (
