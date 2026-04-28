@@ -22,16 +22,10 @@ def log(message: str) -> None:
     now = datetime.now()
     pretty_time = f"[{now.strftime("%H:%M:%S %m/%d/%y")}]"
     print(f"{pretty_time} {message}")
-    
+
 # Checks if a userid exists in the "users" table.
 def user_exists(user_id: str) -> bool:
     return get_client().query("data_ml/users:userExists", {"userId": user_id}) is not None
-
-# Get all unique userIds that have at least one row in "usersToEvents"
-def get_user_ids_with_event_attendance() -> list[str]:
-    # Cast to a list[str] to satisfy myPy since Convex returns Any.
-    user_ids: list[str] = get_client().query("data_ml/usersToEvents:getUserIdsWithEventAttendance",{})
-    return user_ids
 
 # Get all userIds that exist in "users"
 def get_all_user_ids() -> list[str]:
@@ -39,31 +33,34 @@ def get_all_user_ids() -> list[str]:
     return user_ids
 
 
+# Get all accepted friend userIds for a user.
+def get_friend_ids(user_id: str) -> list[str]:
+    friend_ids: list[str] = get_client().query("data_ml/friends:getFriendIds", {"userId": user_id})
+    return friend_ids
 
-# Combines "usersToEvents" and "events" into a single dataframe.
+
+# Combines "attendance" and "events" into a single dataframe.
 def join_user_events() -> pd.DataFrame:
 
-    # Store "usersToEvents" and "events" into dataframes.
-    usersToEvents_data = get_client().query("data_ml/universal:queryAll", {"table_name": "usersToEvents"})
-    usersToEvents_df = pd.json_normalize(usersToEvents_data)
-    usersToEvents_df = usersToEvents_df[["eventId", "userId"]]
+    # Store "attendance" and "events" into dataframes.
+    attendance_data = get_client().query("data_ml/universal:queryAll", {"table_name": "attendance"})
+    attendance_df = pd.json_normalize(attendance_data)
+    attendance_df = attendance_df[["eventId", "userId"]]
 
     events_data = get_client().query("data_ml/universal:queryAll", {"table_name": "events"})
     events_df = pd.json_normalize(events_data)
     events_df = events_df[["_id", "name"]]
 
-    # Join "usersToEvents" and "events" table.
-    merged_df = usersToEvents_df.merge(events_df, left_on="eventId", right_on="_id")
+    # Join "attendance" and "events" table.
+    merged_df = attendance_df.merge(events_df, left_on="eventId", right_on="_id")
     merged_df = merged_df.rename(columns={"userId": "user_id", "name": "event"})
     merged_df = merged_df[["user_id", "eventId", "event"]]
-    
-    return merged_df
 
+    return merged_df
 
 
 # Raw data for all users and their attended events.
 def raw_matrix_events() -> pd.DataFrame:
-
     # For each cell, 1 = attended and 0 = not attended.
     merged_df = join_user_events()
     return pd.crosstab(merged_df["user_id"], merged_df["event"])
@@ -71,8 +68,7 @@ def raw_matrix_events() -> pd.DataFrame:
 
 # Raw data for all users and accumulated event tags.
 def raw_matrix_eventTags() -> pd.DataFrame:
-
-    # Join "usersToEvents" and "events" dataframes.
+    # Join "attendance" and "events" dataframes.
     user_events_df = join_user_events()
 
     # Join "events" and "tags" dataframes.
@@ -86,7 +82,6 @@ def raw_matrix_eventTags() -> pd.DataFrame:
 
     event_tags_df = pd.merge(left = eventTags_df, right = tags_df, left_on = "tagId", right_on = "_id")
     event_tags_df = event_tags_df[["eventId", "tagId", "name"]]
-
 
     # Join newly made "user_events" and "event_tags" dataframes.
     merged_df = pd.merge(left = user_events_df, right = event_tags_df, left_on = "eventId", right_on = "eventId")
@@ -133,22 +128,24 @@ def raw_matrix_postTags() -> pd.DataFrame:
     return pd.crosstab(merged_df["user_id"], merged_df["tag_name"])
 
 
+# Convert similarity matrix from raw matrices via cosine similarity
+def build_similarity_matrix(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return pd.DataFrame()
+    user_similarity_np = cosine_similarity(df)
+    return pd.DataFrame(user_similarity_np, index=df.index, columns=df.index)
 
-
-# Convert raw matrices into similarity matrices via cosine similarity.
-def similarity_score(df: pd.DataFrame, target_user_id: str) -> pd.DataFrame:
-    
-    if df.empty or target_user_id not in df.index:
-        other_users = df.index.difference([target_user_id])
+# Get user scores from the similarity matrix
+def get_user_scores(sim_matrix: pd.DataFrame, target_user_id: str) -> pd.DataFrame:
+    # Handle users with no data or empty matrices
+    if sim_matrix.empty or target_user_id not in sim_matrix.index:
+        other_users = sim_matrix.index.difference([target_user_id])
         return pd.DataFrame({"similarity_score": 0.0}, index=other_users)
 
-    user_similarity_np = cosine_similarity(df)
-    user_similarity_df = pd.DataFrame(user_similarity_np,     
-                                      index   = df.index,
-                                      columns = df.index)
-    similar_users = user_similarity_df[target_user_id].drop(target_user_id)
+    # Get the specific user's column and drop their own score
+    similar_users = sim_matrix[target_user_id].drop(target_user_id)
     return pd.DataFrame({"similarity_score": similar_users})
-        
+
 
 # Factors in all three similarity matrices, weighted, for a final table.
 def sim_scores_weighted(events: pd.DataFrame, event_tags: pd.DataFrame, post_tags:pd.DataFrame) -> pd.DataFrame:
@@ -160,12 +157,12 @@ def sim_scores_weighted(events: pd.DataFrame, event_tags: pd.DataFrame, post_tag
     return events.mul(EVENTS_WEIGHT) \
            .add(event_tags.mul(EVENT_TAGS_WEIGHT), fill_value = 0) \
            .add(post_tags.mul(POST_TAGS_WEIGHT), fill_value = 0) # Drops NaN values
-    
+
 
 
 # Send recommended friends to Convex server.
 def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> None:
- 
+
     # For user, sort similarity scores by highest.
     sim_scores = sim_scores.dropna(subset = ["similarity_score"])
     top_sim_scores = sim_scores.sort_values(by = 'similarity_score', ascending = False)  
@@ -180,17 +177,19 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> N
         .drop(columns='rank')
     )
 
+    existing_friend_ids = set(get_friend_ids(userId))
+
     # Parse out any userIds that are already friends.
     top_sim_scores = [
         {"userId": friendId, "score": float(score)}
-        for friendId, score in top_sim_scores["similarity_score"].items() 
-        if get_client().query("data_ml/friends:friendExists", {"userAId": userId, "userBId": friendId},) is None
+        for friendId, score in top_sim_scores["similarity_score"].items()
+        if friendId not in existing_friend_ids
     ]
 
     # If list is larger than rec_amt, truncate.
     # Total friend recs may be less than rec_amt, this is fine.
     top_sim_scores = top_sim_scores[:rec_amt]
-    
+
     # Add row if user doesn't have any recommended friends, if they do, update names if values changed.
     get_client().mutation(
         "data_ml/friendRecs:upsert",
@@ -204,27 +203,31 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> N
 def main_one_user(user: str, rec_amt: int, seed: bool) -> None:
 
     if seed:
-        get_client().mutation("seed:seed")    
-        
+        get_client().mutation("seed:seed")
+
     if not user_exists(user):
         raise Exception(f"\"{user}\" cannot be found in users.")
 
     raw_events_df          = raw_matrix_events()
     raw_eventTags_df       = raw_matrix_eventTags()
     raw_postTags_df        = raw_matrix_postTags()
-    
-    simscores_events_df    = similarity_score(raw_events_df, user)
-    simscores_eventTags_df = similarity_score(raw_eventTags_df, user)
-    simscores_postTags_df  = similarity_score(raw_postTags_df, user)
-    
+
+    matrix_events = build_similarity_matrix(raw_events_df)
+    matrix_eventTags = build_similarity_matrix(raw_eventTags_df)
+    matrix_postTags = build_similarity_matrix(raw_postTags_df)
+
+    simscores_events_df = get_user_scores(matrix_events, user)
+    simscores_eventTags_df = get_user_scores(matrix_eventTags, user)
+    simscores_postTags_df = get_user_scores(matrix_postTags, user)
+
     simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
-    
+
     upsert_friend_recs(simscores_weighted, user, rec_amt)
 
 
 # Generate friend recommendations for all users.
 def main_all_users(rec_amt: int, seed: bool) -> None:
-    
+
     if seed:
         get_client().mutation("seed:seed")
 
@@ -235,13 +238,14 @@ def main_all_users(rec_amt: int, seed: bool) -> None:
     raw_eventTags_df = raw_matrix_eventTags()
     raw_postTags_df = raw_matrix_postTags()
 
-    for user_id in user_ids:
-        if not user_exists(user_id):
-            raise Exception(f"\"{user_id}\" cannot be found in users.")
+    matrix_events = build_similarity_matrix(raw_events_df)
+    matrix_eventTags = build_similarity_matrix(raw_eventTags_df)
+    matrix_postTags = build_similarity_matrix(raw_postTags_df)
 
-        simscores_events_df = similarity_score(raw_events_df, user_id)
-        simscores_eventTags_df = similarity_score(raw_eventTags_df, user_id)
-        simscores_postTags_df = similarity_score(raw_postTags_df, user_id)
+    for user_id in user_ids:
+        simscores_events_df = get_user_scores(matrix_events, user_id)
+        simscores_eventTags_df = get_user_scores(matrix_eventTags, user_id)
+        simscores_postTags_df = get_user_scores(matrix_postTags, user_id)
 
         simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
         upsert_friend_recs(simscores_weighted, user_id, rec_amt)
@@ -249,7 +253,7 @@ def main_all_users(rec_amt: int, seed: bool) -> None:
 
 
 USER     = "n17849zzm0xksq2x2wh0gpcqs584x1q6"  # By user_id, Claude
-REC_AMT  = 5         # friendRecs schema only currently supports 5. 
+REC_AMT  = 5         # friendRecs schema only currently supports 5.
 SEED     = False      # Dictates if fake data needs to be populated into Convex.
 
 if __name__ == "__main__":

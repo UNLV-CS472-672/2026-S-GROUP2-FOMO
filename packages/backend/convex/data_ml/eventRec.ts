@@ -86,3 +86,27 @@ export const getInteractionsByUserId = query({
     // Returns: { userId, eventId, status }[]
   },
 });
+
+export const upsertEventRecs = mutation({
+  args: {
+    userId: v.id('users'),
+    eventIds: v.array(v.id('events')),
+  },
+  handler: async (ctx, { userId, eventIds }) => {
+    const existing = await ctx.db
+      .query('eventRecs')
+      .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .first();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        eventIds,
+      });
+    } else {
+      await ctx.db.insert('eventRecs', {
+        userId,
+        eventIds,
+      });
+    }
+  },
+});
