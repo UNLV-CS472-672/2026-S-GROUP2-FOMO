@@ -1,5 +1,6 @@
 'use client';
 
+import { MapEventFeedPanel } from '@/features/map/components/map-event-feed-panel';
 import { MapSurface } from '@/features/map/components/map-surface';
 import { RecenterButton } from '@/features/map/components/recenter-button';
 import { useMapboxEventMap } from '@/features/map/hooks/use-mapbox-event-map';
@@ -9,17 +10,16 @@ import { api } from '@fomo/backend/convex/_generated/api';
 import { env } from '@fomo/env/web';
 import { useQuery } from 'convex/react';
 import { useTheme } from 'next-themes';
-import { useRouter } from 'next/navigation';
-import { useMemo, useSyncExternalStore } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 
 const MAPBOX_TOKEN = env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
 const emptySubscribe = () => () => {};
 
 export default function MapPage() {
-  const router = useRouter();
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
   const { resolvedTheme } = useTheme();
-  const events = useQuery(api.events.queries.getEvents) ?? [];
+  const queriedEvents = useQuery(api.events.queries.getEvents);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const mounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -27,14 +27,19 @@ export default function MapPage() {
   );
 
   const isDark = mounted && resolvedTheme === 'dark';
+  const events = useMemo(() => queriedEvents ?? [], [queriedEvents]);
+  const selectedEvent = useMemo(
+    () => events.find((event) => event.id === selectedEventId) ?? null,
+    [events, selectedEventId]
+  );
 
   const heatmapGeoJSON = useMemo(
     () =>
       pointsToGeoJSON(
-        events.map((e) => ({
-          longitude: e.location.longitude,
-          latitude: e.location.latitude,
-          weight: e.attendeeCount,
+        events.map((event) => ({
+          longitude: event.location.longitude,
+          latitude: event.location.latitude,
+          weight: event.attendeeCount,
         }))
       ),
     [events]
@@ -49,8 +54,7 @@ export default function MapPage() {
     locationGranted,
     mapboxToken: MAPBOX_TOKEN,
     onSelectEvent: (eventId) => {
-      console.log('eventId', eventId);
-      alert('TODO: make sidebar w/ event details feed');
+      setSelectedEventId(eventId);
     },
   });
 
@@ -74,6 +78,8 @@ export default function MapPage() {
       />
 
       <RecenterButton disabled={!locationGranted} onClick={recenterMap} />
+
+      <MapEventFeedPanel event={selectedEvent} onClose={() => setSelectedEventId(null)} />
     </>
   );
 }
