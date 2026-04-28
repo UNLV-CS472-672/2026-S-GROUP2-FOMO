@@ -250,12 +250,13 @@ export const seedData = internalMutation({
     if (eventMediaIds.length !== eventSeeds.length) {
       throw new Error('Expected one media id per seeded event.');
     }
-    if (postMediaIds.length !== postSeedMedia.length) {
-      throw new Error('Expected one media id per seeded post photo.');
-    }
-    if (variantPostMediaIds.length !== eventVariantPostBlueprints.length) {
-      throw new Error('Expected one media id array per seeded variant post.');
-    }
+    // Posts disabled — skip post media validators.
+    // if (postMediaIds.length !== postSeedMedia.length) {
+    //   throw new Error('Expected one media id per seeded post photo.');
+    // }
+    // if (variantPostMediaIds.length !== eventVariantPostBlueprints.length) {
+    //   throw new Error('Expected one media id array per seeded variant post.');
+    // }
 
     //  Users (Convex Table Name: users)
     const userSeeds = [
@@ -351,8 +352,8 @@ export const seedData = internalMutation({
           caption: e.description,
           mediaId,
           hostIds: [u1],
-          startDate: Date.now() + 24 * 60 * 60 * 1000,
-          endDate: Date.now() + 26 * 60 * 60 * 1000,
+          startDate: e.startDate,
+          endDate: e.endDate,
           location: e.location,
         })
       );
@@ -458,10 +459,8 @@ export const seedData = internalMutation({
     for (const pair of userEventPairs) {
       const existing = await ctx.db
         .query('attendance')
-        .filter((q) =>
-          q.and(q.eq(q.field('userId'), pair.userId), q.eq(q.field('eventId'), pair.eventId))
-        )
-        .first();
+        .withIndex('by_user_event', (q) => q.eq('userId', pair.userId).eq('eventId', pair.eventId))
+        .unique();
       if (!existing) await ctx.db.insert('attendance', pair);
     }
 
@@ -546,216 +545,60 @@ export const seedData = internalMutation({
     for (const pair of eventTagPairs) {
       const existing = await ctx.db
         .query('eventTags')
-        .filter((q) =>
-          q.and(q.eq(q.field('eventId'), pair.eventId), q.eq(q.field('tagId'), pair.tagId))
-        )
-        .first();
+        .withIndex('by_event_tag', (q) => q.eq('eventId', pair.eventId).eq('tagId', pair.tagId))
+        .unique();
       if (!existing) await ctx.db.insert('eventTags', pair);
     }
 
+    /* ─────────────────────────────────────────────────────────────
+       POSTS / POST TAGS / COMMENTS / LIKES — DISABLED
+       Re-enable when posts are needed for testing/UI work.
+       ───────────────────────────────────────────────────────────── */
+    /*
     //  Posts (Convex: posts)
     const postSeeds = [
-      {
-        caption: 'Best late-night food near campus?\n\nDrop your go-to spots.',
-        eventId: e1,
-        mediaIds: [postMediaIds[0]!],
-        authorId: u1,
-      },
-      {
-        caption:
-          'Top 5 matcha cafes across Las Vegas Chinatown.\n\nSpoiler Alert: it aint Pop Cafe',
-        eventId: e1,
-        mediaIds: [postMediaIds[1]!],
-        authorId: u1,
-      },
-      {
-        lookupCaption: 'fight at first friday!!!\n\nBROOOO THSI DUDE HIT HIM W A STOP SIGN',
-        eventId: e4,
-        mediaIds: [postMediaIds[6]!],
-        authorId: u3,
-      },
-      {
-        caption:
-          'Happy Birthday Shemes!!!\n\nGo Psi Rho! Happy birthday to my big bro, the BIG 21!',
-        eventId: e3,
-        mediaIds: [postMediaIds[4]!],
-        authorId: u4,
-      },
-      {
-        caption:
-          'St Jimmy - A prodigy, a god-sent\n\nA pinnacle of man. The way he orchestrates his words... Extraordinary...',
-        eventId: e5,
-        mediaIds: [postMediaIds[8]!],
-        authorId: u5,
-      },
-      {
-        caption: 'Need some anime recs / good music\n\ni loveeee wallows and vinland saga',
-        eventId: e6,
-        authorId: u7,
-      },
-      {
-        lookupCaption:
-          'Rate my cosplays! 1-10\n\nbe brutally honest, i spent 5 grand on all these cosplays',
-        eventId: e6,
-        mediaIds: [postMediaIds[10]!],
-        authorId: u7,
-      },
-      {
-        lookupCaption:
-          'met baby keem ?????\n\n' +
-          'i just saw this dude walking across caesars palace? asked for a pic but he spit in my face and started flying way :(',
-        eventId: e7,
-        mediaIds: [postMediaIds[13]!],
-        authorId: u8,
-      },
-      {
-        caption: 'FOMO Study Session\n\nwe are WINNING that competition',
-        eventId: e1,
-        authorId: u9,
-      },
-      {
-        caption:
-          'anyone going to LVL UP this year?\n\nfirst time going, dont know what to expect. do i need to cosplay??',
-        eventId: e6,
-        mediaIds: [postMediaIds[11]!],
-        authorId: u5,
-      },
-      {
-        lookupCaption:
-          'thrift valley haul just dropped\n\n' +
-          'grabbed a vintage carhartt and some cargos for $18 total. they are NOT out of stussy btw',
-        eventId: e9,
-        mediaIds: [postMediaIds[15]!],
-        authorId: u2,
-      },
-      {
-        lookupCaption:
-          'water lantern festival was so peaceful\n\n' +
-          'genuinely one of the most beautiful nights ive had in vegas. 10/10 would litter the pond again',
-        eventId: e8,
-        mediaIds: [postMediaIds[15]!],
-        authorId: u4,
-      },
-      {
-        caption:
-          'UNLV library or coffee shop for finals?\n\nim cooked either way but where do yall go to grind',
-        eventId: e1,
-        authorId: u9,
-      },
-      {
-        caption:
-          'chinatown food crawl this saturday\n\nhitting 5 spots in one night. dm if you tryna pull up',
-        eventId: e1,
-        authorId: u3,
-      },
-      {
-        caption:
-          'my first cosplay ever!!\n\n' +
-          'went as toji fushiguro and someone said i looked like a middle schooler in a costume... be kind',
-        eventId: e6,
-        mediaIds: [postMediaIds[12]!],
-        authorId: u5,
-      },
-      {
-        lookupCaption:
-          'baby keem setlist was CRAZY\n\nhomicide, trademark da baby, family ties back to back?? i blacked out',
-        eventId: e7,
-        mediaIds: [postMediaIds[14]!],
-        authorId: u8,
-      },
-      {
-        caption:
-          'first friday art picks this month\n\n' +
-          'saw some insane murals near the container park. the arts scene in dtlv is really coming up',
-        eventId: e4,
-        mediaIds: [postMediaIds[7]!],
-        authorId: u6,
-      },
-      {
-        caption:
-          'need a study group for calc 2\n\n' +
-          'series and sequences got me in a chokehold. anyone down to meet up at pop cafe?',
-        eventId: e1,
-        authorId: u1,
-      },
-      {
-        caption:
-          'psi rho rush week recap\n\nif you missed it you really missed it. brotherhood is unmatched fr',
-        eventId: e3,
-        mediaIds: [postMediaIds[5]!],
-        authorId: u4,
-      },
-      {
-        caption:
-          'panel notes from st. jimmy\n\n' +
-          'still processing half of what he said but the room was locked in the whole time',
-        eventId: e5,
-        mediaIds: [postMediaIds[9]!],
-        authorId: u6,
-      },
-      {
-        caption:
-          'pre-concert fit check\n\nblack tee, silver chain, questionable financial decisions at the merch booth incoming',
-        eventId: e2,
-        mediaIds: [postMediaIds[2]!],
-        authorId: u2,
-      },
-      {
-        caption:
-          'rocky opener was actually insane\n\ncrowd was yelling every word before the lights even dropped',
-        eventId: e2,
-        mediaIds: [postMediaIds[3]!],
-        authorId: u6,
-      },
-      {
-        caption:
-          'lantern messages hit way too hard\n\nread three strangers wishes and had to stare at the water for a minute',
-        eventId: e8,
-        mediaIds: [postMediaIds[16]!],
-        authorId: u8,
-      },
-      {
-        caption:
-          'best rack at thrift valley no debate\n\nfound two washed hoodies and a denim jacket that still smelled expensive',
-        eventId: e9,
-        mediaIds: [postMediaIds[16]!],
-        authorId: u7,
-      },
+      { caption: 'Best late-night food near campus?\n\nDrop your go-to spots.', eventId: e1, mediaIds: [postMediaIds[0]!], authorId: u1 },
+      { caption: 'Top 5 matcha cafes across Las Vegas Chinatown.\n\nSpoiler Alert: it aint Pop Cafe', eventId: e1, mediaIds: [postMediaIds[1]!], authorId: u1 },
+      { lookupCaption: 'fight at first friday!!!\n\nBROOOO THSI DUDE HIT HIM W A STOP SIGN', eventId: e4, mediaIds: [postMediaIds[6]!], authorId: u3 },
+      { caption: 'Happy Birthday Shemes!!!\n\nGo Psi Rho! Happy birthday to my big bro, the BIG 21!', eventId: e3, mediaIds: [postMediaIds[4]!], authorId: u4 },
+      { caption: 'St Jimmy - A prodigy, a god-sent\n\nA pinnacle of man. The way he orchestrates his words... Extraordinary...', eventId: e5, mediaIds: [postMediaIds[8]!], authorId: u5 },
+      { caption: 'Need some anime recs / good music\n\ni loveeee wallows and vinland saga', eventId: e6, authorId: u7 },
+      { lookupCaption: 'Rate my cosplays! 1-10\n\nbe brutally honest, i spent 5 grand on all these cosplays', eventId: e6, mediaIds: [postMediaIds[10]!], authorId: u7 },
+      { lookupCaption: 'met baby keem ?????\n\ni just saw this dude walking across caesars palace? asked for a pic but he spit in my face and started flying way :(', eventId: e7, mediaIds: [postMediaIds[13]!], authorId: u8 },
+      { caption: 'FOMO Study Session\n\nwe are WINNING that competition', eventId: e1, authorId: u9 },
+      { caption: 'anyone going to LVL UP this year?\n\nfirst time going, dont know what to expect. do i need to cosplay??', eventId: e6, mediaIds: [postMediaIds[11]!], authorId: u5 },
+      { lookupCaption: 'thrift valley haul just dropped\n\ngrabbed a vintage carhartt and some cargos for $18 total. they are NOT out of stussy btw', eventId: e9, mediaIds: [postMediaIds[15]!], authorId: u2 },
+      { lookupCaption: 'water lantern festival was so peaceful\n\ngenuinely one of the most beautiful nights ive had in vegas. 10/10 would litter the pond again', eventId: e8, mediaIds: [postMediaIds[15]!], authorId: u4 },
+      { caption: 'UNLV library or coffee shop for finals?\n\nim cooked either way but where do yall go to grind', eventId: e1, authorId: u9 },
+      { caption: 'chinatown food crawl this saturday\n\nhitting 5 spots in one night. dm if you tryna pull up', eventId: e1, authorId: u3 },
+      { caption: 'my first cosplay ever!!\n\nwent as toji fushiguro and someone said i looked like a middle schooler in a costume... be kind', eventId: e6, mediaIds: [postMediaIds[12]!], authorId: u5 },
+      { lookupCaption: 'baby keem setlist was CRAZY\n\nhomicide, trademark da baby, family ties back to back?? i blacked out', eventId: e7, mediaIds: [postMediaIds[14]!], authorId: u8 },
+      { caption: 'first friday art picks this month\n\nsaw some insane murals near the container park. the arts scene in dtlv is really coming up', eventId: e4, mediaIds: [postMediaIds[7]!], authorId: u6 },
+      { caption: 'need a study group for calc 2\n\nseries and sequences got me in a chokehold. anyone down to meet up at pop cafe?', eventId: e1, authorId: u1 },
+      { caption: 'psi rho rush week recap\n\nif you missed it you really missed it. brotherhood is unmatched fr', eventId: e3, mediaIds: [postMediaIds[5]!], authorId: u4 },
+      { caption: 'panel notes from st. jimmy\n\nstill processing half of what he said but the room was locked in the whole time', eventId: e5, mediaIds: [postMediaIds[9]!], authorId: u6 },
+      { caption: 'pre-concert fit check\n\nblack tee, silver chain, questionable financial decisions at the merch booth incoming', eventId: e2, mediaIds: [postMediaIds[2]!], authorId: u2 },
+      { caption: 'rocky opener was actually insane\n\ncrowd was yelling every word before the lights even dropped', eventId: e2, mediaIds: [postMediaIds[3]!], authorId: u6 },
+      { caption: 'lantern messages hit way too hard\n\nread three strangers wishes and had to stare at the water for a minute', eventId: e8, mediaIds: [postMediaIds[16]!], authorId: u8 },
+      { caption: 'best rack at thrift valley no debate\n\nfound two washed hoodies and a denim jacket that still smelled expensive', eventId: e9, mediaIds: [postMediaIds[16]!], authorId: u7 },
     ];
     const postIds: any[] = [];
     for (const p of postSeeds) {
       const caption = p.caption ?? p.lookupCaption;
-      if (!caption) {
-        throw new Error('Seeded post is missing caption text.');
-      }
-
-      const existing = await ctx.db
-        .query('posts')
-        .filter((q) => q.eq(q.field('caption'), caption))
-        .first();
+      if (!caption) throw new Error('Seeded post is missing caption text.');
+      const existing = await ctx.db.query('posts').filter((q) => q.eq(q.field('caption'), caption)).first();
       if (existing) {
-        await ctx.db.patch(existing._id, {
-          eventId: p.eventId,
-          caption,
-          mediaIds: p.mediaIds,
-        });
+        await ctx.db.patch(existing._id, { eventId: p.eventId, caption, mediaIds: p.mediaIds ?? [] });
         postIds.push(existing._id);
         continue;
       }
-
       const { lookupCaption: _lookupCaption, ...post } = p;
-      postIds.push(
-        await ctx.db.insert('posts', { ...post, caption, mediaIds: post.mediaIds ?? [] })
-      );
+      postIds.push(await ctx.db.insert('posts', { ...post, caption, mediaIds: post.mediaIds ?? [] }));
     }
 
     const eventIdList = [e1, e2, e3, e4, e5, e6, e7, e8, e9];
     for (const [index, blueprint] of eventVariantPostBlueprints.entries()) {
-      const existing = await ctx.db
-        .query('posts')
-        .filter((q) => q.eq(q.field('caption'), blueprint.caption))
-        .first();
-
+      const existing = await ctx.db.query('posts').filter((q) => q.eq(q.field('caption'), blueprint.caption)).first();
       const mediaIds = variantPostMediaIds[index] ?? [];
       const payload = {
         eventId: eventIdList[blueprint.eventIndex]!,
@@ -763,292 +606,19 @@ export const seedData = internalMutation({
         caption: blueprint.caption,
         mediaIds: mediaIds,
       };
-
       if (existing) {
         await ctx.db.patch(existing._id, payload);
         postIds.push(existing._id);
         continue;
       }
-
       postIds.push(await ctx.db.insert('posts', payload));
     }
-    const [
-      p1,
-      p2,
-      p3,
-      p4,
-      p5,
-      p6,
-      p7,
-      p8,
-      p9,
-      p10,
-      p11,
-      p12,
-      p13,
-      p14,
-      p15,
-      p16,
-      p17,
-      p18,
-      p19,
-      p20,
-      p21,
-      p22,
-      p23,
-      p24,
-    ] = postIds;
+    const [p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,p21,p22,p23,p24] = postIds;
 
-    //  Post Tags (Convex: postTags)
-    const postTagPairs = [
-      { postId: p1, tagId: tagIds['food'] },
-      { postId: p2, tagId: tagIds['food'] },
-      { postId: p2, tagId: tagIds['drink'] },
-      { postId: p2, tagId: tagIds['study'] },
-      { postId: p2, tagId: tagIds['chinatown'] },
-      { postId: p3, tagId: tagIds['wild'] },
-      { postId: p4, tagId: tagIds['party'] },
-      { postId: p4, tagId: tagIds['college'] },
-      { postId: p4, tagId: tagIds['birthday'] },
-      { postId: p5, tagId: tagIds['insightful'] },
-      { postId: p6, tagId: tagIds['music'] },
-      { postId: p6, tagId: tagIds['anime'] },
-      { postId: p6, tagId: tagIds['culture'] },
-      { postId: p7, tagId: tagIds['anime'] },
-      { postId: p7, tagId: tagIds['games'] },
-      { postId: p7, tagId: tagIds['comics'] },
-      { postId: p8, tagId: tagIds['music'] },
-      { postId: p8, tagId: tagIds['wild'] },
-      { postId: p9, tagId: tagIds['college'] },
-      { postId: p9, tagId: tagIds['study'] },
-      { postId: p9, tagId: tagIds['insightful'] },
-      { postId: p10, tagId: tagIds['convention'] },
-      { postId: p10, tagId: tagIds['anime'] },
-      { postId: p10, tagId: tagIds['games'] },
-      { postId: p11, tagId: tagIds['thrift'] },
-      { postId: p11, tagId: tagIds['clothes'] },
-      { postId: p11, tagId: tagIds['fits'] },
-      { postId: p12, tagId: tagIds['chill'] },
-      { postId: p12, tagId: tagIds['culture'] },
-      { postId: p13, tagId: tagIds['study'] },
-      { postId: p13, tagId: tagIds['college'] },
-      { postId: p14, tagId: tagIds['food'] },
-      { postId: p14, tagId: tagIds['chinatown'] },
-      { postId: p14, tagId: tagIds['culture'] },
-      { postId: p15, tagId: tagIds['anime'] },
-      { postId: p15, tagId: tagIds['comics'] },
-      { postId: p15, tagId: tagIds['wild'] },
-      { postId: p16, tagId: tagIds['concert'] },
-      { postId: p16, tagId: tagIds['rap'] },
-      { postId: p16, tagId: tagIds['music'] },
-      { postId: p17, tagId: tagIds['art'] },
-      { postId: p17, tagId: tagIds['music'] },
-      { postId: p17, tagId: tagIds['culture'] },
-      { postId: p18, tagId: tagIds['study'] },
-      { postId: p18, tagId: tagIds['college'] },
-      { postId: p18, tagId: tagIds['food'] },
-      { postId: p19, tagId: tagIds['party'] },
-      { postId: p19, tagId: tagIds['college'] },
-      { postId: p19, tagId: tagIds['insightful'] },
-      { postId: p20, tagId: tagIds['panel'] },
-      { postId: p20, tagId: tagIds['conference'] },
-      { postId: p20, tagId: tagIds['insightful'] },
-      { postId: p21, tagId: tagIds['concert'] },
-      { postId: p21, tagId: tagIds['fits'] },
-      { postId: p21, tagId: tagIds['music'] },
-      { postId: p22, tagId: tagIds['concert'] },
-      { postId: p22, tagId: tagIds['rap'] },
-      { postId: p22, tagId: tagIds['music'] },
-      { postId: p23, tagId: tagIds['chill'] },
-      { postId: p23, tagId: tagIds['culture'] },
-      { postId: p24, tagId: tagIds['thrift'] },
-      { postId: p24, tagId: tagIds['fits'] },
-      { postId: p24, tagId: tagIds['clothes'] },
-    ];
-    for (const pair of postTagPairs) {
-      const existing = await ctx.db
-        .query('postTags')
-        .filter((q) =>
-          q.and(q.eq(q.field('postId'), pair.postId), q.eq(q.field('tagId'), pair.tagId))
-        )
-        .first();
-      if (!existing) await ctx.db.insert('postTags', pair);
-    }
+    //  Post Tags, Comments, Post Likes, Comment Likes all disabled with the rest.
+    */
 
-    //  Comments (Convex: comments)
-    const comments = [
-      { postId: p1, authorId: u2, text: 'Gorilla Sushi!' },
-      { postId: p1, authorId: u4, text: 'used to be top sushi, went downhill tho' },
-      { postId: p1, authorId: u5, text: 'Chubby Cattle is fire! (smilehappy)' },
-      { postId: p2, authorId: u1, text: 'What did Pop Cafe do wrong lol' },
-      { postId: p2, authorId: u2, text: 'Im honestly shocked Airoma wasnt on the list.' },
-      { postId: p2, authorId: u4, text: 'i concur, pop cafe be cheeks' },
-      { postId: p2, authorId: u5, text: 'last time i had matcha bad things happen' },
-      { postId: p3, authorId: u1, text: 'OUCH!' },
-      { postId: p3, authorId: u3, text: 'straight for da noggin' },
-      { postId: p3, authorId: u6, text: 'I know that dude' },
-      { postId: p4, authorId: u1, text: 'HAPPY BIRTHDAY SHEMES' },
-      { postId: p4, authorId: u2, text: 'Thank you for the fun night!!' },
-      { postId: p5, authorId: u2, text: 'Hes so good at speaking it gave me amnesia.' },
-      { postId: p5, authorId: u5, text: 'Hes so good at speaking it gave me amnesia.' },
-      { postId: p5, authorId: u3, text: 'Amazing.' },
-      { postId: p5, authorId: u6, text: 'Revolutionary.' },
-      { postId: p6, authorId: u3, text: 'SAO!' },
-      { postId: p6, authorId: u7, text: 'my guy said sao im crine' },
-      { postId: p7, authorId: u6, text: 'I love it!!' },
-      { postId: p7, authorId: u8, text: 'unrecognizable' },
-      { postId: p7, authorId: u9, text: '2, i hate toji' },
-      { postId: p8, authorId: u3, text: 'deserved tbh' },
-      { postId: p8, authorId: u5, text: 'frank ocean bird.. chirp chirp' },
-      { postId: p8, authorId: u6, text: 'How unprofessional!!!' },
-      { postId: p8, authorId: u9, text: 'i love gnx!' },
-      { postId: p8, authorId: u3, text: 'GREAT WORK TEAM!!!' },
-      { postId: p8, authorId: u7, text: 'same time next week?' },
-      { postId: p8, authorId: u8, text: 'Are we meeting at Pop next meeting?' },
-      { postId: p10, authorId: u7, text: 'YES and you 100% should cosplay, its way more fun' },
-      {
-        postId: p10,
-        authorId: u6,
-        text: 'i went last year, bring cash for the vendor hall it gets crazy',
-      },
-      { postId: p10, authorId: u9, text: 'no pressure on cosplay but people go all out fr' },
-      { postId: p11, authorId: u1, text: 'WAIT they still have stussy?? im pulling up' },
-      { postId: p11, authorId: u4, text: 'carhartt for $18 is actually insane' },
-      { postId: p11, authorId: u7, text: 'bro the fits section of this app was made for you' },
-      { postId: p12, authorId: u3, text: 'literally cried it was so pretty' },
-      { postId: p12, authorId: u8, text: 'litter the pond again LMAOOO' },
-      { postId: p12, authorId: u5, text: 'i missed it and im so sad' },
-      {
-        postId: p13,
-        authorId: u2,
-        text: 'coffee shop for sure, library got too much eye contact energy',
-      },
-      { postId: p13, authorId: u6, text: 'pop cafe during off hours hits different for studying' },
-      { postId: p13, authorId: u3, text: 'neither, i study in my car' },
-      { postId: p14, authorId: u1, text: 'im in, what time' },
-      { postId: p14, authorId: u8, text: 'save me a spot at the hot pot place' },
-      { postId: p14, authorId: u5, text: 'chinatown crawl is a core unlv experience' },
-      { postId: p15, authorId: u7, text: 'nah you looked clean dont let them play you' },
-      { postId: p15, authorId: u9, text: 'toji is literally the coolest character what' },
-      { postId: p15, authorId: u2, text: 'post pics!!! we need to see' },
-      { postId: p16, authorId: u3, text: 'homicide live had me on another planet' },
-      { postId: p16, authorId: u2, text: 'family ties made the whole crowd go insane' },
-      { postId: p16, authorId: u9, text: 'i cant believe i missed this' },
-      { postId: p17, authorId: u4, text: 'the murals by the lot on 3rd are so underrated' },
-      { postId: p17, authorId: u1, text: 'DTLV has been going crazy lately' },
-      { postId: p17, authorId: u9, text: 'which artists did you see? looking for local recs' },
-      { postId: p18, authorId: u5, text: 'im down, i need help with sequences too' },
-      { postId: p18, authorId: u3, text: 'pop cafe is the move, see you there' },
-      { postId: p18, authorId: u7, text: 'calc 2 is genuinely evil i feel this' },
-      { postId: p19, authorId: u2, text: 'rush week was unreal, glad i joined' },
-      { postId: p19, authorId: u6, text: 'psi rho stays winning' },
-      { postId: p19, authorId: u3, text: 'brotherhood > everything' },
-      { postId: p21, authorId: u8, text: 'chain is carrying the whole fit ngl' },
-      { postId: p21, authorId: u4, text: 'merch booth debt is temporary aura is forever' },
-      { postId: p22, authorId: u2, text: 'the opener lowkey outperformed everybody' },
-      { postId: p22, authorId: u9, text: 'i lost my voice before rocky even came out' },
-      { postId: p23, authorId: u5, text: 'this whole event healed me a little bit' },
-      { postId: p23, authorId: u3, text: 'sunset park after dark really has a crazy vibe' },
-      { postId: p24, authorId: u2, text: 'denim jacket sounds like a generational pull' },
-      { postId: p24, authorId: u8, text: 'need thrift valley to become a monthly problem' },
-    ];
-    const seededComments: { _id: any; postId: any; authorId: any; text: string }[] = [];
-    for (const comment of comments) {
-      const existing = await ctx.db
-        .query('comments')
-        .filter((q) =>
-          q.and(
-            q.eq(q.field('postId'), comment.postId),
-            q.eq(q.field('authorId'), comment.authorId),
-            q.eq(q.field('text'), comment.text)
-          )
-        )
-        .first();
-      const commentId = existing?._id ?? (await ctx.db.insert('comments', comment));
-      seededComments.push({ _id: commentId, ...comment });
-    }
-
-    // Seed post likes from a handful of example posts.
-    const postLikePairs = [
-      { userId: u2, postId: p1 },
-      { userId: u4, postId: p1 },
-      { userId: u3, postId: p3 },
-      { userId: u6, postId: p3 },
-      { userId: u1, postId: p4 },
-      { userId: u8, postId: p7 },
-      { userId: u9, postId: p7 },
-      { userId: u3, postId: p8 },
-      { userId: u7, postId: p10 },
-      { userId: u1, postId: p11 },
-      { userId: u8, postId: p12 },
-      { userId: u2, postId: p13 },
-      { userId: u8, postId: p14 },
-      { userId: u7, postId: p15 },
-      { userId: u2, postId: p16 },
-      { userId: u4, postId: p17 },
-      { userId: u5, postId: p18 },
-      { userId: u2, postId: p19 },
-      { userId: u8, postId: p21 },
-      { userId: u4, postId: p22 },
-      { userId: u1, postId: p23 },
-      { userId: u6, postId: p24 },
-    ];
-    for (const pair of postLikePairs) {
-      const existing = await ctx.db
-        .query('likes')
-        .withIndex('by_userId_postId', (q) => q.eq('userId', pair.userId).eq('postId', pair.postId))
-        .unique();
-      if (!existing) {
-        await ctx.db.insert('likes', pair);
-        const post = (await ctx.db.get(pair.postId)) as any;
-        await ctx.db.patch(pair.postId, { likeCount: (post?.likeCount ?? 0) + 1 });
-      }
-    }
-
-    const findCommentId = (postId: any, text: string) =>
-      seededComments.find(
-        (comment) => String(comment.postId) === String(postId) && comment.text === text
-      )?._id;
-
-    // Seed comment likes from a few of the example comments.
-    const commentLikePairs = [
-      { userId: u1, commentId: findCommentId(p1, 'Gorilla Sushi!') },
-      { userId: u6, commentId: findCommentId(p1, 'used to be top sushi, went downhill tho') },
-      { userId: u3, commentId: findCommentId(p2, 'Im honestly shocked Airoma wasnt on the list.') },
-      { userId: u8, commentId: findCommentId(p3, 'straight for da noggin') },
-      { userId: u9, commentId: findCommentId(p4, 'Thank you for the fun night!!') },
-      { userId: u4, commentId: findCommentId(p6, 'my guy said sao im crine') },
-      { userId: u5, commentId: findCommentId(p7, 'I love it!!') },
-      {
-        userId: u2,
-        commentId: findCommentId(p10, 'YES and you 100% should cosplay, its way more fun'),
-      },
-      { userId: u9, commentId: findCommentId(p11, 'carhartt for $18 is actually insane') },
-      { userId: u1, commentId: findCommentId(p12, 'literally cried it was so pretty') },
-      { userId: u4, commentId: findCommentId(p14, 'save me a spot at the hot pot place') },
-      { userId: u8, commentId: findCommentId(p16, 'family ties made the whole crowd go insane') },
-      {
-        userId: u1,
-        commentId: findCommentId(p17, 'which artists did you see? looking for local recs'),
-      },
-      { userId: u6, commentId: findCommentId(p18, 'pop cafe is the move, see you there') },
-      { userId: u5, commentId: findCommentId(p19, 'brotherhood > everything') },
-    ].filter((pair): pair is { userId: any; commentId: any } => Boolean(pair.commentId));
-
-    for (const pair of commentLikePairs) {
-      const existing = await ctx.db
-        .query('likes')
-        .withIndex('by_userId_commentId', (q) =>
-          q.eq('userId', pair.userId).eq('commentId', pair.commentId)
-        )
-        .unique();
-      if (!existing) {
-        await ctx.db.insert('likes', pair);
-        const comment = (await ctx.db.get(pair.commentId)) as any;
-        await ctx.db.patch(pair.commentId, { likeCount: (comment?.likeCount ?? 0) + 1 });
-      }
-    }
-
+    //  Friends
     const friendPairs = [
       { requesterId: u1, recipientId: u2, status: 'accepted' },
       { requesterId: u1, recipientId: u4, status: 'pending' },
@@ -1082,6 +652,9 @@ export const seedData = internalMutation({
       if (!existing) await ctx.db.insert('friends', pair);
     }
 
+    //  User Tag Weights (Convex: userTagWeights)
+    //  Cold-start: 1.0 for each preferred tag, 0.0 elsewhere.
+    //  Length is NUM_TAGS; updateUserPreferences.py pads to 3 * NUM_TAGS on first run.
     const NUM_TAGS = tagNames.length;
 
     const tagIndex: Record<string, number> = {};
@@ -1127,7 +700,6 @@ export const seedData = internalMutation({
     return {
       users: userIds,
       event: eventIds,
-      post: postIds,
       tags: tagIds,
     };
   },
@@ -1175,7 +747,7 @@ export const seed = action({
       })
     );
 
-    return await ctx.runMutation(anyApi.seed.seedData, {
+    return await ctx.runMutation(anyApi.temp_seed.seedData, {
       eventMediaIds,
       postMediaIds,
       variantPostMediaIds,

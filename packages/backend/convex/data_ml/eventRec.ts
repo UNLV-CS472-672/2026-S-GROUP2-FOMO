@@ -96,7 +96,7 @@ export const getInteractionsByUserId = query({
     );
 
     return withEvents
-      .filter(({ event }) => event !== null && event.endDate > sinceMs)
+      .filter(({ event }) => event !== null && event.endDate >= sinceMs)
       .map(({ row }) => row);
   },
 });

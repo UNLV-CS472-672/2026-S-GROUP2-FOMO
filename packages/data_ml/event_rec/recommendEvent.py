@@ -36,10 +36,11 @@ MAX_TAGS = 8   # normalizer for tag_count_norm
 BETA = 0.10
 TAU  = 1.25
 
-def activation_fn(raw_weights):
-
+def activation_fn(raw_weights: NDArray[np.float32]) -> NDArray[np.float32]:
+    """
+    Activation Function. Squishes values between 0 and 1
+    """
     result: NDArray[np.float32] = (1.0 - np.exp(-(raw_weights + BETA) / TAU)).astype(np.float32)
-
     return result
 
 def get_tag_info(client: ConvexClient) -> tuple[int, dict[str, int]]:
@@ -117,6 +118,7 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
         users     = [row["_id"] for row in all_users]
 
     user_features          = get_user_features(client, users, num_tags).to(DEVICE)
+    print(user_features)
     event_ids, event_array = get_event_features(client, num_tags, tag_id_to_idx)
     event_features         = torch.from_numpy(event_array).to(DEVICE)
 
@@ -185,7 +187,7 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
 
 
 USERS = ["ALL"]
-UPDATE_DB = True
+UPDATE_DB = False
 
 if __name__ == "__main__": # pragma: no cover
     log("Updating event recommendations...")

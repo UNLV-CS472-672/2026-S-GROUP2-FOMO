@@ -65,12 +65,12 @@ def build_weights(mat: NDArray[np.float32], row_weight: float = 1.0) -> NDArray[
     row_sums = mat.sum(axis=1, keepdims=True)
     row_sums[row_sums == 0] = 1.0
     normalized = mat / row_sums
-    tag_weights = normalized.sum(axis=0) * row_weight
+    tag_weights : NDArray[np.float32] = normalized.sum(axis=0) * row_weight
 
     return tag_weights
 #
 
-def get_interaction_ids(user_id: str, user_last_updated: int) -> tuple[list[str], list[str], list[str]]:
+def get_interaction_ids(user_id: str, user_last_updated: float) -> tuple[list[str], list[str], list[str]]:
     """
     Returns rows from usersToEvents with fields:
     { eventId: str, interactionType: "going" | "interested" | "uninterested" }
@@ -115,9 +115,8 @@ def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
             user_raw_weights: NDArray[np.float32] = np.zeros(NUM_TAGS * 3, dtype=np.float32)
 
     else:
-        # Frontend Failed
         user_raw_weights: NDArray[np.float32] = np.zeros(NUM_TAGS * 3, dtype=np.float32)
-        user_last_updated: int = -1
+        user_last_updated: float = -1.0
 
     # Get event ids for events the user has attended, was interested, and has blocked
     going_ids, interested_ids, uninterested_ids = get_interaction_ids(user_id, user_last_updated)
@@ -130,19 +129,8 @@ def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
     int_weights = build_weights(int_mat,  row_weight=0.5)
     blk_weights = build_weights(blk_mat,  row_weight=2.0)
 
-    # Cold start used only once, Front end will populated raw user weights with cold start values
-
-    # # Cold Start preferences
-    # initial_prefs = get_client().query("data_ml/eventRec:getPreferredTagsByUserId", {"userId": user_id})
-    #
-    # if initial_prefs:
-    #     prior = np.zeros(NUM_TAGS, dtype=np.float32)
-    #     for tag_id in initial_prefs.get("tagIds", []):
-    #         if tag_id in TAG_ID_TO_IDX:
-    #             prior[TAG_ID_TO_IDX[tag_id]] = 0.5
-    #     att_weights = np.clip(att_weights + prior * (1.0 - att_weights), 0.0, 1.0)
-
     result: NDArray[np.float32] = np.concatenate([att_weights, int_weights, blk_weights]).astype(np.float32)
+
     return result + user_raw_weights
 
 
