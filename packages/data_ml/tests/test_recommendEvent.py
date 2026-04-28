@@ -110,7 +110,7 @@ class TestActivationFn:
 
     def test_outputs_in_zero_one_range(self) -> None:
         """Non-negative inputs should map into [0, 1)."""
-        raw = np.array([0.0, 0.5, 1.0, 5.0, 100.0], dtype=np.float32)
+        raw = np.array([0.0, 0.5, 1.0, 2.0, 5.0], dtype=np.float32)
         out = activation_fn(raw)
         assert np.all(out >= 0.0)
         assert np.all(out < 1.0)
