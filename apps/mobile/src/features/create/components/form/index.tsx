@@ -1,6 +1,7 @@
 import { DatetimeField } from '@/features/create/components/form/datetime/field';
 import { DescriptionField } from '@/features/create/components/form/description-field';
 import { EventField } from '@/features/create/components/form/event-field';
+import { LocationField } from '@/features/create/components/form/location-field';
 import { MediaField } from '@/features/create/components/form/media-field';
 import { NameField } from '@/features/create/components/form/name-field';
 import { TagsField } from '@/features/create/components/form/tags-field';
@@ -28,6 +29,7 @@ export function CreateForm({
     setIsTagMenuOpen,
     allTags,
     openCamera,
+    getCurrentLocation,
   } = useCreateContext();
 
   const formActive = mode === 'event' ? isEventMode : !isEventMode;
@@ -80,6 +82,14 @@ export function CreateForm({
       ) : null}
       {mode === 'event' ? <NameField control={control} formActive={formActive} /> : null}
       {mode === 'event' ? <DatetimeField control={control} formActive={formActive} /> : null}
+      {mode === 'event' ? (
+        <LocationField
+          control={control}
+          setValue={setValue}
+          formActive={formActive}
+          getCurrentLocation={getCurrentLocation}
+        />
+      ) : null}
       {mode === 'post' ? (
         <EventField control={control} setValue={setValue} formActive={formActive} />
       ) : null}
