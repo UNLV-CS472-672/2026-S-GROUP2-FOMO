@@ -14,6 +14,7 @@ import type { SharedValue } from 'react-native-reanimated';
 
 type SearchDrawerProps = {
   onSelectEvent: (eventId: string) => void;
+  onSelectLocation: (coords: { longitude: number; latitude: number }) => void;
   animatedIndex?: SharedValue<number>;
   animatedPosition?: SharedValue<number>;
   isFocused?: boolean;
@@ -21,6 +22,7 @@ type SearchDrawerProps = {
 
 export function SearchDrawer({
   onSelectEvent,
+  onSelectLocation,
   animatedIndex,
   animatedPosition,
   isFocused = true,
@@ -86,6 +88,7 @@ export function SearchDrawer({
         onExpand={() => setSheetIndex(SEARCH_DRAWER_STATE.expanded)}
         onSaveRecentSearch={(value) => void addRecentSearch(value)}
         onSelectEvent={onSelectEvent}
+        onSelectLocation={onSelectLocation}
       />
     </Drawer>
   );
