@@ -66,16 +66,6 @@ export const getUserTagWeights = query({
   },
 });
 
-export const getPreferredTagsByUserId = query({
-  args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
-    return await ctx.db
-      .query('userPreferredTags')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
-      .unique();
-  },
-});
-
 export const getInteractionsByUserId = query({
   args: { userId: v.id('users'), sinceMs: v.optional(v.number()) },
   handler: async (ctx, { userId, sinceMs }) => {
