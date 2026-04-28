@@ -1,8 +1,9 @@
+import { Icon } from '@/components/icon';
 import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import * as MediaLibrary from 'expo-media-library';
 import { useCallback, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 type LatestGalleryImageProps = {
   onPress: () => void;
@@ -52,7 +53,7 @@ export function LatestGalleryImage({ onPress }: LatestGalleryImageProps) {
         />
       ) : (
         <View className="flex-1 items-center justify-center px-1">
-          <Text className="text-center text-[9px] font-semibold text-white">Gallery</Text>
+          <Icon name="photo-library" size={20} className="text-background" />
         </View>
       )}
     </Pressable>

@@ -227,7 +227,8 @@ def test_build_weights_row_weight_scales(tags_initialized: None) -> None:
 # Function now takes (user_id, user_last_updated).
 # Schema field is `status` with values "going" / "interested" / "uninterested".
 
-def test_get_interaction_ids_splits_by_status(mock_client: MagicMock) -> None:
+# Should split rows by status into three lists
+def test_get_interaction_ids_splits_by_type(mock_client: MagicMock) -> None:
     mock_client.query.return_value = [
         {"eventId": "e1", "status": "going"},
         {"eventId": "e2", "status": "interested"},

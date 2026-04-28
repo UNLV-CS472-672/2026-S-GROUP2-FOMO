@@ -14,11 +14,11 @@ client: Optional[ConvexClient] = (
     ConvexClient(CONVEX_CLOUD_URL) if CONVEX_CLOUD_URL else None
 )
 
+
 def get_client() -> ConvexClient:
     if client is None:
         raise RuntimeError("ConvexClient not initialized")
     return client
-
 
 NUM_TAGS = 0
 TAG_ID_TO_IDX: dict[str, int] = {}
@@ -35,7 +35,9 @@ def init_tags() -> None:
 def event_multihot(event_id: str) -> NDArray[np.float32]:
     """Returns a (num_tags,) binary vector for one event."""
     vec = np.zeros(NUM_TAGS, dtype=np.float32)
-    event_tags = get_client().query("data_ml/eventRec:getByEventId", {"eventId": event_id})
+    event_tags = get_client().query(
+        "data_ml/eventRec:getByEventId", {"eventId": event_id}
+    )
     for row in event_tags:
         tag_id = row["tagId"]
         if tag_id in TAG_ID_TO_IDX:
@@ -50,7 +52,9 @@ def build_matrix(event_ids: list[str]) -> NDArray[np.float32]:
     return np.array([event_multihot(eid) for eid in event_ids], dtype=np.float32)
 
 
-def build_weights(mat: NDArray[np.float32], row_weight: float = 1.0) -> NDArray[np.float32]:
+def build_weights(
+    mat: NDArray[np.float32], row_weight: float = 1.0
+) -> NDArray[np.float32]:
     """
     Converts an (n_events, num_tags) matrix into a (num_tags,) bounded weight vector.
 
@@ -124,9 +128,9 @@ def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
     int_mat = build_matrix(interested_ids)
     blk_mat = build_matrix(uninterested_ids)
 
-    att_weights = build_weights(att_mat,  row_weight=1.0)
-    int_weights = build_weights(int_mat,  row_weight=0.5)
-    blk_weights = build_weights(blk_mat,  row_weight=2.0)
+    att_weights = build_weights(att_mat, row_weight=1.0)
+    int_weights = build_weights(int_mat, row_weight=0.5)
+    blk_weights = build_weights(blk_mat, row_weight=2.0)
 
     result: NDArray[np.float32] = np.concatenate([att_weights, int_weights, blk_weights]).astype(np.float32)
 
@@ -137,7 +141,9 @@ def main(users: list[str], update_db: bool) -> None:
     init_tags()
 
     if len(users) == 1 and users[0] == "ALL":
-        all_users = get_client().query("data_ml/universal:queryAll", {"table_name": "users"})
+        all_users = get_client().query(
+            "data_ml/universal:queryAll", {"table_name": "users"}
+        )
         users = [row["_id"] for row in all_users]
 
     user_feature_vectors: dict[str, NDArray[np.float32]] = {}
@@ -146,17 +152,26 @@ def main(users: list[str], update_db: bool) -> None:
 
     if update_db:
         for user_id, vec in user_feature_vectors.items():
-            get_client().mutation("data_ml/eventRec:upsertUserTagWeights",{"userId":  user_id, "weights": vec.tolist()})
+            get_client().mutation(
+                "data_ml/eventRec:upsertUserTagWeights",
+                {"userId": user_id, "weights": vec.tolist()},
+            )
         print(f"Updated {len(user_feature_vectors)} users in Convex.")
     else:
         for user_id, vec in user_feature_vectors.items():
             att = vec[:NUM_TAGS]
-            int_ = vec[NUM_TAGS: 2 * NUM_TAGS]
-            blk = vec[2 * NUM_TAGS:]
+            int_ = vec[NUM_TAGS : 2 * NUM_TAGS]
+            blk = vec[2 * NUM_TAGS :]
             print(f"\nUser {user_id}:")
-            print(f"  attended  weights (top 5): { sorted(enumerate(att), key=lambda x: -x[1])[:5] }")
-            print(f"  interested weights (top 5): { sorted(enumerate(int_), key=lambda x: -x[1])[:5] }")
-            print(f"  blocked   weights (top 5): { sorted(enumerate(blk), key=lambda x: -x[1])[:5] }")
+            print(
+                f"  attended  weights (top 5): {sorted(enumerate(att), key=lambda x: -x[1])[:5]}"
+            )
+            print(
+                f"  interested weights (top 5): {sorted(enumerate(int_), key=lambda x: -x[1])[:5]}"
+            )
+            print(
+                f"  blocked   weights (top 5): {sorted(enumerate(blk), key=lambda x: -x[1])[:5]}"
+            )
 
 
 USERS = ["ALL"]
@@ -164,3 +179,4 @@ UPDATE_DB = True
 
 if __name__ == "__main__":
     main(USERS, UPDATE_DB)
+
