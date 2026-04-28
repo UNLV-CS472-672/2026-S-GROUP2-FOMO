@@ -2,7 +2,7 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: 'fomo',
+  name: 'Fomo',
   slug: 'fomo',
   version: '1.0.0',
   orientation: 'portrait',
@@ -22,14 +22,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       ITSAppUsesNonExemptEncryption: false,
       LSApplicationQueriesSchemes: ['comgooglemaps'],
       NSLocationWhenInUseUsageDescription:
-        'FOMO uses your location to show events near you on the map.',
+        'Fomo uses your location to show events near you on the map.',
       NSCameraUsageDescription:
-        'FOMO uses your camera so you can capture photos and videos for posts.',
+        'Fomo uses your camera so you can capture photos and videos for posts.',
       NSPhotoLibraryUsageDescription:
-        'FOMO needs access to your photos so you can choose media for posts.',
+        'Fomo needs access to your photos so you can choose media for posts.',
       NSPhotoLibraryAddUsageDescription:
-        'FOMO needs permission to save photos and videos to your library.',
-      NSMicrophoneUsageDescription: 'FOMO uses your microphone when recording videos.',
+        'Fomo needs permission to save photos and videos to your library.',
+      NSMicrophoneUsageDescription: 'Fomo uses your microphone when recording videos.',
     },
   },
   android: {
@@ -69,15 +69,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-location',
       {
-        locationWhenInUsePermission: 'FOMO uses your location to show events near you on the map.',
+        locationWhenInUsePermission: 'Fomo uses your location to show events near you on the map.',
       },
     ],
     [
       'expo-speech-recognition',
       {
-        microphonePermission: 'FOMO uses your microphone so you can search with your voice.',
+        microphonePermission: 'Fomo uses your microphone so you can search with your voice.',
         speechRecognitionPermission:
-          'FOMO uses speech recognition so you can search events with your voice.',
+          'Fomo uses speech recognition so you can search events with your voice.',
         androidSpeechServicePackages: ['com.google.android.googlequicksearchbox'],
       },
     ],
@@ -100,9 +100,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-image-picker',
       {
-        photosPermission: 'FOMO needs access to your photos so you can choose media for posts.',
-        cameraPermission: 'FOMO uses your camera so you can take photos for posts.',
-        microphonePermission: 'FOMO uses your microphone when recording videos.',
+        photosPermission: 'Fomo needs access to your photos so you can choose media for posts.',
+        cameraPermission: 'Fomo uses your camera so you can take photos for posts.',
+        microphonePermission: 'Fomo uses your microphone when recording videos.',
       },
     ],
     'expo-video',
