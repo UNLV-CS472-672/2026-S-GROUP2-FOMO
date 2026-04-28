@@ -24,7 +24,6 @@ export function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: n
   };
 }
 
-// smaller radius in accordance to user
 const BBOX_RADIUS_DEG = 0.45;
 
 type SuggestionRaw = {
@@ -37,11 +36,13 @@ type SuggestionRaw = {
 export async function retrieveCoordinates(
   mapboxId: string,
   sessionToken: string,
-  accessToken: string
+  accessToken: string,
+  permanent: boolean = false // IMPORTANT NOTE!!! Set to 'true' whenever we deploy.
 ): Promise<Coordinates | null> {
   const params = new URLSearchParams({
     access_token: accessToken,
     session_token: sessionToken,
+    permanent: String(permanent),
   });
 
   const res = await fetch(`${RETRIEVE_URL}/${mapboxId}?${params}`);
@@ -58,16 +59,17 @@ export async function geocode(
   query: string,
   accessToken: string,
   sessionToken: string,
-  proximity?: Coordinates
+  proximity?: Coordinates,
+  permanent: boolean = false // IMPORTANT NOTE!!! Set to 'true' whenever we deploy.
 ): Promise<GeocodingResult[]> {
   const params = new URLSearchParams({
     q: query,
     access_token: accessToken,
     session_token: sessionToken,
-    // POI first, then addresses and places as fallback
     types: 'poi,address,place',
     limit: '5',
     language: 'en',
+    permanent: String(permanent),
   });
 
   if (proximity) {
