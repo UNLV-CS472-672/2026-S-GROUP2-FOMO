@@ -33,7 +33,14 @@ def log(message: str) -> None:
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 MAX_TAGS = 8   # normalizer for tag_count_norm
+BETA = 0.10
+TAU  = 1.25
 
+def activation_fn(raw_weights):
+
+    result: NDArray[np.float32] = (1.0 - np.exp(-(raw_weights + BETA) / TAU)).astype(np.float32)
+
+    return result
 
 def get_tag_info(client: ConvexClient) -> tuple[int, dict[str, int]]:
     tags = client.query("data_ml/universal:queryAll", {"table_name": "tags"})
@@ -61,7 +68,9 @@ def get_user_features(client: ConvexClient, users: list[str], num_tags: int) -> 
                 arr = arr[:expected_dim]
             fixed.append(arr)
 
-    return torch.from_numpy(np.stack(fixed))
+    fixed_np: NDArray[np.float32] = np.stack(fixed)
+
+    return torch.from_numpy(activation_fn(fixed_np))
 
 
 def get_event_features(client: ConvexClient, num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[list[str], NDArray[np.float32]]:

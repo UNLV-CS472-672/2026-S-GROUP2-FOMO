@@ -79,7 +79,7 @@ export default defineSchema({
 
   attendance: defineTable({
     userId: v.id('users'),
-    eventId: v.id('events'),
+    eventId: v.union(v.id('events'), v.id('externalEvents')),
     status: v.optional(
       v.union(v.literal('going'), v.literal('interested'), v.literal('uninterested'))
     ),
