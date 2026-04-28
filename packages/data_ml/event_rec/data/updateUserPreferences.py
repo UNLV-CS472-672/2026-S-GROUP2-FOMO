@@ -75,11 +75,10 @@ def get_interaction_ids(user_id: str, user_last_updated: float) -> tuple[list[st
     Returns rows from usersToEvents with fields:
     { eventId: str, interactionType: "going" | "interested" | "uninterested" }
     """
-    args = {"userId": user_id}
     if user_last_updated >= 0:
-        args["sinceMs"] = user_last_updated
-
-    interactions = get_client().query("data_ml/eventRec:getInteractionsByUserId", args)
+        interactions = get_client().query("data_ml/eventRec:getInteractionsByUserId", {"userId": user_id, "sinceMs": user_last_updated})
+    else:
+        interactions = get_client().query("data_ml/eventRec:getInteractionsByUserId", {"userId": user_id})
 
     going = [row["eventId"] for row in interactions if row["status"] == "going"]
     interested = [row["eventId"] for row in interactions if row["status"] == "interested"]
@@ -99,24 +98,24 @@ def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
     # If something is not returned then blame frontend team for messing up coldstart upload
     if user_weights_and_timestamp:
         user_raw_weights = user_weights_and_timestamp['weights']
-        user_last_updated = user_weights_and_timestamp['lastUpdatedAt']
+        user_last_updated: float = user_weights_and_timestamp['lastUpdatedAt']
 
         # Cold Start Tags provided, treat as attended weights
         if len(user_raw_weights) == NUM_TAGS:
-            user_raw_weights: NDArray[np.float32] = np.concatenate([
+            user_raw_weights_nd: NDArray[np.float32] = np.concatenate([
                 np.array(user_raw_weights, dtype=np.float32),
                 np.zeros(NUM_TAGS * 2, dtype=np.float32)
             ])
 
         elif len(user_raw_weights) == NUM_TAGS * 3:
-            user_raw_weights: NDArray[np.float32] = np.array(user_raw_weights, dtype=np.float32)
+            user_raw_weights_nd = np.array(user_raw_weights, dtype=np.float32)
 
         else:
-            user_raw_weights: NDArray[np.float32] = np.zeros(NUM_TAGS * 3, dtype=np.float32)
+            user_raw_weights_nd = np.zeros(NUM_TAGS * 3, dtype=np.float32)
 
     else:
-        user_raw_weights: NDArray[np.float32] = np.zeros(NUM_TAGS * 3, dtype=np.float32)
-        user_last_updated: float = -1.0
+        user_raw_weights_nd = np.zeros(NUM_TAGS * 3, dtype=np.float32)
+        user_last_updated = -1.0
 
     # Get event ids for events the user has attended, was interested, and has blocked
     going_ids, interested_ids, uninterested_ids = get_interaction_ids(user_id, user_last_updated)
@@ -131,7 +130,7 @@ def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
 
     result: NDArray[np.float32] = np.concatenate([att_weights, int_weights, blk_weights]).astype(np.float32)
 
-    return result + user_raw_weights
+    return result + user_raw_weights_nd
 
 
 def main(users: list[str], update_db: bool) -> None:
