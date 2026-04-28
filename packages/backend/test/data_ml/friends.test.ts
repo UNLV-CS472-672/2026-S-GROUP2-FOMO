@@ -10,14 +10,24 @@ function setup() {
   return convexTest(schema, modules);
 }
 
+function userDoc(name: string, clerkId: string) {
+  return {
+    bio: '',
+    clerkId,
+    username: name,
+    displayName: name,
+    avatarUrl: '',
+  };
+}
+
 describe('api["data_ml/friends"]', () => {
   describe('friendExists', () => {
     it('returns the requested user id for accepted current-shape friendships in either direction', async () => {
       const t = setup();
 
       const { userAId, userBId } = await t.run(async (ctx) => {
-        const userAId = await ctx.db.insert('users', { name: 'a', clerkId: 'a' });
-        const userBId = await ctx.db.insert('users', { name: 'b', clerkId: 'b' });
+        const userAId = await ctx.db.insert('users', userDoc('a', 'a'));
+        const userBId = await ctx.db.insert('users', userDoc('b', 'b'));
         await ctx.db.insert('friends', {
           requesterId: userAId,
           recipientId: userBId,
@@ -38,8 +48,8 @@ describe('api["data_ml/friends"]', () => {
       const t = setup();
 
       const { userAId, userBId } = await t.run(async (ctx) => {
-        const userAId = await ctx.db.insert('users', { name: 'a', clerkId: 'a' });
-        const userBId = await ctx.db.insert('users', { name: 'b', clerkId: 'b' });
+        const userAId = await ctx.db.insert('users', userDoc('a', 'a'));
+        const userBId = await ctx.db.insert('users', userDoc('b', 'b'));
         await ctx.db.insert('friends', {
           requesterId: userAId,
           recipientId: userBId,

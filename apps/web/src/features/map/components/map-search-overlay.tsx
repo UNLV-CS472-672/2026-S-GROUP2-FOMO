@@ -8,8 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 export type MapSearchEvent = {
   id: string;
   name: string;
-  organization: string;
-  description: string;
+  caption: string;
   attendeeCount: number;
   location: {
     latitude: number;
@@ -42,7 +41,7 @@ export function MapSearchOverlay({ onSelectEvent }: MapSearchOverlayProps) {
   const [query, setQuery] = useState('');
   const normalizedQuery = query.trim();
   const debouncedQuery = useDebouncedValue(normalizedQuery, 250);
-  const events = useQuery(api.data_ml.events.getEvents, {});
+  const events = useQuery(api.events.queries.getEvents);
   const filteredEvents = useMemo(() => {
     if (!events) {
       return undefined;
@@ -56,7 +55,7 @@ export function MapSearchOverlay({ onSelectEvent }: MapSearchOverlayProps) {
     const normalizedSearch = debouncedQuery.toLowerCase();
     return events
       .filter((event) => {
-        const haystack = `${event.name} ${event.organization} ${event.description}`.toLowerCase();
+        const haystack = `${event.name} ${event.caption}`.toLowerCase();
         return haystack.includes(normalizedSearch);
       })
       .slice(0, 8);
@@ -125,7 +124,7 @@ export function MapSearchOverlay({ onSelectEvent }: MapSearchOverlayProps) {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{event.name}</p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {event.organization} - {event.attendeeCount} going
+                      {event.caption} - {event.attendeeCount} going
                     </p>
                     {showEventId ? (
                       <p className="truncate text-xs text-muted-foreground/70">
