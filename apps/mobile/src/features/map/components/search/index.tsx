@@ -89,6 +89,7 @@ export function SearchDrawer({
         onSaveRecentSearch={(value) => void addRecentSearch(value)}
         onSelectEvent={onSelectEvent}
         onSelectLocation={onSelectLocation}
+        onCloseDrawer={() => setSheetIndex(SEARCH_DRAWER_STATE.collapsed)}
       />
     </Drawer>
   );

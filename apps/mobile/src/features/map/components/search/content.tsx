@@ -22,6 +22,7 @@ type SearchContentProps = {
   onSaveRecentSearch: (value: RecentSearch) => void;
   onSelectEvent: (eventId: string) => void;
   onSelectLocation: (coords: { longitude: number; latitude: number }) => void;
+  onCloseDrawer: () => void;
 };
 
 export function SearchContent({
@@ -32,6 +33,7 @@ export function SearchContent({
   onSaveRecentSearch,
   onSelectEvent,
   onSelectLocation,
+  onCloseDrawer,
 }: SearchContentProps) {
   const theme = useAppTheme();
   const {
@@ -149,6 +151,7 @@ export function SearchContent({
                   onSaveRecentSearch({ type: 'query', label: loc.name });
                   const coords = await resolveCoordinates(loc.mapbox_id);
                   if (coords) onSelectLocation(coords);
+                  onCloseDrawer();
                 }}
               >
                 <View className="size-10 items-center justify-center rounded-full bg-foreground/5">
