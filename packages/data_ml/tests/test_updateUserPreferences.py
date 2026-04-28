@@ -232,13 +232,13 @@ def test_build_weights_row_weight_scales(tags_initialized: None) -> None:
 #  get_interaction_ids()
 # ------------------------------
 
-# Should split rows by interactionType into three lists
+# Should split rows by status into three lists
 def test_get_interaction_ids_splits_by_type(mock_client: MagicMock) -> None:
     mock_client.query.return_value = [
-        {"eventId": "e1", "interactionType": "attended"},
-        {"eventId": "e2", "interactionType": "interested"},
-        {"eventId": "e3", "interactionType": "blocked"},
-        {"eventId": "e4", "interactionType": "attended"},
+        {"eventId": "e1", "status": "going"},
+        {"eventId": "e2", "status": "interested"},
+        {"eventId": "e3", "status": "uninterested"},
+        {"eventId": "e4", "status": "going"},
     ]
     attended, interested, blocked = get_interaction_ids("u1")
     assert attended == ["e1", "e4"]
@@ -314,7 +314,7 @@ def test_build_user_feature_vector_uses_interactions(
     sample_event_tags_e1: list[dict[str, str]],
 ) -> None:
     mock_client.query.side_effect = [
-        [{"eventId": "e1", "interactionType": "attended"}],
+        [{"eventId": "e1", "status": "going"}],
         sample_event_tags_e1,
         None,
     ]

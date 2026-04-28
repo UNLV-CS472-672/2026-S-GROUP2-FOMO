@@ -136,13 +136,14 @@ async function serializeProfileFeedPost(
   post: Doc<'posts'>,
   viewerId?: Doc<'users'>['_id']
 ) {
-  const [author, comments, likes] = await Promise.all([
+  const [author, comments, likes, event] = await Promise.all([
     ctx.db.get(post.authorId),
     getThreadedCommentsByPost(ctx, post._id),
     ctx.db
       .query('likes')
       .withIndex('by_postId', (q) => q.eq('postId', post._id))
       .collect(),
+    post.eventId ? ctx.db.get(post.eventId) : Promise.resolve(null),
   ]);
 
   return {
@@ -155,6 +156,8 @@ async function serializeProfileFeedPost(
     likes: post.likeCount ?? likes.length,
     liked: viewerId ? likes.some((like) => like.userId === viewerId) : false,
     mediaIds: post.mediaIds ?? [],
+    eventId: post.eventId ?? null,
+    eventName: event?.name ?? '',
     commentCount: countComments(comments),
     comments,
   };
