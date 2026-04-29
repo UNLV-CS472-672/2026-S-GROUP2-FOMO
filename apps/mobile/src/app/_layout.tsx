@@ -1,10 +1,11 @@
 import '@/global.css';
 
 import { useAuth as useClerkAuth } from '@clerk/expo';
+import { api } from '@fomo/backend/convex/_generated/api';
 import { navigationThemeColors } from '@fomo/theme/native';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useConvexAuth } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useMemo } from 'react';
@@ -23,9 +24,21 @@ function RootNavigator() {
   const { isAuthenticated, isLoading: isConvexLoading } = useConvexAuth();
   const { isGuestLoading, isGuestMode } = useGuest();
   const segments = useSegments();
+  const tagPreferences = useQuery(
+    api.tags.getCurrentUserTagPreferences,
+    isAuthenticated ? {} : 'skip'
+  );
   const isLoading = isConvexLoading || isGuestLoading;
+  const isOnboardingRoute = segments[0] === '(onboarding)';
+  const isTagPreferencesLoading =
+    isAuthenticated && (tagPreferences === undefined || tagPreferences === null);
+  const needsInterestOnboarding = tagPreferences?.hasCompletedSelection === false;
 
-  const isAuthResolving = !isClerkLoaded || isLoading || (isClerkAuthenticated && !isAuthenticated);
+  const isAuthResolving =
+    !isClerkLoaded ||
+    isLoading ||
+    (isClerkAuthenticated && !isAuthenticated) ||
+    isTagPreferencesLoading;
   if (isAuthResolving) {
     return (
       <AuthLoadingScreen
@@ -37,7 +50,15 @@ function RootNavigator() {
     );
   }
 
-  const isAuthenticatedRouteAllowed = segments[0] === '(tabs)';
+  if (isAuthenticated && needsInterestOnboarding && !isOnboardingRoute) {
+    return <Redirect href="/(onboarding)/interests" />;
+  }
+
+  if (isAuthenticated && !needsInterestOnboarding && isOnboardingRoute) {
+    return <Redirect href="/(tabs)/(map)" />;
+  }
+
+  const isAuthenticatedRouteAllowed = segments[0] === '(tabs)' || isOnboardingRoute;
   if (isAuthenticated && !isAuthenticatedRouteAllowed) {
     return <Redirect href="/(tabs)/(map)" />;
   }
@@ -50,6 +71,7 @@ function RootNavigator() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(onboarding)" />
       <Stack.Screen name="(tabs)" />
     </Stack>
   );
@@ -71,20 +93,20 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <BottomSheetModalProvider>
-        <ThemeProvider value={navigationTheme}>
-          <ClerkProvider>
-            <ConvexProvider>
+      <ThemeProvider value={navigationTheme}>
+        <ClerkProvider>
+          <ConvexProvider>
+            <BottomSheetModalProvider>
               <GuestProvider>
                 <UserProvider>
                   <RootNavigator />
                   <StatusBar style={isDark ? 'light' : 'dark'} />
                 </UserProvider>
               </GuestProvider>
-            </ConvexProvider>
-          </ClerkProvider>
-        </ThemeProvider>
-      </BottomSheetModalProvider>
+            </BottomSheetModalProvider>
+          </ConvexProvider>
+        </ClerkProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }
