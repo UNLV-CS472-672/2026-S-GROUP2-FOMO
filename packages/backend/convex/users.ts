@@ -182,6 +182,7 @@ export const getProfileFeed = query({
   },
 });
 
+// TODO :: SHOULD BE REMOVED AFTER CLERK CONVEX WEBHOOK
 export const updateCurrentProfile = mutation({
   args: {
     username: v.string(),
@@ -209,6 +210,7 @@ export const updateCurrentProfile = mutation({
   },
 });
 
+// TODO :: SHOULD BE REMOVED AFTER CLERK CONVEX WEBHOOK
 export const updateAvatarUrl = mutation({
   args: {
     avatarUrl: v.string(),

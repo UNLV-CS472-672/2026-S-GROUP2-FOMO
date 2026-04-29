@@ -1,25 +1,17 @@
 import { ButtonText } from '@/components/ui/button';
-import { DrawerModal } from '@/components/ui/drawer';
 import { Screen } from '@/components/ui/screen';
 import { Authenticated, GuestOnly } from '@/features/auth/components/auth-gate';
+import { GuestMode } from '@/features/profile/components/guest-mode';
 import { ProfilePage } from '@/features/profile/profile-page';
 import { useAppTheme } from '@/lib/use-app-theme';
-import { useUser } from '@clerk/expo';
 import { MaterialIcons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
-import { BottomSheetView } from '@gorhom/bottom-sheet';
-import { useConvexAuth, useMutation, useQuery } from 'convex/react';
-import * as ImagePicker from 'expo-image-picker';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-
-// imports for authentication and guest mode
-import { GuestMode } from '@/features/profile/components/guest-mode';
+import { Pressable, ScrollView, View } from 'react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user: clerkUser } = useUser();
 
   const { isAuthenticated } = useConvexAuth();
   const profile = useQuery(api.users.getCurrentProfile, isAuthenticated ? {} : 'skip');
@@ -29,43 +21,6 @@ export default function ProfileScreen() {
     api.users.getProfileFeed,
     profile ? { userId: profile.user._id } : 'skip'
   );
-
-  const updateAvatarUrl = useMutation(api.users.updateAvatarUrl);
-  const [isPickerDrawerOpen, setIsPickerDrawerOpen] = useState(false);
-
-  async function handlePickFromGallery() {
-    setIsPickerDrawerOpen(false);
-    if (!clerkUser) return;
-
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please allow access to your photo library in Settings.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      try {
-        const response = await fetch(result.assets[0].uri);
-        const blob = await response.blob();
-        await clerkUser.setProfileImage({ file: blob });
-        await clerkUser.reload();
-        const avatarUrl = clerkUser.imageUrl;
-        if (avatarUrl) {
-          await updateAvatarUrl({ avatarUrl });
-        }
-      } catch (err) {
-        Alert.alert('Error', 'Failed to update profile picture. Please try again.');
-        console.error('Avatar update failed', err);
-      }
-    }
-  }
 
   return (
     <Screen className="flex-1">
@@ -85,7 +40,6 @@ export default function ProfileScreen() {
               }}
               activityLabel="Recent Activity"
               onPressSettings={() => router.push('/profile/settings')}
-              onPressAvatar={() => setIsPickerDrawerOpen(true)}
               topPaddingClassName="pt-20"
               bioFallback="No bio yet."
               viewerUserId={profile.user._id}
@@ -96,26 +50,6 @@ export default function ProfileScreen() {
                 />
               }
             />
-            <DrawerModal
-              open={isPickerDrawerOpen}
-              onClose={() => setIsPickerDrawerOpen(false)}
-              snapPoints={['30%']}
-              enablePanDownToClose
-            >
-              <BottomSheetView style={{ padding: 24 }}>
-                <Text className="mb-4 text-center text-base font-semibold text-foreground">
-                  Change Profile Photo
-                </Text>
-                <TouchableOpacity
-                  className="rounded-xl bg-card px-4 py-4"
-                  onPress={() => void handlePickFromGallery()}
-                  accessibilityLabel="Choose from library"
-                  accessibilityRole="button"
-                >
-                  <Text className="text-base text-foreground">Choose from Library</Text>
-                </TouchableOpacity>
-              </BottomSheetView>
-            </DrawerModal>
           </>
         ) : (
           <ScrollView className="flex-1 bg-background" />

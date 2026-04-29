@@ -29,7 +29,6 @@ type ProfilePageProps = {
   activityLabel: string;
   emptyPostsMessage?: string;
   onPressSettings?: () => void;
-  onPressAvatar?: () => void;
   topPaddingClassName?: string;
   bioFallback?: string;
   mediaFeedPathname?: string;
@@ -103,7 +102,6 @@ export function ProfilePage({
   activityLabel,
   emptyPostsMessage = 'No posts yet',
   onPressSettings,
-  onPressAvatar,
   topPaddingClassName = 'pt-20',
   bioFallback,
   mediaFeedPathname = '/profile/media-feed',
@@ -196,27 +194,13 @@ export function ProfilePage({
         contentContainerClassName="pb-8"
       >
         <View className="flex-row items-start px-4 pb-4 pt-2">
-          {onPressAvatar ? (
-            <TouchableOpacity
-              onPress={onPressAvatar}
-              accessibilityLabel="Change profile picture"
-              accessibilityRole="button"
-            >
-              <Avatar
-                name={profile.user.displayName || profile.user.username}
-                size={92}
-                source={profile.user.avatarUrl ? { uri: profile.user.avatarUrl } : undefined}
-              />
-            </TouchableOpacity>
-          ) : (
-            <View>
-              <Avatar
-                name={profile.user.displayName || profile.user.username}
-                size={92}
-                source={profile.user.avatarUrl ? { uri: profile.user.avatarUrl } : undefined}
-              />
-            </View>
-          )}
+          <View>
+            <Avatar
+              name={profile.user.displayName || profile.user.username}
+              size={92}
+              source={profile.user.avatarUrl ? { uri: profile.user.avatarUrl } : undefined}
+            />
+          </View>
 
           <View className="ml-3 flex-1 pr-0">
             <View className="flex-row items-center justify-between">
