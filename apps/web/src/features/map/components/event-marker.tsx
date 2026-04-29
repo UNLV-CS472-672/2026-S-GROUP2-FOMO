@@ -2,15 +2,8 @@
 
 import { createRoot, type Root } from 'react-dom/client';
 
-const EVENT_IMAGES = [
-  '/rigrig.jpg',
-  '/jonah-mog.png',
-  '/git-learning-class.png',
-  '/rate-my-date.jpg',
-] as const;
-
 type EventMarkerProps = {
-  imageSrc: string;
+  imageSrc: string | null;
   name: string;
   size: number;
 };
@@ -30,8 +23,14 @@ export function EventMarker({ imageSrc, name, size }: EventMarkerProps) {
         className="overflow-hidden rounded-full border-2 border-amber-500 shadow-[0_4px_12px_rgba(0,0,0,0.35)]"
         style={{ width: size, height: size }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageSrc} alt={name} className="h-full w-full object-cover" />
+        {imageSrc ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={imageSrc} alt={name} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-primary/15 px-2 text-center text-sm font-black uppercase text-primary">
+            {name.slice(0, 2)}
+          </div>
+        )}
       </div>
 
       <div
@@ -44,10 +43,6 @@ export function EventMarker({ imageSrc, name, size }: EventMarkerProps) {
       />
     </div>
   );
-}
-
-export function getEventMarkerImage(index: number) {
-  return EVENT_IMAGES[index % EVENT_IMAGES.length] ?? EVENT_IMAGES[0];
 }
 
 export function createEventMarkerMount(props: EventMarkerProps): EventMarkerMount {
