@@ -13,6 +13,7 @@ import type * as comments from "../comments.js";
 import type * as data_ml_eventRec from "../data_ml/eventRec.js";
 import type * as data_ml_friendRecs from "../data_ml/friendRecs.js";
 import type * as data_ml_friends from "../data_ml/friends.js";
+import type * as data_ml_http from "../data_ml/http.js";
 import type * as data_ml_universal from "../data_ml/universal.js";
 import type * as data_ml_users from "../data_ml/users.js";
 import type * as eventSeedsStatic from "../eventSeedsStatic.js";
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   "data_ml/eventRec": typeof data_ml_eventRec;
   "data_ml/friendRecs": typeof data_ml_friendRecs;
   "data_ml/friends": typeof data_ml_friends;
+  "data_ml/http": typeof data_ml_http;
   "data_ml/universal": typeof data_ml_universal;
   "data_ml/users": typeof data_ml_users;
   eventSeedsStatic: typeof eventSeedsStatic;

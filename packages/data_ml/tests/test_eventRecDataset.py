@@ -300,38 +300,25 @@ def test_get_data_loader_passes_batch_size(mock_load_offline: MagicMock) -> None
 #  _load_online (basic tests)
 # ------------------------------
 
-@patch('recommendEvent.get_client')
+@patch('data.eventRecDataset._make_loaders', return_value=(MagicMock(), MagicMock()))
+@patch('data.eventRecDataset.queries.get_by_event_id', return_value=[])
+@patch('data.eventRecDataset.queries.query_all', return_value=[])
+@patch('updateUserPreferences.build_user_feature_vector', return_value=np.zeros(0, dtype=np.float32))
 @patch('updateUserPreferences.init_tags')
-@patch('updateUserPreferences.build_user_feature_vector')
-def test_load_online_calls_init_tags(mock_build_vector: MagicMock, mock_init_tags: MagicMock, mock_get_client: MagicMock) -> None:
+def test_load_online_calls_init_tags(mock_init_tags: MagicMock, mock_build_vector: MagicMock, mock_query_all: MagicMock, mock_get_by_event: MagicMock, mock_make_loaders: MagicMock) -> None:
     """Test _load_online calls init_tags to initialize tag mappings"""
-    mock_client = MagicMock()
-    mock_get_client.return_value = mock_client
-    mock_client.query.return_value = []
-
-    try:
-        _load_online(batch_size=32)
-    except:
-        pass
-
+    _load_online(batch_size=32)
     mock_init_tags.assert_called_once()
 
 
-@patch('recommendEvent.get_client')
+@patch('data.eventRecDataset._make_loaders', return_value=(MagicMock(), MagicMock()))
+@patch('data.eventRecDataset.queries.get_by_event_id', return_value=[])
+@patch('data.eventRecDataset.queries.query_all')
+@patch('updateUserPreferences.build_user_feature_vector', return_value=np.zeros(30, dtype=np.float32))
 @patch('updateUserPreferences.init_tags')
-@patch('updateUserPreferences.build_user_feature_vector')
-def test_load_online_queries_users(mock_build_vector: MagicMock, mock_init_tags: MagicMock, mock_get_client: MagicMock) -> None:
+def test_load_online_queries_users(mock_init_tags: MagicMock, mock_build_vector: MagicMock, mock_query_all: MagicMock, mock_get_by_event: MagicMock, mock_make_loaders: MagicMock) -> None:
     """Test _load_online queries users table"""
-    mock_client = MagicMock()
-    mock_get_client.return_value = mock_client
-    mock_client.query.return_value = [{"_id": "u1"}, {"_id": "u2"}]
-    mock_build_vector.return_value = np.zeros(30, dtype=np.float32)
-
-    try:
-        _load_online(batch_size=32)
-    except:
-        pass
-
-    # Check that users were queried
-    calls = [call[0] for call in mock_client.query.call_args_list]
-    assert any("users" in str(call) for call in calls)
+    mock_query_all.side_effect = lambda table: [{"_id": "u1"}, {"_id": "u2"}] if table == "users" else []
+    _load_online(batch_size=32)
+    queried_tables = [call.args[0] for call in mock_query_all.call_args_list]
+    assert "users" in queried_tables

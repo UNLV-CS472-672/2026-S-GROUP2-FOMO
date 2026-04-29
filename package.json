@@ -37,6 +37,7 @@
     "@commitlint/config-conventional": "^19.6.0",
     "@t3-oss/env-core": "^0.13.10",
     "@t3-oss/env-nextjs": "^0.13.10",
+    "@types/node": "^20.19.32",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4",

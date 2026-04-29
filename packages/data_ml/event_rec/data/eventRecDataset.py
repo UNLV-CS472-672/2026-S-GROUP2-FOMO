@@ -26,6 +26,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader, random_split
 from typing import Any, Optional
+from lib import queries
 
 
 class EventRecDataset(Dataset[Any]):
@@ -78,44 +79,31 @@ def _load_offline(data_dir:   str, batch_size: int = 32) -> tuple[DataLoader[Eve
     return _make_loaders(dataset, batch_size)
 
 
-# Idk if this work :)
 def _load_online(batch_size: int = 32) -> tuple[DataLoader[EventRecDataset], DataLoader[EventRecDataset]]:
     """Pull live data from Convex."""
-    from recommendEvent import get_client
-    from updateUserPreferences import init_tags, build_user_feature_vector, NUM_TAGS
+    import updateUserPreferences as upe
 
-    client = get_client()
-    init_tags()
+    upe.init_tags()
 
-    # Users
-    users    = client.query("data_ml/universal:queryAll", {"table_name": "users"})
-    user_ids = [u["_id"] for u in users]
+    user_ids = [u["_id"] for u in queries.query_all("users")]
     np.random.shuffle(user_ids)
 
     user_features = np.array(
-        [build_user_feature_vector(uid) for uid in user_ids],
+        [upe.build_user_feature_vector(uid) for uid in user_ids],
         dtype=np.float32,
     )
 
-    # Events: build (num_tags + 4) feature vectors
-    all_events = client.query("data_ml/universal:queryAll", {"table_name": "events"})
-
     event_rows = []
-    for event in all_events:
+    for event in queries.query_all("events"):
         eid  = event["_id"]
-        tags = np.zeros(NUM_TAGS, dtype=np.float32)
-
-        event_tags = client.query("data_ml/eventRec:getByEventId", {"eventId": eid})
-        from updateUserPreferences import TAG_ID_TO_IDX
-        for row in event_tags:
-            if row["tagId"] in TAG_ID_TO_IDX:
-                tags[TAG_ID_TO_IDX[row["tagId"]]] = 1.0
-
+        tags = np.zeros(upe.NUM_TAGS, dtype=np.float32)
+        for row in queries.get_by_event_id(eid):
+            if row["tagId"] in upe.TAG_ID_TO_IDX:
+                tags[upe.TAG_ID_TO_IDX[row["tagId"]]] = 1.0
         tag_count_norm = tags.sum() / 8.0
         day_norm       = float(event.get("dayOfWeek", 5)) / 6.0
         hour_norm      = float(event.get("startHour",  19)) / 23.0
         is_free        = float(event.get("isFree", False))
-
         event_rows.append(np.concatenate([tags, [tag_count_norm, day_norm, hour_norm, is_free]]))
 
     event_features = np.array(event_rows, dtype=np.float32)

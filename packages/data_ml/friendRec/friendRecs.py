@@ -1,53 +1,16 @@
-import os
 import pandas as pd
-from typing import Optional
-from convex import ConvexClient
-from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
-from datetime import datetime
-
-load_dotenv()
-CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
-client: Optional[ConvexClient] = (
-    ConvexClient(CONVEX_CLOUD_URL) if CONVEX_CLOUD_URL else None
-)
-
-# Deploy ConvexClient from env.
-def get_client() -> ConvexClient:
-    if client is None:
-        raise RuntimeError("ConvexClient not initialized")
-    return client
-
-def log(message: str) -> None:
-    now = datetime.now()
-    pretty_time = f"[{now.strftime("%H:%M:%S %m/%d/%y")}]"
-    print(f"{pretty_time} {message}")
-
-# Checks if a userid exists in the "users" table.
-def user_exists(user_id: str) -> bool:
-    return get_client().query("data_ml/users:userExists", {"userId": user_id}) is not None
-
-# Get all userIds that exist in "users"
-def get_all_user_ids() -> list[str]:
-    user_ids: list[str] = get_client().query("data_ml/users:getAllUserIds", {})
-    return user_ids
-
-
-# Get all accepted friend userIds for a user.
-def get_friend_ids(user_id: str) -> list[str]:
-    friend_ids: list[str] = get_client().query("data_ml/friends:getFriendIds", {"userId": user_id})
-    return friend_ids
-
+from lib import queries, log
 
 # Combines "attendance" and "events" into a single dataframe.
 def join_user_events() -> pd.DataFrame:
 
     # Store "attendance" and "events" into dataframes.
-    attendance_data = get_client().query("data_ml/universal:queryAll", {"table_name": "attendance"})
+    attendance_data = queries.query_all("attendance")
     attendance_df = pd.json_normalize(attendance_data)
     attendance_df = attendance_df[["eventId", "userId"]]
 
-    events_data = get_client().query("data_ml/universal:queryAll", {"table_name": "events"})
+    events_data = queries.query_all("events")
     events_df = pd.json_normalize(events_data)
     events_df = events_df[["_id", "name"]]
 
@@ -72,11 +35,11 @@ def raw_matrix_eventTags() -> pd.DataFrame:
     user_events_df = join_user_events()
 
     # Join "events" and "tags" dataframes.
-    eventTags_json = get_client().query("data_ml/universal:queryAll", {"table_name": "eventTags"})
+    eventTags_json = queries.query_all("eventTags")
     eventTags_df = pd.json_normalize(eventTags_json)
     eventTags_df = eventTags_df[["eventId", "tagId"]]
 
-    tags_json = get_client().query("data_ml/universal:queryAll", {"table_name": "tags"})
+    tags_json = queries.query_all("tags")
     tags_df = pd.json_normalize(tags_json)
     tags_df = tags_df[["_id", "name"]]
 
@@ -96,11 +59,11 @@ def raw_matrix_eventTags() -> pd.DataFrame:
 def raw_matrix_postTags() -> pd.DataFrame:
 
     # Join "users" and "posts" dataframes.
-    users_json = get_client().query("data_ml/universal:queryAll", {"table_name": "users"})
+    users_json = queries.query_all("users")
     users_df = pd.json_normalize(users_json)
     users_df = users_df[["_id"]]
 
-    posts_json = get_client().query("data_ml/universal:queryAll", {"table_name": "posts"})
+    posts_json = queries.query_all("posts")
     posts_df = pd.json_normalize(posts_json)
     posts_df = posts_df[["_id", "authorId"]]
 
@@ -109,11 +72,11 @@ def raw_matrix_postTags() -> pd.DataFrame:
     users_posts_df = users_posts_df.rename(columns={"_id_x":"user_id"})
 
     # Join "postTags" and "tags" dataframes
-    postTags_json = get_client().query("data_ml/universal:queryAll", {"table_name": "postTags"})
+    postTags_json = queries.query_all("postTags")
     postTags_df = pd.json_normalize(postTags_json)
     postTags_df = postTags_df[["postId", "tagId"]]
 
-    tags_json = get_client().query("data_ml/universal:queryAll", {"table_name": "tags"})
+    tags_json = queries.query_all("tags")
     tags_df = pd.json_normalize(tags_json)
     tags_df = tags_df[["_id", "name"]]
 
@@ -177,7 +140,7 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> N
         .drop(columns='rank')
     )
 
-    existing_friend_ids = set(get_friend_ids(userId))
+    existing_friend_ids = set(queries.get_friend_ids(userId))
 
     # Parse out any userIds that are already friends.
     top_sim_scores = [
@@ -191,21 +154,14 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> N
     top_sim_scores = top_sim_scores[:rec_amt]
 
     # Add row if user doesn't have any recommended friends, if they do, update names if values changed.
-    get_client().mutation(
-        "data_ml/friendRecs:upsert",
-        {"userId": userId, "recs": top_sim_scores},
-    )
+    queries.upsert_friend_recs(userId, top_sim_scores)
 
 
 
 
 # Generate friend recommendations for a single user.
-def main_one_user(user: str, rec_amt: int, seed: bool) -> None:
-
-    if seed:
-        get_client().mutation("seed:seed")
-
-    if not user_exists(user):
+def main_one_user(user: str, rec_amt: int) -> None:
+    if not queries.user_exists(user):
         raise Exception(f"\"{user}\" cannot be found in users.")
 
     raw_events_df          = raw_matrix_events()
@@ -226,12 +182,8 @@ def main_one_user(user: str, rec_amt: int, seed: bool) -> None:
 
 
 # Generate friend recommendations for all users.
-def main_all_users(rec_amt: int, seed: bool) -> None:
-
-    if seed:
-        get_client().mutation("seed:seed")
-
-    user_ids = get_all_user_ids()
+def main_all_users(rec_amt: int) -> None:
+    user_ids = queries.get_all_user_ids()
 
     # Build all raw matrices once and only generate similarity scores for each user
     raw_events_df = raw_matrix_events()
@@ -254,10 +206,9 @@ def main_all_users(rec_amt: int, seed: bool) -> None:
 
 USER     = "n17849zzm0xksq2x2wh0gpcqs584x1q6"  # By user_id, Claude
 REC_AMT  = 5         # friendRecs schema only currently supports 5.
-SEED     = False      # Dictates if fake data needs to be populated into Convex.
 
 if __name__ == "__main__":
     log("Updating friend recommendations...")
-    main_all_users(REC_AMT, SEED)
+    main_all_users(REC_AMT)
     log("Friend recommendations updated.")
 
