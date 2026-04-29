@@ -4,9 +4,13 @@ from typing import Optional, Any
 from dotenv import load_dotenv
 
 load_dotenv()
-_BASE_URL = os.getenv("CONVEX_SITE_URL").rstrip("/")
+_BASE_URL = os.getenv("CONVEX_SITE_URL")
 _CRON_SECRET = os.getenv("CRON_SECRET")
 
+def _get_base_url() -> str:
+    if not _BASE_URL:
+        raise RuntimeError("CONVEX_SITE_URL environment variable not set")
+    return _BASE_URL.rstrip("/")
 
 def _headers() -> dict[str, str]:
     if not _CRON_SECRET:
@@ -15,13 +19,13 @@ def _headers() -> dict[str, str]:
 
 
 def _get(path: str, params: Optional[dict[str, Any]] = None) -> Any:
-    resp = requests.get(f"{_BASE_URL}{path}", headers=_headers(), params=params)
+    resp = requests.get(f"{_get_base_url()}{path}", headers=_headers(), params=params)
     resp.raise_for_status()
     return resp.json()
 
 
 def _post(path: str, body: dict[str, Any]) -> None:
-    resp = requests.post(f"{_BASE_URL}{path}", headers=_headers(), json=body)
+    resp = requests.post(f"{_get_base_url()}{path}", headers=_headers(), json=body)
     resp.raise_for_status()
 
 
@@ -54,7 +58,7 @@ def get_tag_info() -> tuple[int, dict[str, int]]:
 
 def get_user_tag_weights(users: list[str]) -> list[Optional[float]]:
     resp = requests.get(
-        f"{_BASE_URL}/data-ml/get-user-tag-weights",
+        f"{_get_base_url()}/data-ml/get-user-tag-weights",
         headers=_headers(),
         params=[("userId", uid) for uid in users],
     )
@@ -89,7 +93,7 @@ def upsert_user_tag_weights(user_id: str, weights: list[float]) -> None:
 
 def get_preferred_tags_by_user_id(user_ids: list[str]) -> list[str]:
     resp = requests.get(
-        f"{_BASE_URL}/data-ml/get-preferred-tags-by-user-id",
+        f"{_get_base_url()}/data-ml/get-preferred-tags-by-user-id",
         headers=_headers(),
         params=[("userId", uid) for uid in user_ids],
     )
