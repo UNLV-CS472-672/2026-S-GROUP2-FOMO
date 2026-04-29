@@ -142,6 +142,7 @@ export function ProfilePage({
     }));
   const profileBio = profile.user.bio ?? bioFallback;
   const relationshipStatus = friendship?.status;
+  const isOwnProfile = viewerUserId === userId;
 
   async function handleSendFriendRequest() {
     if (!viewerUserId || viewerUserId === userId || isSendingFriendRequest) {
@@ -194,13 +195,22 @@ export function ProfilePage({
         contentContainerClassName="pb-8"
       >
         <View className="flex-row items-start px-4 pb-4 pt-2">
-          <View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={isOwnProfile ? 'Edit profile picture' : 'Profile picture'}
+            disabled={!isOwnProfile}
+            hitSlop={8}
+            onPress={() => {
+              if (!isOwnProfile) return;
+              Alert.alert('Implement clerk pfp here Jonah');
+            }}
+          >
             <Avatar
               name={profile.user.displayName || profile.user.username}
               size={92}
               source={profile.user.avatarUrl ? { uri: profile.user.avatarUrl } : undefined}
             />
-          </View>
+          </Pressable>
 
           <View className="ml-3 flex-1 pr-0">
             <View className="flex-row items-center justify-between">
