@@ -83,9 +83,11 @@ http.route({
     const { searchParams } = new URL(req.url);
 
     const userId = searchParams.get('userId') as unknown as Id<'users'>;
+    const numTags = Number(searchParams.get('numTags'));
 
     const result = await ctx.runQuery(internal.data_ml.eventRec.getUserTagWeightsWithTimestamp, {
       userId,
+      numTags,
     });
     return new Response(JSON.stringify(result), { status: 200 });
   }),
@@ -218,6 +220,23 @@ http.route({
     const userId = searchParams.get('userId') as unknown as Id<'users'>;
 
     const result = await ctx.runQuery(internal.data_ml.users.getNameById, { userId });
+    return new Response(JSON.stringify(result), { status: 200 });
+  }),
+});
+
+http.route({
+  path: '/data-ml/get-preferred-tags-by-user-id',
+  method: 'GET',
+  handler: httpAction(async (ctx, req) => {
+    const authError = validateSecret(req);
+    if (authError) return authError;
+
+    const { searchParams } = new URL(req.url);
+    const userIds = searchParams.getAll('userId') as unknown as Id<'users'>[];
+
+    const result = await ctx.runQuery(internal.data_ml.eventRec.getPreferredTagsByUserId, {
+      userIds,
+    });
     return new Response(JSON.stringify(result), { status: 200 });
   }),
 });

@@ -113,7 +113,7 @@ export const upsertEventRecs = internalMutation({
 
 // Returns the current user's top-K event IDs in rank order
 // (index 0 = #1 rec). Returns null when no recs have been computed yet.
-export const getCurrentUserEventRecs = query({
+export const getCurrentUserEventRecs = internalQuery({
   args: {},
   handler: async (ctx) => {
     const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
@@ -150,7 +150,7 @@ export const getUserTagWeightsWithTimestamp = internalQuery({
   },
 });
 
-export const getPreferredTagsByUserId = query({
+export const getPreferredTagsByUserId = internalQuery({
   args: { userIds: v.array(v.id('users')) },
   handler: async (ctx, { userIds }) => {
     return await Promise.all(

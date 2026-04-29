@@ -341,15 +341,15 @@ def test_upsert_event_recs_empty_list() -> None:
 def test_get_user_tag_weights_with_timestamp_returns_dict() -> None:
     data = {"weights": [0.1, 0.2], "lastUpdatedAt": 1700000000.0}
     with patch("queries._get", return_value=data):
-        result = queries.get_user_tag_weights_with_timestamp("u1")
+        result = queries.get_user_tag_weights_with_timestamp("u1", 3)
         assert result == data
 
 
 def test_get_user_tag_weights_with_timestamp_calls_correct_path() -> None:
     with patch("queries._get", return_value={}) as mock_get:
-        queries.get_user_tag_weights_with_timestamp("u1")
+        queries.get_user_tag_weights_with_timestamp("u1", 3)
         mock_get.assert_called_once_with(
-            "/data-ml/get-user-tag-weights-timestamp", {"userId": "u1"}
+            "/data-ml/get-user-tag-weights-timestamp", {"userId": "u1", "numTags": 3}
         )
 
 

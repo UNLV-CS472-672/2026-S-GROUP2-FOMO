@@ -78,7 +78,8 @@ class TestGetUserFeatures:
         expected_dim = 3 * num_tags
         weights = [np.random.rand(expected_dim).tolist(), np.random.rand(expected_dim).tolist()]
 
-        with patch("event_rec.recommendEvent.queries.get_user_tag_weights", return_value=weights):
+        with patch("event_rec.recommendEvent.queries.get_user_tag_weights", return_value=weights), \
+             patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id", return_value=[]):
             features = get_user_features(users, num_tags)
 
         assert features.shape == (2, expected_dim)
@@ -89,7 +90,8 @@ class TestGetUserFeatures:
         users = ["user1"]
         expected_dim = 3 * num_tags
 
-        with patch("event_rec.recommendEvent.queries.get_user_tag_weights", return_value=[None]):
+        with patch("event_rec.recommendEvent.queries.get_user_tag_weights", return_value=[None]), \
+             patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id", return_value=[]):
             features = get_user_features(users, num_tags)
 
         assert features.shape == (1, expected_dim)
@@ -102,7 +104,8 @@ class TestGetUserFeatures:
         expected_dim = 3 * num_tags
         short_vector = [1.0, 2.0, 3.0]
 
-        with patch("event_rec.recommendEvent.queries.get_user_tag_weights", return_value=[short_vector]):
+        with patch("event_rec.recommendEvent.queries.get_user_tag_weights", return_value=[short_vector]), \
+             patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id", return_value=[]):
             features = get_user_features(users, num_tags)
 
         assert features.shape == (1, expected_dim)
@@ -118,7 +121,8 @@ class TestGetUserFeatures:
         expected_dim = 3 * num_tags
         long_vector = list(range(expected_dim + 10))
 
-        with patch("event_rec.recommendEvent.queries.get_user_tag_weights", return_value=[long_vector]):
+        with patch("event_rec.recommendEvent.queries.get_user_tag_weights", return_value=[long_vector]), \
+             patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id", return_value=[]):
             features = get_user_features(users, num_tags)
 
         assert features.shape == (1, expected_dim)
@@ -131,7 +135,8 @@ class TestGetUserFeatures:
         expected_dim = 3 * num_tags
         weights = [(np.random.rand(expected_dim) * 5).tolist()]
 
-        with patch("event_rec.recommendEvent.queries.get_user_tag_weights", return_value=weights):
+        with patch("event_rec.recommendEvent.queries.get_user_tag_weights", return_value=weights), \
+             patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id", return_value=[]):
             features = get_user_features(users, num_tags)
 
         assert torch.all(features >= 0.0)
@@ -239,6 +244,7 @@ def _make_tower_mock(output_fn: Any = None) -> MagicMock:
 
 
 class TestMain:
+    @patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id")
     @patch("event_rec.recommendEvent.queries.upsert_event_recs")
     @patch("event_rec.recommendEvent.queries.get_interactions_by_user_id")
     @patch("event_rec.recommendEvent.queries.get_by_event_id")
@@ -259,6 +265,7 @@ class TestMain:
         mock_get_by_event: MagicMock,
         mock_get_interactions: MagicMock,
         mock_upsert: MagicMock,
+        mock_get_preferred_tags: MagicMock,
         sample_tags: List[Dict[str, Any]],
         sample_users: List[Dict[str, Any]],
         sample_events: List[Dict[str, Any]],
@@ -281,6 +288,7 @@ class TestMain:
         except Exception as e:
             pytest.fail(f"main() raised {type(e).__name__} unexpectedly: {e}")
 
+    @patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id")
     @patch("event_rec.recommendEvent.queries.upsert_event_recs")
     @patch("event_rec.recommendEvent.queries.get_interactions_by_user_id")
     @patch("event_rec.recommendEvent.queries.get_by_event_id")
@@ -301,6 +309,7 @@ class TestMain:
         mock_get_by_event: MagicMock,
         mock_get_interactions: MagicMock,
         mock_upsert: MagicMock,
+        mock_get_preferred_tags: MagicMock,
         sample_tags: List[Dict[str, Any]],
         sample_users: List[Dict[str, Any]],
         sample_events: List[Dict[str, Any]],
@@ -323,6 +332,7 @@ class TestMain:
         except Exception as e:
             pytest.fail(f"main() with 'ALL' users raised {type(e).__name__} unexpectedly: {e}")
 
+    @patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id")
     @patch("event_rec.recommendEvent.queries.upsert_event_recs")
     @patch("event_rec.recommendEvent.queries.get_interactions_by_user_id")
     @patch("event_rec.recommendEvent.queries.get_by_event_id")
@@ -343,6 +353,7 @@ class TestMain:
         mock_get_by_event: MagicMock,
         mock_get_interactions: MagicMock,
         mock_upsert: MagicMock,
+        mock_get_preferred_tags: MagicMock,
         sample_tags: List[Dict[str, Any]],
         sample_users: List[Dict[str, Any]],
         sample_events: List[Dict[str, Any]],
@@ -362,6 +373,7 @@ class TestMain:
 
         main(["user1"], update_db=False, model_path="dummy.pt", k=10)
 
+    @patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id")
     @patch("event_rec.recommendEvent.queries.upsert_event_recs")
     @patch("event_rec.recommendEvent.queries.get_interactions_by_user_id")
     @patch("event_rec.recommendEvent.queries.get_by_event_id")
@@ -382,6 +394,7 @@ class TestMain:
         mock_get_by_event: MagicMock,
         mock_get_interactions: MagicMock,
         mock_upsert: MagicMock,
+        mock_get_preferred_tags: MagicMock,
         sample_tags: List[Dict[str, Any]],
         sample_users: List[Dict[str, Any]],
         sample_events: List[Dict[str, Any]],

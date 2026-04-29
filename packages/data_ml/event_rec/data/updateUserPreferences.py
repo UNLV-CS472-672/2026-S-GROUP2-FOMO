@@ -91,7 +91,7 @@ def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
     Builds full (3 * num_tags,) feature vector for one user:
       [going_weights | interested_weights | uninterested_weights]
     """
-    user_weights_and_timestamp = queries.get_user_tag_weights_with_timestamp(user_id)
+    user_weights_and_timestamp = queries.get_user_tag_weights_with_timestamp(user_id, NUM_TAGS)
 
     expected_dim = 3 * NUM_TAGS
     user_last_updated = -1.0

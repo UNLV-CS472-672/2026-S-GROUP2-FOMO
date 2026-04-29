@@ -79,11 +79,19 @@ def upsert_event_recs(user_id: str, event_ids: list[str]) -> None:
     _post("/data-ml/upsert-event-recs", {"userId": user_id, "eventIds": event_ids})
 
 
-def get_user_tag_weights_with_timestamp(user_id: str) -> dict[str, Any]:
-    result: dict[str, Any] = _get("/data-ml/get-user-tag-weights-timestamp", {"userId": user_id})
-    print(result)
+def get_user_tag_weights_with_timestamp(user_id: str, num_tags: int) -> dict[str, Any]:
+    result: dict[str, Any] = _get("/data-ml/get-user-tag-weights-timestamp", {"userId": user_id, "numTags": num_tags})
     return result
 
 
 def upsert_user_tag_weights(user_id: str, weights: list[float]) -> None:
     _post("/data-ml/upsert-user-tag-weights", {"userId": user_id, "weights": weights})
+
+def get_preferred_tags_by_user_id(user_ids: list[str]) -> list[str]:
+    resp = requests.get(
+        f"{_BASE_URL}/data-ml/get-preferred-tags-by-user-id",
+        headers=_headers(),
+        params=[("userId", uid) for uid in user_ids],
+    )
+    resp.raise_for_status()
+    return resp.json()  # type: ignore[no-any-return]

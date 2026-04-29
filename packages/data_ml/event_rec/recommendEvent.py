@@ -8,7 +8,7 @@ from lib import queries, log
 
 
 from .models.twoTowerModel import UserTower, EventTower
-from data.updateUserPreferences import TAG_ID_TO_IDX, NUM_TAGS, init_tags
+from .data.updateUserPreferences import TAG_ID_TO_IDX, NUM_TAGS, init_tags
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -50,9 +50,8 @@ def get_user_features(users: list[str], num_tags: int) -> torch.Tensor:
 
     fixed_np: NDArray[np.float32] = np.stack(fixed)
 
-    tag_prefs = client.query(
-        "data_ml/eventRec:getPreferredTagsByUserId", {"userIds": users}
-    )
+    tag_prefs = queries.get_preferred_tags_by_user_id(users)
+
     if not isinstance(tag_prefs, list):
         tag_prefs = []
 
