@@ -47,8 +47,8 @@ def query_all(table_name: str) -> list[dict[str, Any]]:
 
 def query_active(num_tags: int | None) -> list[dict[str, Any]]:
     if num_tags is not None:
-        return _get("/data-ml/get-users-with-recent-activity", {"numTags": num_tags})
-    return _get("/data-ml/get-users-with-recent-activity")
+        return _get("/data-ml/get-users-with-recent-activity", {"numTags": num_tags}) # type: ignore[no-any-return]
+    return _get("/data-ml/get-users-with-recent-activity") # type: ignore[no-any-return]
 
 def upsert_friend_recs(userId: str, top_sim_scores: list[dict[str, Any]]) -> None:
     _post("/data-ml/upsert-friend-recs", {"userId": userId, "recs": top_sim_scores})

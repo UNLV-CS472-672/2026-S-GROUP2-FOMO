@@ -171,8 +171,8 @@ describe('api.users', () => {
             location: { latitude: 1, longitude: 1, h3Index: 'h' },
           })
         );
-        await ctx.db.insert('attendance', { userId: uid, eventId: later });
-        await ctx.db.insert('attendance', { userId: uid, eventId: earlier });
+        await ctx.db.insert('attendance', { userId: uid, eventId: later, updatedAt: Date.now() });
+        await ctx.db.insert('attendance', { userId: uid, eventId: earlier, updatedAt: Date.now() });
         return uid;
       });
 
@@ -194,7 +194,7 @@ describe('api.users', () => {
           'events',
           makeEvent({ name: 'gone', startDate: 1, endDate: 2 })
         );
-        await ctx.db.insert('attendance', { userId: uid, eventId: eid });
+        await ctx.db.insert('attendance', { userId: uid, eventId: eid, updatedAt: Date.now() });
         await ctx.db.delete(eid);
         return uid;
       });
@@ -287,7 +287,7 @@ describe('api.users', () => {
             location: { latitude: 0, longitude: 0, h3Index: 'h8' },
           })
         );
-        await ctx.db.insert('attendance', { userId: uid, eventId: eid });
+        await ctx.db.insert('attendance', { userId: uid, eventId: eid, updatedAt: Date.now() });
         await ctx.db.insert('friendRecs', {
           userId: uid,
           recs: [{ userId: other, score: 0.42 }],
