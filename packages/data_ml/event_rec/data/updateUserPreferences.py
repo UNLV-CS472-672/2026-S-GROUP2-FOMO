@@ -3,6 +3,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from convex import ConvexClient
+from convex.values import CoercibleToConvexValue
 from dotenv import load_dotenv
 from typing import Optional
 
@@ -86,7 +87,7 @@ def get_interaction_ids(
     { eventId: str, interactionType: "going" | "interested" | "uninterested" }
     """
 
-    query_args: dict[str, float | str] = {"userId": user_id}
+    query_args: dict[str, CoercibleToConvexValue] = {"userId": user_id}
     if user_last_updated >= 0:
         query_args["sinceMs"] = user_last_updated
 
