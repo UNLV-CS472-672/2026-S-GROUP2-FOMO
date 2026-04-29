@@ -23,6 +23,7 @@ import type * as events_queries from "../events/queries.js";
 import type * as events_search from "../events/search.js";
 import type * as files from "../files.js";
 import type * as friends from "../friends.js";
+import type * as http from "../http.js";
 import type * as likes from "../likes.js";
 import type * as posts from "../posts.js";
 import type * as seed from "../seed.js";
@@ -52,6 +53,7 @@ declare const fullApi: ApiFromModules<{
   "events/search": typeof events_search;
   files: typeof files;
   friends: typeof friends;
+  http: typeof http;
   likes: typeof likes;
   posts: typeof posts;
   seed: typeof seed;

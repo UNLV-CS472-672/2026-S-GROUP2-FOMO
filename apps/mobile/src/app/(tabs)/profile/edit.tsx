@@ -18,8 +18,6 @@ import {
   View,
 } from 'react-native';
 
-const USERNAME_MIN_LENGTH = 3;
-const USERNAME_MAX_LENGTH = 24;
 const DESCRIPTION_MAX_LENGTH = 280;
 
 export default function EditProfileScreen() {
@@ -27,7 +25,6 @@ export default function EditProfileScreen() {
   const { user: clerkUser } = useUser();
   const profile = useQuery(api.users.getCurrentProfileMinimal, {});
   const updateCurrentProfile = useMutation(api.users.updateCurrentProfile);
-  const updateAvatarUrl = useMutation(api.users.updateAvatarUrl);
 
   const [username, setUsername] = useState('');
   const [description, setDescription] = useState('');
@@ -43,21 +40,14 @@ export default function EditProfileScreen() {
     setDescription(profile.bio);
   }, [profile]);
 
-  const normalizedUsername = useMemo(() => username.trim(), [username]);
   const normalizedDescription = useMemo(() => description.trim(), [description]);
 
-  const isFormValid =
-    normalizedUsername.length >= USERNAME_MIN_LENGTH &&
-    normalizedUsername.length <= USERNAME_MAX_LENGTH &&
-    /^[a-zA-Z0-9_.-]+$/.test(normalizedUsername) &&
-    normalizedDescription.length <= DESCRIPTION_MAX_LENGTH;
+  const isFormValid = normalizedDescription.length <= DESCRIPTION_MAX_LENGTH;
 
   const hasChanges =
     profile !== undefined &&
     profile !== null &&
-    (normalizedUsername !== profile.username ||
-      normalizedDescription !== profile.bio ||
-      pendingAvatarUri !== null);
+    (normalizedDescription !== profile.bio || pendingAvatarUri !== null);
 
   async function openGallery() {
     setIsPickerDrawerOpen(false);
@@ -91,23 +81,15 @@ export default function EditProfileScreen() {
 
     try {
       if (pendingAvatarUri) {
+        // Update Clerk directly; Convex avatarUrl is synced by webhook.
         const response = await fetch(pendingAvatarUri);
         const blob = await response.blob();
-        const image = await clerkUser?.setProfileImage({ file: blob });
-        const avatarUrl = image?.publicUrl;
-
-        if (!avatarUrl) {
-          throw new Error('Could not resolve Clerk avatar URL.');
-        }
-
-        await updateAvatarUrl({ avatarUrl });
+        await clerkUser?.setProfileImage({ file: blob });
       }
 
-      if (normalizedUsername !== profile.username || normalizedDescription !== profile.bio) {
-        await updateCurrentProfile({
-          username: normalizedUsername,
-          bio: normalizedDescription,
-        });
+      if (normalizedDescription !== profile.bio) {
+        // Only app-owned bio is written in Convex; identity fields are Clerk-owned.
+        await updateCurrentProfile({ bio: normalizedDescription });
       }
 
       router.back();
@@ -176,30 +158,20 @@ export default function EditProfileScreen() {
           <Text className="mt-2 text-sm text-muted-foreground">Tap to change photo</Text>
         </View>
 
-        {/* Username */}
+        {/* Username (Clerk-owned) */}
         <View>
           <Text className="text-sm font-medium text-foreground">Username</Text>
           <TextInput
             value={username}
-            onChangeText={(value) => {
-              setUsername(value);
-              setUsernameError(null);
-              setErrorMessage(null);
-            }}
+            editable={false}
             autoCapitalize="none"
             autoCorrect={false}
-            maxLength={USERNAME_MAX_LENGTH}
-            className="mt-2 rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
+            className="mt-2 rounded-xl border border-border bg-muted px-4 py-3 text-base text-foreground"
             placeholder="your_username"
             placeholderTextColor="#8A8A8A"
             accessibilityLabel="Username"
           />
-          <Text className="mt-1 text-xs text-muted-foreground">
-            {normalizedUsername.length}/{USERNAME_MAX_LENGTH}
-          </Text>
-          {usernameError ? (
-            <Text className="mt-1 text-sm text-destructive">{usernameError}</Text>
-          ) : null}
+          <Text className="mt-1 text-xs text-muted-foreground">Username is managed in Clerk.</Text>
         </View>
 
         {/* Description */}
@@ -225,9 +197,7 @@ export default function EditProfileScreen() {
         </View>
 
         {!isFormValid ? (
-          <Text className="text-sm text-destructive">
-            Username must be 3-24 chars and only use letters, numbers, dot, underscore, or hyphen.
-          </Text>
+          <Text className="text-sm text-destructive">Description is too long.</Text>
         ) : null}
 
         {errorMessage ? <Text className="text-sm text-destructive">{errorMessage}</Text> : null}

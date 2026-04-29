@@ -1,33 +1,18 @@
-import { v } from 'convex/values';
+import type { UserJSON } from '@clerk/backend';
+import { v, type Validator } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
-import { mutation, query, QueryCtx } from './_generated/server';
+import { internalMutation, mutation, query, QueryCtx } from './_generated/server';
 import {
   __backend_only_getAndAuthenticateCurrentConvexUser,
   __backend_only_guestOrAuthenticatedUser,
 } from './auth';
 import { getThreadedCommentsByPost } from './comments';
 
-const USERNAME_MIN_LENGTH = 3;
-const USERNAME_MAX_LENGTH = 24;
 const BIO_MAX_LENGTH = 280;
-
-function normalizeUsername(username: string): string {
-  return username.trim();
-}
 
 function normalizeBio(bio: string): string {
   return bio.trim();
-}
-
-function validateUsername(username: string): void {
-  if (username.length < USERNAME_MIN_LENGTH || username.length > USERNAME_MAX_LENGTH) {
-    throw new Error(`Username must be ${USERNAME_MIN_LENGTH}-${USERNAME_MAX_LENGTH} characters.`);
-  }
-
-  if (!/^[a-zA-Z0-9_.-]+$/.test(username)) {
-    throw new Error('Username can only include letters, numbers, dots, underscores, and hyphens.');
-  }
 }
 
 function validateBio(bio: string): void {
@@ -113,6 +98,65 @@ export const getCurrentProfileMinimal = query({
       avatarUrl: user.avatarUrl,
       bio: user.bio,
     };
+  },
+});
+
+function getUsername(data: UserJSON): string {
+  if (data.username && data.username.trim().length > 0) {
+    return data.username;
+  }
+  return data.id;
+}
+
+function getDisplayName(data: UserJSON): string {
+  const first = data.first_name?.trim() ?? '';
+  const last = data.last_name?.trim() ?? '';
+  const fullName = `${first} ${last}`.trim();
+  if (fullName.length > 0) {
+    return fullName;
+  }
+  return data.username ?? data.id;
+}
+
+export const upsertFromClerk = internalMutation({
+  args: { data: v.any() as Validator<UserJSON> },
+  async handler(ctx, { data }) {
+    // Clerk is the source of truth for identity fields; webhook events mirror those into Convex.
+    const userAttributes = {
+      clerkId: data.id,
+      username: getUsername(data),
+      displayName: getDisplayName(data),
+      avatarUrl: data.image_url ?? '',
+    };
+
+    const existing = await ctx.db
+      .query('users')
+      .withIndex('by_clerkId', (q) => q.eq('clerkId', data.id))
+      .unique();
+
+    if (existing === null) {
+      await ctx.db.insert('users', {
+        ...userAttributes,
+        bio: '',
+      });
+      return;
+    }
+
+    await ctx.db.patch(existing._id, userAttributes);
+  },
+});
+
+export const deleteFromClerk = internalMutation({
+  args: { clerkUserId: v.string() },
+  async handler(ctx, { clerkUserId }) {
+    const existing = await ctx.db
+      .query('users')
+      .withIndex('by_clerkId', (q) => q.eq('clerkId', clerkUserId))
+      .unique();
+
+    if (existing !== null) {
+      await ctx.db.delete(existing._id);
+    }
   },
 });
 
@@ -211,53 +255,32 @@ export const getProfileFeed = query({
 });
 
 export const updateAvatarUrl = mutation({
-  args: { avatarUrl: v.string() },
-  handler: async (ctx, { avatarUrl }) => {
-    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
-    const nextAvatarUrl = avatarUrl.trim();
-    if (!nextAvatarUrl) {
-      throw new Error('Could not resolve Clerk avatar URL.');
-    }
-    await ctx.db.patch(user._id, { avatarUrl: nextAvatarUrl });
-    return { avatarUrl: nextAvatarUrl };
+  args: { storageId: v.id('_storage') },
+  handler: async (_ctx, { storageId: _storageId }) => {
+    // Keep avatar updates Clerk-owned so webhook sync can propagate consistently.
+    throw new Error(
+      'Avatar is Clerk-owned. Update the Clerk profile image; webhook sync will update Convex.'
+    );
   },
 });
 
 export const updateCurrentProfile = mutation({
-  args: {
-    username: v.string(),
-    bio: v.string(),
-  },
-  handler: async (ctx, { username, bio }) => {
+  args: { bio: v.string() },
+  handler: async (ctx, { bio }) => {
     const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
 
-    const nextUsername = normalizeUsername(username);
     const nextBio = normalizeBio(bio);
 
-    validateUsername(nextUsername);
     validateBio(nextBio);
 
-    if (nextUsername !== user.username) {
-      const existingWithUsername = (await ctx.db.query('users').collect()).find(
-        (candidate) =>
-          candidate._id !== user._id &&
-          candidate.username.toLowerCase() === nextUsername.toLowerCase()
-      );
-
-      if (existingWithUsername) {
-        throw new Error('Username is taken');
-      }
-    }
-
+    // Username/displayName are intentionally not patched here; webhook updates those from Clerk.
     await ctx.db.patch(user._id, {
-      username: nextUsername,
-      displayName: nextUsername,
       bio: nextBio,
     });
 
     return {
       id: user._id,
-      username: nextUsername,
+      username: user.username,
       bio: nextBio,
     };
   },

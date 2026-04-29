@@ -9,7 +9,7 @@ import { useUser } from '@clerk/expo';
 import { MaterialIcons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { BottomSheetView } from '@gorhom/bottom-sheet';
-import { useConvexAuth, useMutation, useQuery } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -18,7 +18,6 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 export default function ProfileScreen() {
   const router = useRouter();
   const { user: clerkUser } = useUser();
-  const updateAvatarUrl = useMutation(api.users.updateAvatarUrl);
   const [isPickerDrawerOpen, setIsPickerDrawerOpen] = useState(false);
 
   const { isAuthenticated } = useConvexAuth();
@@ -50,16 +49,10 @@ export default function ProfileScreen() {
 
     const asset = result.assets[0];
     try {
+      // Clerk profile image update triggers webhook sync for Convex avatarUrl.
       const response = await fetch(asset.uri);
       const blob = await response.blob();
-      const image = await clerkUser?.setProfileImage({ file: blob });
-      const avatarUrl = image?.publicUrl;
-
-      if (!avatarUrl) {
-        throw new Error('Could not resolve Clerk avatar URL.');
-      }
-
-      await updateAvatarUrl({ avatarUrl });
+      await clerkUser?.setProfileImage({ file: blob });
     } catch (error) {
       Alert.alert('Error', 'Could not update profile picture. Please try again.');
       console.error('Avatar update failed', error);

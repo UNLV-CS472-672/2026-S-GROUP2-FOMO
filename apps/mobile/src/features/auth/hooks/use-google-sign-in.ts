@@ -1,4 +1,3 @@
-import { useOnSignInComplete } from '@/features/auth/hooks/use-on-sign-in-complete';
 import {
   buildIncompleteSignUpMessage,
   buildMissingRequirementsMessage,
@@ -117,7 +116,6 @@ export function useGoogleSignIn({
 }: UseGoogleSignInArgs) {
   const { isSignedIn } = useAuth({ treatPendingAsSignedOut: false });
   const { startGoogleAuthenticationFlow } = useSignInWithGoogle();
-  const onSignInComplete = useOnSignInComplete();
 
   // state
   const [loadingProvider, setLoadingProvider] = useState<SocialProvider | null>(null);
@@ -164,7 +162,7 @@ export function useGoogleSignIn({
       });
 
       if (resolvedSessionId && result.setActive) {
-        await onSignInComplete({ sessionId: resolvedSessionId, setActive: result.setActive });
+        await result.setActive({ session: resolvedSessionId });
         return;
       }
 
@@ -259,9 +257,11 @@ export function useGoogleSignIn({
       const signUpAttemptMeta = signUpAttempt as SignUpMeta;
 
       if (getClerkStatus(signUpAttemptMeta) === 'complete' && signUpAttemptMeta.createdSessionId) {
-        await onSignInComplete({
-          sessionId: signUpAttemptMeta.createdSessionId,
-          setActive: pendingUsernameSetup.setActive,
+        if (!pendingUsernameSetup.setActive) {
+          throw new Error('Expected Clerk setActive after Google sign-up completion.');
+        }
+        await pendingUsernameSetup.setActive({
+          session: signUpAttemptMeta.createdSessionId,
         });
         setPendingUsernameSetup(null);
         return;
