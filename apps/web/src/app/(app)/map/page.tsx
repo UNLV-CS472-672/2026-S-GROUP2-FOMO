@@ -77,7 +77,11 @@ export default function MapPage() {
         staticMapSrc={staticMapSrc}
       />
 
-      <RecenterButton disabled={!locationGranted} onClick={recenterMap} />
+      <RecenterButton
+        disabled={!locationGranted}
+        offsetForEventPanel={selectedEvent !== null}
+        onClick={recenterMap}
+      />
 
       <MapEventFeedPanel event={selectedEvent} onClose={() => setSelectedEventId(null)} />
     </>
