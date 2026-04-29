@@ -12,8 +12,17 @@ http.route({
   path: '/clerk-users-webhook',
   method: 'POST',
   handler: httpAction(async (ctx, request) => {
+    console.log('[clerk-users-webhook] request received', {
+      method: request.method,
+      url: request.url,
+      hasSvixId: Boolean(request.headers.get('svix-id')),
+      hasSvixTimestamp: Boolean(request.headers.get('svix-timestamp')),
+      hasSvixSignature: Boolean(request.headers.get('svix-signature')),
+    });
+
     const event = await validateRequest(request);
     if (!event) {
+      console.warn('[clerk-users-webhook] request rejected before event handling');
       return new Response('Invalid webhook payload', { status: 400 });
     }
 
@@ -51,7 +60,16 @@ async function validateRequest(req: Request): Promise<WebhookEvent | null> {
   const svixSignature = req.headers.get('svix-signature');
   const secret = env.CLERK_WEBHOOK_SECRET;
 
+  console.log('[clerk-users-webhook] validating request', {
+    payloadLength: payload.length,
+    svixId: svixId ?? null,
+    hasSvixTimestamp: Boolean(svixTimestamp),
+    hasSvixSignature: Boolean(svixSignature),
+    hasWebhookSecret: Boolean(secret),
+  });
+
   if (!svixId || !svixTimestamp || !svixSignature || !secret) {
+    console.warn('[clerk-users-webhook] missing required verification inputs');
     return null;
   }
 
@@ -62,7 +80,8 @@ async function validateRequest(req: Request): Promise<WebhookEvent | null> {
       'svix-timestamp': svixTimestamp,
       'svix-signature': svixSignature,
     }) as WebhookEvent;
-  } catch {
+  } catch (error) {
+    console.error('[clerk-users-webhook] signature verification failed', error);
     return null;
   }
 }
