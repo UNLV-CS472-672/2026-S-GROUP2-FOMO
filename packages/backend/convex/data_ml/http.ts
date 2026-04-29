@@ -100,9 +100,11 @@ http.route({
 
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId') as unknown as Id<'users'>;
+    const sinceMs = searchParams.get('sinceMs') as unknown as number;
 
     const result = await ctx.runQuery(internal.data_ml.eventRec.getInteractionsByUserId, {
       userId,
+      sinceMs,
     });
     return new Response(JSON.stringify(result), { status: 200 });
   }),
