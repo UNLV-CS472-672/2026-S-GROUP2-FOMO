@@ -87,4 +87,3 @@ async function validateRequest(req: Request): Promise<WebhookEvent | null> {
 }
 
 export default http;
-export { default } from './data_ml/http';
