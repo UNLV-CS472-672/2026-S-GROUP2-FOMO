@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
+import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../auth';
 
 export const getByUserId = query({
   args: { userId: v.id('users') },
@@ -103,31 +104,63 @@ export const upsertEventRecs = mutation({
       .first();
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
-        eventIds,
-      });
+      await ctx.db.patch(existing._id, { eventIds });
     } else {
-      await ctx.db.insert('eventRecs', {
-        userId,
-        eventIds,
-      });
+      await ctx.db.insert('eventRecs', { userId, eventIds });
     }
   },
 });
 
+// Returns the current user's top-K event IDs in rank order
+// (index 0 = #1 rec). Returns null when no recs have been computed yet.
+export const getCurrentUserEventRecs = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    const doc = await ctx.db
+      .query('eventRecs')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .unique();
+    return doc?.eventIds ?? null;
+  },
+});
+
 export const getUserTagWeightsWithTimestamp = query({
-  args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
+  args: {
+    userId: v.id('users'),
+    numTags: v.number(),
+  },
+  handler: async (ctx, { userId, numTags }) => {
     const result = await ctx.db
       .query('userTagWeights')
       .withIndex('by_userId', (q) => q.eq('userId', userId))
       .unique();
 
-    if (!result) return null;
+    if (!result) {
+      return {
+        weights: new Array(numTags * 3).fill(0),
+        lastUpdatedAt: 0,
+      };
+    }
 
     return {
       weights: result.weights,
       lastUpdatedAt: result.updatedAt,
     };
+  },
+});
+
+export const getPreferredTagsByUserId = query({
+  args: { userIds: v.array(v.id('users')) },
+  handler: async (ctx, { userIds }) => {
+    return await Promise.all(
+      userIds.map(async (userId) => {
+        const doc = await ctx.db
+          .query('userTagPreferences')
+          .withIndex('by_userId', (q) => q.eq('userId', userId))
+          .unique();
+        return doc?.tags ?? [];
+      })
+    );
   },
 });
