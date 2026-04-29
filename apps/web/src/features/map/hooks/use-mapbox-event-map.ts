@@ -23,11 +23,7 @@ type MapEvent = {
   id: string;
   name?: string;
   attendeeCount: number;
-  media?: {
-    url: string | null;
-    contentType: string | null;
-    isVideo: boolean;
-  } | null;
+  markerImageUrl?: string | null;
   location: {
     longitude: number;
     latitude: number;
@@ -234,7 +230,7 @@ export function useMapboxEventMap({
       const weightDelta = maxWeight - minWeight || 1;
       const normalizedWeight = (event.attendeeCount - minWeight) / weightDelta;
       const markerMount = createEventMarkerMount({
-        imageSrc: event.media?.isVideo ? null : (event.media?.url ?? null),
+        imageSrc: event.markerImageUrl ?? null,
         name: event.name ?? 'Event',
         size: 44 + normalizedWeight * 44,
       });

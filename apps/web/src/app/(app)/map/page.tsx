@@ -9,17 +9,21 @@ import { pointsToGeoJSON } from '@/features/map/utils/h3';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { env } from '@fomo/env/web';
 import { useQuery } from 'convex/react';
+import type { FunctionReturnType } from 'convex/server';
 import { useTheme } from 'next-themes';
-import { useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 const MAPBOX_TOKEN = env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
 const emptySubscribe = () => () => {};
+type Events = NonNullable<FunctionReturnType<typeof api.events.queries.getEvents>>;
+type MapEvent = Events[number];
 
 export default function MapPage() {
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
   const { resolvedTheme } = useTheme();
   const queriedEvents = useQuery(api.events.queries.getEvents);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [markerImageUrls, setMarkerImageUrls] = useState<Record<string, string | null>>({});
   const mounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -28,6 +32,19 @@ export default function MapPage() {
 
   const isDark = mounted && resolvedTheme === 'dark';
   const events = useMemo(() => queriedEvents ?? [], [queriedEvents]);
+  const handleResolveMarkerImage = useCallback((eventId: string, imageUrl: string | null) => {
+    setMarkerImageUrls((current) =>
+      current[eventId] === imageUrl ? current : { ...current, [eventId]: imageUrl }
+    );
+  }, []);
+  const eventsWithMarkerImages = useMemo(
+    () =>
+      events.map((event) => ({
+        ...event,
+        markerImageUrl: markerImageUrls[event.id] ?? null,
+      })),
+    [events, markerImageUrls]
+  );
   const selectedEvent = useMemo(
     () => events.find((event) => event.id === selectedEventId) ?? null,
     [events, selectedEventId]
@@ -47,7 +64,7 @@ export default function MapPage() {
 
   const { loadError, mapContainerRef, mapReady, recenterMap } = useMapboxEventMap({
     centerCoordinate,
-    events,
+    events: eventsWithMarkerImages,
     hasResolvedLocation,
     heatmapGeoJSON,
     isDark,
@@ -77,6 +94,14 @@ export default function MapPage() {
         staticMapSrc={staticMapSrc}
       />
 
+      {events.map((event) => (
+        <EventMarkerImageResolver
+          key={event.id}
+          event={event}
+          onResolve={handleResolveMarkerImage}
+        />
+      ))}
+
       <RecenterButton
         disabled={!locationGranted}
         offsetForEventPanel={selectedEvent !== null}
@@ -86,4 +111,29 @@ export default function MapPage() {
       <MapEventFeedPanel event={selectedEvent} onClose={() => setSelectedEventId(null)} />
     </>
   );
+}
+
+function EventMarkerImageResolver({
+  event,
+  onResolve,
+}: {
+  event: MapEvent;
+  onResolve: (eventId: string, imageUrl: string | null) => void;
+}) {
+  const file = useQuery(api.files.getFile, event.mediaId ? { storageId: event.mediaId } : 'skip');
+
+  useEffect(() => {
+    if (!event.mediaId) {
+      onResolve(event.id, null);
+      return;
+    }
+
+    if (file === undefined) {
+      return;
+    }
+
+    onResolve(event.id, file.isVideo ? null : (file.url ?? null));
+  }, [event.id, event.mediaId, file, onResolve]);
+
+  return null;
 }
