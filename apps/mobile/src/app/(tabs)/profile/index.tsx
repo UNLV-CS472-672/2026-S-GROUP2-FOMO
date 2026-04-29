@@ -2,7 +2,6 @@ import { Button, ButtonText } from '@/components/ui/button';
 import { DrawerModal } from '@/components/ui/drawer';
 import { Screen } from '@/components/ui/screen';
 import { Authenticated, GuestOnly } from '@/features/auth/components/auth-gate';
-import { useUploadMedia } from '@/features/create/hooks/use-upload-media';
 import { GuestMode } from '@/features/profile/components/guest-mode';
 import { ProfilePage } from '@/features/profile/profile-page';
 import { useAppTheme } from '@/lib/use-app-theme';
@@ -10,18 +9,15 @@ import { useUser } from '@clerk/expo';
 import { MaterialIcons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { BottomSheetView } from '@gorhom/bottom-sheet';
-import { useConvexAuth, useMutation, useQuery } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Text } from 'react-native';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { user: clerkUser } = useUser();
-  const updateAvatarUrl = useMutation(api.users.updateAvatarUrl);
-  const { uploadMedia } = useUploadMedia();
   const [isPickerDrawerOpen, setIsPickerDrawerOpen] = useState(false);
 
   const { isAuthenticated } = useConvexAuth();
@@ -53,9 +49,7 @@ export default function ProfileScreen() {
 
     const asset = result.assets[0];
     try {
-      const storageId = await uploadMedia(asset.uri, asset.mimeType ?? 'image/jpeg');
-      await updateAvatarUrl({ storageId });
-
+      // Clerk profile image update triggers webhook sync for Convex avatarUrl.
       const response = await fetch(asset.uri);
       const blob = await response.blob();
       await clerkUser?.setProfileImage({ file: blob });

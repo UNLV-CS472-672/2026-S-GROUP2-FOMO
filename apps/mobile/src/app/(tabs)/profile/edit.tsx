@@ -1,6 +1,5 @@
 import { Button, ButtonText } from '@/components/ui/button';
 import { DrawerModal } from '@/components/ui/drawer';
-import { useUploadMedia } from '@/features/create/hooks/use-upload-media';
 import { Avatar } from '@/features/posts/components/avatar';
 import { useUser } from '@clerk/expo';
 import { api } from '@fomo/backend/convex/_generated/api';
@@ -18,8 +17,6 @@ import {
   View,
 } from 'react-native';
 
-const USERNAME_MIN_LENGTH = 3;
-const USERNAME_MAX_LENGTH = 24;
 const DESCRIPTION_MAX_LENGTH = 280;
 
 export default function EditProfileScreen() {
@@ -27,13 +24,10 @@ export default function EditProfileScreen() {
   const { user: clerkUser } = useUser();
   const profile = useQuery(api.users.getCurrentProfileMinimal, {});
   const updateCurrentProfile = useMutation(api.users.updateCurrentProfile);
-  const updateAvatarUrl = useMutation(api.users.updateAvatarUrl);
-  const { uploadMedia } = useUploadMedia();
 
   const [username, setUsername] = useState('');
   const [description, setDescription] = useState('');
   const [pendingAvatarUri, setPendingAvatarUri] = useState<string | null>(null);
-  const [pendingAvatarMime, setPendingAvatarMime] = useState<string>('image/jpeg');
   const [isPickerDrawerOpen, setIsPickerDrawerOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -44,21 +38,14 @@ export default function EditProfileScreen() {
     setDescription(profile.bio);
   }, [profile]);
 
-  const normalizedUsername = useMemo(() => username.trim(), [username]);
   const normalizedDescription = useMemo(() => description.trim(), [description]);
 
-  const isFormValid =
-    normalizedUsername.length >= USERNAME_MIN_LENGTH &&
-    normalizedUsername.length <= USERNAME_MAX_LENGTH &&
-    /^[a-zA-Z0-9_.-]+$/.test(normalizedUsername) &&
-    normalizedDescription.length <= DESCRIPTION_MAX_LENGTH;
+  const isFormValid = normalizedDescription.length <= DESCRIPTION_MAX_LENGTH;
 
   const hasChanges =
     profile !== undefined &&
     profile !== null &&
-    (normalizedUsername !== profile.username ||
-      normalizedDescription !== profile.bio ||
-      pendingAvatarUri !== null);
+    (normalizedDescription !== profile.bio || pendingAvatarUri !== null);
 
   async function openGallery() {
     setIsPickerDrawerOpen(false);
@@ -79,7 +66,6 @@ export default function EditProfileScreen() {
     if (!result.canceled && result.assets.length > 0) {
       const asset = result.assets[0];
       setPendingAvatarUri(asset.uri);
-      setPendingAvatarMime(asset.mimeType ?? 'image/jpeg');
       setErrorMessage(null);
     }
   }
@@ -92,21 +78,15 @@ export default function EditProfileScreen() {
 
     try {
       if (pendingAvatarUri) {
-        // Upload to Convex storage and persist URL in DB
-        const storageId = await uploadMedia(pendingAvatarUri, pendingAvatarMime);
-        await updateAvatarUrl({ storageId });
-
-        // Also update Clerk profile image
+        // Update Clerk directly; Convex avatarUrl is synced by webhook.
         const response = await fetch(pendingAvatarUri);
         const blob = await response.blob();
         await clerkUser?.setProfileImage({ file: blob });
       }
 
-      if (normalizedUsername !== profile.username || normalizedDescription !== profile.bio) {
-        await updateCurrentProfile({
-          username: normalizedUsername,
-          bio: normalizedDescription,
-        });
+      if (normalizedDescription !== profile.bio) {
+        // Only app-owned bio is written in Convex; identity fields are Clerk-owned.
+        await updateCurrentProfile({ bio: normalizedDescription });
       }
 
       router.back();
@@ -165,26 +145,20 @@ export default function EditProfileScreen() {
           <Text className="mt-2 text-sm text-muted-foreground">Tap to change photo</Text>
         </View>
 
-        {/* Username */}
+        {/* Username (Clerk-owned) */}
         <View>
           <Text className="text-sm font-medium text-foreground">Username</Text>
           <TextInput
             value={username}
-            onChangeText={(value) => {
-              setUsername(value);
-              setErrorMessage(null);
-            }}
+            editable={false}
             autoCapitalize="none"
             autoCorrect={false}
-            maxLength={USERNAME_MAX_LENGTH}
-            className="mt-2 rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
+            className="mt-2 rounded-xl border border-border bg-muted px-4 py-3 text-base text-foreground"
             placeholder="your_username"
             placeholderTextColor="#8A8A8A"
             accessibilityLabel="Username"
           />
-          <Text className="mt-1 text-xs text-muted-foreground">
-            {normalizedUsername.length}/{USERNAME_MAX_LENGTH}
-          </Text>
+          <Text className="mt-1 text-xs text-muted-foreground">Username is managed in Clerk.</Text>
         </View>
 
         {/* Description */}
@@ -210,9 +184,7 @@ export default function EditProfileScreen() {
         </View>
 
         {!isFormValid ? (
-          <Text className="text-sm text-destructive">
-            Username must be 3-24 chars and only use letters, numbers, dot, underscore, or hyphen.
-          </Text>
+          <Text className="text-sm text-destructive">Description is too long.</Text>
         ) : null}
 
         {errorMessage ? <Text className="text-sm text-destructive">{errorMessage}</Text> : null}
