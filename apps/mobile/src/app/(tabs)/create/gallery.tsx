@@ -1,98 +1,232 @@
+import { Icon } from '@/components/icon';
+import { Screen } from '@/components/ui/screen';
+import { VideoThumbnail } from '@/components/video/video-thumbnail';
+import { useCreateContext } from '@/features/create/context';
+import { useAppTheme } from '@/lib/use-app-theme';
+import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import * as MediaLibrary from 'expo-media-library';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useWatch } from 'react-hook-form';
+import {
+  ActivityIndicator,
+  FlatList,
+  Linking,
+  Platform,
+  Pressable,
+  Text,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type GalleryParams = {
+  mode?: string | string[];
+  /** When set, picking an asset returns to manage-media and replaces this index (no JSON payload). */
+  replaceIndex?: string | string[];
   returnTo?: string | string[];
 };
 
-type PhotoAsset = MediaLibrary.Asset;
+type GalleryAsset = MediaLibrary.Asset;
 
 const PAGE_SIZE = 60;
+
+const POST_GALLERY_MEDIA_TYPES: MediaLibrary.MediaTypeValue[] = [
+  MediaLibrary.MediaType.photo,
+  MediaLibrary.MediaType.video,
+];
+
+const EVENT_GALLERY_MEDIA_TYPES: MediaLibrary.MediaTypeValue[] = [MediaLibrary.MediaType.photo];
+
+function isVideoAsset(asset: MediaLibrary.Asset) {
+  return asset.mediaType === MediaLibrary.MediaType.video;
+}
 
 function getStringParam(value: string | string[] | undefined) {
   if (Array.isArray(value)) return value[0];
   return value;
 }
 
+function isLibraryAccessGranted(response: MediaLibrary.PermissionResponse) {
+  return response.granted || response.status === MediaLibrary.PermissionStatus.GRANTED;
+}
+
 export default function CreateGalleryScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<GalleryParams>();
+  const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
+  const { control, replacePostMedia } = useCreateContext();
+  const currentPostMedia = useWatch({ control, name: 'post.media' });
 
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [isCheckingPermission, setIsCheckingPermission] = useState(true);
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+  const [mustOpenSettings, setMustOpenSettings] = useState(false);
   const [isLoadingAssets, setIsLoadingAssets] = useState(false);
-  const [assets, setAssets] = useState<PhotoAsset[]>([]);
+  const [assets, setAssets] = useState<GalleryAsset[]>([]);
   const [endCursor, setEndCursor] = useState<string | null>(null);
   const [hasNextPage, setHasNextPage] = useState(true);
 
-  const returnTo = useMemo(() => {
-    return getStringParam(params.returnTo) === '/create/event' ? '/create/event' : '/create/post';
-  }, [params.returnTo]);
+  const assetsLenRef = useRef(0);
+  assetsLenRef.current = assets.length;
 
-  const ensurePermission = useCallback(async () => {
-    setIsCheckingPermission(true);
-    const current = await MediaLibrary.getPermissionsAsync();
-    const next = current.granted ? current : await MediaLibrary.requestPermissionsAsync();
-    setPermissionGranted(next.granted);
-    setIsCheckingPermission(false);
-    return next.granted;
-  }, []);
+  const initialPermissionPassDone = useRef(false);
 
-  const loadPage = useCallback(async (after?: string) => {
-    setIsLoadingAssets(true);
+  const mode = useMemo(() => {
+    return getStringParam(params.mode) === 'event' ? 'event' : 'post';
+  }, [params.mode]);
 
-    const page = await MediaLibrary.getAssetsAsync({
-      first: PAGE_SIZE,
-      after,
-      mediaType: MediaLibrary.MediaType.photo,
-      sortBy: [MediaLibrary.SortBy.creationTime],
-    });
+  const replaceIndex = useMemo(() => getStringParam(params.replaceIndex), [params.replaceIndex]);
+  const isReplaceFlow = mode === 'post' && replaceIndex != null && replaceIndex !== '';
+  const returnTo = useMemo(() => getStringParam(params.returnTo), [params.returnTo]);
 
-    if (after) {
-      setAssets((prev) => {
-        const seen = new Set(prev.map((asset) => asset.id));
-        const nextItems = page.assets.filter((asset) => !seen.has(asset.id));
-        return [...prev, ...nextItems];
-      });
-    } else {
-      setAssets(page.assets);
+  const mediaTypesForQuery = useMemo(
+    () => (mode === 'event' ? EVENT_GALLERY_MEDIA_TYPES : POST_GALLERY_MEDIA_TYPES),
+    [mode]
+  );
+
+  /** Android 13+ read scope; ignored on iOS by expo-media-library. */
+  const readGranular = useMemo((): MediaLibrary.GranularPermission[] | undefined => {
+    if (Platform.OS !== 'android') return undefined;
+    return mode === 'event' ? ['photo'] : ['photo', 'video'];
+  }, [mode]);
+
+  const getReadPermission = useCallback(async () => {
+    return MediaLibrary.getPermissionsAsync(false, readGranular);
+  }, [readGranular]);
+
+  const loadPage = useCallback(
+    async (after?: string) => {
+      const perm = await getReadPermission();
+      if (!isLibraryAccessGranted(perm)) {
+        setPermissionGranted(false);
+        setMustOpenSettings(!perm.canAskAgain);
+        if (!after) {
+          setAssets([]);
+          setEndCursor(null);
+          setHasNextPage(false);
+        }
+        setIsLoadingAssets(false);
+        return;
+      }
+      setPermissionGranted(true);
+      setMustOpenSettings(false);
+
+      setIsLoadingAssets(true);
+      try {
+        const page = await MediaLibrary.getAssetsAsync({
+          first: PAGE_SIZE,
+          after,
+          mediaType: mediaTypesForQuery,
+          sortBy: [MediaLibrary.SortBy.creationTime],
+        });
+
+        if (after) {
+          setAssets((prev) => {
+            const seen = new Set(prev.map((asset) => asset.id));
+            const nextItems = page.assets.filter((asset) => !seen.has(asset.id));
+            return [...prev, ...nextItems];
+          });
+        } else {
+          setAssets(page.assets);
+        }
+
+        setEndCursor(page.endCursor ?? null);
+        setHasNextPage(page.hasNextPage);
+      } finally {
+        setIsLoadingAssets(false);
+      }
+    },
+    [getReadPermission, mediaTypesForQuery]
+  );
+
+  const requestLibraryAccess = useCallback(async () => {
+    setIsRequestingPermission(true);
+    try {
+      let next = await getReadPermission();
+      if (isLibraryAccessGranted(next)) {
+        setPermissionGranted(true);
+        setMustOpenSettings(false);
+        await loadPage();
+        return;
+      }
+      if (next.canAskAgain) {
+        next = await MediaLibrary.requestPermissionsAsync(false, readGranular);
+      } else {
+        await Linking.openSettings();
+        next = await getReadPermission();
+      }
+      const granted = isLibraryAccessGranted(next);
+      setPermissionGranted(granted);
+      setMustOpenSettings(!granted && !next.canAskAgain);
+      if (granted) {
+        await loadPage();
+      }
+    } finally {
+      setIsRequestingPermission(false);
     }
+  }, [getReadPermission, loadPage, readGranular]);
 
-    setEndCursor(page.endCursor ?? null);
-    setHasNextPage(page.hasNextPage);
-    setIsLoadingAssets(false);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
 
-  useEffect(() => {
-    let isMounted = true;
+      const sync = async () => {
+        if (!initialPermissionPassDone.current) {
+          setIsCheckingPermission(true);
+        }
+        const perm = await getReadPermission();
+        if (cancelled) return;
 
-    const bootstrap = async () => {
-      const granted = await ensurePermission();
-      if (!isMounted || !granted) return;
-      await loadPage();
-    };
+        const granted = isLibraryAccessGranted(perm);
+        setMustOpenSettings(!granted && !perm.canAskAgain);
 
-    void bootstrap();
+        if (!granted) {
+          setPermissionGranted(false);
+          setAssets([]);
+          setEndCursor(null);
+          setHasNextPage(false);
+        } else {
+          setPermissionGranted(true);
+          if (assetsLenRef.current === 0) {
+            await loadPage();
+          }
+        }
 
-    return () => {
-      isMounted = false;
-    };
-  }, [ensurePermission, loadPage]);
+        if (!initialPermissionPassDone.current) {
+          initialPermissionPassDone.current = true;
+          setIsCheckingPermission(false);
+        }
+      };
 
-  const handleSelectAsset = async (asset: PhotoAsset) => {
+      void sync();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [getReadPermission, loadPage])
+  );
+
+  const handleSelectAsset = async (asset: GalleryAsset) => {
     const info = await MediaLibrary.getAssetInfoAsync(asset.id);
     const mediaUri = info.localUri ?? asset.uri;
+    const mediaType = isVideoAsset(asset) ? 'video' : 'photo';
 
-    router.replace({
-      pathname: returnTo as never,
-      params: {
-        mediaUri,
-        mediaType: 'photo',
-      } as never,
+    if (isReplaceFlow) {
+      const idx = parseInt(replaceIndex!, 10);
+      if (!Number.isNaN(idx) && idx >= 0) {
+        const next = Array.isArray(currentPostMedia) ? [...currentPostMedia] : [];
+        next[idx] = { uri: mediaUri, type: mediaType };
+        replacePostMedia(next);
+      }
+      router.back();
+      return;
+    }
+
+    router.push({
+      pathname: '/create/media-preview',
+      params: { mode, mediaUri, mediaType, ...(returnTo ? { returnTo } : {}) },
     });
   };
 
@@ -103,89 +237,110 @@ export default function CreateGalleryScreen() {
 
   if (isCheckingPermission) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-[#090909]">
-        <ActivityIndicator color="#fff" />
-      </SafeAreaView>
+      <Screen className="flex-1 items-center justify-center">
+        <ActivityIndicator color={theme.tint} />
+      </Screen>
     );
   }
 
   if (!permissionGranted) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center gap-3 bg-[#090909] px-6">
-        <Text className="text-center text-[28px] font-bold text-white">Gallery access needed</Text>
-        <Text className="text-center text-base leading-6 text-zinc-300">
-          Allow photo access so you can pick images from your device.
+      <Screen className="flex-1 items-center justify-center gap-3 px-6">
+        <Text className="text-center text-[28px] font-bold text-foreground">
+          Gallery access needed
+        </Text>
+        <Text className="text-center text-base leading-6 text-muted-foreground">
+          {mode === 'event'
+            ? 'Allow access to your photo library so you can pick a cover image from your device.'
+            : 'Allow access to your library so you can pick photos and videos from your device.'}
         </Text>
         <Pressable
-          className="mt-2 rounded-full border border-white/30 bg-zinc-800 px-5 py-3"
+          className="mt-2 min-h-[48px] flex-row items-center justify-center gap-2 rounded-full bg-primary px-5 py-3"
+          disabled={isRequestingPermission}
           onPress={() => {
-            void ensurePermission().then((granted) => {
-              if (granted) {
-                void loadPage();
-              }
-            });
+            void requestLibraryAccess();
           }}
         >
-          <Text className="font-semibold text-white">Allow Photo Access</Text>
+          {isRequestingPermission ? <ActivityIndicator color={theme.tintForeground} /> : null}
+          <Text className="font-semibold text-primary-foreground">
+            {mustOpenSettings ? 'Open Settings' : 'Allow Library Access'}
+          </Text>
         </Pressable>
-        <Pressable className="rounded-full px-5 py-3" onPress={() => router.back()}>
-          <Text className="font-semibold text-zinc-300">Back</Text>
-        </Pressable>
-      </SafeAreaView>
+        {mustOpenSettings ? (
+          <Text className="mt-1 max-w-sm text-center text-sm text-muted-foreground">
+            Photo access was turned off for this app. Open Settings, enable Photos, then return
+            here.
+          </Text>
+        ) : null}
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#090909]">
-      <View className="flex-row items-center justify-between px-4 py-3">
-        <Pressable
-          className="rounded-full border border-white/30 px-3 py-2"
-          onPress={() => router.back()}
-        >
-          <Text className="font-semibold text-white">Back</Text>
-        </Pressable>
-        <Text className="text-lg font-semibold text-white">Gallery</Text>
-        <View style={{ width: 54 }} />
-      </View>
-
+    <Screen className="flex-1">
       <FlatList
         data={assets}
         keyExtractor={(item) => item.id}
         numColumns={3}
-        contentContainerStyle={{ paddingHorizontal: 6, paddingBottom: 20 }}
+        contentContainerStyle={{
+          paddingHorizontal: 6,
+          paddingBottom: Math.max(insets.bottom, 20),
+        }}
         columnWrapperStyle={{ gap: 6 }}
         onEndReachedThreshold={0.5}
         onEndReached={handleLoadMore}
         ListEmptyComponent={
           <View className="items-center justify-center px-6 py-12">
-            <Text className="text-center text-base text-zinc-300">
-              No photos found in your gallery.
+            <Text className="text-center text-base text-muted-foreground">
+              {mode === 'event'
+                ? 'No photos found in your gallery.'
+                : 'No photos or videos found in your gallery.'}
             </Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <Pressable
-            className="mb-1.5 flex-1 overflow-hidden rounded-lg border border-white/10"
-            style={{ aspectRatio: 1 }}
-            onPress={() => {
-              void handleSelectAsset(item);
-            }}
-          >
-            <Image
-              source={{ uri: item.uri }}
-              style={{ width: '100%', height: '100%' }}
-              contentFit="cover"
-            />
-          </Pressable>
-        )}
+        renderItem={({ item }) => {
+          const isVideo = isVideoAsset(item);
+          return (
+            <Pressable
+              className="mb-1.5 flex-1 overflow-hidden rounded-lg border border-border"
+              style={{ aspectRatio: 1 }}
+              onPress={() => {
+                void handleSelectAsset(item);
+              }}
+            >
+              {isVideo ? (
+                <View className="h-full w-full">
+                  <VideoThumbnail
+                    uri={item.uri}
+                    className="h-full w-full"
+                    maxWidth={360}
+                    maxHeight={360}
+                    fallbackClassName="h-full w-full bg-muted"
+                  />
+                  <View className="pointer-events-none absolute inset-0 items-center justify-center">
+                    <View className="rounded-full bg-card/85 p-2">
+                      <Icon name="play-arrow" size={28} className="text-card-foreground" />
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: item.uri }}
+                  style={{ width: '100%', height: '100%' }}
+                  contentFit="cover"
+                />
+              )}
+            </Pressable>
+          );
+        }}
         ListFooterComponent={
           isLoadingAssets && assets.length > 0 ? (
             <View className="py-4">
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={theme.tint} />
             </View>
           ) : null
         }
       />
-    </SafeAreaView>
+    </Screen>
   );
 }

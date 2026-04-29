@@ -67,24 +67,28 @@ export const getUserTagWeights = query({
   },
 });
 
-export const getPreferredTagsByUserId = query({
-  args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
-    return await ctx.db
-      .query('userPreferredTags')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
-      .unique();
-  },
-});
-
 export const getInteractionsByUserId = query({
-  args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
-    return await ctx.db
+  args: { userId: v.id('users'), sinceMs: v.optional(v.number()) },
+  handler: async (ctx, { userId, sinceMs }) => {
+    const attendanceRows = await ctx.db
       .query('attendance')
       .withIndex('by_userId', (q) => q.eq('userId', userId))
       .collect();
-    // Returns: { userId, eventId, status }[]
+    // { userId, eventId, status }[]
+
+    // No value passed for sinceMs, Don't want to filter
+    if (sinceMs === undefined) return attendanceRows;
+
+    const withEvents = await Promise.all(
+      attendanceRows.map(async (row) => {
+        const event = await ctx.db.get(row.eventId);
+        return { row, event };
+      })
+    );
+
+    return withEvents
+      .filter(({ event }) => event !== null && event.endDate >= sinceMs)
+      .map(({ row }) => row);
   },
 });
 
@@ -118,5 +122,22 @@ export const getCurrentUserEventRecs = query({
       .withIndex('by_userId', (q) => q.eq('userId', user._id))
       .unique();
     return doc?.eventIds ?? null;
+  },
+});
+
+export const getUserTagWeightsWithTimestamp = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    const result = await ctx.db
+      .query('userTagWeights')
+      .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .unique();
+
+    if (!result) return null;
+
+    return {
+      weights: result.weights,
+      lastUpdatedAt: result.updatedAt,
+    };
   },
 });

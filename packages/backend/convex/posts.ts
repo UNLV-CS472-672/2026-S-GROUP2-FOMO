@@ -1,6 +1,28 @@
 import { v } from 'convex/values';
 
-import { query } from './_generated/server';
+import { mutation, query } from './_generated/server';
+import { __backend_only_getAndAuthenticateCurrentConvexUser } from './auth';
+
+export const createPost = mutation({
+  args: {
+    caption: v.optional(v.string()),
+    mediaIds: v.array(v.id('_storage')),
+    eventId: v.id('events'),
+    tagIds: v.array(v.id('tags')),
+  },
+  handler: async (ctx, { caption, mediaIds, eventId, tagIds }) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    const postId = await ctx.db.insert('posts', {
+      caption,
+      mediaIds,
+      authorId: user._id,
+      likeCount: 0,
+      eventId,
+    });
+    await Promise.all(tagIds.map((tagId) => ctx.db.insert('postTags', { postId, tagId })));
+    return postId;
+  },
+});
 
 export const getPostsByEventId = query({
   args: { eventId: v.id('events') },

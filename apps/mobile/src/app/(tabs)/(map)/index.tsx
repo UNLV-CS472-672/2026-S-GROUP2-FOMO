@@ -201,6 +201,14 @@ export default function MapScreen() {
 
       <SearchDrawer
         onSelectEvent={(eventId) => push(`/(tabs)/(map)/event/${eventId}`)}
+        onSelectLocation={({ longitude, latitude }) =>
+          cameraRef.current?.setCamera({
+            centerCoordinate: [longitude, latitude],
+            zoomLevel: DEFAULT_ZOOM_LEVEL,
+            animationMode: 'flyTo',
+            animationDuration: 800,
+          })
+        }
         animatedIndex={drawerAnimatedIndex}
         animatedPosition={drawerAnimatedPosition}
         isFocused={isFocused}

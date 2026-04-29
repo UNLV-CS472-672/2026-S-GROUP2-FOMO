@@ -1,5 +1,32 @@
 import { v } from 'convex/values';
-import { query } from './_generated/server';
+import type { Id } from './_generated/dataModel';
+import { mutation, query, type QueryCtx } from './_generated/server';
+import { __backend_only_getAndAuthenticateCurrentConvexUser } from './auth';
+
+type FileMetadata = {
+  contentType?: string;
+};
+
+export async function serializeStorageFile(ctx: QueryCtx, storageId: Id<'_storage'>) {
+  const [url, metadata] = await Promise.all([
+    ctx.storage.getUrl(storageId),
+    ctx.db.system.get('_storage', storageId) as Promise<FileMetadata | null>,
+  ]);
+
+  return {
+    url,
+    contentType: metadata?.contentType ?? null,
+    isVideo: metadata?.contentType?.startsWith('video/') ?? false,
+  };
+}
+
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    return await ctx.storage.generateUploadUrl();
+  },
+});
 
 /**
  * Return lightweight file data for a Convex storage file
@@ -7,15 +34,6 @@ import { query } from './_generated/server';
 export const getFile = query({
   args: { storageId: v.id('_storage') },
   handler: async (ctx, args) => {
-    const [url, metadata] = await Promise.all([
-      ctx.storage.getUrl(args.storageId),
-      ctx.storage.getMetadata(args.storageId),
-    ]);
-
-    return {
-      url,
-      contentType: metadata?.contentType ?? null,
-      isVideo: metadata?.contentType?.startsWith('video/') ?? false,
-    };
+    return await serializeStorageFile(ctx, args.storageId);
   },
 });

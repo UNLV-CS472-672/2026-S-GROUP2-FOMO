@@ -60,6 +60,7 @@ export function MediaFeedScreen() {
             <MediaCard
               post={post}
               readOnly={isGuestMode}
+              showEventLink
               onToggleLike={() => {
                 if (isGuestMode) return;
                 void togglePostLike({ postId: post.id as Id<'posts'> }).catch((error) => {

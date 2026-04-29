@@ -4,6 +4,7 @@ import { Avatar } from '@/features/posts/components/avatar';
 import { MediaCarousel } from '@/features/posts/components/media-carousel';
 import type { FeedPost } from '@/features/posts/types';
 import { formatRelativeTime } from '@/lib/format';
+import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import {
   type NativeScrollEvent,
@@ -21,9 +22,17 @@ type MediaCardProps = {
   readOnly: boolean;
   onToggleLike: () => void;
   onPressAuthor?: () => void;
+  showEventLink?: boolean;
 };
 
-export function MediaCard({ post, readOnly, onToggleLike, onPressAuthor }: MediaCardProps) {
+export function MediaCard({
+  post,
+  readOnly,
+  onToggleLike,
+  onPressAuthor,
+  showEventLink = false,
+}: MediaCardProps) {
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const [activeIndex, setActiveIndex] = useState(0);
   const [carouselIndex, setCarouselIndex] = useState<number | null>(null);
@@ -49,6 +58,15 @@ export function MediaCard({ post, readOnly, onToggleLike, onPressAuthor }: Media
     setMediaHeight(Math.min(width, Math.round((width / natW) * natH)));
   }
 
+  function handlePressEvent() {
+    if (!post.eventId) return;
+
+    router.push({
+      pathname: '/(tabs)/(map)/event/[eventId]',
+      params: { eventId: post.eventId },
+    });
+  }
+
   return (
     <View className="bg-surface">
       {carouselIndex !== null && (
@@ -60,36 +78,37 @@ export function MediaCard({ post, readOnly, onToggleLike, onPressAuthor }: Media
       )}
 
       {/* Author header */}
-      {onPressAuthor ? (
-        <Pressable
-          className="flex-row items-center gap-2.5 px-3 py-2.5"
-          onPress={onPressAuthor}
-          hitSlop={6}
-        >
+      <View className="flex-row items-center gap-2.5 px-3 py-2.5">
+        {onPressAuthor ? (
+          <Pressable onPress={onPressAuthor} hitSlop={6}>
+            <Avatar
+              name={post.authorName}
+              size={32}
+              source={post.authorAvatarUrl ? { uri: post.authorAvatarUrl } : undefined}
+            />
+          </Pressable>
+        ) : (
           <Avatar
             name={post.authorName}
             size={32}
             source={post.authorAvatarUrl ? { uri: post.authorAvatarUrl } : undefined}
           />
-          <View className="min-w-0 flex-1">
+        )}
+        <View className="min-w-0 flex-1">
+          {onPressAuthor ? (
+            <Pressable onPress={onPressAuthor} hitSlop={6}>
+              <Text className="text-[14px] font-semibold text-foreground">{post.authorName}</Text>
+            </Pressable>
+          ) : (
             <Text className="text-[14px] font-semibold text-foreground">{post.authorName}</Text>
-          </View>
-        </Pressable>
-      ) : (
-        <View className="flex-row items-center gap-2.5 px-3 py-2.5">
-          <Avatar
-            name={post.authorName}
-            size={32}
-            source={post.authorAvatarUrl ? { uri: post.authorAvatarUrl } : undefined}
-          />
-          <View className="min-w-0 flex-1">
-            <Text className="text-[14px] font-semibold text-foreground">{post.authorName}</Text>
-            <Text className="text-[12px] text-muted-foreground">
-              {formatRelativeTime(post.creationTime)}
-            </Text>
-          </View>
+          )}
+          {showEventLink && post.eventId && post.eventName ? (
+            <Pressable className="self-start" onPress={handlePressEvent} hitSlop={6}>
+              <Text className="text-[12px] text-muted-foreground">{post.eventName}</Text>
+            </Pressable>
+          ) : null}
         </View>
-      )}
+      </View>
 
       {/* Media swiper */}
       <Animated.ScrollView

@@ -28,9 +28,11 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
       .first(),
   ]);
 
+  type AttendedEvent = Doc<'events'> | Doc<'externalEvents'>;
+
   const events = (
     await Promise.all(userEventLinks.map((link: Doc<'attendance'>) => ctx.db.get(link.eventId)))
-  ).filter((event: Doc<'events'> | null): event is Doc<'events'> => event !== null);
+  ).filter((event): event is AttendedEvent => event !== null);
 
   const recommendedUsers = friendRecs
     ? (
@@ -61,7 +63,7 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
     comments: comments.sort(
       (a: Doc<'comments'>, b: Doc<'comments'>) => b._creationTime - a._creationTime
     ),
-    events: events.sort((a: Doc<'events'>, b: Doc<'events'>) => a.startDate - b.startDate),
+    events: events.sort((a, b) => a.startDate - b.startDate),
     stats: {
       postCount: posts.length,
       commentCount: comments.length,
@@ -136,13 +138,14 @@ async function serializeProfileFeedPost(
   post: Doc<'posts'>,
   viewerId?: Doc<'users'>['_id']
 ) {
-  const [author, comments, likes] = await Promise.all([
+  const [author, comments, likes, event] = await Promise.all([
     ctx.db.get(post.authorId),
     getThreadedCommentsByPost(ctx, post._id),
     ctx.db
       .query('likes')
       .withIndex('by_postId', (q) => q.eq('postId', post._id))
       .collect(),
+    post.eventId ? ctx.db.get(post.eventId) : Promise.resolve(null),
   ]);
 
   return {
@@ -155,6 +158,8 @@ async function serializeProfileFeedPost(
     likes: post.likeCount ?? likes.length,
     liked: viewerId ? likes.some((like) => like.userId === viewerId) : false,
     mediaIds: post.mediaIds ?? [],
+    eventId: post.eventId ?? null,
+    eventName: event?.name ?? '',
     commentCount: countComments(comments),
     comments,
   };
