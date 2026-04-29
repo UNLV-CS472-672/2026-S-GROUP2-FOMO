@@ -134,10 +134,11 @@ def test_main_trains_from_scratch(mock_get_data_loader: MagicMock, mock_save_mod
 
     user_feats, pos_feats, neg_feats = batch
 
-    mock_train_loader.__iter__.return_value = iter([(user_feats, pos_feats, neg_feats)])
+    mock_train_loader.__iter__.side_effect = lambda: iter([(user_feats, pos_feats, neg_feats)])
     mock_train_loader.__len__.return_value = 1
-    mock_test_loader.__iter__.return_value = iter([(user_feats, pos_feats, neg_feats)])
+    mock_test_loader.__iter__.side_effect = lambda: iter([(user_feats, pos_feats, neg_feats)])
     mock_test_loader.__len__.return_value = 1
+
 
     # Run with 1 epoch
     main(epochs=1, model_path=None)
@@ -159,10 +160,11 @@ def test_main_loads_checkpoint(mock_get_data_loader: MagicMock, mock_save_model:
 
     user_feats, pos_feats, neg_feats = batch
 
-    mock_train_loader.__iter__.return_value = iter([(user_feats, pos_feats, neg_feats)])
+    mock_train_loader.__iter__.side_effect = lambda: iter([(user_feats, pos_feats, neg_feats)])
     mock_train_loader.__len__.return_value = 1
-    mock_test_loader.__iter__.return_value = iter([(user_feats, pos_feats, neg_feats)])
+    mock_test_loader.__iter__.side_effect = lambda: iter([(user_feats, pos_feats, neg_feats)])
     mock_test_loader.__len__.return_value = 1
+
 
     checkpoint_path = tmp_path / "test_model.pt"
     user_tower = UserTower(NUM_TAGS)
