@@ -109,19 +109,19 @@ export function CreateEventForm() {
           </p>
         ) : null}
 
-        <div className="fixed bottom-5 right-5 z-30">
+        <div className="sticky bottom-0 z-20 -mx-4 border-t border-border bg-surface-muted/95 px-4 py-4 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
           <Button
             type="submit"
-            size="icon-lg"
+            size="lg"
             disabled={form.submitting}
-            className="size-12 rounded-full bg-card text-primary shadow-sm hover:bg-card/90"
-            aria-label="Create event"
+            className="h-12 w-full rounded-2xl text-base font-semibold shadow-sm sm:ml-auto sm:w-auto sm:px-6"
           >
             {form.submitting ? (
               <LoaderCircle className="size-5 animate-spin" aria-hidden="true" />
             ) : (
               <Send className="size-5" aria-hidden="true" />
             )}
+            {form.submitting ? 'Creating event...' : 'Create event'}
           </Button>
         </div>
       </form>
