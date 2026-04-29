@@ -16,6 +16,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate required CI secrets
+        run: |
+          if [ -z "$CLERK_WEBHOOK_SECRET" ]; then
+            echo "Missing CLERK_WEBHOOK_SECRET (or clerk_webhook_secret) in GitHub Actions secrets."
+            echo "Note: secrets are not exposed to workflows triggered from forked pull requests."
+            exit 1
+          fi
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
