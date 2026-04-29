@@ -113,6 +113,8 @@ type SyncTicketmasterRunResult = {
 
 type SyncTicketmasterResult = SyncTicketmasterDryRunResult | SyncTicketmasterRunResult;
 
+const FALLBACK_EVENT_DESCRIPTION = 'No description available.';
+
 const TICKETMASTER_SEGMENTS = {
   music: 'Music',
   concerts: 'Music',
@@ -259,8 +261,7 @@ function normalizeTicketmasterEvent(
   const longitude = parseCoordinate(event._embedded?.venues?.[0]?.location?.longitude);
   if (latitude === null || longitude === null) return null;
 
-  const description = attractionAbout?.trim();
-  if (!description) return null;
+  const description = attractionAbout?.trim() || FALLBACK_EVENT_DESCRIPTION;
 
   return {
     name,
