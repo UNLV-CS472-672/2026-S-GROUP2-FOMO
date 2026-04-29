@@ -136,6 +136,12 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index('by_userId', ['userId']),
 
+  userTagPreferences: defineTable({
+    userId: v.id('users'),
+    tags: v.array(v.id('tags')),
+    updatedAt: v.number(),
+  }).index('by_userId', ['userId']),
+
   likes: defineTable({
     userId: v.id('users'),
     commentId: v.optional(v.id('comments')), // optional -- only if liking a comment
