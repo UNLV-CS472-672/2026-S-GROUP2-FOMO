@@ -164,3 +164,39 @@ export const getPreferredTagsByUserId = internalQuery({
     );
   },
 });
+
+export const getUsersWithRecentActivity = internalQuery({
+  args: { userIds: v.array(v.id('users')), numTags: v.optional(v.number()) },
+  handler: async (ctx, { userIds, numTags }) => {
+    const results = await Promise.all(
+      userIds.map(async (userId) => {
+        const weightsRow = await ctx.db
+          .query('userTagWeights')
+          .withIndex('by_userId', (q) => q.eq('userId', userId))
+          .unique();
+
+        const lastUpdated = weightsRow?.updatedAt ?? 0;
+
+        const newestInteraction = await ctx.db
+          .query('attendance')
+          .withIndex('by_userId', (q) => q.eq('userId', userId))
+          .order('desc')
+          .first();
+
+        const hasRecentActiviy =
+          newestInteraction !== null && newestInteraction._creationTime > lastUpdated;
+
+        const weights =
+          weightsRow?.weights ?? (numTags !== undefined ? new Array(numTags * 3).fill(0) : null);
+
+        return {
+          userId,
+          lastUpdated,
+          weights,
+        };
+      })
+    );
+
+    return results.filter((r): r is NonNullable<typeof r> => r !== null);
+  },
+});

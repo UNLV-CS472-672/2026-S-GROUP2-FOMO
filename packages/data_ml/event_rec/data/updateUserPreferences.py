@@ -130,9 +130,13 @@ def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
 def main(users: list[str], update_db: bool) -> None:
     init_tags()
 
-    if len(users) == 1 and users[0] == "ALL":
-        all_users = queries.query_all("users")
-        users = [row["_id"] for row in all_users]
+    if len(users) == 1:
+        if users[0] == "ALL":
+            all_users = queries.query_all("users")
+            users = [row["_id"] for row in all_users]
+        elif users[0] == "ACTIVE":
+            all_users = queries.query_active("users")
+
 
     user_feature_vectors: dict[str, NDArray[np.float32]] = {}
     for user_id in users:

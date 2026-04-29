@@ -45,6 +45,8 @@ def get_friend_ids(user_id: str) -> list[str]:
 def query_all(table_name: str) -> list[dict[str, Any]]:
     return _get("/data-ml/query-all", {"table_name": table_name})  # type: ignore[no-any-return]
 
+# def query_active(table_name: str) -> list[dict[str, Any]]:
+#     return _get("/data-ml/query-active", {"table_name": table_name})
 
 def upsert_friend_recs(userId: str, top_sim_scores: list[dict[str, Any]]) -> None:
     _post("/data-ml/upsert-friend-recs", {"userId": userId, "recs": top_sim_scores})
