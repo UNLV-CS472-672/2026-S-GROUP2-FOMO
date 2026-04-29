@@ -131,3 +131,24 @@ export const getUserTagWeightsWithTimestamp = query({
     };
   },
 });
+
+export const getAllEventsAfterNow = query({
+  handler: async (ctx) => {
+    const now = Date.now();
+
+    const events = await ctx.db
+      .query('events')
+      .withIndex('by_endDate', (q) => q.gte('endDate', now))
+      .collect();
+
+    const externalEvents = await ctx.db
+      .query('externalEvents')
+      .withIndex('by_endDate', (q) => q.gte('endDate', now))
+      .collect();
+
+    return [
+      ...events.map((e) => ({ ...e, source: 'internal' as const })),
+      ...externalEvents.map((e) => ({ ...e, source: 'external' as const })),
+    ];
+  },
+});
