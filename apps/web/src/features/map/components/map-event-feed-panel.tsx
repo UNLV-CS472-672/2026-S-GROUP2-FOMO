@@ -9,7 +9,10 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import type { FunctionReturnType } from 'convex/server';
 import {
+  Bell,
+  BellOff,
   CalendarDays,
+  Check,
   CheckCircle2,
   Heart,
   ImageIcon,
@@ -17,9 +20,13 @@ import {
   Navigation,
   PlusCircle,
   Star,
+  UserRound,
   Users,
   X,
+  XCircle,
+  type LucideIcon,
 } from 'lucide-react';
+import { useState } from 'react';
 
 type Events = NonNullable<FunctionReturnType<typeof api.events.queries.getEvents>>;
 type MapEvent = Events[number];
@@ -28,6 +35,8 @@ type EventFeedPost = EventFeed[number];
 type TopMediaPosts = NonNullable<FunctionReturnType<typeof api.events.queries.getTopMediaPosts>>;
 type TopMediaPost = TopMediaPosts[number];
 type ViewerAttendance = FunctionReturnType<typeof api.events.attendance.getViewerAttendance>;
+type AttendanceStatus = NonNullable<ViewerAttendance>['attendance'];
+type NotificationPref = NonNullable<ViewerAttendance>['notification'];
 
 type MapEventFeedPanelProps = {
   event: MapEvent | null;
@@ -39,6 +48,26 @@ const AVATAR_TONES = [
   'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-200',
   'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200',
   'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-200',
+];
+
+const ATTENDANCE_OPTIONS: {
+  value: Exclude<AttendanceStatus, null>;
+  label: string;
+  Icon: LucideIcon;
+}[] = [
+  { value: 'going', label: 'Going', Icon: CheckCircle2 },
+  { value: 'interested', label: 'Interested', Icon: Star },
+  { value: 'uninterested', label: 'Not interested', Icon: XCircle },
+];
+
+const NOTIFICATION_OPTIONS: {
+  value: NotificationPref;
+  label: string;
+  Icon: LucideIcon;
+}[] = [
+  { value: 'all', label: 'All', Icon: Bell },
+  { value: 'friends', label: 'Friends only', Icon: UserRound },
+  { value: 'none', label: 'None', Icon: BellOff },
 ];
 
 export function MapEventFeedPanel({ event, onClose }: MapEventFeedPanelProps) {
@@ -83,24 +112,17 @@ export function MapEventFeedPanel({ event, onClose }: MapEventFeedPanelProps) {
       canMutate={isAuthenticated}
       authLoading={authLoading}
       onClose={onClose}
-      onToggleAttendance={async () => {
+      onChangeRsvp={async (attendance, notification) => {
         if (!isAuthenticated) {
           return;
         }
 
-        const currentAttendance = viewerAttendance?.attendance ?? null;
-        const nextAttendance = currentAttendance === 'going' ? 'interested' : 'going';
-
-        try {
-          await ensureCurrentUser({});
-          await setViewerAttendance({
-            eventId: event.id,
-            attendance: nextAttendance,
-            notification: viewerAttendance?.notification ?? 'all',
-          });
-        } catch (error) {
-          console.error('Failed to update map event attendance', error);
-        }
+        await ensureCurrentUser({});
+        await setViewerAttendance({
+          eventId: event.id,
+          attendance,
+          notification,
+        });
       }}
       onToggleLike={async (post) => {
         if (!isAuthenticated) {
@@ -153,7 +175,7 @@ type EventFeedContentProps = {
   canMutate: boolean;
   authLoading: boolean;
   onClose: () => void;
-  onToggleAttendance: () => Promise<void>;
+  onChangeRsvp: (attendance: AttendanceStatus, notification: NotificationPref) => Promise<void>;
   onToggleLike: (post: EventFeedPost) => Promise<void>;
 };
 
@@ -167,9 +189,37 @@ function EventFeedContent({
   canMutate,
   authLoading,
   onClose,
-  onToggleAttendance,
+  onChangeRsvp,
   onToggleLike,
 }: EventFeedContentProps) {
+  const [rsvpOpen, setRsvpOpen] = useState(false);
+  const [optimisticRsvp, setOptimisticRsvp] = useState<{
+    eventId: string;
+    attendance: AttendanceStatus;
+    notification: NotificationPref;
+  } | null>(null);
+  const queriedAttendance = viewerAttendance?.attendance ?? null;
+  const queriedNotification = viewerAttendance?.notification ?? 'all';
+  const optimisticForEvent = optimisticRsvp?.eventId === event.id ? optimisticRsvp : null;
+  const attendance = optimisticForEvent?.attendance ?? queriedAttendance;
+  const notification = optimisticForEvent?.notification ?? queriedNotification;
+
+  const handleAttendanceChange = (nextAttendance: AttendanceStatus) => {
+    setOptimisticRsvp({ eventId: event.id, attendance: nextAttendance, notification });
+    void onChangeRsvp(nextAttendance, notification).catch((error) => {
+      console.error('Failed to update map event attendance', error);
+      setOptimisticRsvp(null);
+    });
+  };
+
+  const handleNotificationChange = (nextNotification: NotificationPref) => {
+    setOptimisticRsvp({ eventId: event.id, attendance, notification: nextNotification });
+    void onChangeRsvp(attendance, nextNotification).catch((error) => {
+      console.error('Failed to update map RSVP notification preference', error);
+      setOptimisticRsvp(null);
+    });
+  };
+
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -215,24 +265,20 @@ function EventFeedContent({
                   type="button"
                   className={cn(
                     'size-12 rounded-2xl',
-                    viewerAttendance?.attendance
+                    attendance
                       ? 'border border-primary/20 bg-primary/10 text-primary hover:bg-primary/15'
                       : 'bg-primary text-primary-foreground hover:bg-primary/90'
                   )}
-                  aria-label={
-                    canMutate
-                      ? viewerAttendance?.attendance
-                        ? 'Update RSVP'
-                        : 'RSVP'
-                      : 'Sign in to RSVP'
-                  }
+                  aria-label={canMutate ? (attendance ? 'Update RSVP' : 'RSVP') : 'Sign in to RSVP'}
                   disabled={authLoading || !canMutate || viewerAttendance === undefined}
-                  onClick={onToggleAttendance}
+                  onClick={() => setRsvpOpen(true)}
                 >
-                  {viewerAttendance?.attendance === 'going' ? (
+                  {attendance === 'going' ? (
                     <CheckCircle2 className="h-6 w-6" />
-                  ) : viewerAttendance?.attendance === 'interested' ? (
+                  ) : attendance === 'interested' ? (
                     <Star className="h-6 w-6 fill-current" />
+                  ) : attendance === 'uninterested' ? (
+                    <XCircle className="h-6 w-6" />
                   ) : (
                     <PlusCircle className="h-6 w-6" />
                   )}
@@ -241,6 +287,16 @@ function EventFeedContent({
             </div>
           </div>
         </section>
+
+        <RsvpDialog
+          open={rsvpOpen}
+          attendance={attendance}
+          notification={notification}
+          readOnly={!canMutate}
+          onOpenChange={setRsvpOpen}
+          onAttendanceChange={handleAttendanceChange}
+          onNotificationChange={handleNotificationChange}
+        />
 
         {event.tags.length > 0 ? (
           <div className="flex flex-wrap gap-1.5 px-4">
@@ -298,6 +354,106 @@ function EventFeedContent({
         </section>
       </div>
     </div>
+  );
+}
+
+function RsvpDialog({
+  open,
+  attendance,
+  notification,
+  readOnly,
+  onOpenChange,
+  onAttendanceChange,
+  onNotificationChange,
+}: {
+  open: boolean;
+  attendance: AttendanceStatus;
+  notification: NotificationPref;
+  readOnly: boolean;
+  onOpenChange: (open: boolean) => void;
+  onAttendanceChange: (attendance: AttendanceStatus) => void;
+  onNotificationChange: (notification: NotificationPref) => void;
+}) {
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[60] bg-black/35 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <Dialog.Content className="fixed inset-x-0 bottom-0 z-[70] max-h-[85svh] overflow-y-auto rounded-t-[1.75rem] border border-border bg-background px-6 pb-8 pt-4 shadow-2xl outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom-full data-[state=open]:slide-in-from-bottom-full md:left-1/2 md:right-auto md:top-1/2 md:bottom-auto md:w-[24rem] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl md:pb-6 md:data-[state=closed]:slide-out-to-bottom-0 md:data-[state=open]:slide-in-from-bottom-0">
+          <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-muted-foreground/35 md:hidden" />
+          <Dialog.Title className="text-xl font-bold">RSVP</Dialog.Title>
+          {readOnly ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Sign in to RSVP or manage notifications.
+            </p>
+          ) : null}
+
+          <section className="mt-6">
+            <h3 className="text-[13px] font-semibold tracking-wide text-muted-foreground">
+              ATTENDANCE
+            </h3>
+            <div className="mt-3 space-y-2">
+              {ATTENDANCE_OPTIONS.map(({ value, label, Icon }) => {
+                const selected = attendance === value;
+
+                return (
+                  <Button
+                    key={value}
+                    type="button"
+                    variant="outline"
+                    className={cn(
+                      'h-14 w-full justify-start gap-3 rounded-xl px-4 text-base font-normal',
+                      selected &&
+                        'border-primary/30 bg-primary/10 font-semibold text-primary hover:bg-primary/15 hover:text-primary'
+                    )}
+                    disabled={readOnly}
+                    onClick={() => onAttendanceChange(selected ? null : value)}
+                  >
+                    <Icon
+                      className={cn(
+                        'h-5 w-5',
+                        selected && value === 'interested' && 'fill-current'
+                      )}
+                    />
+                    <span className="min-w-0 flex-1 text-left">{label}</span>
+                    {selected ? <Check className="h-5 w-5" /> : null}
+                  </Button>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="mt-6">
+            <h3 className="text-[13px] font-semibold tracking-wide text-muted-foreground">
+              NOTIFICATIONS
+            </h3>
+            <div className="mt-3 space-y-2">
+              {NOTIFICATION_OPTIONS.map(({ value, label, Icon }) => {
+                const selected = notification === value;
+
+                return (
+                  <Button
+                    key={value}
+                    type="button"
+                    variant="outline"
+                    className={cn(
+                      'h-14 w-full justify-start gap-3 rounded-xl px-4 text-base font-normal',
+                      selected &&
+                        'border-primary/30 bg-primary/10 font-semibold text-primary hover:bg-primary/15 hover:text-primary'
+                    )}
+                    disabled={readOnly}
+                    onClick={() => onNotificationChange(value)}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="min-w-0 flex-1 text-left">{label}</span>
+                    {selected ? <Check className="h-5 w-5" /> : null}
+                  </Button>
+                );
+              })}
+            </div>
+          </section>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 
