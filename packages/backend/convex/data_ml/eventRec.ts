@@ -165,7 +165,7 @@ export const getPreferredTagsByUserId = internalQuery({
   },
 });
 
-export const getUsersWithRecentActivity = internalQuery({
+export const getUsersWithRecentActivity = internalMutation({
   args: { numTags: v.optional(v.number()) },
   handler: async (ctx, { numTags }) => {
     const allUsers = await ctx.db.query('users').collect();
@@ -187,10 +187,20 @@ export const getUsersWithRecentActivity = internalQuery({
           .order('desc')
           .first();
 
+        const needsSeeding = weightsRow === null;
         const hasRecentActivity =
           newestInteraction !== null && newestInteraction.updatedAt > lastUpdated;
 
-        if (!hasRecentActivity) return null;
+        if (!hasRecentActivity) {
+          if (needsSeeding && numTags !== undefined) {
+            await ctx.db.insert('userTagWeights', {
+              userId,
+              weights: new Array(numTags * 3).fill(0),
+              updatedAt: Date.now(),
+            });
+          }
+          return null;
+        }
 
         const weights =
           weightsRow?.weights ?? (numTags !== undefined ? new Array(numTags * 3).fill(0) : null);

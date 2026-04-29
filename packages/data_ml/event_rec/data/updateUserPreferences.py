@@ -173,7 +173,7 @@ def main(users: list[str], update_db: bool) -> None:
             )
 
 
-USERS = ["ALL"]
+USERS = ["ACTIVE"]
 UPDATE_DB = True
 
 if __name__ == "__main__":

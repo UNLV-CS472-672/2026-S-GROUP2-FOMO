@@ -128,8 +128,8 @@ export const seedData = internalMutation({
           caption: e.description,
           mediaId,
           hostIds: [u1],
-          startDate: Date.now() + 24 * 60 * 60 * 1000,
-          endDate: Date.now() + 26 * 60 * 60 * 1000,
+          startDate: Date.now() - 24 * 60 * 60 * 1000,
+          endDate: Date.now() - 20 * 60 * 60 * 1000,
           location: e.location,
         })
       );

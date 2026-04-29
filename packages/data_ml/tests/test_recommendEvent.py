@@ -156,13 +156,25 @@ class TestGetEventFeatures:
         num_tags = 3
         tag_id_to_idx = {"tag1": 0, "tag2": 1, "tag3": 2}
 
-        with patch("event_rec.recommendEvent.queries.query_all", return_value=sample_events), \
+        with patch("event_rec.recommendEvent.queries.get_all_events_after_now", return_value=sample_events), \
              patch("event_rec.recommendEvent.queries.get_by_event_id",
                    side_effect=lambda eid: sample_event_tags.get(eid, [])):
             event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
 
         assert len(event_ids) == 2
         assert event_features.shape == (2, num_tags + 4)
+
+    def test_returns_empty_when_no_events(self) -> None:
+        """Early-return path: no events ending after now."""
+        num_tags = 3
+        tag_id_to_idx = {"tag1": 0, "tag2": 1, "tag3": 2}
+
+        with patch("event_rec.recommendEvent.queries.get_all_events_after_now", return_value=[]), \
+             patch("event_rec.recommendEvent.queries.get_by_event_id", return_value=[]):
+            event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
+
+        assert event_ids == []
+        assert event_features.shape == (0, num_tags + 4)
 
     def test_tag_encoding(
         self,
@@ -172,7 +184,7 @@ class TestGetEventFeatures:
         num_tags = 3
         tag_id_to_idx = {"tag1": 0, "tag2": 1, "tag3": 2}
 
-        with patch("event_rec.recommendEvent.queries.query_all", return_value=sample_events), \
+        with patch("event_rec.recommendEvent.queries.get_all_events_after_now", return_value=sample_events), \
              patch("event_rec.recommendEvent.queries.get_by_event_id",
                    side_effect=lambda eid: sample_event_tags.get(eid, [])):
             event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
@@ -189,7 +201,7 @@ class TestGetEventFeatures:
         tag_id_to_idx = {"tag1": 0, "tag2": 1, "tag3": 2}
         event_tags = {"event1": [{"tagId": "tag1"}, {"tagId": "tag2"}]}
 
-        with patch("event_rec.recommendEvent.queries.query_all", return_value=[sample_events[0]]), \
+        with patch("event_rec.recommendEvent.queries.get_all_events_after_now", return_value=[sample_events[0]]), \
              patch("event_rec.recommendEvent.queries.get_by_event_id",
                    side_effect=lambda eid: event_tags.get(eid, [])):
             event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
@@ -204,7 +216,7 @@ class TestGetEventFeatures:
         num_tags = 3
         tag_id_to_idx = {"tag1": 0, "tag2": 1, "tag3": 2}
 
-        with patch("event_rec.recommendEvent.queries.query_all", return_value=[sample_events[0]]), \
+        with patch("event_rec.recommendEvent.queries.get_all_events_after_now", return_value=[sample_events[0]]), \
              patch("event_rec.recommendEvent.queries.get_by_event_id",
                    return_value=sample_event_tags["event1"]):
             event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
@@ -220,7 +232,7 @@ class TestGetEventFeatures:
         num_tags = 3
         tag_id_to_idx = {"tag1": 0, "tag2": 1, "tag3": 2}
 
-        with patch("event_rec.recommendEvent.queries.query_all", return_value=sample_events), \
+        with patch("event_rec.recommendEvent.queries.get_all_events_after_now", return_value=sample_events), \
              patch("event_rec.recommendEvent.queries.get_by_event_id",
                    side_effect=lambda eid: sample_event_tags.get(eid, [])):
             event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
@@ -249,6 +261,7 @@ class TestMain:
     @patch("event_rec.recommendEvent.queries.get_interactions_by_user_id")
     @patch("event_rec.recommendEvent.queries.get_by_event_id")
     @patch("event_rec.recommendEvent.queries.get_user_tag_weights")
+    @patch("event_rec.recommendEvent.queries.get_all_events_after_now")
     @patch("event_rec.recommendEvent.queries.query_all")
     @patch("event_rec.recommendEvent.queries.get_tag_info")
     @patch("event_rec.recommendEvent.torch.load")
@@ -261,6 +274,7 @@ class TestMain:
         mock_torch_load: MagicMock,
         mock_get_tag_info: MagicMock,
         mock_query_all: MagicMock,
+        mock_get_all_events: MagicMock,
         mock_get_weights: MagicMock,
         mock_get_by_event: MagicMock,
         mock_get_interactions: MagicMock,
@@ -276,6 +290,7 @@ class TestMain:
         tag_id_to_idx = {tag["_id"]: i for i, tag in enumerate(sample_tags)}
         mock_get_tag_info.return_value = (num_tags, tag_id_to_idx)
         mock_query_all.side_effect = lambda t: sample_users if t == "users" else sample_events
+        mock_get_all_events.return_value = sample_events
         mock_get_weights.side_effect = lambda users: [np.random.rand(3 * num_tags).tolist() for _ in users]
         mock_get_by_event.side_effect = lambda eid: sample_event_tags.get(eid, [])
         mock_get_interactions.side_effect = lambda uid: sample_interactions.get(uid, [])
@@ -293,6 +308,7 @@ class TestMain:
     @patch("event_rec.recommendEvent.queries.get_interactions_by_user_id")
     @patch("event_rec.recommendEvent.queries.get_by_event_id")
     @patch("event_rec.recommendEvent.queries.get_user_tag_weights")
+    @patch("event_rec.recommendEvent.queries.get_all_events_after_now")
     @patch("event_rec.recommendEvent.queries.query_all")
     @patch("event_rec.recommendEvent.queries.get_tag_info")
     @patch("event_rec.recommendEvent.torch.load")
@@ -305,6 +321,7 @@ class TestMain:
         mock_torch_load: MagicMock,
         mock_get_tag_info: MagicMock,
         mock_query_all: MagicMock,
+        mock_get_all_events: MagicMock,
         mock_get_weights: MagicMock,
         mock_get_by_event: MagicMock,
         mock_get_interactions: MagicMock,
@@ -320,6 +337,7 @@ class TestMain:
         tag_id_to_idx = {tag["_id"]: i for i, tag in enumerate(sample_tags)}
         mock_get_tag_info.return_value = (num_tags, tag_id_to_idx)
         mock_query_all.side_effect = lambda t: sample_users if t == "users" else sample_events
+        mock_get_all_events.return_value = sample_events
         mock_get_weights.side_effect = lambda users: [np.random.rand(3 * num_tags).tolist() for _ in users]
         mock_get_by_event.side_effect = lambda eid: sample_event_tags.get(eid, [])
         mock_get_interactions.side_effect = lambda uid: sample_interactions.get(uid, [])
@@ -337,6 +355,7 @@ class TestMain:
     @patch("event_rec.recommendEvent.queries.get_interactions_by_user_id")
     @patch("event_rec.recommendEvent.queries.get_by_event_id")
     @patch("event_rec.recommendEvent.queries.get_user_tag_weights")
+    @patch("event_rec.recommendEvent.queries.get_all_events_after_now")
     @patch("event_rec.recommendEvent.queries.query_all")
     @patch("event_rec.recommendEvent.queries.get_tag_info")
     @patch("event_rec.recommendEvent.torch.load")
@@ -349,6 +368,7 @@ class TestMain:
         mock_torch_load: MagicMock,
         mock_get_tag_info: MagicMock,
         mock_query_all: MagicMock,
+        mock_get_all_events: MagicMock,
         mock_get_weights: MagicMock,
         mock_get_by_event: MagicMock,
         mock_get_interactions: MagicMock,
@@ -364,6 +384,7 @@ class TestMain:
         tag_id_to_idx = {tag["_id"]: i for i, tag in enumerate(sample_tags)}
         mock_get_tag_info.return_value = (num_tags, tag_id_to_idx)
         mock_query_all.side_effect = lambda t: sample_users if t == "users" else sample_events
+        mock_get_all_events.return_value = sample_events
         mock_get_weights.side_effect = lambda users: [np.random.rand(3 * num_tags).tolist() for _ in users]
         mock_get_by_event.side_effect = lambda eid: sample_event_tags.get(eid, [])
         mock_get_interactions.side_effect = lambda uid: sample_interactions.get(uid, [])
@@ -378,6 +399,7 @@ class TestMain:
     @patch("event_rec.recommendEvent.queries.get_interactions_by_user_id")
     @patch("event_rec.recommendEvent.queries.get_by_event_id")
     @patch("event_rec.recommendEvent.queries.get_user_tag_weights")
+    @patch("event_rec.recommendEvent.queries.get_all_events_after_now")
     @patch("event_rec.recommendEvent.queries.query_all")
     @patch("event_rec.recommendEvent.queries.get_tag_info")
     @patch("event_rec.recommendEvent.torch.load")
@@ -390,6 +412,7 @@ class TestMain:
         mock_torch_load: MagicMock,
         mock_get_tag_info: MagicMock,
         mock_query_all: MagicMock,
+        mock_get_all_events: MagicMock,
         mock_get_weights: MagicMock,
         mock_get_by_event: MagicMock,
         mock_get_interactions: MagicMock,
@@ -405,6 +428,7 @@ class TestMain:
         tag_id_to_idx = {tag["_id"]: i for i, tag in enumerate(sample_tags)}
         mock_get_tag_info.return_value = (num_tags, tag_id_to_idx)
         mock_query_all.side_effect = lambda t: sample_users if t == "users" else sample_events
+        mock_get_all_events.return_value = sample_events
         mock_get_weights.side_effect = lambda users: [np.random.rand(3 * num_tags).tolist() for _ in users]
         mock_get_by_event.side_effect = lambda eid: sample_event_tags.get(eid, [])
         mock_get_interactions.side_effect = lambda uid: sample_interactions.get(uid, [])
