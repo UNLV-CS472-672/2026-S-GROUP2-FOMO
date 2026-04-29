@@ -49,18 +49,18 @@ async function serializeEvent(ctx: QueryCtx, event: Doc<'events'>, recommendatio
 async function serializeEventFeedPost(
   ctx: QueryCtx,
   post: Doc<'posts'>,
-  viewerId?: Doc<'users'>['_id'],
-  eventName?: string
+  viewerId?: Doc<'users'>['_id']
 ) {
   const mediaIds = post.mediaIds ?? [];
 
-  const [author, comments, likes] = await Promise.all([
+  const [author, comments, likes, event] = await Promise.all([
     ctx.db.get(post.authorId),
     getThreadedCommentsByPost(ctx, post._id),
     ctx.db
       .query('likes')
       .withIndex('by_postId', (q) => q.eq('postId', post._id))
       .collect(),
+    post.eventId ? ctx.db.get(post.eventId) : Promise.resolve(null),
   ]);
 
   return {
@@ -74,7 +74,7 @@ async function serializeEventFeedPost(
     liked: viewerId ? likes.some((like) => like.userId === viewerId) : false,
     mediaIds,
     eventId: post.eventId ?? null,
-    eventName: eventName ?? '',
+    eventName: event?.name ?? '',
     commentCount: countComments(comments),
     comments,
   };
@@ -163,7 +163,6 @@ export const getEventFeed = query({
   },
   handler: async (ctx, { eventId, sortBy, mediaOnly }) => {
     const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
-    const event = await ctx.db.get(eventId);
     const posts = await ctx.db
       .query('posts')
       .withIndex('by_event', (q) => q.eq('eventId', eventId))
@@ -175,9 +174,7 @@ export const getEventFeed = query({
     }
 
     const serialized = await Promise.all(
-      posts.map((post) =>
-        serializeEventFeedPost(ctx, post, guestMode ? undefined : viewer._id, event?.name ?? '')
-      )
+      posts.map((post) => serializeEventFeedPost(ctx, post, guestMode ? undefined : viewer._id))
     );
 
     if (sortBy === 'popular') {
