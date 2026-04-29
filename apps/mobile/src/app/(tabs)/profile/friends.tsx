@@ -1,9 +1,8 @@
 import { Screen } from '@/components/ui/screen';
 import { FriendCell } from '@/features/profile/components/friend-cell';
 import { useAppTheme } from '@/lib/use-app-theme';
-import { useUser } from '@clerk/expo';
 import { api } from '@fomo/backend/convex/_generated/api';
-import { useQuery } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -13,14 +12,17 @@ export function FriendsScreenContent() {
   const router = useRouter();
   const params = useLocalSearchParams<{ source?: string | string[] }>();
   const theme = useAppTheme();
-  const { isSignedIn } = useUser();
+  const { isAuthenticated } = useConvexAuth();
   const [searchText, setSearchText] = useState('');
   const [isRecommendedCollapsed, setIsRecommendedCollapsed] = useState(false);
   const source = Array.isArray(params.source) ? params.source[0] : params.source;
   const showRecommendedFriends = source !== 'profile-visit';
 
-  const friendRecResult = useQuery(api.data_ml.friends.getFriendRecs, isSignedIn ? {} : 'skip');
-  const friendsResult = useQuery(api.data_ml.friends.getFriends, isSignedIn ? {} : 'skip');
+  const friendRecResult = useQuery(
+    api.data_ml.friends.getFriendRecs,
+    isAuthenticated ? {} : 'skip'
+  );
+  const friendsResult = useQuery(api.data_ml.friends.getFriends, isAuthenticated ? {} : 'skip');
 
   const recommendedFriends = friendRecResult?.recs ?? [];
 
