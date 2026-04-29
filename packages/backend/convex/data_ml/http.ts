@@ -81,6 +81,7 @@ http.route({
     if (authError) return authError;
 
     const { searchParams } = new URL(req.url);
+
     const userId = searchParams.getAll('userId') as unknown as Id<'users'>;
 
     const result = await ctx.runQuery(internal.data_ml.eventRec.getUserTagWeightsWithTimestamp, {
