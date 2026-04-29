@@ -4,31 +4,10 @@ import numpy as np
 from numpy.typing import NDArray
 
 from convex import ConvexClient
-from dotenv import load_dotenv
-from typing import Optional, Any
-from datetime import datetime
 from pathlib import Path
 
 
 from models.twoTowerModel import UserTower, EventTower
-
-load_dotenv()
-
-CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
-
-client: Optional[ConvexClient] = (
-    ConvexClient(CONVEX_CLOUD_URL) if CONVEX_CLOUD_URL else None
-)
-
-def get_client() -> ConvexClient:
-    if client is None:
-        raise RuntimeError("ConvexClient not initialized")
-    return client
-
-def log(message: str) -> None:
-    now = datetime.now()
-    pretty_time = f"[{now.strftime("%H:%M:%S %m/%d/%y")}]"
-    print(f"{pretty_time} {message}")
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
