@@ -2,7 +2,7 @@ import type { UserJSON } from '@clerk/backend';
 import { v, type Validator } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
-import { internalMutation, mutation, query, QueryCtx } from './_generated/server';
+import { internalMutation, mutation, query, QueryCtx, type MutationCtx } from './_generated/server';
 import {
   __backend_only_getAndAuthenticateCurrentConvexUser,
   __backend_only_guestOrAuthenticatedUser,
@@ -137,22 +137,24 @@ export const upsertFromClerk = internalMutation({
   },
 });
 
-export const updateCurrentProfile = mutation({
+async function updateBioForCurrentUser(ctx: MutationCtx, bio: string) {
+  const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+  const nextBio = normalizeBio(bio);
+  validateBio(nextBio);
+
+  // Username/displayName/avatarUrl are Clerk-owned; webhook updates those fields.
+  await ctx.db.patch(user._id, { bio: nextBio });
+
+  return {
+    id: user._id,
+    username: user.username,
+    bio: nextBio,
+  };
+}
+
+export const updateBio = mutation({
   args: { bio: v.string() },
-  handler: async (ctx, { bio }) => {
-    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
-    const nextBio = normalizeBio(bio);
-    validateBio(nextBio);
-
-    // Username/displayName/avatarUrl are Clerk-owned; webhook updates those fields.
-    await ctx.db.patch(user._id, { bio: nextBio });
-
-    return {
-      id: user._id,
-      username: user.username,
-      bio: nextBio,
-    };
-  },
+  handler: async (ctx, { bio }) => updateBioForCurrentUser(ctx, bio),
 });
 
 export const deleteFromClerk = internalMutation({
