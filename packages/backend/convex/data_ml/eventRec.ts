@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
-import { mutation, query } from '../_generated/server';
+import { internalMutation, internalQuery } from '../_generated/server';
 
-export const getByUserId = query({
+export const getByUserId = internalQuery({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
     return await ctx.db
@@ -12,7 +12,7 @@ export const getByUserId = query({
   },
 });
 
-export const getByEventId = query({
+export const getByEventId = internalQuery({
   args: { eventId: v.id('events') },
   handler: async (ctx, { eventId }) => {
     return await ctx.db
@@ -22,7 +22,7 @@ export const getByEventId = query({
   },
 });
 
-export const upsertUserTagWeights = mutation({
+export const upsertUserTagWeights = internalMutation({
   args: {
     userId: v.id('users'),
     weights: v.array(v.number()),
@@ -48,7 +48,7 @@ export const upsertUserTagWeights = mutation({
   },
 });
 
-export const getUserTagWeights = query({
+export const getUserTagWeights = internalQuery({
   args: { userIDs: v.array(v.id('users')) },
   handler: async (ctx, { userIDs }) => {
     const results = await Promise.all(
@@ -66,7 +66,17 @@ export const getUserTagWeights = query({
   },
 });
 
-export const getInteractionsByUserId = query({
+export const getPreferredTagsByUserId = internalQuery({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    return await ctx.db
+      .query('userPreferredTags')
+      .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .unique();
+  },
+});
+
+export const getInteractionsByUserId = internalQuery({
   args: { userId: v.id('users'), sinceMs: v.optional(v.number()) },
   handler: async (ctx, { userId, sinceMs }) => {
     const attendanceRows = await ctx.db
@@ -91,7 +101,7 @@ export const getInteractionsByUserId = query({
   },
 });
 
-export const upsertEventRecs = mutation({
+export const upsertEventRecs = internalMutation({
   args: {
     userId: v.id('users'),
     eventIds: v.array(v.id('events')),

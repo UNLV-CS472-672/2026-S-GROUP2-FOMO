@@ -4,10 +4,10 @@
 
 import { v, Validator } from 'convex/values';
 import { TableNames } from '../_generated/dataModel';
-import { query } from '../_generated/server';
+import { internalQuery } from '../_generated/server';
 
 // Queries and returns the entire table based on "table_name" input.
-export const queryAll = query({
+export const queryAll = internalQuery({
   args: { table_name: v.string() as Validator<TableNames> },
   handler: async (ctx, { table_name }) => {
     try {
