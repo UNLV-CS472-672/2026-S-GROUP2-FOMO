@@ -8,50 +8,42 @@ import { httpAction } from './_generated/server';
 
 const http = httpRouter();
 
-http.route({
-  path: '/clerk-users-webhook',
-  method: 'POST',
-  handler: httpAction(async (ctx, request) => {
-    console.log('[clerk-users-webhook] request received', {
-      method: request.method,
-      url: request.url,
-      hasSvixId: Boolean(request.headers.get('svix-id')),
-      hasSvixTimestamp: Boolean(request.headers.get('svix-timestamp')),
-      hasSvixSignature: Boolean(request.headers.get('svix-signature')),
-    });
+const clerkWebhookHandler = httpAction(async (ctx, request) => {
+  console.log('[clerk-webhook] request received', {
+    method: request.method,
+    url: request.url,
+    hasSvixId: Boolean(request.headers.get('svix-id')),
+    hasSvixTimestamp: Boolean(request.headers.get('svix-timestamp')),
+    hasSvixSignature: Boolean(request.headers.get('svix-signature')),
+  });
 
-    const event = await validateRequest(request);
-    if (!event) {
-      console.warn('[clerk-users-webhook] request rejected before event handling');
-      return new Response('Invalid webhook payload', { status: 400 });
-    }
+  const event = await validateRequest(request);
+  if (!event) {
+    console.warn('[clerk-webhook] request rejected before event handling');
+    return new Response('Invalid webhook payload', { status: 400 });
+  }
 
-    console.log('[clerk-users-webhook] incoming event', {
-      type: event.type,
-      userId: event.data?.id ?? null,
-      data: event.data,
-    });
-
-    switch (event.type) {
-      case 'user.created':
-      case 'user.updated':
-        await ctx.runMutation(internal.users.upsertFromClerk, { data: event.data });
-        break;
-      case 'user.deleted': {
-        const clerkUserId = event.data.id;
-        if (!clerkUserId) {
-          return new Response('Missing Clerk user id', { status: 400 });
-        }
-        await ctx.runMutation(internal.users.deleteFromClerk, { clerkUserId });
-        break;
+  switch (event.type) {
+    case 'user.created':
+    case 'user.updated':
+      await ctx.runMutation(internal.users.upsertFromClerk, { data: event.data });
+      break;
+    case 'user.deleted': {
+      const clerkUserId = event.data.id;
+      if (!clerkUserId) {
+        return new Response('Missing Clerk user id', { status: 400 });
       }
-      default:
-        break;
+      await ctx.runMutation(internal.users.deleteFromClerk, { clerkUserId });
+      break;
     }
+    default:
+      break;
+  }
 
-    return new Response(null, { status: 200 });
-  }),
+  return new Response(null, { status: 200 });
 });
+
+http.route({ path: '/webhooks/clerk', method: 'POST', handler: clerkWebhookHandler });
 
 async function validateRequest(req: Request): Promise<WebhookEvent | null> {
   const payload = await req.text();
@@ -60,7 +52,7 @@ async function validateRequest(req: Request): Promise<WebhookEvent | null> {
   const svixSignature = req.headers.get('svix-signature');
   const secret = env.CLERK_WEBHOOK_SECRET;
 
-  console.log('[clerk-users-webhook] validating request', {
+  console.log('[clerk-webhook] validating request', {
     payloadLength: payload.length,
     svixId: svixId ?? null,
     hasSvixTimestamp: Boolean(svixTimestamp),
@@ -69,7 +61,7 @@ async function validateRequest(req: Request): Promise<WebhookEvent | null> {
   });
 
   if (!svixId || !svixTimestamp || !svixSignature || !secret) {
-    console.warn('[clerk-users-webhook] missing required verification inputs');
+    console.warn('[clerk-webhook] missing required verification inputs');
     return null;
   }
 
@@ -81,7 +73,7 @@ async function validateRequest(req: Request): Promise<WebhookEvent | null> {
       'svix-signature': svixSignature,
     }) as WebhookEvent;
   } catch (error) {
-    console.error('[clerk-users-webhook] signature verification failed', error);
+    console.error('[clerk-webhook] signature verification failed', error);
     return null;
   }
 }
