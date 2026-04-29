@@ -82,7 +82,7 @@ export default function EditProfileScreen() {
     try {
       if (pendingAvatarUri) {
         await clerkUser.setProfileImage({
-          file: buildClerkImageFile(pendingAvatarUri) as Parameters<
+          file: buildClerkImageFile(pendingAvatarUri) as unknown as Parameters<
             typeof clerkUser.setProfileImage
           >[0]['file'],
         });
