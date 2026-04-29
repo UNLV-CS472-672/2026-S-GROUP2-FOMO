@@ -197,7 +197,7 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
 
 
 USERS = ["ALL"]
-UPDATE_DB = False
+UPDATE_DB = True
 
 if __name__ == "__main__": # pragma: no cover
     init_tags()
