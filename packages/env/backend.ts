@@ -4,7 +4,7 @@ import { z } from 'zod';
 export const env = createEnv({
   server: {
     CLERK_JWT_ISSUER_DOMAIN: z.string().min(1),
-    CLERK_WEBHOOK_SECRET: z.string().min(1).optional(),
+    CLERK_WEBHOOK_SECRET: z.string().min(1),
     TICKETMASTER_API_KEY: z.string().min(1),
   },
   clientPrefix: 'PUBLIC_',

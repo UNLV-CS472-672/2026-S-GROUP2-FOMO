@@ -101,53 +101,12 @@ export const getCurrentProfileMinimal = query({
   },
 });
 
-function sanitizeUsername(value: string): string {
-  const normalized = value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_.-]/g, '_');
-  return normalized.length > 0 ? normalized : 'user';
-}
-
-function usernameFromPrimaryEmail(data: UserJSON): string | null {
-  const primaryEmail = data.email_addresses?.find(
-    (email) => email.id === data.primary_email_address_id
-  );
-  const emailValue = primaryEmail?.email_address?.trim();
-  if (!emailValue) {
-    return null;
-  }
-
-  const localPart = emailValue.split('@')[0];
-  if (!localPart) {
-    return null;
-  }
-  return sanitizeUsername(localPart);
-}
-
 function getUsername(data: UserJSON): string {
-  const clerkUsername = data.username?.trim();
-  if (clerkUsername && clerkUsername.length > 0) {
-    return sanitizeUsername(clerkUsername);
-  }
-
-  const emailUsername = usernameFromPrimaryEmail(data);
-  if (emailUsername) {
-    return emailUsername;
-  }
-
-  // Final fallback keeps a stable value, but avoids shipping raw `user_...` ids.
-  return `user_${data.id.slice(-8).toLowerCase()}`;
+  return data.username!;
 }
 
 function getDisplayName(data: UserJSON): string {
-  const first = data.first_name?.trim() ?? '';
-  const last = data.last_name?.trim() ?? '';
-  const fullName = `${first} ${last}`.trim();
-  if (fullName.length > 0) {
-    return fullName;
-  }
-  return data.username ?? data.id;
+  return data.username!;
 }
 
 export const upsertFromClerk = internalMutation({
