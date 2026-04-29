@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CalendarClock, CalendarPlus, LoaderCircle, Send } from 'lucide-react';
+import { CalendarClock, CalendarPlus, LoaderCircle } from 'lucide-react';
 
 import { useCreateEventForm } from '../hooks/use-create-event-form';
 import { CreateEventField } from './field';
@@ -119,7 +119,7 @@ export function CreateEventForm() {
             {form.submitting ? (
               <LoaderCircle className="size-5 animate-spin" aria-hidden="true" />
             ) : (
-              <Send className="size-5" aria-hidden="true" />
+              <CalendarPlus className="size-5" aria-hidden="true" />
             )}
             {form.submitting ? 'Creating event...' : 'Create event'}
           </Button>
