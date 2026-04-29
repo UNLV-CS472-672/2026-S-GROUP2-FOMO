@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
+import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../auth';
 
 export const getByUserId = query({
   args: { userId: v.id('users') },
@@ -103,15 +104,24 @@ export const upsertEventRecs = mutation({
       .first();
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
-        eventIds,
-      });
+      await ctx.db.patch(existing._id, { eventIds });
     } else {
-      await ctx.db.insert('eventRecs', {
-        userId,
-        eventIds,
-      });
+      await ctx.db.insert('eventRecs', { userId, eventIds });
     }
+  },
+});
+
+// Returns the current user's top-K event IDs in rank order
+// (index 0 = #1 rec). Returns null when no recs have been computed yet.
+export const getCurrentUserEventRecs = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    const doc = await ctx.db
+      .query('eventRecs')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .unique();
+    return doc?.eventIds ?? null;
   },
 });
 
