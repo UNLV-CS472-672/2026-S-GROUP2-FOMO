@@ -72,7 +72,10 @@ def get_event_features(num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[li
     Only returns events that haven't ended yet.
     Shape: (num_events, num_tags + 4)
     """
-    all_events = queries.query_all("events")
+    all_events = queries.get_all_events_after_now("data_ml/eventRec:getAllEventsAfterNow")
+
+    if not all_events:
+        return [], np.zeros((0, num_tags + 4), dtype=np.float32)
 
     event_ids = []
     event_rows = []

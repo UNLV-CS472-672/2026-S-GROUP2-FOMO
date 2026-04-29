@@ -103,3 +103,6 @@ def get_preferred_tags_by_user_id(user_ids: list[str]) -> list[str]:
     )
     resp.raise_for_status()
     return resp.json()  # type: ignore[no-any-return]
+
+def get_all_events_after_now() -> list[dict[str, Any]]:
+    return _get("/data-ml/get-all-events-after-now") # type: ignore[no-any-return]
