@@ -4,7 +4,7 @@ from typing import Optional, Any
 from dotenv import load_dotenv
 
 load_dotenv()
-_BASE_URL = os.getenv("CONVEX_SITE_URL", "").rstrip("/")
+_BASE_URL = os.getenv("CONVEX_SITE_URL").rstrip("/")
 _CRON_SECRET = os.getenv("CRON_SECRET")
 
 
