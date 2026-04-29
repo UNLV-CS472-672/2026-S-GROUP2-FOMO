@@ -24,7 +24,8 @@ const DEFAULT_ZOOM_LEVEL = 13;
 export default function MapScreen() {
   const { push } = useRouter();
   const { isSignedIn } = useUser();
-  const events: EventSummary[] = useQuery(api.events.queries.getEvents) ?? [];
+  const eventsRaw = useQuery(api.events.queries.getEvents);
+  const events: EventSummary[] = useMemo(() => eventsRaw ?? [], [eventsRaw]);
   const eventRecs = useQuery(
     api.data_ml.eventRec.getCurrentUserEventRecs,
     isSignedIn ? {} : 'skip'
