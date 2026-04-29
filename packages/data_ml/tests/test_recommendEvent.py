@@ -15,7 +15,10 @@ from recommendEvent import (
     get_event_features,
     log,
     main,
-    MAX_TAGS
+    activation_fn,
+    MAX_TAGS,
+    BETA,
+    TAU,
 )
 
 
@@ -54,14 +57,14 @@ def sample_events() -> List[Dict[str, Any]]:
             "name": "Concert",
             "dayOfWeek": 5,
             "startHour": 19,
-            "isFree": False
+            "isFree": False,
         },
         {
             "_id": "event2",
             "name": "Basketball Game",
             "dayOfWeek": 6,
             "startHour": 14,
-            "isFree": True
+            "isFree": True,
         },
     ]
 
@@ -77,15 +80,60 @@ def sample_event_tags() -> Dict[str, List[Dict[str, Any]]]:
 
 @pytest.fixture
 def sample_interactions() -> Dict[str, List[Dict[str, Any]]]:
-    """Sample user-event interactions"""
+    """Sample user-event interactions (schema field is `status`)"""
     return {
         "user1": [
             {"eventId": "event1", "status": "going"},
             {"eventId": "event2", "status": "uninterested"},
         ],
-        "user2": []
+        "user2": [],
     }
 
+
+# Helper: what activation_fn(raw) yields, for asserting expected values.
+def _activated(raw: float) -> float:
+    return float(1.0 - np.exp(-(raw + BETA) / TAU))
+
+
+# ------------------------------
+#  activation_fn
+# ------------------------------
+
+class TestActivationFn:
+    """Tests for the activation function"""
+
+    def test_zero_input_gives_baseline(self) -> None:
+        """activation_fn(0) should equal the BETA-only baseline."""
+        result = activation_fn(np.array([0.0], dtype=np.float32))
+        expected = 1.0 - np.exp(-BETA / TAU)
+        assert result[0] == pytest.approx(expected, abs=1e-6)
+
+    def test_outputs_in_zero_one_range(self) -> None:
+        """Non-negative inputs should map into [0, 1)."""
+        raw = np.array([0.0, 0.5, 1.0, 2.0, 5.0], dtype=np.float32)
+        out = activation_fn(raw)
+        assert np.all(out >= 0.0)
+        assert np.all(out < 1.0)
+
+    def test_monotonically_increasing(self) -> None:
+        """Larger raw weights should produce larger activated values."""
+        raw = np.array([0.0, 0.5, 1.0, 2.0], dtype=np.float32)
+        out = activation_fn(raw)
+        assert np.all(np.diff(out) > 0)
+
+    def test_dtype_is_float32(self) -> None:
+        out = activation_fn(np.array([0.5], dtype=np.float32))
+        assert out.dtype == np.float32
+
+    def test_preserves_shape_2d(self) -> None:
+        raw = np.zeros((3, 5), dtype=np.float32)
+        out = activation_fn(raw)
+        assert out.shape == (3, 5)
+
+
+# ------------------------------
+#  get_tag_info
+# ------------------------------
 
 class TestGetTagInfo:
     """Tests for get_tag_info function"""
@@ -93,60 +141,60 @@ class TestGetTagInfo:
     def test_returns_correct_num_tags(
         self, mock_convex_client: Mock, sample_tags: List[Dict[str, Any]]
     ) -> None:
-        """Test that get_tag_info returns correct number of tags"""
         mock_convex_client.query.return_value = sample_tags
-
         num_tags, tag_id_to_idx = get_tag_info(mock_convex_client)
-
         assert num_tags == 3
         assert len(tag_id_to_idx) == 3
 
     def test_creates_correct_tag_mapping(
         self, mock_convex_client: Mock, sample_tags: List[Dict[str, Any]]
     ) -> None:
-        """Test that tag ID to index mapping is correct"""
         mock_convex_client.query.return_value = sample_tags
-
         num_tags, tag_id_to_idx = get_tag_info(mock_convex_client)
-
         assert tag_id_to_idx["tag1"] == 0
         assert tag_id_to_idx["tag2"] == 1
         assert tag_id_to_idx["tag3"] == 2
 
     def test_empty_tags(self, mock_convex_client: Mock) -> None:
-        """Test behavior with no tags"""
         mock_convex_client.query.return_value = []
-
         num_tags, tag_id_to_idx = get_tag_info(mock_convex_client)
-
         assert num_tags == 0
         assert len(tag_id_to_idx) == 0
 
 
+# ------------------------------
+#  log
+# ------------------------------
+
 class TestLog:
     def test_log_prints_timestamped_message(self) -> None:
-        with patch("recommendEvent.datetime") as mock_datetime, patch("recommendEvent.print") as mock_print:
+        with patch("recommendEvent.datetime") as mock_datetime, patch(
+            "recommendEvent.print"
+        ) as mock_print:
             mock_now = MagicMock()
             mock_now.strftime.return_value = "12:34:56 01/02/26"
             mock_datetime.now.return_value = mock_now
-
             log("hello world")
-
         mock_print.assert_called_once_with("[12:34:56 01/02/26] hello world")
 
+
+# ------------------------------
+#  get_user_features
+# ------------------------------
+# get_user_features now applies activation_fn to the stored raw weights
+# before returning. So returned tensor values are activated, not raw.
 
 class TestGetUserFeatures:
     """Tests for get_user_features function"""
 
     def test_returns_correct_shape(self, mock_convex_client: Mock) -> None:
-        """Test that user features have correct shape"""
         num_tags = 5
         users = ["user1", "user2"]
         expected_dim = 3 * num_tags
 
         mock_convex_client.query.return_value = [
             np.random.rand(expected_dim).tolist(),
-            np.random.rand(expected_dim).tolist()
+            np.random.rand(expected_dim).tolist(),
         ]
 
         features = get_user_features(mock_convex_client, users, num_tags)
@@ -154,8 +202,8 @@ class TestGetUserFeatures:
         assert features.shape == (2, expected_dim)
         assert isinstance(features, torch.Tensor)
 
-    def test_handles_none_weights(self, mock_convex_client: Mock) -> None:
-        """Test that None weights are converted to zero vectors"""
+    def test_handles_none_weights_returns_baseline(self, mock_convex_client: Mock) -> None:
+        """None weights should produce zeros pre-activation, baseline post-activation."""
         num_tags = 5
         users = ["user1"]
         expected_dim = 3 * num_tags
@@ -165,10 +213,12 @@ class TestGetUserFeatures:
         features = get_user_features(mock_convex_client, users, num_tags)
 
         assert features.shape == (1, expected_dim)
-        assert torch.all(features == 0)
+        # All entries equal the BETA-only baseline.
+        baseline = _activated(0.0)
+        assert torch.allclose(features, torch.full_like(features, baseline), atol=1e-6)
 
     def test_pads_short_vectors(self, mock_convex_client: Mock) -> None:
-        """Test that short vectors are padded correctly"""
+        """Short vectors should be padded with zeros, then activated."""
         num_tags = 5
         users = ["user1"]
         expected_dim = 3 * num_tags
@@ -179,13 +229,18 @@ class TestGetUserFeatures:
         features = get_user_features(mock_convex_client, users, num_tags)
 
         assert features.shape == (1, expected_dim)
-        assert features[0, 0].item() == 1.0
-        assert features[0, 1].item() == 2.0
-        assert features[0, 2].item() == 3.0
-        assert torch.all(features[0, 3:] == 0)
+        # First three were 1, 2, 3 raw; the rest are 0 raw. All get activated.
+        assert features[0, 0].item() == pytest.approx(_activated(1.0), abs=1e-5)
+        assert features[0, 1].item() == pytest.approx(_activated(2.0), abs=1e-5)
+        assert features[0, 2].item() == pytest.approx(_activated(3.0), abs=1e-5)
+        # Padded zeros become the baseline.
+        baseline = _activated(0.0)
+        assert torch.allclose(
+            features[0, 3:], torch.full((expected_dim - 3,), baseline), atol=1e-6
+        )
 
     def test_truncates_long_vectors(self, mock_convex_client: Mock) -> None:
-        """Test that long vectors are truncated correctly"""
+        """Long vectors should be truncated to expected_dim, then activated."""
         num_tags = 5
         users = ["user1"]
         expected_dim = 3 * num_tags
@@ -196,9 +251,30 @@ class TestGetUserFeatures:
         features = get_user_features(mock_convex_client, users, num_tags)
 
         assert features.shape == (1, expected_dim)
-        assert features[0, 0].item() == 0.0
-        assert features[0, expected_dim - 1].item() == expected_dim - 1
+        # First raw value was 0, last raw value was expected_dim - 1.
+        assert features[0, 0].item() == pytest.approx(_activated(0.0), abs=1e-5)
+        assert features[0, expected_dim - 1].item() == pytest.approx(
+            _activated(float(expected_dim - 1)), abs=1e-5
+        )
 
+    def test_output_is_in_zero_one(self, mock_convex_client: Mock) -> None:
+        """All activated outputs should fall in [0, 1)."""
+        num_tags = 5
+        users = ["user1"]
+        expected_dim = 3 * num_tags
+
+        mock_convex_client.query.return_value = [
+            (np.random.rand(expected_dim) * 5).tolist()  # raw values 0..5
+        ]
+
+        features = get_user_features(mock_convex_client, users, num_tags)
+        assert torch.all(features >= 0.0)
+        assert torch.all(features < 1.0)
+
+
+# ------------------------------
+#  get_event_features
+# ------------------------------
 
 class TestGetEventFeatures:
     """Tests for get_event_features function"""
@@ -209,7 +285,6 @@ class TestGetEventFeatures:
         sample_events: List[Dict[str, Any]],
         sample_event_tags: Dict[str, List[Dict[str, Any]]],
     ) -> None:
-        """Test that event features have correct shape"""
         num_tags = 3
         tag_id_to_idx = {"tag1": 0, "tag2": 1, "tag3": 2}
 
@@ -223,7 +298,9 @@ class TestGetEventFeatures:
 
         mock_convex_client.query.side_effect = query_side_effect
 
-        event_ids, event_features = get_event_features(mock_convex_client, num_tags, tag_id_to_idx)
+        event_ids, event_features = get_event_features(
+            mock_convex_client, num_tags, tag_id_to_idx
+        )
 
         assert len(event_ids) == 2
         assert event_features.shape == (2, num_tags + 4)
@@ -234,7 +311,6 @@ class TestGetEventFeatures:
         sample_events: List[Dict[str, Any]],
         sample_event_tags: Dict[str, List[Dict[str, Any]]],
     ) -> None:
-        """Test that tags are one-hot encoded correctly"""
         num_tags = 3
         tag_id_to_idx = {"tag1": 0, "tag2": 1, "tag3": 2}
 
@@ -248,7 +324,9 @@ class TestGetEventFeatures:
 
         mock_convex_client.query.side_effect = query_side_effect
 
-        event_ids, event_features = get_event_features(mock_convex_client, num_tags, tag_id_to_idx)
+        event_ids, event_features = get_event_features(
+            mock_convex_client, num_tags, tag_id_to_idx
+        )
 
         assert event_features[0, 0] == 1.0
         assert event_features[0, 1] == 0.0
@@ -261,13 +339,10 @@ class TestGetEventFeatures:
     def test_tag_count_normalization(
         self, mock_convex_client: Mock, sample_events: List[Dict[str, Any]]
     ) -> None:
-        """Test that tag count is normalized correctly"""
         num_tags = 3
         tag_id_to_idx = {"tag1": 0, "tag2": 1, "tag3": 2}
 
-        event_tags = {
-            "event1": [{"tagId": "tag1"}, {"tagId": "tag2"}]
-        }
+        event_tags = {"event1": [{"tagId": "tag1"}, {"tagId": "tag2"}]}
 
         def query_side_effect(query_name: str, params: Dict[str, Any]) -> List[Dict[str, Any]]:
             if query_name == "data_ml/universal:queryAll":
@@ -279,7 +354,9 @@ class TestGetEventFeatures:
 
         mock_convex_client.query.side_effect = query_side_effect
 
-        event_ids, event_features = get_event_features(mock_convex_client, num_tags, tag_id_to_idx)
+        event_ids, event_features = get_event_features(
+            mock_convex_client, num_tags, tag_id_to_idx
+        )
 
         expected_norm = 2.0 / MAX_TAGS
         assert abs(event_features[0, num_tags] - expected_norm) < 1e-6
@@ -290,7 +367,6 @@ class TestGetEventFeatures:
         sample_events: List[Dict[str, Any]],
         sample_event_tags: Dict[str, List[Dict[str, Any]]],
     ) -> None:
-        """Test that day_norm and hour_norm are calculated correctly"""
         num_tags = 3
         tag_id_to_idx = {"tag1": 0, "tag2": 1, "tag3": 2}
 
@@ -303,7 +379,9 @@ class TestGetEventFeatures:
 
         mock_convex_client.query.side_effect = query_side_effect
 
-        event_ids, event_features = get_event_features(mock_convex_client, num_tags, tag_id_to_idx)
+        event_ids, event_features = get_event_features(
+            mock_convex_client, num_tags, tag_id_to_idx
+        )
 
         expected_day_norm = 5.0 / 6.0
         assert abs(event_features[0, num_tags + 1] - expected_day_norm) < 1e-6
@@ -317,7 +395,6 @@ class TestGetEventFeatures:
         sample_events: List[Dict[str, Any]],
         sample_event_tags: Dict[str, List[Dict[str, Any]]],
     ) -> None:
-        """Test that isFree is encoded correctly"""
         num_tags = 3
         tag_id_to_idx = {"tag1": 0, "tag2": 1, "tag3": 2}
 
@@ -331,250 +408,58 @@ class TestGetEventFeatures:
 
         mock_convex_client.query.side_effect = query_side_effect
 
-        event_ids, event_features = get_event_features(mock_convex_client, num_tags, tag_id_to_idx)
+        event_ids, event_features = get_event_features(
+            mock_convex_client, num_tags, tag_id_to_idx
+        )
 
         assert event_features[0, num_tags + 3] == 0.0
-
         assert event_features[1, num_tags + 3] == 1.0
+
+
+# ------------------------------
+#  get_client
+# ------------------------------
 
 class TestGetClient:
     """Tests for get_client function"""
 
     def test_get_client_raises_when_not_initialized(self) -> None:
-        """get_client raises RuntimeError when module-level client is None"""
         import recommendEvent
         with patch.object(recommendEvent, "client", None):
             with pytest.raises(RuntimeError, match="ConvexClient not initialized"):
                 recommendEvent.get_client()
 
     def test_get_client_returns_client_when_initialized(self) -> None:
-        """get_client returns the module-level client when set"""
         import recommendEvent
         mock_client = MagicMock()
         with patch.object(recommendEvent, "client", mock_client):
             assert recommendEvent.get_client() is mock_client
 
+
+# ------------------------------
+#  main (integration)
+# ------------------------------
+
 class TestMain:
     """Integration tests for main function"""
 
-    @patch('recommendEvent.get_client')
-    @patch('recommendEvent.torch.load')
-    @patch('recommendEvent.UserTower')
-    @patch('recommendEvent.EventTower')
+    @patch("recommendEvent.get_client")
+    @patch("recommendEvent.torch.load")
+    @patch("recommendEvent.UserTower")
+    @patch("recommendEvent.EventTower")
     def test_main_runs_without_error(
-            self,
-            mock_event_tower: MagicMock,
-            mock_user_tower: MagicMock,
-            mock_torch_load: MagicMock,
-            mock_get_client: MagicMock,
-            mock_convex_client: Mock,
-            sample_tags: List[Dict[str, Any]],
-            sample_users: List[Dict[str, Any]],
-            sample_events: List[Dict[str, Any]],
-            sample_event_tags: Dict[str, List[Dict[str, Any]]],
-            sample_interactions: Dict[str, List[Dict[str, Any]]],
+        self,
+        mock_event_tower: MagicMock,
+        mock_user_tower: MagicMock,
+        mock_torch_load: MagicMock,
+        mock_get_client: MagicMock,
+        mock_convex_client: Mock,
+        sample_tags: List[Dict[str, Any]],
+        sample_users: List[Dict[str, Any]],
+        sample_events: List[Dict[str, Any]],
+        sample_event_tags: Dict[str, List[Dict[str, Any]]],
+        sample_interactions: Dict[str, List[Dict[str, Any]]],
     ) -> None:
-        """Test that main runs without errors"""
-        # Setup mocks
-        mock_get_client.return_value = mock_convex_client
-
-        def query_side_effect(query_name: str, params: Dict[str, Any]) -> List[Any]:
-            if query_name == "data_ml/universal:queryAll":
-                if params["table_name"] == "tags":
-                    return sample_tags
-                elif params["table_name"] == "users":
-                    return sample_users
-                elif params["table_name"] == "events":
-                    return sample_events
-            elif query_name == "data_ml/eventRec:getUserTagWeights":
-                num_tags = len(sample_tags)
-                return [np.random.rand(3 * num_tags).tolist() for _ in params["userIDs"]]
-            elif query_name == "data_ml/eventRec:getByEventId":
-                event_id = params["eventId"]
-                return sample_event_tags.get(event_id, [])
-            elif query_name == "data_ml/eventRec:getInteractionsByUserId":
-                user_id = params["userId"]
-                return sample_interactions.get(user_id, [])
-            return []
-
-        mock_convex_client.query.side_effect = query_side_effect
-
-        mock_user_instance = MagicMock()
-        mock_event_instance = MagicMock()
-
-        mock_user_instance.side_effect = lambda x: torch.randn(x.shape[0], 64)
-        mock_event_instance.side_effect = lambda x: torch.randn(x.shape[0], 64)
-
-        mock_user_instance.eval.return_value = mock_user_instance
-        mock_event_instance.eval.return_value = mock_event_instance
-        mock_user_instance.to.return_value = mock_user_instance
-        mock_event_instance.to.return_value = mock_event_instance
-        mock_user_instance.load_state_dict = MagicMock()
-        mock_event_instance.load_state_dict = MagicMock()
-
-        mock_user_tower.return_value = mock_user_instance
-        mock_event_tower.return_value = mock_event_instance
-
-        mock_torch_load.return_value = {
-            'user_tower': {},
-            'event_tower': {}
-        }
-
-        try:
-            main(["user1", "user2"], update_db=False, model_path="dummy.pt", k=10)
-        except Exception as e:
-            pytest.fail(f"main() raised {type(e).__name__} unexpectedly: {e}")
-
-    @patch('recommendEvent.get_client')
-    @patch('recommendEvent.torch.load')
-    @patch('recommendEvent.UserTower')
-    @patch('recommendEvent.EventTower')
-    def test_main_handles_all_users(
-            self,
-            mock_event_tower: MagicMock,
-            mock_user_tower: MagicMock,
-            mock_torch_load: MagicMock,
-            mock_get_client: MagicMock,
-            mock_convex_client: Mock,
-            sample_tags: List[Dict[str, Any]],
-            sample_users: List[Dict[str, Any]],
-            sample_events: List[Dict[str, Any]],
-            sample_event_tags: Dict[str, List[Dict[str, Any]]],
-            sample_interactions: Dict[str, List[Dict[str, Any]]],
-    ) -> None:
-        """Test that main handles 'ALL' users correctly"""
-        mock_get_client.return_value = mock_convex_client
-
-        def query_side_effect(query_name: str, params: Dict[str, Any]) -> List[Any]:
-            if query_name == "data_ml/universal:queryAll":
-                if params["table_name"] == "tags":
-                    return sample_tags
-                elif params["table_name"] == "users":
-                    return sample_users
-                elif params["table_name"] == "events":
-                    return sample_events
-            elif query_name == "data_ml/eventRec:getUserTagWeights":
-                num_tags = len(sample_tags)
-                return [np.random.rand(3 * num_tags).tolist() for _ in params["userIDs"]]
-            elif query_name == "data_ml/eventRec:getByEventId":
-                event_id = params["eventId"]
-                return sample_event_tags.get(event_id, [])
-            elif query_name == "data_ml/eventRec:getInteractionsByUserId":
-                user_id = params["userId"]
-                return sample_interactions.get(user_id, [])
-            return []
-
-        mock_convex_client.query.side_effect = query_side_effect
-
-        mock_user_instance = MagicMock()
-        mock_event_instance = MagicMock()
-
-        mock_user_instance.side_effect = lambda x: torch.randn(x.shape[0], 64)
-        mock_event_instance.side_effect = lambda x: torch.randn(x.shape[0], 64)
-
-        mock_user_instance.eval.return_value = mock_user_instance
-        mock_event_instance.eval.return_value = mock_event_instance
-        mock_user_instance.to.return_value = mock_user_instance
-        mock_event_instance.to.return_value = mock_event_instance
-        mock_user_instance.load_state_dict = MagicMock()
-        mock_event_instance.load_state_dict = MagicMock()
-
-        mock_user_tower.return_value = mock_user_instance
-        mock_event_tower.return_value = mock_event_instance
-
-        mock_torch_load.return_value = {
-            'user_tower': {},
-            'event_tower': {}
-        }
-
-        try:
-            main(["ALL"], update_db=False, model_path="dummy.pt", k=10)
-        except Exception as e:
-            pytest.fail(f"main() with 'ALL' users raised {type(e).__name__} unexpectedly: {e}")
-
-    @patch('recommendEvent.get_client')
-    @patch('recommendEvent.torch.load')
-    @patch('recommendEvent.UserTower')
-    @patch('recommendEvent.EventTower')
-    def test_blocked_events_have_negative_score(
-            self,
-            mock_event_tower: MagicMock,
-            mock_user_tower: MagicMock,
-            mock_torch_load: MagicMock,
-            mock_get_client: MagicMock,
-            mock_convex_client: Mock,
-            sample_tags: List[Dict[str, Any]],
-            sample_users: List[Dict[str, Any]],
-            sample_events: List[Dict[str, Any]],
-            sample_event_tags: Dict[str, List[Dict[str, Any]]],
-            sample_interactions: Dict[str, List[Dict[str, Any]]],
-            capsys: pytest.CaptureFixture[str],
-    ) -> None:
-        """Test that blocked events receive negative scores"""
-        mock_get_client.return_value = mock_convex_client
-
-        def query_side_effect(query_name: str, params: Dict[str, Any]) -> List[Any]:
-            if query_name == "data_ml/universal:queryAll":
-                if params["table_name"] == "tags":
-                    return sample_tags
-                elif params["table_name"] == "users":
-                    return sample_users
-                elif params["table_name"] == "events":
-                    return sample_events
-            elif query_name == "data_ml/eventRec:getUserTagWeights":
-                num_tags = len(sample_tags)
-                return [np.random.rand(3 * num_tags).tolist() for _ in params["userIDs"]]
-            elif query_name == "data_ml/eventRec:getByEventId":
-                event_id = params["eventId"]
-                return sample_event_tags.get(event_id, [])
-            elif query_name == "data_ml/eventRec:getInteractionsByUserId":
-                user_id = params["userId"]
-                return sample_interactions.get(user_id, [])
-            return []
-
-        mock_convex_client.query.side_effect = query_side_effect
-
-        mock_user_instance = MagicMock()
-        mock_event_instance = MagicMock()
-
-        mock_user_instance.side_effect = lambda x: torch.ones(x.shape[0], 64)
-        mock_event_instance.side_effect = lambda x: torch.ones(x.shape[0], 64)
-
-        mock_user_instance.eval.return_value = mock_user_instance
-        mock_event_instance.eval.return_value = mock_event_instance
-        mock_user_instance.to.return_value = mock_user_instance
-        mock_event_instance.to.return_value = mock_event_instance
-        mock_user_instance.load_state_dict = MagicMock()
-        mock_event_instance.load_state_dict = MagicMock()
-
-        mock_user_tower.return_value = mock_user_instance
-        mock_event_tower.return_value = mock_event_instance
-
-        mock_torch_load.return_value = {
-            'user_tower': {},
-            'event_tower': {}
-        }
-
-        main(["user1"], update_db=False, model_path="dummy.pt", k=10)
-
-    @patch('recommendEvent.get_client')
-    @patch('recommendEvent.torch.load')
-    @patch('recommendEvent.UserTower')
-    @patch('recommendEvent.EventTower')
-    def test_main_writes_to_convex_when_update_db_true(
-            self,
-            mock_event_tower: MagicMock,
-            mock_user_tower: MagicMock,
-            mock_torch_load: MagicMock,
-            mock_get_client: MagicMock,
-            mock_convex_client: Mock,
-            sample_tags: List[Dict[str, Any]],
-            sample_users: List[Dict[str, Any]],
-            sample_events: List[Dict[str, Any]],
-            sample_event_tags: Dict[str, List[Dict[str, Any]]],
-            sample_interactions: Dict[str, List[Dict[str, Any]]],
-    ) -> None:
-        """Test that main calls upsertEventRecs when update_db=True"""
         mock_get_client.return_value = mock_convex_client
 
         def query_side_effect(query_name: str, params: Dict[str, Any]) -> List[Any]:
@@ -608,18 +493,188 @@ class TestMain:
         mock_event_instance.load_state_dict = MagicMock()
         mock_user_tower.return_value = mock_user_instance
         mock_event_tower.return_value = mock_event_instance
-        mock_torch_load.return_value = {'user_tower': {}, 'event_tower': {}}
+
+        mock_torch_load.return_value = {"user_tower": {}, "event_tower": {}}
+
+        try:
+            main(["user1", "user2"], update_db=False, model_path="dummy.pt", k=10)
+        except Exception as e:
+            pytest.fail(f"main() raised {type(e).__name__} unexpectedly: {e}")
+
+    @patch("recommendEvent.get_client")
+    @patch("recommendEvent.torch.load")
+    @patch("recommendEvent.UserTower")
+    @patch("recommendEvent.EventTower")
+    def test_main_handles_all_users(
+        self,
+        mock_event_tower: MagicMock,
+        mock_user_tower: MagicMock,
+        mock_torch_load: MagicMock,
+        mock_get_client: MagicMock,
+        mock_convex_client: Mock,
+        sample_tags: List[Dict[str, Any]],
+        sample_users: List[Dict[str, Any]],
+        sample_events: List[Dict[str, Any]],
+        sample_event_tags: Dict[str, List[Dict[str, Any]]],
+        sample_interactions: Dict[str, List[Dict[str, Any]]],
+    ) -> None:
+        mock_get_client.return_value = mock_convex_client
+
+        def query_side_effect(query_name: str, params: Dict[str, Any]) -> List[Any]:
+            if query_name == "data_ml/universal:queryAll":
+                if params["table_name"] == "tags":
+                    return sample_tags
+                elif params["table_name"] == "users":
+                    return sample_users
+                elif params["table_name"] == "events":
+                    return sample_events
+            elif query_name == "data_ml/eventRec:getUserTagWeights":
+                num_tags = len(sample_tags)
+                return [np.random.rand(3 * num_tags).tolist() for _ in params["userIDs"]]
+            elif query_name == "data_ml/eventRec:getByEventId":
+                return sample_event_tags.get(params["eventId"], [])
+            elif query_name == "data_ml/eventRec:getInteractionsByUserId":
+                return sample_interactions.get(params["userId"], [])
+            return []
+
+        mock_convex_client.query.side_effect = query_side_effect
+
+        mock_user_instance = MagicMock()
+        mock_event_instance = MagicMock()
+        mock_user_instance.side_effect = lambda x: torch.randn(x.shape[0], 64)
+        mock_event_instance.side_effect = lambda x: torch.randn(x.shape[0], 64)
+        mock_user_instance.eval.return_value = mock_user_instance
+        mock_event_instance.eval.return_value = mock_event_instance
+        mock_user_instance.to.return_value = mock_user_instance
+        mock_event_instance.to.return_value = mock_event_instance
+        mock_user_instance.load_state_dict = MagicMock()
+        mock_event_instance.load_state_dict = MagicMock()
+        mock_user_tower.return_value = mock_user_instance
+        mock_event_tower.return_value = mock_event_instance
+
+        mock_torch_load.return_value = {"user_tower": {}, "event_tower": {}}
+
+        try:
+            main(["ALL"], update_db=False, model_path="dummy.pt", k=10)
+        except Exception as e:
+            pytest.fail(f"main() with 'ALL' users raised {type(e).__name__} unexpectedly: {e}")
+
+    @patch("recommendEvent.get_client")
+    @patch("recommendEvent.torch.load")
+    @patch("recommendEvent.UserTower")
+    @patch("recommendEvent.EventTower")
+    def test_blocked_events_have_negative_score(
+        self,
+        mock_event_tower: MagicMock,
+        mock_user_tower: MagicMock,
+        mock_torch_load: MagicMock,
+        mock_get_client: MagicMock,
+        mock_convex_client: Mock,
+        sample_tags: List[Dict[str, Any]],
+        sample_users: List[Dict[str, Any]],
+        sample_events: List[Dict[str, Any]],
+        sample_event_tags: Dict[str, List[Dict[str, Any]]],
+        sample_interactions: Dict[str, List[Dict[str, Any]]],
+    ) -> None:
+        mock_get_client.return_value = mock_convex_client
+
+        def query_side_effect(query_name: str, params: Dict[str, Any]) -> List[Any]:
+            if query_name == "data_ml/universal:queryAll":
+                if params["table_name"] == "tags":
+                    return sample_tags
+                elif params["table_name"] == "users":
+                    return sample_users
+                elif params["table_name"] == "events":
+                    return sample_events
+            elif query_name == "data_ml/eventRec:getUserTagWeights":
+                num_tags = len(sample_tags)
+                return [np.random.rand(3 * num_tags).tolist() for _ in params["userIDs"]]
+            elif query_name == "data_ml/eventRec:getByEventId":
+                return sample_event_tags.get(params["eventId"], [])
+            elif query_name == "data_ml/eventRec:getInteractionsByUserId":
+                return sample_interactions.get(params["userId"], [])
+            return []
+
+        mock_convex_client.query.side_effect = query_side_effect
+
+        mock_user_instance = MagicMock()
+        mock_event_instance = MagicMock()
+        mock_user_instance.side_effect = lambda x: torch.ones(x.shape[0], 64)
+        mock_event_instance.side_effect = lambda x: torch.ones(x.shape[0], 64)
+        mock_user_instance.eval.return_value = mock_user_instance
+        mock_event_instance.eval.return_value = mock_event_instance
+        mock_user_instance.to.return_value = mock_user_instance
+        mock_event_instance.to.return_value = mock_event_instance
+        mock_user_instance.load_state_dict = MagicMock()
+        mock_event_instance.load_state_dict = MagicMock()
+        mock_user_tower.return_value = mock_user_instance
+        mock_event_tower.return_value = mock_event_instance
+
+        mock_torch_load.return_value = {"user_tower": {}, "event_tower": {}}
+
+        main(["user1"], update_db=False, model_path="dummy.pt", k=10)
+
+    @patch("recommendEvent.get_client")
+    @patch("recommendEvent.torch.load")
+    @patch("recommendEvent.UserTower")
+    @patch("recommendEvent.EventTower")
+    def test_main_writes_to_convex_when_update_db_true(
+        self,
+        mock_event_tower: MagicMock,
+        mock_user_tower: MagicMock,
+        mock_torch_load: MagicMock,
+        mock_get_client: MagicMock,
+        mock_convex_client: Mock,
+        sample_tags: List[Dict[str, Any]],
+        sample_users: List[Dict[str, Any]],
+        sample_events: List[Dict[str, Any]],
+        sample_event_tags: Dict[str, List[Dict[str, Any]]],
+        sample_interactions: Dict[str, List[Dict[str, Any]]],
+    ) -> None:
+        mock_get_client.return_value = mock_convex_client
+
+        def query_side_effect(query_name: str, params: Dict[str, Any]) -> List[Any]:
+            if query_name == "data_ml/universal:queryAll":
+                if params["table_name"] == "tags":
+                    return sample_tags
+                elif params["table_name"] == "users":
+                    return sample_users
+                elif params["table_name"] == "events":
+                    return sample_events
+            elif query_name == "data_ml/eventRec:getUserTagWeights":
+                num_tags = len(sample_tags)
+                return [np.random.rand(3 * num_tags).tolist() for _ in params["userIDs"]]
+            elif query_name == "data_ml/eventRec:getByEventId":
+                return sample_event_tags.get(params["eventId"], [])
+            elif query_name == "data_ml/eventRec:getInteractionsByUserId":
+                return sample_interactions.get(params["userId"], [])
+            return []
+
+        mock_convex_client.query.side_effect = query_side_effect
+
+        mock_user_instance = MagicMock()
+        mock_event_instance = MagicMock()
+        mock_user_instance.side_effect = lambda x: torch.randn(x.shape[0], 64)
+        mock_event_instance.side_effect = lambda x: torch.randn(x.shape[0], 64)
+        mock_user_instance.eval.return_value = mock_user_instance
+        mock_event_instance.eval.return_value = mock_event_instance
+        mock_user_instance.to.return_value = mock_user_instance
+        mock_event_instance.to.return_value = mock_event_instance
+        mock_user_instance.load_state_dict = MagicMock()
+        mock_event_instance.load_state_dict = MagicMock()
+        mock_user_tower.return_value = mock_user_instance
+        mock_event_tower.return_value = mock_event_instance
+        mock_torch_load.return_value = {"user_tower": {}, "event_tower": {}}
 
         main(["user1", "user2"], update_db=True, model_path="dummy.pt", k=2)
 
-        # Verify the mutation was called for each user
         mutation_calls = [
-            call for call in mock_convex_client.mutation.call_args_list
+            call
+            for call in mock_convex_client.mutation.call_args_list
             if call.args[0] == "data_ml/eventRec:upsertEventRecs"
         ]
         assert len(mutation_calls) == 2
 
-        # Verify each call has the right shape
         for call in mutation_calls:
             args = call.args[1]
             assert "userId" in args

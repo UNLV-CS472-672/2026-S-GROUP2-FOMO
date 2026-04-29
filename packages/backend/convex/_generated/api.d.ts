@@ -25,6 +25,7 @@ import type * as likes from "../likes.js";
 import type * as posts from "../posts.js";
 import type * as seed from "../seed.js";
 import type * as tags from "../tags.js";
+import type * as temp_seed from "../temp_seed.js";
 import type * as users from "../users.js";
 
 import type {
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   posts: typeof posts;
   seed: typeof seed;
   tags: typeof tags;
+  temp_seed: typeof temp_seed;
   users: typeof users;
 }>;
 

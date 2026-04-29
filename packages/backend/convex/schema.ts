@@ -79,7 +79,7 @@ export default defineSchema({
 
   attendance: defineTable({
     userId: v.id('users'),
-    eventId: v.id('events'),
+    eventId: v.union(v.id('events'), v.id('externalEvents')),
     status: v.optional(
       v.union(v.literal('going'), v.literal('interested'), v.literal('uninterested'))
     ),
@@ -129,11 +129,6 @@ export default defineSchema({
     userId: v.id('users'),
     weights: v.array(v.number()),
     updatedAt: v.number(),
-  }).index('by_userId', ['userId']),
-
-  userPreferredTags: defineTable({
-    userId: v.id('users'),
-    tagIds: v.array(v.id('tags')),
   }).index('by_userId', ['userId']),
 
   likes: defineTable({
