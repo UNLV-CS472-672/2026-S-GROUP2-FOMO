@@ -1,8 +1,8 @@
 import { Button, ButtonText } from '@/components/ui/button';
 import { DrawerModal } from '@/components/ui/drawer';
-import { useUploadMedia } from '@/features/create/hooks/use-upload-media';
 import { Avatar } from '@/features/posts/components/avatar';
 import { useUser } from '@clerk/expo';
+import { MaterialIcons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { BottomSheetView } from '@gorhom/bottom-sheet';
 import { useMutation, useQuery } from 'convex/react';
@@ -28,13 +28,12 @@ export default function EditProfileScreen() {
   const profile = useQuery(api.users.getCurrentProfileMinimal, {});
   const updateCurrentProfile = useMutation(api.users.updateCurrentProfile);
   const updateAvatarUrl = useMutation(api.users.updateAvatarUrl);
-  const { uploadMedia } = useUploadMedia();
 
   const [username, setUsername] = useState('');
   const [description, setDescription] = useState('');
   const [pendingAvatarUri, setPendingAvatarUri] = useState<string | null>(null);
-  const [pendingAvatarMime, setPendingAvatarMime] = useState<string>('image/jpeg');
   const [isPickerDrawerOpen, setIsPickerDrawerOpen] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -79,7 +78,6 @@ export default function EditProfileScreen() {
     if (!result.canceled && result.assets.length > 0) {
       const asset = result.assets[0];
       setPendingAvatarUri(asset.uri);
-      setPendingAvatarMime(asset.mimeType ?? 'image/jpeg');
       setErrorMessage(null);
     }
   }
@@ -88,18 +86,21 @@ export default function EditProfileScreen() {
     if (!profile || isSaving || !isFormValid || !hasChanges) return;
 
     setIsSaving(true);
+    setUsernameError(null);
     setErrorMessage(null);
 
     try {
       if (pendingAvatarUri) {
-        // Upload to Convex storage and persist URL in DB
-        const storageId = await uploadMedia(pendingAvatarUri, pendingAvatarMime);
-        await updateAvatarUrl({ storageId });
-
-        // Also update Clerk profile image
         const response = await fetch(pendingAvatarUri);
         const blob = await response.blob();
-        await clerkUser?.setProfileImage({ file: blob });
+        const image = await clerkUser?.setProfileImage({ file: blob });
+        const avatarUrl = image?.publicUrl;
+
+        if (!avatarUrl) {
+          throw new Error('Could not resolve Clerk avatar URL.');
+        }
+
+        await updateAvatarUrl({ avatarUrl });
       }
 
       if (normalizedUsername !== profile.username || normalizedDescription !== profile.bio) {
@@ -111,7 +112,12 @@ export default function EditProfileScreen() {
 
       router.back();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Could not update profile.');
+      const message = error instanceof Error ? error.message : 'Could not update profile.';
+      if (message === 'Username is taken') {
+        setUsernameError(message);
+      } else {
+        setErrorMessage(message);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -158,7 +164,12 @@ export default function EditProfileScreen() {
             <View>
               <Avatar name={profile.username} size={96} source={avatarSource} />
               <View className="absolute bottom-0 right-0 h-7 w-7 items-center justify-center rounded-full bg-primary">
-                <Text className="text-xs font-bold text-primary-foreground">✎</Text>
+                <MaterialIcons
+                  name="edit"
+                  size={14}
+                  color="white"
+                  style={{ transform: [{ scaleX: -1 }] }}
+                />
               </View>
             </View>
           </TouchableOpacity>
@@ -172,6 +183,7 @@ export default function EditProfileScreen() {
             value={username}
             onChangeText={(value) => {
               setUsername(value);
+              setUsernameError(null);
               setErrorMessage(null);
             }}
             autoCapitalize="none"
@@ -185,6 +197,9 @@ export default function EditProfileScreen() {
           <Text className="mt-1 text-xs text-muted-foreground">
             {normalizedUsername.length}/{USERNAME_MAX_LENGTH}
           </Text>
+          {usernameError ? (
+            <Text className="mt-1 text-sm text-destructive">{usernameError}</Text>
+          ) : null}
         </View>
 
         {/* Description */}

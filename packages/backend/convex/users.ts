@@ -211,15 +211,15 @@ export const getProfileFeed = query({
 });
 
 export const updateAvatarUrl = mutation({
-  args: { storageId: v.id('_storage') },
-  handler: async (ctx, { storageId }) => {
+  args: { avatarUrl: v.string() },
+  handler: async (ctx, { avatarUrl }) => {
     const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
-    const url = await ctx.storage.getUrl(storageId);
-    if (!url) {
-      throw new Error('Could not resolve URL for uploaded avatar.');
+    const nextAvatarUrl = avatarUrl.trim();
+    if (!nextAvatarUrl) {
+      throw new Error('Could not resolve Clerk avatar URL.');
     }
-    await ctx.db.patch(user._id, { avatarUrl: url });
-    return { avatarUrl: url };
+    await ctx.db.patch(user._id, { avatarUrl: nextAvatarUrl });
+    return { avatarUrl: nextAvatarUrl };
   },
 });
 
@@ -238,13 +238,14 @@ export const updateCurrentProfile = mutation({
     validateBio(nextBio);
 
     if (nextUsername !== user.username) {
-      const existingWithUsername = await ctx.db
-        .query('users')
-        .withIndex('by_username', (q) => q.eq('username', nextUsername))
-        .unique();
+      const existingWithUsername = (await ctx.db.query('users').collect()).find(
+        (candidate) =>
+          candidate._id !== user._id &&
+          candidate.username.toLowerCase() === nextUsername.toLowerCase()
+      );
 
-      if (existingWithUsername && existingWithUsername._id !== user._id) {
-        throw new Error('That username is already taken.');
+      if (existingWithUsername) {
+        throw new Error('Username is taken');
       }
     }
 

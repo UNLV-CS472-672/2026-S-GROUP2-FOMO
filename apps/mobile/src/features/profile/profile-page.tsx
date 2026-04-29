@@ -17,7 +17,6 @@ import { useRouter } from 'expo-router';
 import type { ComponentProps, ReactNode } from 'react';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { StyleSheet } from 'react-native';
 
 type ProfilePageProps = {
   profile: NonNullable<FunctionReturnType<typeof api.users.getCurrentProfile>>;
@@ -203,16 +202,11 @@ export function ProfilePage({
               accessibilityLabel="Change profile picture"
               accessibilityRole="button"
             >
-              <View>
-                <Avatar
-                  name={profile.user.displayName || profile.user.username}
-                  size={92}
-                  source={profile.user.avatarUrl ? { uri: profile.user.avatarUrl } : undefined}
-                />
-                <View style={styles.avatarBadge}>
-                  <Text style={styles.avatarBadgeText}>✎</Text>
-                </View>
-              </View>
+              <Avatar
+                name={profile.user.displayName || profile.user.username}
+                size={92}
+                source={profile.user.avatarUrl ? { uri: profile.user.avatarUrl } : undefined}
+              />
             </TouchableOpacity>
           ) : (
             <View>
@@ -445,22 +439,3 @@ export function ProfilePage({
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  avatarBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#ef4444',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarBadgeText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-});
