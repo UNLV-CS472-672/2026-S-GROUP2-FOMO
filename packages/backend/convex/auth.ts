@@ -1,24 +1,10 @@
 import type { UserIdentity as ClerkIdentity } from 'convex/server';
 
 import { Doc } from './_generated/dataModel';
-import { mutation, QueryCtx } from './_generated/server';
+import { QueryCtx } from './_generated/server';
 
 function clerkIdFromIdentity(identity: ClerkIdentity): string {
-  return identity.tokenIdentifier;
-}
-
-async function getClerkIdentity(ctx: QueryCtx): Promise<ClerkIdentity> {
-  const identity = await ctx.auth.getUserIdentity();
-  console.log('identity', identity);
-  if (!identity) {
-    throw new Error('No Clerk identity found');
-  }
-
-  return identity as ClerkIdentity;
-}
-
-function usernameFromIdentity(identity: ClerkIdentity): string {
-  return identity.nickname ?? clerkIdFromIdentity(identity);
+  return identity.subject;
 }
 
 async function getConvexUserRowForIdentity(
@@ -82,25 +68,3 @@ export async function __backend_only_guestOrAuthenticatedUser(
   }
   return [user, false];
 }
-
-// Called from the client after sign-in so `users.getCurrentProfile` can resolve without manual DB fixes.
-export const ensureCurrentUser = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const existing = await getAndAuthenticateCurrentConvexUserAllowNull(ctx);
-    if (existing) {
-      return existing._id;
-    }
-
-    const identity = await getClerkIdentity(ctx);
-
-    // New Clerk user: `clerkId` must match the stable id on `ctx.auth` (Clerk `clerkId` claim).
-    return await ctx.db.insert('users', {
-      clerkId: clerkIdFromIdentity(identity),
-      username: usernameFromIdentity(identity),
-      displayName: usernameFromIdentity(identity),
-      avatarUrl: '',
-      bio: '',
-    });
-  },
-});

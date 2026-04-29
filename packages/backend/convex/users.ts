@@ -1,7 +1,8 @@
-import { v } from 'convex/values';
+import type { UserJSON } from '@clerk/backend';
+import { v, type Validator } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
-import { query, QueryCtx } from './_generated/server';
+import { internalMutation, query, QueryCtx } from './_generated/server';
 import {
   __backend_only_getAndAuthenticateCurrentConvexUser,
   __backend_only_guestOrAuthenticatedUser,
@@ -85,6 +86,64 @@ export const getCurrentProfileMinimal = query({
       avatarUrl: user.avatarUrl,
       bio: user.bio,
     };
+  },
+});
+
+function getUsername(data: UserJSON): string {
+  if (data.username && data.username.trim().length > 0) {
+    return data.username;
+  }
+  return data.id;
+}
+
+function getDisplayName(data: UserJSON): string {
+  const first = data.first_name?.trim() ?? '';
+  const last = data.last_name?.trim() ?? '';
+  const fullName = `${first} ${last}`.trim();
+  if (fullName.length > 0) {
+    return fullName;
+  }
+  return data.username ?? data.id;
+}
+
+export const upsertFromClerk = internalMutation({
+  args: { data: v.any() as Validator<UserJSON> },
+  async handler(ctx, { data }) {
+    const userAttributes = {
+      clerkId: data.id,
+      username: getUsername(data),
+      displayName: getDisplayName(data),
+      avatarUrl: data.image_url ?? '',
+    };
+
+    const existing = await ctx.db
+      .query('users')
+      .withIndex('by_clerkId', (q) => q.eq('clerkId', data.id))
+      .unique();
+
+    if (existing === null) {
+      await ctx.db.insert('users', {
+        ...userAttributes,
+        bio: '',
+      });
+      return;
+    }
+
+    await ctx.db.patch(existing._id, userAttributes);
+  },
+});
+
+export const deleteFromClerk = internalMutation({
+  args: { clerkUserId: v.string() },
+  async handler(ctx, { clerkUserId }) {
+    const existing = await ctx.db
+      .query('users')
+      .withIndex('by_clerkId', (q) => q.eq('clerkId', clerkUserId))
+      .unique();
+
+    if (existing !== null) {
+      await ctx.db.delete(existing._id);
+    }
   },
 });
 
