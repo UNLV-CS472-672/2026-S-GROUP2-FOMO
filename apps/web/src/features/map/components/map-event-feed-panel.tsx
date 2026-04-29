@@ -452,16 +452,18 @@ function FeedPostCard({
       ) : null}
 
       <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-        <button
+        <Button
           type="button"
-          className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+          variant="ghost"
+          size="xs"
+          className="-ml-2 h-auto px-2 py-1 text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground"
           onClick={onToggleLike}
           aria-label={canMutate ? (post.liked ? 'Unlike post' : 'Like post') : 'Sign in to like'}
           disabled={!canMutate}
         >
           <Heart className={cn('h-4 w-4', post.liked && 'fill-rose-500 text-rose-500')} />
           <span>{post.likes}</span>
-        </button>
+        </Button>
         <span className="inline-flex items-center gap-1.5">
           <MessageCircle className="h-4 w-4" />
           {post.commentCount}

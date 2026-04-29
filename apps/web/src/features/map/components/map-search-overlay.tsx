@@ -102,10 +102,11 @@ export function MapSearchOverlay({ onSelectEvent, onSelectLocation }: MapSearchO
                 </div>
               ) : locationResults.length > 0 ? (
                 locationResults.map((location) => (
-                  <button
+                  <Button
                     key={location.mapbox_id}
                     type="button"
-                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
+                    variant="ghost"
+                    className="h-auto w-full justify-start gap-3 rounded-none px-3 py-2.5 text-left whitespace-normal hover:bg-muted/60"
                     onClick={async () => {
                       setQuery(location.name);
                       setOpen(false);
@@ -124,7 +125,7 @@ export function MapSearchOverlay({ onSelectEvent, onSelectLocation }: MapSearchO
                         {location.full_address}
                       </p>
                     </div>
-                  </button>
+                  </Button>
                 ))
               ) : (
                 <p className="px-3 py-2.5 text-sm text-muted-foreground">No places found.</p>
