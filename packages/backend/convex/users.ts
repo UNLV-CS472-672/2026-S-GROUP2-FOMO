@@ -28,9 +28,11 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
       .first(),
   ]);
 
+  type AttendedEvent = Doc<'events'> | Doc<'externalEvents'>;
+
   const events = (
     await Promise.all(userEventLinks.map((link: Doc<'attendance'>) => ctx.db.get(link.eventId)))
-  ).filter((event: Doc<'events'> | null): event is Doc<'events'> => event !== null);
+  ).filter((event): event is AttendedEvent => event !== null);
 
   const recommendedUsers = friendRecs
     ? (
@@ -61,7 +63,7 @@ async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
     comments: comments.sort(
       (a: Doc<'comments'>, b: Doc<'comments'>) => b._creationTime - a._creationTime
     ),
-    events: events.sort((a: Doc<'events'>, b: Doc<'events'>) => a.startDate - b.startDate),
+    events: events.sort((a, b) => a.startDate - b.startDate),
     stats: {
       postCount: posts.length,
       commentCount: comments.length,

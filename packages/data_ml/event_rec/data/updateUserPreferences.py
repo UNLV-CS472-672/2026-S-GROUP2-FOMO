@@ -20,10 +20,6 @@ def get_client() -> ConvexClient:
         raise RuntimeError("ConvexClient not initialized")
     return client
 
-
-BETA = 0.10
-TAU = 1.25
-
 NUM_TAGS = 0
 TAG_ID_TO_IDX: dict[str, int] = {}
 
@@ -73,69 +69,72 @@ def build_weights(
     row_sums = mat.sum(axis=1, keepdims=True)
     row_sums[row_sums == 0] = 1.0
     normalized = mat / row_sums
-    tag_weights = normalized.sum(axis=0) * row_weight
+    tag_weights : NDArray[np.float32] = normalized.sum(axis=0) * row_weight
 
-    result: NDArray[np.float32] = (1.0 - np.exp(-(tag_weights + BETA) / TAU)).astype(
-        np.float32
-    )
-    return result
+    return tag_weights
+#
 
-
-def get_interaction_ids(user_id: str) -> tuple[list[str], list[str], list[str]]:
+def get_interaction_ids(user_id: str, user_last_updated: float) -> tuple[list[str], list[str], list[str]]:
     """
-    Returns rows from attendance with fields:
-    { eventId: str, status: "going" | "interested" | "uninterested" }
+    Returns rows from usersToEvents with fields:
+    { eventId: str, interactionType: "going" | "interested" | "uninterested" }
     """
-    interactions = get_client().query(
-        "data_ml/eventRec:getInteractionsByUserId", {"userId": user_id}
-    )
+    if user_last_updated >= 0:
+        interactions = get_client().query("data_ml/eventRec:getInteractionsByUserId", {"userId": user_id, "sinceMs": user_last_updated})
+    else:
+        interactions = get_client().query("data_ml/eventRec:getInteractionsByUserId", {"userId": user_id})
 
-    attended = [row["eventId"] for row in interactions if row["status"] == "going"]
-    interested = [
-        row["eventId"] for row in interactions if row["status"] == "interested"
-    ]
-    blocked = [
-        row["eventId"] for row in interactions if row["status"] == "uninterested"
-    ]
+    going = [row["eventId"] for row in interactions if row["status"] == "going"]
+    interested = [row["eventId"] for row in interactions if row["status"] == "interested"]
+    uninterested = [row["eventId"] for row in interactions if row["status"] == "uninterested"]
 
-    return attended, interested, blocked
+    return going, interested, uninterested
 
 
 def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
     """
     Builds full (3 * num_tags,) feature vector for one user:
-      [attended_weights | interested_weights | blocked_weights]
+      [going_weights | interested_weights | uninterested_weights]
     """
+    user_weights_and_timestamp = get_client().query("data_ml/eventRec:getUserTagWeightsWithTimestamp", {"userId": user_id})
+
+    # Should always return something, but just in case check
+    # If something is not returned then blame frontend team for messing up coldstart upload
+    if user_weights_and_timestamp:
+        user_raw_weights = user_weights_and_timestamp['weights']
+        user_last_updated: float = user_weights_and_timestamp['lastUpdatedAt']
+
+        # Cold Start Tags provided, treat as attended weights
+        if len(user_raw_weights) == NUM_TAGS:
+            user_raw_weights_nd: NDArray[np.float32] = np.concatenate([
+                np.array(user_raw_weights, dtype=np.float32),
+                np.zeros(NUM_TAGS * 2, dtype=np.float32)
+            ])
+
+        elif len(user_raw_weights) == NUM_TAGS * 3:
+            user_raw_weights_nd = np.array(user_raw_weights, dtype=np.float32)
+
+        else:
+            user_raw_weights_nd = np.zeros(NUM_TAGS * 3, dtype=np.float32)
+
+    else:
+        user_raw_weights_nd = np.zeros(NUM_TAGS * 3, dtype=np.float32)
+        user_last_updated = -1.0
 
     # Get event ids for events the user has attended, was interested, and has blocked
-    attended_ids, interested_ids, blocked_ids = get_interaction_ids(user_id)
+    going_ids, interested_ids, uninterested_ids = get_interaction_ids(user_id, user_last_updated)
 
-    att_mat = build_matrix(attended_ids)
+    att_mat = build_matrix(going_ids)
     int_mat = build_matrix(interested_ids)
-    blk_mat = build_matrix(blocked_ids)
+    blk_mat = build_matrix(uninterested_ids)
 
     att_weights = build_weights(att_mat, row_weight=1.0)
     int_weights = build_weights(int_mat, row_weight=0.5)
     blk_weights = build_weights(blk_mat, row_weight=2.0)
 
-    blk_weights = blk_weights
+    result: NDArray[np.float32] = np.concatenate([att_weights, int_weights, blk_weights]).astype(np.float32)
 
-    # Cold Start preferences
-    initial_prefs = get_client().query(
-        "data_ml/eventRec:getPreferredTagsByUserId", {"userId": user_id}
-    )
-
-    if initial_prefs:
-        prior = np.zeros(NUM_TAGS, dtype=np.float32)
-        for tag_id in initial_prefs.get("tagIds", []):
-            if tag_id in TAG_ID_TO_IDX:
-                prior[TAG_ID_TO_IDX[tag_id]] = 0.5
-        att_weights = np.clip(att_weights + prior * (1.0 - att_weights), 0.0, 1.0)
-
-    result: NDArray[np.float32] = np.concatenate(
-        [att_weights, int_weights, blk_weights]
-    ).astype(np.float32)
-    return result
+    return result + user_raw_weights_nd
 
 
 def main(users: list[str], update_db: bool) -> None:
