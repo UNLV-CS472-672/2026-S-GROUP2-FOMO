@@ -5,6 +5,7 @@ import type { Doc } from '../_generated/dataModel';
 import { query, type QueryCtx } from '../_generated/server';
 import { __backend_only_guestOrAuthenticatedUser } from '../auth';
 import { getThreadedCommentsByPost } from '../comments';
+import { serializeStorageFile } from '../files';
 import { getAttendeeCount } from './attendance';
 
 export function latLngToH3Index(lat: number, lng: number, resolution: number = 9): string {
@@ -21,12 +22,13 @@ export function latLngToH3Index(lat: number, lng: number, resolution: number = 9
 }
 
 async function serializeEvent(ctx: QueryCtx, event: Doc<'events'>, recommendationScore?: number) {
-  const [attendeeCount, eventTagLinks] = await Promise.all([
+  const [attendeeCount, eventTagLinks, media] = await Promise.all([
     getAttendeeCount(ctx, event._id),
     ctx.db
       .query('eventTags')
       .withIndex('by_event', (q) => q.eq('eventId', event._id))
       .collect(),
+    event.mediaId ? serializeStorageFile(ctx, event.mediaId) : Promise.resolve(null),
   ]);
 
   const tags = await Promise.all(eventTagLinks.map(async (link) => await ctx.db.get(link.tagId)));
@@ -41,6 +43,7 @@ async function serializeEvent(ctx: QueryCtx, event: Doc<'events'>, recommendatio
     startDate: event.startDate,
     endDate: event.endDate,
     mediaId: event.mediaId ?? null,
+    media,
     hostIds: event.hostIds,
     recommendationScore,
   };
