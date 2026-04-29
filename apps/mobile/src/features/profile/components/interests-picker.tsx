@@ -1,6 +1,7 @@
 import { Button, ButtonText } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { api } from '@fomo/backend/convex/_generated/api';
+import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
@@ -29,7 +30,7 @@ export function InterestsPicker({
 }: InterestsPickerProps) {
   const preferences = useQuery(api.tags.getCurrentUserTagPreferences, {});
   const savePreferences = useMutation(api.tags.saveCurrentUserTagPreferences);
-  const [draftWeights, setDraftWeights] = useState<number[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<Id<'tags'>[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   const insets = useSafeAreaInsets();
@@ -39,7 +40,7 @@ export function InterestsPicker({
       return;
     }
 
-    setDraftWeights(preferences.tags.map((tag) => tag.weight));
+    setSelectedTagIds(preferences.tags.filter((tag) => tag.selected).map((tag) => tag.id));
   }, [preferences]);
 
   if (!preferences) {
@@ -61,9 +62,9 @@ export function InterestsPicker({
   }
 
   const hasChanges = preferences.tags.some(
-    (tag, index) => (draftWeights[index] ?? 0) !== tag.weight
+    (tag) => selectedTagIds.includes(tag.id) !== tag.selected
   );
-  const selectedCount = draftWeights.reduce((total, weight) => total + (weight ? 1 : 0), 0);
+  const selectedCount = selectedTagIds.length;
   const canSubmit = !isSaving && (hasChanges || !preferences.hasCompletedSelection);
 
   async function handleSave() {
@@ -74,7 +75,7 @@ export function InterestsPicker({
     setIsSaving(true);
 
     try {
-      await savePreferences({ weights: draftWeights });
+      await savePreferences({ tagIds: selectedTagIds });
       if (successMessage) {
         Alert.alert('Saved', successMessage);
       }
@@ -112,8 +113,8 @@ export function InterestsPicker({
           </Text>
 
           <View className="mt-4 flex-row flex-wrap gap-2.5">
-            {preferences.tags.map((tag, index) => {
-              const isSelected = (draftWeights[index] ?? 0) === 1;
+            {preferences.tags.map((tag) => {
+              const isSelected = selectedTagIds.includes(tag.id);
 
               return (
                 <Pressable
@@ -127,10 +128,12 @@ export function InterestsPicker({
                       : 'border-border bg-background dark:bg-secondary'
                   )}
                   onPress={() => {
-                    setDraftWeights((current) => {
-                      const next = [...current];
-                      next[index] = next[index] ? 0 : 1;
-                      return next;
+                    setSelectedTagIds((current) => {
+                      if (current.includes(tag.id)) {
+                        return current.filter((id) => id !== tag.id);
+                      }
+
+                      return [...current, tag.id];
                     });
                   }}
                 >
@@ -163,8 +166,8 @@ export function InterestsPicker({
         </Text>
 
         <View className="mt-3 flex-row flex-wrap gap-2">
-          {preferences.tags.map((tag, index) => {
-            const isSelected = (draftWeights[index] ?? 0) === 1;
+          {preferences.tags.map((tag) => {
+            const isSelected = selectedTagIds.includes(tag.id);
 
             return (
               <Pressable
@@ -178,10 +181,12 @@ export function InterestsPicker({
                     : 'border-border bg-background dark:bg-secondary'
                 )}
                 onPress={() => {
-                  setDraftWeights((current) => {
-                    const next = [...current];
-                    next[index] = next[index] ? 0 : 1;
-                    return next;
+                  setSelectedTagIds((current) => {
+                    if (current.includes(tag.id)) {
+                      return current.filter((id) => id !== tag.id);
+                    }
+
+                    return [...current, tag.id];
                   });
                 }}
               >
@@ -215,8 +220,8 @@ export function InterestsPicker({
       </Text>
 
       <View className="mt-3 flex-row flex-wrap gap-2">
-        {preferences.tags.map((tag, index) => {
-          const isSelected = (draftWeights[index] ?? 0) === 1;
+        {preferences.tags.map((tag) => {
+          const isSelected = selectedTagIds.includes(tag.id);
 
           return (
             <Pressable
@@ -230,10 +235,12 @@ export function InterestsPicker({
                   : 'border-border bg-background dark:bg-secondary'
               )}
               onPress={() => {
-                setDraftWeights((current) => {
-                  const next = [...current];
-                  next[index] = next[index] ? 0 : 1;
-                  return next;
+                setSelectedTagIds((current) => {
+                  if (current.includes(tag.id)) {
+                    return current.filter((id) => id !== tag.id);
+                  }
+
+                  return [...current, tag.id];
                 });
               }}
             >

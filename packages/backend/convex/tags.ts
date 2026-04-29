@@ -31,22 +31,22 @@ export const getCurrentUserTagPreferences = query({
       return null;
     }
 
-    const [tags, existingWeights] = await Promise.all([
+    const [tags, existingPreferences] = await Promise.all([
       getOrderedTags(ctx),
       ctx.db
-        .query('userTagWeights')
+        .query('userTagPreferences')
         .withIndex('by_userId', (q) => q.eq('userId', user._id))
         .unique(),
     ]);
 
-    const weights = tags.map((_, index) => (existingWeights?.weights[index] ? 1 : 0));
+    const selectedTagIds = new Set(existingPreferences?.tags ?? []);
 
     return {
-      hasCompletedSelection: existingWeights !== null,
-      tags: tags.map((tag, index) => ({
+      hasCompletedSelection: existingPreferences !== null,
+      tags: tags.map((tag) => ({
         id: tag._id,
         name: tag.name,
-        weight: weights[index] ?? 0,
+        selected: selectedTagIds.has(tag._id),
       })),
     };
   },
@@ -54,28 +54,29 @@ export const getCurrentUserTagPreferences = query({
 
 export const saveCurrentUserTagPreferences = mutation({
   args: {
-    weights: v.array(v.number()),
+    tagIds: v.array(v.id('tags')),
   },
-  handler: async (ctx, { weights }) => {
+  handler: async (ctx, { tagIds }) => {
     const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
     const tags = await getOrderedTags(ctx);
-    const normalizedWeights = tags.map((_, index) => (weights[index] ? 1 : 0));
+    const allowedTagIds = new Set(tags.map((tag) => tag._id));
+    const selectedTagIds = tagIds.filter((tagId) => allowedTagIds.has(tagId));
     const existing = await ctx.db
-      .query('userTagWeights')
+      .query('userTagPreferences')
       .withIndex('by_userId', (q) => q.eq('userId', user._id))
       .unique();
 
     if (existing) {
       await ctx.db.patch(existing._id, {
-        weights: normalizedWeights,
+        tags: selectedTagIds,
         updatedAt: Date.now(),
       });
       return existing._id;
     }
 
-    return await ctx.db.insert('userTagWeights', {
+    return await ctx.db.insert('userTagPreferences', {
       userId: user._id,
-      weights: normalizedWeights,
+      tags: selectedTagIds,
       updatedAt: Date.now(),
     });
   },
