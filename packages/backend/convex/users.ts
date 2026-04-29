@@ -1,12 +1,40 @@
 import { v } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
-import { query, QueryCtx } from './_generated/server';
+import { mutation, query, QueryCtx } from './_generated/server';
 import {
   __backend_only_getAndAuthenticateCurrentConvexUser,
   __backend_only_guestOrAuthenticatedUser,
 } from './auth';
 import { getThreadedCommentsByPost } from './comments';
+
+const USERNAME_MIN_LENGTH = 3;
+const USERNAME_MAX_LENGTH = 24;
+const BIO_MAX_LENGTH = 280;
+
+function normalizeUsername(username: string): string {
+  return username.trim();
+}
+
+function normalizeBio(bio: string): string {
+  return bio.trim();
+}
+
+function validateUsername(username: string): void {
+  if (username.length < USERNAME_MIN_LENGTH || username.length > USERNAME_MAX_LENGTH) {
+    throw new Error(`Username must be ${USERNAME_MIN_LENGTH}-${USERNAME_MAX_LENGTH} characters.`);
+  }
+
+  if (!/^[a-zA-Z0-9_.-]+$/.test(username)) {
+    throw new Error('Username can only include letters, numbers, dots, underscores, and hyphens.');
+  }
+}
+
+function validateBio(bio: string): void {
+  if (bio.length > BIO_MAX_LENGTH) {
+    throw new Error(`Description must be ${BIO_MAX_LENGTH} characters or less.`);
+  }
+}
 
 async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
   const [posts, comments, userEventLinks, friendRecs] = await Promise.all([
@@ -177,5 +205,57 @@ export const getProfileFeed = query({
     return await Promise.all(
       posts.map((post) => serializeProfileFeedPost(ctx, post, guestMode ? undefined : viewer._id))
     );
+  },
+});
+
+export const updateAvatarUrl = mutation({
+  args: { storageId: v.id('_storage') },
+  handler: async (ctx, { storageId }) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    const url = await ctx.storage.getUrl(storageId);
+    if (!url) {
+      throw new Error('Could not resolve URL for uploaded avatar.');
+    }
+    await ctx.db.patch(user._id, { avatarUrl: url });
+    return { avatarUrl: url };
+  },
+});
+
+export const updateCurrentProfile = mutation({
+  args: {
+    username: v.string(),
+    bio: v.string(),
+  },
+  handler: async (ctx, { username, bio }) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+
+    const nextUsername = normalizeUsername(username);
+    const nextBio = normalizeBio(bio);
+
+    validateUsername(nextUsername);
+    validateBio(nextBio);
+
+    if (nextUsername !== user.username) {
+      const existingWithUsername = await ctx.db
+        .query('users')
+        .withIndex('by_username', (q) => q.eq('username', nextUsername))
+        .unique();
+
+      if (existingWithUsername && existingWithUsername._id !== user._id) {
+        throw new Error('That username is already taken.');
+      }
+    }
+
+    await ctx.db.patch(user._id, {
+      username: nextUsername,
+      displayName: nextUsername,
+      bio: nextBio,
+    });
+
+    return {
+      id: user._id,
+      username: nextUsername,
+      bio: nextBio,
+    };
   },
 });

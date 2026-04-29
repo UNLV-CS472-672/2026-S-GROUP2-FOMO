@@ -14,7 +14,7 @@ import { useMutation } from 'convex/react';
 import { FunctionReturnType } from 'convex/server';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type ProfilePageProps = {
   profile: NonNullable<FunctionReturnType<typeof api.users.getCurrentProfile>>;
@@ -27,6 +27,7 @@ type ProfilePageProps = {
   activityLabel: string;
   emptyPostsMessage?: string;
   onPressSettings?: () => void;
+  onPressAvatar?: () => void;
   topPaddingClassName?: string;
   bioFallback?: string;
   mediaFeedPathname?: string;
@@ -62,6 +63,7 @@ export function ProfilePage({
   activityLabel,
   emptyPostsMessage = 'No posts yet',
   onPressSettings,
+  onPressAvatar,
   topPaddingClassName = 'pt-20',
   bioFallback,
   mediaFeedPathname = '/profile/media-feed',
@@ -96,13 +98,32 @@ export function ProfilePage({
         contentContainerClassName="pb-8"
       >
         <View className="flex-row items-start px-4 pb-4 pt-2">
-          <View>
-            <Avatar
-              name={profile.user.displayName || profile.user.username}
-              size={92}
-              source={profile.user.avatarUrl ? { uri: profile.user.avatarUrl } : undefined}
-            />
-          </View>
+          {onPressAvatar ? (
+            <TouchableOpacity
+              onPress={onPressAvatar}
+              accessibilityLabel="Change profile picture"
+              accessibilityRole="button"
+            >
+              <View>
+                <Avatar
+                  name={profile.user.displayName || profile.user.username}
+                  size={92}
+                  source={profile.user.avatarUrl ? { uri: profile.user.avatarUrl } : undefined}
+                />
+                <View style={styles.avatarBadge}>
+                  <Text style={styles.avatarBadgeText}>✎</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <View>
+              <Avatar
+                name={profile.user.displayName || profile.user.username}
+                size={92}
+                source={profile.user.avatarUrl ? { uri: profile.user.avatarUrl } : undefined}
+              />
+            </View>
+          )}
 
           <View className="ml-3 flex-1 pr-0">
             <View className="flex-row items-center justify-between">
@@ -243,3 +264,22 @@ export function ProfilePage({
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  avatarBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarBadgeText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+});
