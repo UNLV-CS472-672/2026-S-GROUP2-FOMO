@@ -49,7 +49,8 @@ async function serializeEvent(ctx: QueryCtx, event: Doc<'events'>, recommendatio
 async function serializeEventFeedPost(
   ctx: QueryCtx,
   post: Doc<'posts'>,
-  viewerId?: Doc<'users'>['_id']
+  viewerId?: Doc<'users'>['_id'],
+  eventName?: string
 ) {
   const mediaIds = post.mediaIds ?? [];
 
@@ -72,6 +73,8 @@ async function serializeEventFeedPost(
     likes: post.likeCount ?? likes.length,
     liked: viewerId ? likes.some((like) => like.userId === viewerId) : false,
     mediaIds,
+    eventId: post.eventId ?? null,
+    eventName: eventName ?? '',
     commentCount: countComments(comments),
     comments,
   };
@@ -160,6 +163,7 @@ export const getEventFeed = query({
   },
   handler: async (ctx, { eventId, sortBy, mediaOnly }) => {
     const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
+    const event = await ctx.db.get(eventId);
     const posts = await ctx.db
       .query('posts')
       .withIndex('by_event', (q) => q.eq('eventId', eventId))
@@ -171,7 +175,9 @@ export const getEventFeed = query({
     }
 
     const serialized = await Promise.all(
-      posts.map((post) => serializeEventFeedPost(ctx, post, guestMode ? undefined : viewer._id))
+      posts.map((post) =>
+        serializeEventFeedPost(ctx, post, guestMode ? undefined : viewer._id, event?.name ?? '')
+      )
     );
 
     if (sortBy === 'popular') {
