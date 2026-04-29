@@ -235,9 +235,13 @@ export const seedData = internalMutation({
     for (const pair of userEventPairs) {
       const existing = await ctx.db
         .query('attendance')
-        .withIndex('by_user_event', (q) => q.eq('userId', pair.userId).eq('eventId', pair.eventId))
-        .unique();
-      if (!existing) await ctx.db.insert('attendance', pair);
+        .filter((q) =>
+          q.and(q.eq(q.field('userId'), pair.userId), q.eq(q.field('eventId'), pair.eventId))
+        )
+        .first();
+      if (!existing) {
+        await ctx.db.insert('attendance', { ...pair, updatedAt: Date.now() });
+      }
     }
 
     //  Event Tags (the content signal that drives recs)

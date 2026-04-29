@@ -24,16 +24,24 @@ from updateUserPreferences import (
 
 @pytest.fixture(autouse=True)
 def mock_queries() -> Generator[dict[str, MagicMock], None, None]:
+    # Default get_user_tag_weights_with_timestamp returns a zero vector of length 3*NUM_TAGS.
+    # NUM_TAGS=3 in tags_initialized, so 9 zeros. Tests can override per-case.
+    default_weights_ts = {
+        "weights": [0.0] * 9,
+        "lastUpdatedAt": 0.0,
+    }
     with patch("updateUserPreferences.queries.query_all", return_value=[]) as mock_query_all, \
          patch("updateUserPreferences.queries.get_by_event_id", return_value=[]) as mock_get_by_event, \
          patch("updateUserPreferences.queries.get_interactions_by_user_id", return_value=[]) as mock_get_interactions, \
-         patch("updateUserPreferences.queries.get_user_tag_weights_with_timestamp", return_value=None) as mock_get_weights_ts, \
+         patch("updateUserPreferences.queries.get_user_tag_weights_with_timestamp", return_value=default_weights_ts) as mock_get_weights_ts, \
+         patch("updateUserPreferences.queries.query_active", return_value=[]) as mock_query_active, \
          patch("updateUserPreferences.queries.upsert_user_tag_weights") as mock_upsert:
         yield {
             "query_all": mock_query_all,
             "get_by_event_id": mock_get_by_event,
             "get_interactions_by_user_id": mock_get_interactions,
             "get_user_tag_weights_with_timestamp": mock_get_weights_ts,
+            "query_active": mock_query_active,
             "upsert_user_tag_weights": mock_upsert,
         }
 
@@ -271,34 +279,17 @@ def test_build_user_feature_vector_shape_no_prior_no_events(
     tags_initialized: None,
 ) -> None:
     """No stored row, no interactions -> all-zero (3*NUM_TAGS,) vector."""
+    # default mock: weights = [0]*9, lastUpdatedAt = 0
     vec = build_user_feature_vector("u1")
     assert vec.shape == (9,)
     assert np.all(vec == 0.0)
-
-
-def test_build_user_feature_vector_cold_start_pads_to_full_length(
-    mock_queries: dict[str, MagicMock],
-    tags_initialized: None,
-) -> None:
-    """Length-NUM_TAGS cold-start row should land in the going slice; others zero."""
-    mock_queries["get_user_tag_weights_with_timestamp"].return_value = {
-        "weights": [1.0, 0.0, 1.0],
-        "lastUpdatedAt": 1700000000.0,
-    }
-    vec = build_user_feature_vector("u1")
-    going = vec[:3]
-    interested = vec[3:6]
-    uninterested = vec[6:]
-    np.testing.assert_allclose(going, [1.0, 0.0, 1.0])
-    assert np.all(interested == 0.0)
-    assert np.all(uninterested == 0.0)
 
 
 def test_build_user_feature_vector_full_length_passthrough(
     mock_queries: dict[str, MagicMock],
     tags_initialized: None,
 ) -> None:
-    """Length-3*NUM_TAGS stored vector should pass through unchanged when no new events."""
+    """Stored full-length vector should pass through unchanged when no new events."""
     stored = [0.5, 0.0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, 0.2]
     mock_queries["get_user_tag_weights_with_timestamp"].return_value = {
         "weights": stored,
@@ -306,19 +297,6 @@ def test_build_user_feature_vector_full_length_passthrough(
     }
     vec = build_user_feature_vector("u1")
     np.testing.assert_allclose(vec, stored)
-
-
-def test_build_user_feature_vector_malformed_falls_back_to_zeros(
-    mock_queries: dict[str, MagicMock],
-    tags_initialized: None,
-) -> None:
-    """An array of unexpected length should fall back to zeros."""
-    mock_queries["get_user_tag_weights_with_timestamp"].return_value = {
-        "weights": [0.1, 0.2],
-        "lastUpdatedAt": 1700000000.0,
-    }
-    vec = build_user_feature_vector("u1")
-    assert np.all(vec == 0.0)
 
 
 def test_build_user_feature_vector_adds_new_event_deltas(
@@ -336,22 +314,47 @@ def test_build_user_feature_vector_adds_new_event_deltas(
     assert np.all(vec[3:] == 0.0)
 
 
-def test_build_user_feature_vector_cold_start_plus_new_event(
+def test_build_user_feature_vector_stored_plus_new_event(
     mock_queries: dict[str, MagicMock],
     tags_initialized: None,
     sample_event_tags_e1: list[dict[str, str]],
 ) -> None:
-    """Cold-start prior should add cleanly with new event deltas."""
+    """Stored full-length vector should add cleanly with new event deltas."""
+    stored = [1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     mock_queries["get_user_tag_weights_with_timestamp"].return_value = {
-        "weights": [1.0, 0.0, 1.0],
+        "weights": stored,
         "lastUpdatedAt": 1700000000.0,
     }
     mock_queries["get_interactions_by_user_id"].return_value = [{"eventId": "e1", "status": "going"}]
     mock_queries["get_by_event_id"].return_value = sample_event_tags_e1
     vec = build_user_feature_vector("u1")
     going = vec[:3]
-    # Cold-start [1, 0, 1] + e1 delta [0.5, 0.5, 0] = [1.5, 0.5, 1.0]
+    # Stored going [1, 0, 1] + e1 delta [0.5, 0.5, 0] = [1.5, 0.5, 1.0]
     np.testing.assert_allclose(going, [1.5, 0.5, 1.0])
+
+
+def test_build_user_feature_vector_uses_prefetched_when_provided(
+    mock_queries: dict[str, MagicMock],
+    tags_initialized: None,
+) -> None:
+    """When last_updated and weights are passed in, skip the per-user fetch."""
+    prefetched_weights = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    vec = build_user_feature_vector(
+        "u1",
+        last_updated=1700000000.0,
+        weights=prefetched_weights,
+    )
+    np.testing.assert_allclose(vec, prefetched_weights)
+    mock_queries["get_user_tag_weights_with_timestamp"].assert_not_called()
+
+
+def test_build_user_feature_vector_falls_back_to_query_when_args_missing(
+    mock_queries: dict[str, MagicMock],
+    tags_initialized: None,
+) -> None:
+    """When prefetched args are None, fall back to the per-user fetch."""
+    build_user_feature_vector("u1")
+    mock_queries["get_user_tag_weights_with_timestamp"].assert_called_once_with("u1", 3)
 
 
 # ------------------------------
@@ -394,6 +397,26 @@ def test_main_expands_all(mock_main_dependencies: dict[str, MagicMock]) -> None:
     ]
     main(["ALL"], update_db=False)
     assert mock_main_dependencies["build_user_feature_vector"].call_count == 3
+
+
+def test_main_expands_active(mock_main_dependencies: dict[str, MagicMock]) -> None:
+    mock_main_dependencies["queries"]["query_active"].return_value = [
+        {"userId": "u1", "lastUpdated": 1700000000.0, "weights": [0.0] * 9},
+        {"userId": "u2", "lastUpdated": 1700000001.0, "weights": [0.1] * 9},
+    ]
+    main(["ACTIVE"], update_db=False)
+    assert mock_main_dependencies["build_user_feature_vector"].call_count == 2
+
+
+def test_main_active_passes_prefetched_state(mock_main_dependencies: dict[str, MagicMock]) -> None:
+    """In ACTIVE mode, build_user_feature_vector should receive prefetched last_updated/weights."""
+    mock_main_dependencies["queries"]["query_active"].return_value = [
+        {"userId": "u1", "lastUpdated": 1700000000.0, "weights": [0.5] * 9},
+    ]
+    main(["ACTIVE"], update_db=False)
+    call_kwargs = mock_main_dependencies["build_user_feature_vector"].call_args.kwargs
+    assert call_kwargs["last_updated"] == 1700000000.0
+    assert call_kwargs["weights"] == [0.5] * 9
 
 
 def test_main_calls_mutation_when_update_db_true(
