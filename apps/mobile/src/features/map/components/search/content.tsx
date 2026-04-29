@@ -1,5 +1,6 @@
 import { Icon } from '@/components/icon';
 import { EventSearchImage } from '@/features/map/components/search/event-search-image';
+import { useLocationSearch } from '@/features/map/hooks/use-location-search';
 import type { RecentSearch } from '@/features/map/hooks/use-recent-searches';
 import { formatFilterLabel, getEventTimeLabel, isEventLive } from '@/lib/format';
 import { useAppTheme } from '@/lib/use-app-theme';
@@ -7,7 +8,7 @@ import { api } from '@fomo/backend/convex/_generated/api';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useQuery } from 'convex/react';
 import { useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 const MAX_SUGGESTED_EVENTS = 6;
 
@@ -20,6 +21,8 @@ type SearchContentProps = {
   onExpand: () => void;
   onSaveRecentSearch: (value: RecentSearch) => void;
   onSelectEvent: (eventId: string) => void;
+  onSelectLocation: (coords: { longitude: number; latitude: number }) => void;
+  onCloseDrawer: () => void;
 };
 
 export function SearchContent({
@@ -29,8 +32,15 @@ export function SearchContent({
   onExpand,
   onSaveRecentSearch,
   onSelectEvent,
+  onSelectLocation,
+  onCloseDrawer,
 }: SearchContentProps) {
   const theme = useAppTheme();
+  const {
+    results: locationResults,
+    isLoading: isLoadingLocations,
+    resolveCoordinates,
+  } = useLocationSearch(query);
   const events = useQuery(api.events.queries.getEvents) ?? [];
   const popularTags = useQuery(api.tags.getPopularEventTags) ?? [];
   const [activeFilter, setActiveFilter] = useState('all');
@@ -122,6 +132,51 @@ export function SearchContent({
           ))}
         </View>
       </View>
+
+      {/* location autocomplete results */}
+      {query.trim().length > 0 && (
+        <View className="gap-3">
+          <View className="flex-row items-center gap-2">
+            <Text className="text-[18px] font-semibold text-foreground">Places</Text>
+            {isLoadingLocations && <ActivityIndicator size="small" color={theme.mutedText} />}
+          </View>
+
+          {locationResults.length > 0 ? (
+            locationResults.map((loc) => (
+              <Pressable
+                key={loc.mapbox_id}
+                accessibilityRole="button"
+                className="flex-row items-center gap-3 rounded-[22px] bg-background/80 px-3 py-3"
+                onPress={async () => {
+                  onSaveRecentSearch({ type: 'query', label: loc.name });
+                  const coords = await resolveCoordinates(loc.mapbox_id);
+                  if (coords) onSelectLocation(coords);
+                  onCloseDrawer();
+                }}
+              >
+                <View className="size-10 items-center justify-center rounded-full bg-foreground/5">
+                  <Icon name="place" size={18} color={theme.mutedText} />
+                </View>
+                <View className="flex-1 gap-0.5">
+                  <Text className="text-[14px] font-medium text-foreground" numberOfLines={1}>
+                    {loc.name}
+                  </Text>
+                  <Text className="text-[12px] text-muted-foreground" numberOfLines={1}>
+                    {loc.full_address}
+                  </Text>
+                </View>
+              </Pressable>
+            ))
+          ) : !isLoadingLocations ? (
+            <View className="rounded-[24px] border border-dashed border-border bg-background/80 px-4 py-5">
+              <Text className="text-[15px] font-semibold text-foreground">No places found</Text>
+              <Text className="mt-1 text-[13px] leading-5 text-muted-foreground">
+                Try a different search term.
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      )}
 
       {/* filtered based off search  */}
       <View className="gap-3">

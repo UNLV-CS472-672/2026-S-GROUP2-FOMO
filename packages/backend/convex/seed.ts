@@ -1082,86 +1082,46 @@ export const seedData = internalMutation({
       if (!existing) await ctx.db.insert('friends', pair);
     }
 
-    const userPreferredTagSeeds: { userId: any; tagIds: any[] }[] = [
-      {
-        userId: u1,
-        tagIds: [
-          tagIds['study'],
-          tagIds['food'],
-          tagIds['culture'],
-          tagIds['college'],
-          tagIds['insightful'],
-        ],
-      },
-      {
-        userId: u2,
-        tagIds: [tagIds['music'], tagIds['concert'], tagIds['rap'], tagIds['r&b'], tagIds['chill']],
-      },
-      {
-        userId: u3,
-        tagIds: [
-          tagIds['music'],
-          tagIds['art'],
-          tagIds['culture'],
-          tagIds['concert'],
-          tagIds['food'],
-        ],
-      },
-      {
-        userId: u4,
-        tagIds: [
-          tagIds['party'],
-          tagIds['college'],
-          tagIds['chill'],
-          tagIds['drink'],
-          tagIds['wild'],
-        ],
-      },
-      {
-        userId: u5,
-        tagIds: [
-          tagIds['anime'],
-          tagIds['games'],
-          tagIds['comics'],
-          tagIds['convention'],
-          tagIds['vendors'],
-        ],
-      },
-      {
-        userId: u6,
-        tagIds: [tagIds['music'], tagIds['concert'], tagIds['rap'], tagIds['r&b'], tagIds['wild']],
-      },
-      {
-        userId: u7,
-        tagIds: [
-          tagIds['thrift'],
-          tagIds['fits'],
-          tagIds['clothes'],
-          tagIds['chill'],
-          tagIds['culture'],
-        ],
-      },
-      {
-        userId: u8,
-        tagIds: [
-          tagIds['music'],
-          tagIds['concert'],
-          tagIds['art'],
-          tagIds['food'],
-          tagIds['culture'],
-        ],
-      },
-      {
-        userId: u9,
-        tagIds: [tagIds['art'], tagIds['music'], tagIds['anime'], tagIds['comics'], tagIds['food']],
-      },
+    const NUM_TAGS = tagNames.length;
+
+    const tagIndex: Record<string, number> = {};
+    tagNames.forEach((name, i) => {
+      tagIndex[name] = i;
+    });
+
+    const buildColdStartWeights = (preferredTagNames: string[]): number[] => {
+      const weights = new Array(NUM_TAGS).fill(0);
+      for (const name of preferredTagNames) {
+        const idx = tagIndex[name];
+        if (idx !== undefined) weights[idx] = 1;
+      }
+      return weights;
+    };
+
+    const userColdStartSeeds: { userId: any; preferred: string[] }[] = [
+      { userId: u1, preferred: ['study', 'food', 'culture', 'college', 'insightful'] },
+      { userId: u2, preferred: ['music', 'concert', 'rap', 'r&b', 'chill'] },
+      { userId: u3, preferred: ['music', 'art', 'culture', 'concert', 'food'] },
+      { userId: u4, preferred: ['party', 'college', 'chill', 'drink', 'wild'] },
+      { userId: u5, preferred: ['anime', 'games', 'comics', 'convention', 'vendors'] },
+      { userId: u6, preferred: ['music', 'concert', 'rap', 'r&b', 'wild'] },
+      { userId: u7, preferred: ['thrift', 'fits', 'clothes', 'chill', 'culture'] },
+      { userId: u8, preferred: ['music', 'concert', 'art', 'food', 'culture'] },
+      { userId: u9, preferred: ['art', 'music', 'anime', 'comics', 'food'] },
     ];
-    for (const entry of userPreferredTagSeeds) {
+
+    for (const entry of userColdStartSeeds) {
       const existing = await ctx.db
-        .query('userPreferredTags')
+        .query('userTagWeights')
         .withIndex('by_userId', (q) => q.eq('userId', entry.userId))
         .unique();
-      if (!existing) await ctx.db.insert('userPreferredTags', entry);
+      if (existing) continue;
+
+      await ctx.db.insert('userTagWeights', {
+        userId: entry.userId,
+        weights: buildColdStartWeights(entry.preferred),
+        updatedAt: Date.now(),
+      });
     }
 
     return {
