@@ -11,7 +11,8 @@ export const queryAll = internalQuery({
   args: { table_name: v.string() as Validator<TableNames> },
   handler: async (ctx, { table_name }) => {
     try {
-      return await ctx.db.query(table_name).collect();
+      const records = await ctx.db.query(table_name).collect();
+      return records;
     } catch (error) {
       console.error('Error querying table:', table_name, error);
       throw new Error(`Failed to list records from ${table_name}`);

@@ -9,7 +9,8 @@ import { internalQuery } from '../_generated/server';
 export const userExists = internalQuery({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
-    return await ctx.db.get(userId);
+    const user = await ctx.db.get(userId);
+    return user;
   },
 });
 
