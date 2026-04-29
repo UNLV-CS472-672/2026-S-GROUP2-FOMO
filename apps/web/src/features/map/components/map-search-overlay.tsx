@@ -1,11 +1,14 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { useDebouncedValue } from '@/features/map/hooks/use-debounced-value';
+import { useLocationSearch } from '@/features/map/hooks/use-location-search';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { useQuery } from 'convex/react';
 import type { FunctionReturnType } from 'convex/server';
-import { MapPin, SearchIcon } from 'lucide-react';
+import { Loader2, MapPin, SearchIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 type Events = NonNullable<FunctionReturnType<typeof api.events.queries.getEvents>>;
@@ -13,14 +16,21 @@ export type MapSearchEvent = Events[number];
 
 type MapSearchOverlayProps = {
   onSelectEvent?: (event: MapSearchEvent) => void;
+  onSelectLocation?: (coords: { longitude: number; latitude: number }) => void;
 };
 
-export function MapSearchOverlay({ onSelectEvent }: MapSearchOverlayProps) {
+export function MapSearchOverlay({ onSelectEvent, onSelectLocation }: MapSearchOverlayProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const normalizedQuery = query.trim();
   const debouncedQuery = useDebouncedValue(normalizedQuery, 250);
+  const {
+    results: locationResults,
+    isLoading: isLoadingLocations,
+    resolveCoordinates,
+  } = useLocationSearch(query);
   const events = useQuery(api.events.queries.getEvents);
+
   const filteredEvents = useMemo(() => {
     if (!events) {
       return undefined;
@@ -39,6 +49,7 @@ export function MapSearchOverlay({ onSelectEvent }: MapSearchOverlayProps) {
       })
       .slice(0, 8);
   }, [debouncedQuery, events]);
+
   const duplicateEventNames = useMemo(() => {
     const nameCounts = new Map<string, number>();
 
@@ -51,6 +62,8 @@ export function MapSearchOverlay({ onSelectEvent }: MapSearchOverlayProps) {
       [...nameCounts.entries()].filter(([, count]) => count > 1).map(([name]) => name)
     );
   }, [filteredEvents]);
+
+  const showLocationResults = normalizedQuery.length > 0;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -66,7 +79,7 @@ export function MapSearchOverlay({ onSelectEvent }: MapSearchOverlayProps) {
                 setOpen(true);
               }
             }}
-            placeholder="Search events by name"
+            placeholder="Search places or events..."
             className="h-10 rounded-xl pl-9 pr-3"
             onFocus={() => setOpen(true)}
           />
@@ -80,6 +93,45 @@ export function MapSearchOverlay({ onSelectEvent }: MapSearchOverlayProps) {
         onCloseAutoFocus={(event) => event.preventDefault()}
       >
         <div className="max-h-80 overflow-y-auto py-1">
+          {showLocationResults ? (
+            <div className="border-b border-border/70 py-1">
+              {isLoadingLocations ? (
+                <div className="flex items-center gap-2 px-3 py-2.5 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Searching...
+                </div>
+              ) : locationResults.length > 0 ? (
+                locationResults.map((location) => (
+                  <button
+                    key={location.mapbox_id}
+                    type="button"
+                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
+                    onClick={async () => {
+                      setQuery(location.name);
+                      setOpen(false);
+                      const coords = await resolveCoordinates(location.mapbox_id);
+                      if (coords) {
+                        onSelectLocation?.(coords);
+                      }
+                    }}
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      <MapPin className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{location.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {location.full_address}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <p className="px-3 py-2.5 text-sm text-muted-foreground">No places found.</p>
+              )}
+            </div>
+          ) : null}
+
           {filteredEvents === undefined ? (
             <p className="px-3 py-3 text-sm text-muted-foreground">Loading events...</p>
           ) : filteredEvents.length > 0 ? (
