@@ -2,23 +2,9 @@ import os
 import numpy as np
 from numpy.typing import NDArray
 
-from convex import ConvexClient
 from dotenv import load_dotenv
 from typing import Optional
-
-load_dotenv()
-
-CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
-
-client: Optional[ConvexClient] = (
-    ConvexClient(CONVEX_CLOUD_URL) if CONVEX_CLOUD_URL else None
-)
-
-
-def get_client() -> ConvexClient:
-    if client is None:
-        raise RuntimeError("ConvexClient not initialized")
-    return client
+from lib import queries
 
 NUM_TAGS = 0
 TAG_ID_TO_IDX: dict[str, int] = {}
@@ -27,7 +13,7 @@ TAG_ID_TO_IDX: dict[str, int] = {}
 def init_tags() -> None:
     """init tags"""
     global NUM_TAGS, TAG_ID_TO_IDX
-    tags = get_client().query("data_ml/universal:queryAll", {"table_name": "tags"})
+    tags = queries.query_all("tags")
     TAG_ID_TO_IDX = {tag["_id"]: i for i, tag in enumerate(tags)}
     NUM_TAGS = len(TAG_ID_TO_IDX)
 
@@ -35,9 +21,7 @@ def init_tags() -> None:
 def event_multihot(event_id: str) -> NDArray[np.float32]:
     """Returns a (num_tags,) binary vector for one event."""
     vec = np.zeros(NUM_TAGS, dtype=np.float32)
-    event_tags = get_client().query(
-        "data_ml/eventRec:getByEventId", {"eventId": event_id}
-    )
+    event_tags = queries.get_by_event_id(event_id)
     for row in event_tags:
         tag_id = row["tagId"]
         if tag_id in TAG_ID_TO_IDX:
@@ -80,9 +64,9 @@ def get_interaction_ids(user_id: str, user_last_updated: float) -> tuple[list[st
     { eventId: str, interactionType: "going" | "interested" | "uninterested" }
     """
     if user_last_updated >= 0:
-        interactions = get_client().query("data_ml/eventRec:getInteractionsByUserId", {"userId": user_id, "sinceMs": user_last_updated})
+        interactions = queries.get_interactions_by_user_id(user_id, user_last_updated)
     else:
-        interactions = get_client().query("data_ml/eventRec:getInteractionsByUserId", {"userId": user_id})
+        interactions = queries.get_interactions_by_user_id(user_id)
 
     going = [row["eventId"] for row in interactions if row["status"] == "going"]
     interested = [row["eventId"] for row in interactions if row["status"] == "interested"]
@@ -96,7 +80,7 @@ def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
     Builds full (3 * num_tags,) feature vector for one user:
       [going_weights | interested_weights | uninterested_weights]
     """
-    user_weights_and_timestamp = get_client().query("data_ml/eventRec:getUserTagWeightsWithTimestamp", {"userId": user_id})
+    user_weights_and_timestamp = queries.get_user_tag_weights_with_timestamp(user_id)
 
     # Should always return something, but just in case check
     # If something is not returned then blame frontend team for messing up coldstart upload
@@ -141,9 +125,7 @@ def main(users: list[str], update_db: bool) -> None:
     init_tags()
 
     if len(users) == 1 and users[0] == "ALL":
-        all_users = get_client().query(
-            "data_ml/universal:queryAll", {"table_name": "users"}
-        )
+        all_users = queries.query_all("users")
         users = [row["_id"] for row in all_users]
 
     user_feature_vectors: dict[str, NDArray[np.float32]] = {}
@@ -152,10 +134,7 @@ def main(users: list[str], update_db: bool) -> None:
 
     if update_db:
         for user_id, vec in user_feature_vectors.items():
-            get_client().mutation(
-                "data_ml/eventRec:upsertUserTagWeights",
-                {"userId": user_id, "weights": vec.tolist()},
-            )
+            queries.upsert_user_tag_weights(user_id, vec.tolist())
         print(f"Updated {len(user_feature_vectors)} users in Convex.")
     else:
         for user_id, vec in user_feature_vectors.items():

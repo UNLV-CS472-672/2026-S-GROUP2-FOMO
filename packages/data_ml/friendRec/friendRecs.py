@@ -154,7 +154,7 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> N
     top_sim_scores = top_sim_scores[:rec_amt]
 
     # Add row if user doesn't have any recommended friends, if they do, update names if values changed.
-    queries.upsertFriendRecs(userId, top_sim_scores)
+    queries.upsert_friend_recs(userId, top_sim_scores)
 
 
 
