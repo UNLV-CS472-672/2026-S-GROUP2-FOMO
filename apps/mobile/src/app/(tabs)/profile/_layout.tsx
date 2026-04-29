@@ -12,6 +12,7 @@ export default function ProfileLayout() {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="[username]" /> {/* NOTE :: header handled inside the [username] screen */}
       <Stack.Screen name="friends" options={{ title: 'Friends' }} />
+      <Stack.Screen name="friend-requests" options={{ title: 'Friend Requests' }} />
       <Stack.Screen name="settings" options={{ title: 'Settings' }} />
       <Stack.Screen name="edit" options={{ title: 'Edit Profile' }} />
       <Stack.Screen name="media-feed" options={{ title: 'Media' }} />

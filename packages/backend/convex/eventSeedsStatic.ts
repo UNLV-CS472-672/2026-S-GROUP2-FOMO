@@ -20,6 +20,8 @@ export type EventSeed = {
   description: string;
   imageUrl: string;
   location: EventSeedLocation;
+  startDate: number;
+  endDate: number;
 };
 
 export const eventSeeds: EventSeed[] = [
@@ -34,6 +36,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.19299595922035,
       h3Index: '892986b810bffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
   {
     name: 'ASAP Rocky Concert',
@@ -46,6 +50,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.16859227452814,
       h3Index: '892986b846fffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
   {
     name: 'Psi Rho house party',
@@ -58,6 +64,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.14269190902489,
       h3Index: '892986b8673ffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
   {
     name: 'Las Vegas - First Friday',
@@ -71,6 +79,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.15239854806732,
       h3Index: '892986b9893ffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
   {
     name: 'St. Jimmy Panel & Conference',
@@ -84,6 +94,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.18328464909499,
       h3Index: '892986b84a3ffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
   {
     name: 'LVL UP EXPO 2026',
@@ -97,6 +109,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.15149229313623,
       h3Index: '892986b8207ffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
   {
     name: 'Baby Keem Concert',
@@ -109,6 +123,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.17538973403965,
       h3Index: '892986b808fffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
   {
     name: 'Water Lantern Festival',
@@ -121,6 +137,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.24699453074136,
       h3Index: '892986b1673ffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
   {
     name: 'Thrift Valley pop up shop',
@@ -133,6 +151,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.15269829421878,
       h3Index: '892986b9c2fffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
 
   // New events to test rec engine
@@ -148,6 +168,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.19872034567823,
       h3Index: '892986b8113ffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
   {
     name: 'UNLV Career & Culture Fair',
@@ -161,6 +183,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.14123456789012,
       h3Index: '892986b8647ffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
   {
     name: 'Vegas Streetwear Market',
@@ -174,6 +198,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.14567890123456,
       h3Index: '892986b989bffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
   {
     name: 'Desert Rap Cypher',
@@ -186,6 +212,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.16234567890123,
       h3Index: '892986b9ddbffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
   {
     name: 'Downtown Art Walk',
@@ -199,6 +227,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.14890123456789,
       h3Index: '892986b9803ffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
   {
     name: 'Sunset Chill Fest',
@@ -212,6 +242,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.14678901234567,
       h3Index: '89298685b73ffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
   {
     name: 'Neon Birthday Bash',
@@ -224,6 +256,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.17123456789012,
       h3Index: '892986b8003ffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
   {
     name: 'UNLV Anime Club Screening',
@@ -237,6 +271,8 @@ export const eventSeeds: EventSeed[] = [
       longitude: -115.14234567890123,
       h3Index: '892986b8647ffff',
     },
+    startDate: Date.now() + 24 * 60 * 60 * 1000,
+    endDate: Date.now() + 26 * 60 * 60 * 1000,
   },
 ];
 

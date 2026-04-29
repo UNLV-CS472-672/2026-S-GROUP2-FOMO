@@ -7,14 +7,17 @@ import { MediaGrid, type GridMediaItem } from '@/features/profile/components/med
 import StatLabel from '@/features/profile/components/stat-label';
 import { useGuest } from '@/integrations/session/guest';
 import { useAppTheme } from '@/lib/use-app-theme';
+import { cn } from '@/lib/utils';
 import { MaterialIcons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
-import { useMutation } from 'convex/react';
+import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { FunctionReturnType } from 'convex/server';
 import { useRouter } from 'expo-router';
+import type { ComponentProps, ReactNode } from 'react';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 type ProfilePageProps = {
   profile: NonNullable<FunctionReturnType<typeof api.users.getCurrentProfile>>;
@@ -31,6 +34,8 @@ type ProfilePageProps = {
   topPaddingClassName?: string;
   bioFallback?: string;
   mediaFeedPathname?: string;
+  viewerUserId?: Id<'users'>;
+  profileAction?: ReactNode;
 };
 
 type ProfileStateScreenProps = {
@@ -56,6 +61,42 @@ export function ProfileStateScreen({
   );
 }
 
+function ProfileIconAction({
+  accessibilityLabel,
+  className,
+  disabled,
+  iconName,
+  iconColor,
+  onPress,
+}: {
+  accessibilityLabel: string;
+  className?: string;
+  disabled?: boolean;
+  iconName: ComponentProps<typeof MaterialIcons>['name'];
+  iconColor: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+      className={cn(
+        'size-12 items-center justify-center rounded-full bg-card shadow-sm',
+        className
+      )}
+      disabled={disabled}
+      hitSlop={10}
+      style={({ pressed }) => [
+        pressed && { opacity: 0.9, transform: [{ scale: 0.96 }] },
+        disabled && { opacity: 0.5 },
+      ]}
+      onPress={onPress}
+    >
+      <MaterialIcons name={iconName} size={20} color={iconColor} />
+    </Pressable>
+  );
+}
+
 export function ProfilePage({
   profile,
   feedPosts,
@@ -67,13 +108,26 @@ export function ProfilePage({
   topPaddingClassName = 'pt-20',
   bioFallback,
   mediaFeedPathname = '/profile/media-feed',
+  viewerUserId,
+  profileAction,
 }: ProfilePageProps) {
   const userId = profile.user._id;
   const theme = useAppTheme();
   const router = useRouter();
+  const { isAuthenticated } = useConvexAuth();
   const { isGuestMode } = useGuest();
   const togglePostLike = useMutation(api.likes.togglePostLike);
+  const sendFriendRequest = useMutation(api.friends.sendFriendRequest);
+  const acceptFriendRequest = useMutation(api.friends.acceptFriendRequest);
+  const cancelFriendRequest = useMutation(api.friends.cancelFriendRequest);
+  const declineFriendRequest = useMutation(api.friends.declineFriendRequest);
   const [activeTab, setActiveTab] = useState<'feed' | 'media'>('feed');
+  const [isSendingFriendRequest, setIsSendingFriendRequest] = useState(false);
+  const [isUpdatingFriendship, setIsUpdatingFriendship] = useState(false);
+  const friendship = useQuery(
+    api.friends.getFriendshipStatusForUser,
+    isAuthenticated && viewerUserId && viewerUserId !== userId ? { otherUserId: userId } : 'skip'
+  );
 
   function handlePressGridItem(item: GridMediaItem) {
     router.push({
@@ -90,6 +144,51 @@ export function ProfilePage({
       mediaId: p.mediaIds[0] as Id<'_storage'>,
     }));
   const profileBio = profile.user.bio ?? bioFallback;
+  const relationshipStatus = friendship?.status;
+
+  async function handleSendFriendRequest() {
+    if (!viewerUserId || viewerUserId === userId || isSendingFriendRequest) {
+      return;
+    }
+
+    setIsSendingFriendRequest(true);
+    try {
+      await sendFriendRequest({ recipientId: userId });
+    } catch (error) {
+      console.error('Failed to send friend request', error);
+      Alert.alert('Unable to send request', error instanceof Error ? error.message : 'Try again.');
+    } finally {
+      setIsSendingFriendRequest(false);
+    }
+  }
+
+  async function handleRespondToFriendRequest(action: 'accept' | 'decline') {
+    if (!viewerUserId || viewerUserId === userId || isUpdatingFriendship) {
+      return;
+    }
+
+    setIsUpdatingFriendship(true);
+    try {
+      if (action === 'accept') {
+        await acceptFriendRequest({ requesterId: userId });
+      } else {
+        await declineFriendRequest({ requesterId: userId });
+      }
+    } catch (error) {
+      console.error(`Failed to ${action} friend request`, error);
+      Alert.alert(
+        'Unable to update request',
+        error instanceof Error ? error.message : 'Try again.'
+      );
+    } finally {
+      setIsUpdatingFriendship(false);
+    }
+  }
+
+  const showIncomingFriendRequestActions =
+    viewerUserId && viewerUserId !== userId && relationshipStatus === 'pending_received';
+  const showHeaderFriendAction =
+    viewerUserId && viewerUserId !== userId && relationshipStatus !== 'pending_received';
 
   return (
     <Screen className="flex-1">
@@ -133,16 +232,73 @@ export function ProfilePage({
                   <Text className="text-sm text-muted-foreground">{profile.user.displayName}</Text>
                 ) : null}
               </View>
-              {onPressSettings ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onPress={onPressSettings}
-                  className="-mr-3 rounded-full"
-                  accessibilityLabel="Open settings"
-                >
-                  <MaterialIcons name="settings" size={22} color={theme.mutedText} />
-                </Button>
+              {profileAction || showHeaderFriendAction || onPressSettings ? (
+                <View className="-mr-3 flex-row items-center gap-1">
+                  {profileAction ? <View>{profileAction}</View> : null}
+                  {showHeaderFriendAction ? (
+                    <ProfileIconAction
+                      accessibilityLabel={
+                        relationshipStatus === 'pending_sent'
+                          ? 'Remove pending friend request'
+                          : relationshipStatus === 'accepted'
+                            ? 'Friends'
+                            : 'Add friend'
+                      }
+                      disabled={
+                        relationshipStatus === undefined ||
+                        relationshipStatus === 'accepted' ||
+                        isSendingFriendRequest ||
+                        isUpdatingFriendship
+                      }
+                      iconName={
+                        relationshipStatus === 'pending_sent'
+                          ? 'person-remove'
+                          : relationshipStatus === 'accepted'
+                            ? 'people'
+                            : 'person-add-alt-1'
+                      }
+                      iconColor={theme.tint}
+                      onPress={() => {
+                        if (relationshipStatus === 'pending_sent') {
+                          void (async () => {
+                            if (isUpdatingFriendship) {
+                              return;
+                            }
+
+                            setIsUpdatingFriendship(true);
+                            try {
+                              await cancelFriendRequest({ recipientId: userId });
+                            } catch (error) {
+                              console.error('Failed to cancel friend request', error);
+                              Alert.alert(
+                                'Unable to remove request',
+                                error instanceof Error ? error.message : 'Try again.'
+                              );
+                            } finally {
+                              setIsUpdatingFriendship(false);
+                            }
+                          })();
+                          return;
+                        }
+
+                        if (relationshipStatus === 'none') {
+                          void handleSendFriendRequest();
+                        }
+                      }}
+                    />
+                  ) : null}
+                  {onPressSettings ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onPress={onPressSettings}
+                      className="rounded-full"
+                      accessibilityLabel="Open settings"
+                    >
+                      <MaterialIcons name="settings" size={22} color={theme.mutedText} />
+                    </Button>
+                  ) : null}
+                </View>
               ) : null}
             </View>
             {profileBio ? (
@@ -164,6 +320,31 @@ export function ProfilePage({
               />
             </View>
           </View>
+          {showIncomingFriendRequestActions ? (
+            <View className="mt-4 flex-row gap-3">
+              <Button
+                className="flex-1"
+                onPress={() => {
+                  void handleRespondToFriendRequest('accept');
+                }}
+                disabled={isUpdatingFriendship}
+                accessibilityLabel="Accept friend request"
+              >
+                <ButtonText>{isUpdatingFriendship ? 'Updating...' : 'Accept'}</ButtonText>
+              </Button>
+              <Button
+                variant="secondary"
+                className="flex-1"
+                onPress={() => {
+                  void handleRespondToFriendRequest('decline');
+                }}
+                disabled={isUpdatingFriendship}
+                accessibilityLabel="Decline friend request"
+              >
+                <ButtonText variant="secondary">Decline</ButtonText>
+              </Button>
+            </View>
+          ) : null}
         </View>
 
         {/* TODO :: SEE WHAT TO DO HERE */}
