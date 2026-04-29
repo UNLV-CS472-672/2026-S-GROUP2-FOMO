@@ -11,6 +11,7 @@ from pathlib import Path
 
 
 from models.twoTowerModel import UserTower, EventTower
+from data.updateUserPreferences import TAG_ID_TO_IDX, NUM_TAGS, init_tags
 
 load_dotenv()
 
@@ -71,7 +72,16 @@ def get_user_features(client: ConvexClient, users: list[str], num_tags: int) -> 
 
     fixed_np: NDArray[np.float32] = np.stack(fixed)
 
-    return torch.from_numpy(activation_fn(fixed_np))
+
+    tag_prefs = client.query("data_ml/eventRec:getPreferredTagsByUserId", {"userIds": users})
+
+    prior = np.zeros(fixed_np.shape, dtype=np.float32)
+    for user_idx, row in enumerate(tag_prefs):
+        for tag_id in row:
+            if tag_id in TAG_ID_TO_IDX:
+                prior[user_idx, TAG_ID_TO_IDX[tag_id]] = 1.0
+
+    return torch.from_numpy(activation_fn(fixed_np + prior))
 
 
 def get_event_features(client: ConvexClient, num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[list[str], NDArray[np.float32]]:
@@ -190,6 +200,7 @@ USERS = ["ALL"]
 UPDATE_DB = False
 
 if __name__ == "__main__": # pragma: no cover
+    init_tags()
     log("Updating event recommendations...")
     model_dir = os.path.join(Path(__file__).parent, "models", "curr_model.pt")
     main(USERS, UPDATE_DB, model_dir)

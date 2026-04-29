@@ -116,18 +116,41 @@ export const upsertEventRecs = mutation({
 });
 
 export const getUserTagWeightsWithTimestamp = query({
-  args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
+  args: {
+    userId: v.id('users'),
+    numTags: v.number(),
+  },
+  handler: async (ctx, { userId, numTags }) => {
     const result = await ctx.db
       .query('userTagWeights')
       .withIndex('by_userId', (q) => q.eq('userId', userId))
       .unique();
 
-    if (!result) return null;
+    if (!result) {
+      return {
+        weights: new Array(numTags * 3).fill(0),
+        lastUpdatedAt: 0,
+      };
+    }
 
     return {
       weights: result.weights,
       lastUpdatedAt: result.updatedAt,
     };
+  },
+});
+
+export const getPreferredTagsByUserId = query({
+  args: { userIds: v.array(v.id('users')) },
+  handler: async (ctx, { userIds }) => {
+    return await Promise.all(
+      userIds.map(async (userId) => {
+        const doc = await ctx.db
+          .query('userTagPreferences')
+          .withIndex('by_userId', (q) => q.eq('userId', userId))
+          .unique();
+        return doc?.tags ?? [];
+      })
+    );
   },
 });
