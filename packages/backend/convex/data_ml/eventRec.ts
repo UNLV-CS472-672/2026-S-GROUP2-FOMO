@@ -179,12 +179,14 @@ export const getUsersWithRecentActivity = internalQuery({
 
         const newestInteraction = await ctx.db
           .query('attendance')
-          .withIndex('by_userId', (q) => q.eq('userId', userId))
+          .withIndex('by_userId_updatedAt', (q) => q.eq('userId', userId))
           .order('desc')
           .first();
 
-        const hasRecentActiviy =
-          newestInteraction !== null && newestInteraction._creationTime > lastUpdated;
+        const hasRecentActivity =
+          newestInteraction !== null && newestInteraction.updatedAt > lastUpdated;
+
+        if (!hasRecentActivity) return null;
 
         const weights =
           weightsRow?.weights ?? (numTags !== undefined ? new Array(numTags * 3).fill(0) : null);

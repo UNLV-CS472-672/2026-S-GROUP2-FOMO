@@ -118,13 +118,18 @@ export const setViewerAttendance = mutation({
     }
 
     if (existingAttendance) {
-      await ctx.db.patch(existingAttendance._id, { status: attendance, notification });
+      await ctx.db.patch(existingAttendance._id, {
+        status: attendance,
+        notification,
+        updatedAt: Date.now(),
+      });
     } else {
       await ctx.db.insert('attendance', {
         userId: user._id,
         eventId,
         status: attendance,
         notification,
+        updatedAt: Date.now(),
       });
     }
 
