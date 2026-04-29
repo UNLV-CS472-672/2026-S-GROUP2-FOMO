@@ -17,6 +17,12 @@ http.route({
       return new Response('Invalid webhook payload', { status: 400 });
     }
 
+    console.log('[clerk-users-webhook] incoming event', {
+      type: event.type,
+      userId: event.data?.id ?? null,
+      data: event.data,
+    });
+
     switch (event.type) {
       case 'user.created':
       case 'user.updated':

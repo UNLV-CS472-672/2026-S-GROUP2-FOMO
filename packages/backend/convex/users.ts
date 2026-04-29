@@ -2,12 +2,24 @@ import type { UserJSON } from '@clerk/backend';
 import { v, type Validator } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
-import { internalMutation, query, QueryCtx } from './_generated/server';
+import { internalMutation, mutation, query, QueryCtx } from './_generated/server';
 import {
   __backend_only_getAndAuthenticateCurrentConvexUser,
   __backend_only_guestOrAuthenticatedUser,
 } from './auth';
 import { getThreadedCommentsByPost } from './comments';
+
+const BIO_MAX_LENGTH = 280;
+
+function normalizeBio(bio: string): string {
+  return bio.trim();
+}
+
+function validateBio(bio: string): void {
+  if (bio.length > BIO_MAX_LENGTH) {
+    throw new Error(`Description must be ${BIO_MAX_LENGTH} characters or less.`);
+  }
+}
 
 async function buildProfile(ctx: QueryCtx, user: Doc<'users'>) {
   const [posts, comments, userEventLinks, friendRecs] = await Promise.all([
@@ -89,11 +101,43 @@ export const getCurrentProfileMinimal = query({
   },
 });
 
-function getUsername(data: UserJSON): string {
-  if (data.username && data.username.trim().length > 0) {
-    return data.username;
+function sanitizeUsername(value: string): string {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]/g, '_');
+  return normalized.length > 0 ? normalized : 'user';
+}
+
+function usernameFromPrimaryEmail(data: UserJSON): string | null {
+  const primaryEmail = data.email_addresses?.find(
+    (email) => email.id === data.primary_email_address_id
+  );
+  const emailValue = primaryEmail?.email_address?.trim();
+  if (!emailValue) {
+    return null;
   }
-  return data.id;
+
+  const localPart = emailValue.split('@')[0];
+  if (!localPart) {
+    return null;
+  }
+  return sanitizeUsername(localPart);
+}
+
+function getUsername(data: UserJSON): string {
+  const clerkUsername = data.username?.trim();
+  if (clerkUsername && clerkUsername.length > 0) {
+    return sanitizeUsername(clerkUsername);
+  }
+
+  const emailUsername = usernameFromPrimaryEmail(data);
+  if (emailUsername) {
+    return emailUsername;
+  }
+
+  // Final fallback keeps a stable value, but avoids shipping raw `user_...` ids.
+  return `user_${data.id.slice(-8).toLowerCase()}`;
 }
 
 function getDisplayName(data: UserJSON): string {
@@ -109,6 +153,7 @@ function getDisplayName(data: UserJSON): string {
 export const upsertFromClerk = internalMutation({
   args: { data: v.any() as Validator<UserJSON> },
   async handler(ctx, { data }) {
+    // Webhook source of truth for identity fields mirrored into Convex users.
     const userAttributes = {
       clerkId: data.id,
       username: getUsername(data),
@@ -130,6 +175,24 @@ export const upsertFromClerk = internalMutation({
     }
 
     await ctx.db.patch(existing._id, userAttributes);
+  },
+});
+
+export const updateCurrentProfile = mutation({
+  args: { bio: v.string() },
+  handler: async (ctx, { bio }) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    const nextBio = normalizeBio(bio);
+    validateBio(nextBio);
+
+    // Username/displayName/avatarUrl are Clerk-owned; webhook updates those fields.
+    await ctx.db.patch(user._id, { bio: nextBio });
+
+    return {
+      id: user._id,
+      username: user.username,
+      bio: nextBio,
+    };
   },
 });
 
