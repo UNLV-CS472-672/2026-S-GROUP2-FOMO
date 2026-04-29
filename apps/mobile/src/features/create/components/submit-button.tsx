@@ -56,7 +56,7 @@ export function CreateSubmitButton({
       <Pressable
         accessibilityLabel={isEventMode ? 'Create event' : 'Create post'}
         accessibilityRole="button"
-        className="size-12 items-center justify-center rounded-full bg-card shadow-sm"
+        className="size-12 items-center justify-center rounded-full bg-card shadow-sm border border-border"
         hitSlop={10}
         disabled={disabled}
         style={({ pressed }) => [
