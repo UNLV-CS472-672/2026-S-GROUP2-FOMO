@@ -1,10 +1,9 @@
 import { Screen } from '@/components/ui/screen';
 import { FriendCell } from '@/features/profile/components/friend-cell';
-import { useUser } from '@clerk/expo';
 import { MaterialIcons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
-import { useMutation, useQuery } from 'convex/react';
+import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -12,8 +11,8 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 
 export default function FriendRequestsScreen() {
   const router = useRouter();
-  const { isSignedIn } = useUser();
-  const requests = useQuery(api.friends.getFriendRequests, isSignedIn ? {} : 'skip');
+  const { isAuthenticated } = useConvexAuth();
+  const requests = useQuery(api.friends.getFriendRequests, isAuthenticated ? {} : 'skip');
   const acceptFriendRequest = useMutation(api.friends.acceptFriendRequest);
   const declineFriendRequest = useMutation(api.friends.declineFriendRequest);
   const cancelFriendRequest = useMutation(api.friends.cancelFriendRequest);

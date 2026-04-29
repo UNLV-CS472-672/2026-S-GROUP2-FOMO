@@ -3,10 +3,9 @@ import { Screen } from '@/components/ui/screen';
 import { Authenticated, GuestOnly } from '@/features/auth/components/auth-gate';
 import { ProfilePage } from '@/features/profile/profile-page';
 import { useAppTheme } from '@/lib/use-app-theme';
-import { useUser } from '@clerk/expo';
 import { MaterialIcons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
-import { useQuery } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, View } from 'react-native';
 
@@ -16,10 +15,10 @@ import { GuestMode } from '@/features/profile/components/guest-mode';
 export default function ProfileScreen() {
   const router = useRouter();
 
-  const { isSignedIn } = useUser();
-  const profile = useQuery(api.users.getCurrentProfile, isSignedIn ? {} : 'skip');
-  const friends = useQuery(api.data_ml.friends.getFriends, isSignedIn ? {} : 'skip');
-  const friendRequests = useQuery(api.friends.getFriendRequests, isSignedIn ? {} : 'skip');
+  const { isAuthenticated } = useConvexAuth();
+  const profile = useQuery(api.users.getCurrentProfile, isAuthenticated ? {} : 'skip');
+  const friends = useQuery(api.data_ml.friends.getFriends, isAuthenticated ? {} : 'skip');
+  const friendRequests = useQuery(api.friends.getFriendRequests, isAuthenticated ? {} : 'skip');
   const feedPosts = useQuery(
     api.users.getProfileFeed,
     profile ? { userId: profile.user._id } : 'skip'

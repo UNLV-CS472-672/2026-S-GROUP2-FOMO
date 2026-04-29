@@ -8,11 +8,10 @@ import StatLabel from '@/features/profile/components/stat-label';
 import { useGuest } from '@/integrations/session/guest';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { cn } from '@/lib/utils';
-import { useUser } from '@clerk/expo';
 import { MaterialIcons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
-import { useMutation, useQuery } from 'convex/react';
+import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { FunctionReturnType } from 'convex/server';
 import { useRouter } from 'expo-router';
 import type { ComponentProps, ReactNode } from 'react';
@@ -112,7 +111,7 @@ export function ProfilePage({
   const userId = profile.user._id;
   const theme = useAppTheme();
   const router = useRouter();
-  const { isSignedIn } = useUser();
+  const { isAuthenticated } = useConvexAuth();
   const { isGuestMode } = useGuest();
   const togglePostLike = useMutation(api.likes.togglePostLike);
   const sendFriendRequest = useMutation(api.friends.sendFriendRequest);
@@ -124,7 +123,7 @@ export function ProfilePage({
   const [isUpdatingFriendship, setIsUpdatingFriendship] = useState(false);
   const friendship = useQuery(
     api.friends.getFriendshipStatusForUser,
-    isSignedIn && viewerUserId && viewerUserId !== userId ? { otherUserId: userId } : 'skip'
+    isAuthenticated && viewerUserId && viewerUserId !== userId ? { otherUserId: userId } : 'skip'
   );
 
   function handlePressGridItem(item: GridMediaItem) {
