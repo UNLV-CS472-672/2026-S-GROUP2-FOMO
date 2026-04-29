@@ -115,13 +115,11 @@ def mock_queries(
          patch("friendRecs.queries.get_friend_ids", return_value=[]) as mock_get_friend_ids, \
          patch("friendRecs.queries.upsert_friend_recs") as mock_upsert_recs, \
          patch("friendRecs.queries.user_exists", return_value=True) as mock_user_exists, \
-         patch("friendRecs.queries.seed") as mock_seed, \
          patch("friendRecs.queries.get_all_user_ids", return_value=["u1", "u2"]) as mock_get_ids:
         yield {
             "get_friend_ids": mock_get_friend_ids,
             "upsert_friend_recs": mock_upsert_recs,
             "user_exists": mock_user_exists,
-            "seed": mock_seed,
             "get_all_user_ids": mock_get_ids,
         }
 
@@ -380,7 +378,6 @@ def mock_main_dependencies(
 
         yield {
             "user_exists":             mock_queries["user_exists"],
-            "seed":                    mock_queries["seed"],
             "raw_matrix_events":       mock_raw_events,
             "raw_matrix_eventTags":    mock_raw_event_tags,
             "raw_matrix_postTags":     mock_raw_post_tags,
@@ -393,28 +390,20 @@ def mock_main_dependencies(
 def test_main_one_user_raises_if_user_not_found(mock_main_dependencies: dict[str, MagicMock]) -> None:
     mock_main_dependencies["user_exists"].return_value = False
     with pytest.raises(Exception):
-        main_one_user("gorilla-sushi", 5, False)
-
-def test_main_one_user_does_not_seed_when_false(mock_main_dependencies: dict[str, MagicMock]) -> None:
-    main_one_user("alice", 5, False)
-    mock_main_dependencies["seed"].assert_not_called()
-
-def test_main_one_user_seeds_when_true(mock_main_dependencies: dict[str, MagicMock]) -> None:
-    main_one_user("alice", 5, True)
-    mock_main_dependencies["seed"].assert_called_once()
+        main_one_user("gorilla-sushi", 5)
 
 def test_main_one_user_calls_all_raw_matrix_functions(mock_main_dependencies: dict[str, MagicMock]) -> None:
-    main_one_user("alice", 5, False)
+    main_one_user("alice", 5)
     mock_main_dependencies["raw_matrix_events"].assert_called_once()
     mock_main_dependencies["raw_matrix_eventTags"].assert_called_once()
     mock_main_dependencies["raw_matrix_postTags"].assert_called_once()
 
 def test_main_one_user_calls_sim_scores_weighted(mock_main_dependencies: dict[str, MagicMock]) -> None:
-    main_one_user("alice", 5, False)
+    main_one_user("alice", 5)
     mock_main_dependencies["sim_scores_weighted"].assert_called_once()
 
 def test_main_one_user_calls_upsert_friend_recs(mock_main_dependencies: dict[str, MagicMock]) -> None:
-    main_one_user("alice", 5, False)
+    main_one_user("alice", 5)
     mock_main_dependencies["upsert_friend_recs"].assert_called_once()
 
 
@@ -447,7 +436,6 @@ def mock_main_all_users_dependencies(
         yield {
             "user_ids":                user_ids,
             "get_all_user_ids":        mock_queries["get_all_user_ids"],
-            "seed":                    mock_queries["seed"],
             "raw_matrix_events":       mock_raw_events,
             "raw_matrix_eventTags":    mock_raw_event_tags,
             "raw_matrix_postTags":     mock_raw_post_tags,
@@ -457,12 +445,8 @@ def mock_main_all_users_dependencies(
             "upsert_friend_recs":      mock_upsert,
         }
 
-def test_main_all_users_seeds_when_true(mock_main_all_users_dependencies: dict[str, MagicMock]) -> None:
-    main_all_users(5, True)
-    mock_main_all_users_dependencies["seed"].assert_called_once()
-
 def test_main_all_users_builds_raw_matrices_once(mock_main_all_users_dependencies: dict[str, MagicMock]) -> None:
-    main_all_users(5, False)
+    main_all_users(5)
     mock_main_all_users_dependencies["raw_matrix_events"].assert_called_once()
     mock_main_all_users_dependencies["raw_matrix_eventTags"].assert_called_once()
     mock_main_all_users_dependencies["raw_matrix_postTags"].assert_called_once()
@@ -470,19 +454,19 @@ def test_main_all_users_builds_raw_matrices_once(mock_main_all_users_dependencie
 def test_main_all_users_builds_similarity_matrices_once(
     mock_main_all_users_dependencies: dict[str, MagicMock],
 ) -> None:
-    main_all_users(5, False)
+    main_all_users(5)
     assert mock_main_all_users_dependencies["build_similarity_matrix"].call_count == 3
 
 def test_main_all_users_calls_get_user_scores_for_each_user_and_each_modality(
     mock_main_all_users_dependencies: dict[str, MagicMock],
 ) -> None:
     user_ids = mock_main_all_users_dependencies["user_ids"]
-    main_all_users(5, False)
+    main_all_users(5)
     assert mock_main_all_users_dependencies["get_user_scores"].call_count == 3 * len(user_ids)
 
 def test_main_all_users_upserts_for_each_user(mock_main_all_users_dependencies: dict[str, MagicMock]) -> None:
     user_ids = mock_main_all_users_dependencies["user_ids"]
-    main_all_users(5, False)
+    main_all_users(5)
     assert mock_main_all_users_dependencies["upsert_friend_recs"].call_count == len(user_ids)
     called_user_ids = [call_args[0][1] for call_args in mock_main_all_users_dependencies["upsert_friend_recs"].call_args_list]
     assert called_user_ids == user_ids

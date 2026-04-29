@@ -361,7 +361,7 @@ def test_build_user_feature_vector_cold_start_plus_new_event(
 @pytest.fixture
 def mock_main_dependencies(
     mock_queries: dict[str, MagicMock],
-) -> Generator[dict[str, MagicMock], None, None]:
+) -> Generator[dict[str, MagicMock | dict[str, MagicMock]], None, None]:
     with patch("updateUserPreferences.init_tags") as mock_init, \
          patch("updateUserPreferences.build_user_feature_vector") as mock_build:
 

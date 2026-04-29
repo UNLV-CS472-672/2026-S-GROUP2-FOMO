@@ -160,11 +160,7 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> N
 
 
 # Generate friend recommendations for a single user.
-def main_one_user(user: str, rec_amt: int, seed: bool) -> None:
-
-    if seed:
-        queries.seed()
-
+def main_one_user(user: str, rec_amt: int) -> None:
     if not queries.user_exists(user):
         raise Exception(f"\"{user}\" cannot be found in users.")
 
@@ -186,11 +182,7 @@ def main_one_user(user: str, rec_amt: int, seed: bool) -> None:
 
 
 # Generate friend recommendations for all users.
-def main_all_users(rec_amt: int, seed: bool) -> None:
-
-    if seed:
-        queries.seed()
-
+def main_all_users(rec_amt: int) -> None:
     user_ids = queries.get_all_user_ids()
 
     # Build all raw matrices once and only generate similarity scores for each user
@@ -214,10 +206,9 @@ def main_all_users(rec_amt: int, seed: bool) -> None:
 
 USER     = "n17849zzm0xksq2x2wh0gpcqs584x1q6"  # By user_id, Claude
 REC_AMT  = 5         # friendRecs schema only currently supports 5.
-SEED     = False      # Dictates if fake data needs to be populated into Convex.
 
 if __name__ == "__main__":
     log("Updating friend recommendations...")
-    main_all_users(REC_AMT, SEED)
+    main_all_users(REC_AMT)
     log("Friend recommendations updated.")
 

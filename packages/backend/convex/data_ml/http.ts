@@ -82,7 +82,7 @@ http.route({
 
     const { searchParams } = new URL(req.url);
 
-    const userId = searchParams.getAll('userId') as unknown as Id<'users'>;
+    const userId = searchParams.get('userId') as unknown as Id<'users'>;
 
     const result = await ctx.runQuery(internal.data_ml.eventRec.getUserTagWeightsWithTimestamp, {
       userId,
@@ -100,12 +100,10 @@ http.route({
 
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId') as unknown as Id<'users'>;
-    const sinceMs = searchParams.get('sinceMs') as unknown as number;
+    const sinceMsRaw = searchParams.get('sinceMs');
+    const queryArgs = sinceMsRaw !== null ? { userId, sinceMs: Number(sinceMsRaw) } : { userId };
 
-    const result = await ctx.runQuery(internal.data_ml.eventRec.getInteractionsByUserId, {
-      userId,
-      sinceMs,
-    });
+    const result = await ctx.runQuery(internal.data_ml.eventRec.getInteractionsByUserId, queryArgs);
     return new Response(JSON.stringify(result), { status: 200 });
   }),
 });
