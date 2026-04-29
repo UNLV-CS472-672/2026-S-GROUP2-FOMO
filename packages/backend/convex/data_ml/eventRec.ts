@@ -66,16 +66,6 @@ export const getUserTagWeights = internalQuery({
   },
 });
 
-export const getPreferredTagsByUserId = internalQuery({
-  args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
-    return await ctx.db
-      .query('userPreferredTags')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
-      .unique();
-  },
-});
-
 export const getInteractionsByUserId = internalQuery({
   args: { userId: v.id('users'), sinceMs: v.optional(v.number()) },
   handler: async (ctx, { userId, sinceMs }) => {
@@ -125,7 +115,7 @@ export const upsertEventRecs = internalMutation({
   },
 });
 
-export const getUserTagWeightsWithTimestamp = query({
+export const getUserTagWeightsWithTimestamp = internalQuery({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
     const result = await ctx.db

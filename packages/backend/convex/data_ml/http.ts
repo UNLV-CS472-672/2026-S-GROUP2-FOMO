@@ -74,16 +74,16 @@ http.route({
 });
 
 http.route({
-  path: '/data-ml/get-preferred-tags',
+  path: '/data-ml/get-user-tag-weights-timestamp',
   method: 'GET',
   handler: httpAction(async (ctx, req) => {
     const authError = validateSecret(req);
     if (authError) return authError;
 
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId') as unknown as Id<'users'>;
+    const userId = searchParams.getAll('userId') as unknown as Id<'users'>;
 
-    const result = await ctx.runQuery(internal.data_ml.eventRec.getPreferredTagsByUserId, {
+    const result = await ctx.runQuery(internal.data_ml.eventRec.getUserTagWeightsWithTimestamp, {
       userId,
     });
     return new Response(JSON.stringify(result), { status: 200 });
