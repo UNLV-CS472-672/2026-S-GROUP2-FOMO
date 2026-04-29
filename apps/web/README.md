@@ -62,7 +62,7 @@ pnpm exec convex env set CLERK_WEBHOOK_SECRET whsec_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 pnpm exec convex env set TICKETMASTER_API_KEY your_ticketmaster_api_key
 ```
 
-`CLERK_WEBHOOK_SECRET` is required for Clerk webhook signature verification on `/clerk-users-webhook`.
+`CLERK_WEBHOOK_SECRET` is required for Clerk webhook signature verification on `/webhooks/clerk`.
 `TICKETMASTER_API_KEY` is only required if you run Ticketmaster ingestion actions.
 
 ---
