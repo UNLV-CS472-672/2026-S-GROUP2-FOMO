@@ -2,7 +2,7 @@ import type { UserJSON } from '@clerk/backend';
 import { v, type Validator } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
-import { internalMutation, query, QueryCtx } from './_generated/server';
+import { internalMutation, mutation, query, QueryCtx } from './_generated/server';
 import {
   __backend_only_getAndAuthenticateCurrentConvexUser,
   __backend_only_guestOrAuthenticatedUser,

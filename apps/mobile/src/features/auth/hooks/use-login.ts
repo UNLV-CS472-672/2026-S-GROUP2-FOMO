@@ -1,4 +1,3 @@
-import { useOnSignInComplete } from '@/features/auth/hooks/use-on-sign-in-complete';
 import { buildClerkErrorState, clearAuthErrors, LoginErrors } from '@/features/auth/utils/errors';
 import { isClerkAPIResponseError, useAuth } from '@clerk/expo';
 import { useSignIn } from '@clerk/expo/legacy';
@@ -16,7 +15,6 @@ type LoginStatus =
 export function useLogin() {
   const { isSignedIn } = useAuth();
   const { isLoaded, signIn, setActive } = useSignIn();
-  const onSignInComplete = useOnSignInComplete();
 
   // state
   const [step, setStep] = useState<LoginStep>('identifier');
@@ -235,7 +233,10 @@ export function useLogin() {
       });
 
       if (result.status === 'complete') {
-        await onSignInComplete({ sessionId: result.createdSessionId, setActive });
+        if (!result.createdSessionId || !setActive) {
+          throw new Error('Expected a Clerk session ID and setActive after successful sign-in.');
+        }
+        await setActive({ session: result.createdSessionId });
       }
     } catch (error) {
       if (__DEV__) {
@@ -260,7 +261,10 @@ export function useLogin() {
     try {
       const result = await signIn.create({ identifier: trimmedIdentifier, password });
       if (result.status === 'complete') {
-        await onSignInComplete({ sessionId: result.createdSessionId, setActive });
+        if (!result.createdSessionId || !setActive) {
+          throw new Error('Expected a Clerk session ID and setActive after successful sign-in.');
+        }
+        await setActive({ session: result.createdSessionId });
       }
     } catch (error) {
       if (__DEV__) {
