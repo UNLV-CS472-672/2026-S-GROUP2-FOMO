@@ -86,26 +86,23 @@ def get_interaction_ids(
     return going, interested, uninterested
 
 
-def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
+def build_user_feature_vector(user_id: str, last_updated: float | None = None, weights: list[float] | None = None) -> NDArray[np.float32]:
     """
     Builds full (3 * num_tags,) feature vector for one user:
       [going_weights | interested_weights | uninterested_weights]
     """
-    user_weights_and_timestamp = queries.get_user_tag_weights_with_timestamp(user_id, NUM_TAGS)
+    if last_updated is not None and weights is not None:
+        # passed in values
+        user_last_updated = last_updated
+        user_raw_weights_nd = np.array(weights, dtype=np.float32)
+    else:
+        # Didn't pass in weights or last_updated. Query for both
+        user_weights_and_timestamp = queries.get_user_tag_weights_with_timestamp(user_id, NUM_TAGS)
 
-    expected_dim = 3 * NUM_TAGS
-    user_last_updated = -1.0
-    user_raw_weights_nd = np.zeros(expected_dim, dtype=np.float32)
-
-    if user_weights_and_timestamp is not None:
         user_last_updated = float(user_weights_and_timestamp.get("lastUpdatedAt", -1.0))
         user_raw_weights = user_weights_and_timestamp.get("weights")
-        if user_raw_weights is not None:
-            raw = np.array(user_raw_weights, dtype=np.float32)
-            if len(raw) == expected_dim:
-                user_raw_weights_nd = raw
-            elif len(raw) == NUM_TAGS:
-                user_raw_weights_nd[:NUM_TAGS] = raw
+
+        user_raw_weights_nd = np.array(user_raw_weights, dtype=np.float32)
 
     # Get event ids for events the user has attended, was interested, and has blocked
     going_ids, interested_ids, uninterested_ids = get_interaction_ids(
@@ -130,17 +127,30 @@ def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
 def main(users: list[str], update_db: bool) -> None:
     init_tags()
 
+    prefetched_state: dict[str, tuple[float, list[float] | None]] = {}
+
     if len(users) == 1:
         if users[0] == "ALL":
             all_users = queries.query_all("users")
             users = [row["_id"] for row in all_users]
         elif users[0] == "ACTIVE":
-            all_users = queries.query_active("users")
-
+            # Guaranteed to have weights and lastUpdated if this query is ran
+            # Can batch users for build_user_feature. Either all users have weights passed in or none do
+            active_rows = queries.query_active(NUM_TAGS)
+            users = [row["userId"] for row in active_rows]
+            for row in active_rows:
+                prefetched_state[row["userId"]] = (
+                    float(row["lastUpdated"]),
+                    row["weights"],
+                )
 
     user_feature_vectors: dict[str, NDArray[np.float32]] = {}
     for user_id in users:
-        user_feature_vectors[user_id] = build_user_feature_vector(user_id)
+        last_updated, raw_weights = None, None
+        if user_id in prefetched_state:
+            last_updated, raw_weights = prefetched_state[user_id]
+
+        user_feature_vectors[user_id] = build_user_feature_vector(user_id, last_updated=last_updated, weights=raw_weights)
 
     if update_db:
         for user_id, vec in user_feature_vectors.items():

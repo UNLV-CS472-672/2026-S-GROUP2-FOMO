@@ -166,10 +166,14 @@ export const getPreferredTagsByUserId = internalQuery({
 });
 
 export const getUsersWithRecentActivity = internalQuery({
-  args: { userIds: v.array(v.id('users')), numTags: v.optional(v.number()) },
-  handler: async (ctx, { userIds, numTags }) => {
+  args: { numTags: v.optional(v.number()) },
+  handler: async (ctx, { numTags }) => {
+    const allUsers = await ctx.db.query('users').collect();
+
     const results = await Promise.all(
-      userIds.map(async (userId) => {
+      allUsers.map(async (user) => {
+        const userId = user._id;
+
         const weightsRow = await ctx.db
           .query('userTagWeights')
           .withIndex('by_userId', (q) => q.eq('userId', userId))
