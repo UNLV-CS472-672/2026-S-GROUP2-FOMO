@@ -10,6 +10,8 @@ jobs:
   ci:
     name: Node
     runs-on: ubuntu-latest
+    env:
+      CLERK_WEBHOOK_SECRET: ${{ secrets.CLERK_WEBHOOK_SECRET }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
