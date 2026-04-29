@@ -1,22 +1,21 @@
+'use client';
+
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
-import { Clock, MapPin, SearchIcon, Sparkles } from 'lucide-react';
+import { useLocationSearch } from '@/features/map/hooks/use-location-search';
+import { Loader2, MapPin, SearchIcon } from 'lucide-react';
 import { useState } from 'react';
 
-const RECENT_ITEMS = [
-  { icon: Clock, name: 'Thomas & Mack Center', detail: 'South Maryland Parkway, Las Vegas, NV' },
-  { icon: Clock, name: 'Fremont Street Experience', detail: 'Fremont Street, Las Vegas, NV' },
-  { icon: Clock, name: 'Las Vegas Convention Center', detail: 'Paradise Road, Las Vegas, NV' },
-];
+type MapSearchOverlayProps = {
+  onSelectLocation?: (coords: { longitude: number; latitude: number }) => void;
+};
 
-const SUGGESTED_ITEMS = [
-  { icon: Sparkles, name: 'Events near you', detail: 'Based on your location' },
-  { icon: MapPin, name: 'Popular this week', detail: 'Trending in Las Vegas' },
-];
-
-export function MapSearchOverlay() {
+export function MapSearchOverlay({ onSelectLocation }: MapSearchOverlayProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const { results, isLoading, resolveCoordinates } = useLocationSearch(query);
+
+  const showResults = query.trim().length > 0;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -30,7 +29,7 @@ export function MapSearchOverlay() {
               setQuery(e.target.value);
               if (!open) setOpen(true);
             }}
-            placeholder="Search events..."
+            placeholder="Search places or events..."
             className="h-10 rounded-xl pl-9 pr-3"
             onFocus={() => setOpen(true)}
           />
@@ -38,48 +37,45 @@ export function MapSearchOverlay() {
       </PopoverAnchor>
 
       <PopoverContent
-        className="w-105 p-0 overflow-hidden rounded-2xl"
+        className="w-105 overflow-hidden rounded-2xl p-0"
         sideOffset={6}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
         <div className="max-h-80 overflow-y-auto py-1">
-          {SUGGESTED_ITEMS.map((item) => (
-            <button
-              key={item.name}
-              type="button"
-              className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
-              onClick={() => setOpen(false)}
-            >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                <item.icon className="h-4 w-4 text-primary" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{item.name}</p>
-                <p className="truncate text-xs text-muted-foreground">{item.detail}</p>
-              </div>
-            </button>
-          ))}
+          {isLoading && (
+            <div className="flex items-center gap-2 px-3 py-2.5 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Searching…
+            </div>
+          )}
 
-          <div className="mx-3 my-1 border-t" />
+          {showResults && !isLoading && results.length === 0 && (
+            <p className="px-3 py-2.5 text-sm text-muted-foreground">No places found.</p>
+          )}
 
-          <p className="px-3 pb-1 pt-2 text-xs font-medium text-muted-foreground">Recent</p>
-          {RECENT_ITEMS.map((item) => (
-            <button
-              key={item.name}
-              type="button"
-              className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
-              onClick={() => setOpen(false)}
-            >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
-                <item.icon className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{item.name}</p>
-                <p className="truncate text-xs text-muted-foreground">{item.detail}</p>
-              </div>
-            </button>
-          ))}
+          {showResults &&
+            results.map((loc) => (
+              <button
+                key={loc.mapbox_id}
+                type="button"
+                className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
+                onClick={async () => {
+                  setQuery(loc.name);
+                  setOpen(false);
+                  const coords = await resolveCoordinates(loc.mapbox_id);
+                  if (coords) onSelectLocation?.(coords);
+                }}
+              >
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <MapPin className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{loc.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{loc.full_address}</p>
+                </div>
+              </button>
+            ))}
         </div>
       </PopoverContent>
     </Popover>

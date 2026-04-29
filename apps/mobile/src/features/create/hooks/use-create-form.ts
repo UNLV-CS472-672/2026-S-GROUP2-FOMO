@@ -1,16 +1,15 @@
 import { useUploadMedia } from '@/features/create/hooks/use-upload-media';
 import type { CreateFormValues, CreateMode } from '@/features/create/types';
+import { coordsToH3Cell } from '@/features/map/utils/h3';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
-import { latLngToCell } from 'h3-js';
 import { useState } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { Alert } from 'react-native';
 
-const H3_RESOLUTION = 9;
 /** WGS84 coordinates rounded for storage (~1 cm precision; avoids float noise from GPS). */
 const LOCATION_COORDINATE_DECIMALS = 7;
 
@@ -28,7 +27,7 @@ async function getDeviceLocation() {
     });
     const latitude = roundGeographicCoordinate(position.coords.latitude);
     const longitude = roundGeographicCoordinate(position.coords.longitude);
-    const h3Index = latLngToCell(latitude, longitude, H3_RESOLUTION);
+    const h3Index = coordsToH3Cell(longitude, latitude);
     return { latitude, longitude, h3Index };
   } catch {
     return null;
@@ -51,6 +50,7 @@ export function useCreateForm(selectedMode: CreateMode) {
         description: '',
         tags: [],
         media: { uri: '', type: undefined },
+        location: { label: '' },
         startDate: (() => {
           const d = new Date();
           d.setHours(20, 0, 0, 0);
@@ -111,11 +111,30 @@ export function useCreateForm(selectedMode: CreateMode) {
         await createPost({ caption, mediaIds, eventId, tagIds });
       } else {
         const eventValues = values.event;
-        const location = (await getDeviceLocation()) ?? {
-          latitude: 0,
-          longitude: 0,
-          h3Index: latLngToCell(0, 0, H3_RESOLUTION),
-        };
+        let location;
+        if (eventValues.location.kind === 'current') {
+          const currentLocation = await getDeviceLocation();
+          if (!currentLocation) {
+            throw new Error(
+              'Allow location access to use your current location, or choose a place instead.'
+            );
+          }
+          location = currentLocation;
+        } else if (
+          eventValues.location.kind === 'place' &&
+          typeof eventValues.location.latitude === 'number' &&
+          typeof eventValues.location.longitude === 'number'
+        ) {
+          const latitude = roundGeographicCoordinate(eventValues.location.latitude);
+          const longitude = roundGeographicCoordinate(eventValues.location.longitude);
+          location = {
+            latitude,
+            longitude,
+            h3Index: coordsToH3Cell(longitude, latitude),
+          };
+        } else {
+          throw new Error('Pick a place or use your current location before creating the event.');
+        }
         let storageId: Id<'_storage'> | undefined;
         if (eventValues.media.uri) {
           storageId = await uploadMedia(
@@ -153,6 +172,22 @@ export function useCreateForm(selectedMode: CreateMode) {
     removePostMedia,
     replacePostMedia,
     clearPostMedia: () => replacePostMedia([]),
+    getCurrentLocation: async () => {
+      const location = await getDeviceLocation();
+      if (!location) {
+        Alert.alert(
+          'Location unavailable',
+          'Allow location access to use your current location, or choose a place instead.',
+          [{ text: 'OK' }]
+        );
+        return null;
+      }
+
+      return {
+        latitude: location.latitude,
+        longitude: location.longitude,
+      };
+    },
     onSubmit,
     allTags,
     isTagMenuOpen,

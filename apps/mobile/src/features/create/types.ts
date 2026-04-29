@@ -13,6 +13,14 @@ export type CreateMediaItem = {
   type: string | undefined;
 };
 
+export type EventLocationValue = {
+  kind?: 'current' | 'place';
+  label: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+};
+
 export type PostModeValues = {
   description: string;
   tags: string[];
@@ -27,6 +35,7 @@ export type EventModeValues = {
   tags: string[];
   /** Events always have a single cover photo. */
   media: CreateMediaItem;
+  location: EventLocationValue;
   startDate: number;
   endDate: number;
 };
