@@ -1,14 +1,16 @@
 import { ProfilePage, ProfileStateScreen } from '@/features/profile/profile-page';
 import { api } from '@fomo/backend/convex/_generated/api';
-import { useQuery } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
 export default function VisitProfileScreen() {
   const router = useRouter();
+  const { isAuthenticated } = useConvexAuth();
   const { username: rawUsername } = useLocalSearchParams<{ username?: string | string[] }>();
   const username = Array.isArray(rawUsername) ? rawUsername[0] : rawUsername;
   const screenTitle = username ?? 'Profile';
 
+  const viewerProfile = useQuery(api.users.getCurrentProfileMinimal, isAuthenticated ? {} : 'skip');
   const profile = useQuery(api.users.getProfileByUsername, username ? { username } : 'skip');
   const feedPosts = useQuery(
     api.users.getProfileFeed,
@@ -49,6 +51,7 @@ export default function VisitProfileScreen() {
         }}
         activityLabel="Recent Events"
         topPaddingClassName="pt-5"
+        viewerUserId={viewerProfile?.id}
       />
     </>
   );

@@ -32,7 +32,12 @@ export default defineSchema({
   })
     .index('by_startDate', ['startDate'])
     .index('by_endDate', ['endDate'])
-    .index('by_startDate_endDate', ['startDate', 'endDate']),
+    .index('by_startDate_endDate', ['startDate', 'endDate'])
+    .index('by_h3Index', ['location.h3Index'])
+    .searchIndex('search_name', {
+      searchField: 'name',
+      filterFields: ['location.h3Index'],
+    }),
 
   externalEvents: defineTable({
     ...sharedEventFields,
@@ -128,6 +133,12 @@ export default defineSchema({
   userTagWeights: defineTable({
     userId: v.id('users'),
     weights: v.array(v.number()),
+    updatedAt: v.number(),
+  }).index('by_userId', ['userId']),
+
+  userTagPreferences: defineTable({
+    userId: v.id('users'),
+    tags: v.array(v.id('tags')),
     updatedAt: v.number(),
   }).index('by_userId', ['userId']),
 

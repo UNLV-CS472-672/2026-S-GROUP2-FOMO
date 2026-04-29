@@ -8,18 +8,22 @@ from lib import queries, log
 
 
 from .models.twoTowerModel import UserTower, EventTower
+from data.updateUserPreferences import TAG_ID_TO_IDX, NUM_TAGS, init_tags
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-MAX_TAGS = 8   # normalizer for tag_count_norm
+MAX_TAGS = 8  # normalizer for tag_count_norm
 BETA = 0.10
-TAU  = 1.25
+TAU = 1.25
+
 
 def activation_fn(raw_weights: NDArray[np.float32]) -> NDArray[np.float32]:
     """
     Activation Function. Squishes values between 0 and 1
     """
-    result: NDArray[np.float32] = (1.0 - np.exp(-(raw_weights + BETA) / TAU)).astype(np.float32)
+    result: NDArray[np.float32] = (1.0 - np.exp(-(raw_weights + BETA) / TAU)).astype(
+        np.float32
+    )
     return result
 
 
@@ -46,7 +50,21 @@ def get_user_features(users: list[str], num_tags: int) -> torch.Tensor:
 
     fixed_np: NDArray[np.float32] = np.stack(fixed)
 
-    return torch.from_numpy(activation_fn(fixed_np))
+    tag_prefs = client.query(
+        "data_ml/eventRec:getPreferredTagsByUserId", {"userIds": users}
+    )
+    if not isinstance(tag_prefs, list):
+        tag_prefs = []
+
+    prior = np.zeros(fixed_np.shape, dtype=np.float32)
+    for user_idx, row in enumerate(tag_prefs):
+        if row is None:
+            continue
+        for tag_id in row:
+            if tag_id in TAG_ID_TO_IDX:
+                prior[user_idx, TAG_ID_TO_IDX[tag_id]] = 1.0
+
+    return torch.from_numpy(activation_fn(fixed_np + prior))
 
 
 def get_event_features(num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[list[str], NDArray[np.float32]]:
@@ -61,7 +79,7 @@ def get_event_features(num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[li
     event_rows = []
 
     for event in all_events:
-        eid  = event["_id"]
+        eid = event["_id"]
         tags = np.zeros(num_tags, dtype=np.float32)
 
         event_tags = queries.get_by_event_id(eid)
@@ -72,12 +90,14 @@ def get_event_features(num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[li
         tag_count_norm = tags.sum() / MAX_TAGS
 
         # FIX: Need to be fixed, too lazy rn. Do in a diff pr
-        day_norm = float(event.get("dayOfWeek",  5)) / 6.0
+        day_norm = float(event.get("dayOfWeek", 5)) / 6.0
         hour_norm = float(event.get("startHour", 19)) / 23.0
-        is_free = float(event.get("isFree",  False))
+        is_free = float(event.get("isFree", False))
 
         event_ids.append(eid)
-        event_rows.append(np.concatenate([tags, [tag_count_norm, day_norm, hour_norm, is_free]]))
+        event_rows.append(
+            np.concatenate([tags, [tag_count_norm, day_norm, hour_norm, is_free]])
+        )
 
     return event_ids, np.array(event_rows, dtype=np.float32)
 
@@ -96,18 +116,18 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
     event_features         = torch.from_numpy(event_array).to(DEVICE)
 
     # Load model
-    user_tower  = UserTower(num_tags=num_tags).to(DEVICE)
+    user_tower = UserTower(num_tags=num_tags).to(DEVICE)
     event_tower = EventTower(num_tags=num_tags).to(DEVICE)
 
     model_weights = torch.load(model_path, map_location=DEVICE)
-    user_tower.load_state_dict(model_weights['user_tower'])
-    event_tower.load_state_dict(model_weights['event_tower'])
+    user_tower.load_state_dict(model_weights["user_tower"])
+    event_tower.load_state_dict(model_weights["event_tower"])
 
     user_tower.eval()
     event_tower.eval()
 
     with torch.no_grad():
-        user_embeddings  = user_tower(user_features)
+        user_embeddings = user_tower(user_features)
         event_embeddings = event_tower(event_features)
 
     raw_scores = user_embeddings @ event_embeddings.T
@@ -146,23 +166,26 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
         event_name = {row["_id"]: row["name"] for row in all_events_rows}
 
         for user_id, user_n in user_name.items():
-            print(f'{user_n} : {user_id}')
+            print(f"{user_n} : {user_id}")
 
         print("")
 
         for event_id, event_n in event_name.items():
-            print(f'{event_n} : {event_id}')
+            print(f"{event_n} : {event_id}")
 
         for user_id in users:
             print(f"\n{user_name.get(user_id, user_id)}:")
             for rank, (event_id, score) in enumerate(recommendations[user_id]):
-                print(f"  {rank + 1}. {event_name.get(event_id, event_id)}: {score:.4f}")
+                print(
+                    f"  {rank + 1}. {event_name.get(event_id, event_id)}: {score:.4f}"
+                )
 
 
 USERS = ["ALL"]
-UPDATE_DB = False
+UPDATE_DB = True
 
-if __name__ == "__main__": # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
+    init_tags()
     log("Updating event recommendations...")
     model_dir = os.path.join(Path(__file__).parent, "models", "curr_model.pt")
     main(USERS, UPDATE_DB, model_dir)
