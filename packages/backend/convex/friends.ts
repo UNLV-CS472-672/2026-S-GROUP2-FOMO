@@ -203,6 +203,23 @@ export const cancelFriendRequest = mutation({
   },
 });
 
+export const removeFriend = mutation({
+  args: { friendId: v.id('users') },
+  handler: async (ctx, { friendId }) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    const { direct, reverse } = await getFriendshipsForPair(ctx, user._id, friendId);
+
+    const record =
+      direct.find((f) => f.status === 'accepted') ?? reverse.find((f) => f.status === 'accepted');
+
+    if (!record) {
+      throw new Error('Friendship not found');
+    }
+
+    await ctx.db.delete(record._id);
+  },
+});
+
 export const getPendingFriendRequests = query({
   args: {},
   handler: async (ctx) => {

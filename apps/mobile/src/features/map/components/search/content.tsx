@@ -42,7 +42,8 @@ export function SearchContent({
     resolveCoordinates,
   } = useLocationSearch(query);
   const events = useQuery(api.events.queries.getEvents) ?? [];
-  const popularTags = useQuery(api.tags.getPopularEventTags) ?? [];
+  const popularTagsQuery = useQuery(api.tags.getPopularEventTags);
+  const popularTags = useMemo(() => popularTagsQuery ?? [], [popularTagsQuery]);
   const [activeFilter, setActiveFilter] = useState('all');
 
   const exploreFilters = useMemo(() => {

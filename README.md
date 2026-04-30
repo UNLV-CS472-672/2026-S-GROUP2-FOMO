@@ -131,6 +131,7 @@ For backend Convex deployment variables, also set values with `pnpm exec convex 
 | `CLERK_SECRET_KEY`                           | Web     | Yes      | Clerk secret key (server-side)                                                          |
 | `NEXT_PUBLIC_MAPBOX_TOKEN`                   | Web     | Yes      | Mapbox access token (from [Mapbox](https://account.mapbox.com) → Access tokens)         |
 | `CLERK_JWT_ISSUER_DOMAIN`                    | Backend | Yes      | Clerk JWT issuer domain (e.g. `https://your-app.clerk.accounts.dev`)                    |
+| `CLERK_WEBHOOK_SECRET`                       | Backend | Yes      | Clerk webhook signing secret (`whsec_...`) used by `/webhooks/clerk`                    |
 | `TICKETMASTER_API_KEY`                       | Backend | No\*     | Required only when running Ticketmaster ingestion actions                               |
 | `EXPO_PUBLIC_CONVEX_URL`                     | Mobile  | Yes      | Convex URL (Android emulator: `http://10.0.2.2:3210`, iOS sim: `http://127.0.0.1:3210`) |
 | `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`          | Mobile  | Yes      | Clerk publishable key                                                                   |

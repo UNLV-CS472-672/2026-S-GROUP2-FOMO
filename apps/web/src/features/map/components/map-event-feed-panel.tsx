@@ -94,7 +94,6 @@ export function MapEventFeedPanel({ event, onClose }: MapEventFeedPanelProps) {
   );
   const togglePostLike = useMutation(api.likes.togglePostLike);
   const setViewerAttendance = useMutation(api.events.attendance.setViewerAttendance);
-  const ensureCurrentUser = useMutation(api.auth.ensureCurrentUser);
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
 
   if (!event) {
@@ -117,7 +116,6 @@ export function MapEventFeedPanel({ event, onClose }: MapEventFeedPanelProps) {
           return;
         }
 
-        await ensureCurrentUser({});
         await setViewerAttendance({
           eventId: event.id,
           attendance,
@@ -130,7 +128,6 @@ export function MapEventFeedPanel({ event, onClose }: MapEventFeedPanelProps) {
         }
 
         try {
-          await ensureCurrentUser({});
           await togglePostLike({ postId: post.id });
         } catch (error) {
           console.error('Failed to toggle event feed post like', error);

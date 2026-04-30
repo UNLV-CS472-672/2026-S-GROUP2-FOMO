@@ -1,9 +1,12 @@
 import { Avatar } from '@/features/posts/components/avatar';
+import { buildClerkImageFile } from '@/features/profile/clerk-image';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { useUser } from '@clerk/expo';
 import { MaterialIcons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
-import { useMutation } from 'convex/react';
+import { BIO_MAX_LENGTH } from '@fomo/backend/convex/users';
+import { useMutation, useQuery } from 'convex/react';
+import type { FunctionReturnType } from 'convex/server';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -16,100 +19,99 @@ import {
   View,
 } from 'react-native';
 
+type Profile = NonNullable<FunctionReturnType<typeof api.users.getCurrentProfileMinimal>>;
+
 export default function EditProfileScreen() {
+  const { user: clerkUser } = useUser();
+  const profile = useQuery(api.users.getCurrentProfileMinimal);
+
+  if (!profile || !clerkUser) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  return <EditProfileForm profile={profile} />;
+}
+
+function EditProfileForm({ profile }: { profile: Profile }) {
   const router = useRouter();
   const { user: clerkUser } = useUser();
   const theme = useAppTheme();
   const params = useLocalSearchParams<{
     avatarUri?: string | string[];
+    avatarFileName?: string | string[];
     avatarNonce?: string | string[];
   }>();
 
-  // TODO :: SHOULD BE REMOVED AFTER CLERK CONVEX WEBHOOK
-  const updateCurrentProfile = useMutation(api.users.updateCurrentProfile);
-  // TODO :: SHOULD BE REMOVED AFTER CLERK CONVEX WEBHOOK
-  const updateAvatarUrl = useMutation(api.users.updateAvatarUrl);
+  const updateBio = useMutation(api.users.updateBio);
 
-  const [username, setUsername] = useState(clerkUser?.username ?? '');
-  const [description, setDescription] = useState(
-    (clerkUser?.unsafeMetadata?.bio as string | undefined) ?? ''
-  );
+  const [username, setUsername] = useState(profile.username ?? '');
+  const [description, setDescription] = useState(profile.bio ?? '');
   const [pendingAvatarUri, setPendingAvatarUri] = useState<string | null>(null);
+  const [pendingAvatarFileName, setPendingAvatarFileName] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const avatarUriParam = Array.isArray(params.avatarUri) ? params.avatarUri[0] : params.avatarUri;
+  const avatarFileNameParam = Array.isArray(params.avatarFileName)
+    ? params.avatarFileName[0]
+    : params.avatarFileName;
   const avatarNonceParam = Array.isArray(params.avatarNonce)
     ? params.avatarNonce[0]
     : params.avatarNonce;
 
   useEffect(() => {
-    if (!avatarUriParam) {
-      return;
-    }
-
+    if (!avatarUriParam) return;
     setPendingAvatarUri(avatarUriParam);
+    setPendingAvatarFileName(avatarFileNameParam ?? null);
     setErrorMessage('');
-  }, [avatarNonceParam, avatarUriParam]);
+  }, [avatarFileNameParam, avatarNonceParam, avatarUriParam]);
 
   function openGallery() {
-    router.push('/profile/gallery-picker');
-  }
-
-  function buildClerkImageFile(uri: string) {
-    const normalizedUri = uri.split('?')[0] ?? uri;
-    const name = normalizedUri.split('/').pop() || `avatar-${Date.now()}.jpg`;
-    const extension = name.split('.').pop()?.toLowerCase();
-    const type =
-      extension === 'png'
-        ? 'image/png'
-        : extension === 'webp'
-          ? 'image/webp'
-          : extension === 'heic' || extension === 'heif'
-            ? 'image/heic'
-            : 'image/jpeg';
-
-    return { uri, name, type };
+    router.push('./gallery-picker');
   }
 
   async function handleSave() {
     if (!clerkUser) return;
-    setUsernameError('');
     setErrorMessage('');
+    setUsernameError('');
     setIsSaving(true);
 
     try {
       if (pendingAvatarUri) {
-        await clerkUser.setProfileImage({
-          file: buildClerkImageFile(pendingAvatarUri) as unknown as Parameters<
-            typeof clerkUser.setProfileImage
-          >[0]['file'],
+        const file = await buildClerkImageFile({
+          uri: pendingAvatarUri,
+          fileName: pendingAvatarFileName,
         });
+
+        await clerkUser.setProfileImage({ file });
         await clerkUser.reload();
-        if (clerkUser.imageUrl) {
-          await updateAvatarUrl({ avatarUrl: clerkUser.imageUrl });
-        }
         setPendingAvatarUri(null);
+        setPendingAvatarFileName(null);
       }
 
       const trimmedUsername = username.trim();
+      if (trimmedUsername && trimmedUsername !== clerkUser.username) {
+        try {
+          await clerkUser.update({ username: trimmedUsername });
+        } catch (err) {
+          if (__DEV__) console.error('error updating username', err);
+          setUsernameError(err instanceof Error ? err.message : 'Invalid username');
+          return;
+        }
+      }
+
       const trimmedBio = description.trim();
-      const currentUsername = clerkUser.username ?? '';
-      const currentBio = (clerkUser.unsafeMetadata?.bio as string | undefined) ?? '';
-
-      if (trimmedUsername !== currentUsername || trimmedBio !== currentBio) {
-        await updateCurrentProfile({ username: trimmedUsername, bio: trimmedBio });
+      if (trimmedBio !== (profile.bio ?? '')) {
+        await updateBio({ bio: trimmedBio });
       }
-
-      router.back();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Something went wrong';
-      if (msg === 'Username is taken') {
-        setUsernameError('Username is already taken');
-      } else {
-        setErrorMessage(msg);
-      }
+      if (__DEV__) console.error('error saving profile', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setIsSaving(false);
     }
@@ -148,27 +150,33 @@ export default function EditProfileScreen() {
           <TextInput
             className="rounded-xl bg-card px-4 py-3 text-base text-foreground"
             value={username}
-            onChangeText={(text) => {
-              setUsername(text);
+            onChangeText={(v) => {
+              setUsername(v);
               setUsernameError('');
             }}
-            autoCapitalize="none"
-            autoCorrect={false}
             placeholder="Username"
             placeholderTextColor={theme.mutedText}
+            autoCapitalize="none"
+            autoCorrect={false}
             accessibilityLabel="Username"
           />
           {usernameError ? <Text className="text-sm text-destructive">{usernameError}</Text> : null}
         </View>
 
         <View className="gap-1">
-          <Text className="text-sm font-medium text-foreground">Bio</Text>
+          <View className="flex-row items-center justify-between">
+            <Text className="text-sm font-medium text-foreground">Bio</Text>
+            <Text className="text-xs text-muted-foreground">
+              {description.length}/{BIO_MAX_LENGTH}
+            </Text>
+          </View>
           <TextInput
             className="rounded-xl bg-card px-4 py-3 text-base text-foreground"
             value={description}
             onChangeText={setDescription}
             multiline
             numberOfLines={4}
+            maxLength={BIO_MAX_LENGTH}
             placeholder="Tell people about yourself"
             placeholderTextColor={theme.mutedText}
             style={{ minHeight: 100, textAlignVertical: 'top' }}

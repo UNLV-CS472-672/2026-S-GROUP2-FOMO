@@ -4,11 +4,12 @@ import { useRouter } from 'expo-router';
 
 const PHOTO_ONLY: MediaLibrary.MediaTypeValue[] = [MediaLibrary.MediaType.photo];
 
-export default function ProfileGalleryPickerScreen() {
+export default function AuthGalleryPickerScreen() {
   const router = useRouter();
+
   const handleSelectAsset = (uri: string, _type: 'photo' | 'video', fileName?: string) => {
     router.dismissTo({
-      pathname: '/profile/edit',
+      pathname: '/(auth)/signup',
       params: {
         avatarUri: uri,
         avatarFileName: fileName,
@@ -22,7 +23,7 @@ export default function ProfileGalleryPickerScreen() {
       mediaTypes={PHOTO_ONLY}
       onSelectAsset={handleSelectAsset}
       emptyMessage="No photos found in your gallery."
-      permissionDescription="Allow access to your photo library so you can pick a profile photo from your device."
+      permissionDescription="Allow access to your photo library so you can pick a profile photo."
     />
   );
 }
