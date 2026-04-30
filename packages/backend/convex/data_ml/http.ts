@@ -44,6 +44,21 @@ http.route({
 });
 
 http.route({
+  path: '/data-ml/get-by-event-ids',
+  method: 'GET',
+  handler: httpAction(async (ctx, req) => {
+    const authError = validateSecret(req);
+    if (authError) return authError;
+
+    const { searchParams } = new URL(req.url);
+    const eventIds = searchParams.getAll('eventId') as unknown as Id<'events'>[];
+
+    const result = await ctx.runQuery(internal.data_ml.eventRec.getByEventIds, { eventIds });
+    return new Response(JSON.stringify(result), { status: 200 });
+  }),
+});
+
+http.route({
   path: '/data-ml/upsert-user-tag-weights',
   method: 'POST',
   handler: httpAction(async (ctx, req) => {
@@ -111,6 +126,23 @@ http.route({
 });
 
 http.route({
+  path: '/data-ml/get-interactions-by-user-ids',
+  method: 'GET',
+  handler: httpAction(async (ctx, req) => {
+    const authError = validateSecret(req);
+    if (authError) return authError;
+
+    const { searchParams } = new URL(req.url);
+    const userIds = searchParams.getAll('userId') as unknown as Id<'users'>[];
+
+    const result = await ctx.runQuery(internal.data_ml.eventRec.getInteractionsByUserIds, {
+      userIds,
+    });
+    return new Response(JSON.stringify(result), { status: 200 });
+  }),
+});
+
+http.route({
   path: '/data-ml/upsert-event-recs',
   method: 'POST',
   handler: httpAction(async (ctx, req) => {
@@ -119,6 +151,19 @@ http.route({
 
     const body = await req.json();
     await ctx.runMutation(internal.data_ml.eventRec.upsertEventRecs, body);
+    return new Response('OK', { status: 200 });
+  }),
+});
+
+http.route({
+  path: '/data-ml/upsert-event-recs-batch',
+  method: 'POST',
+  handler: httpAction(async (ctx, req) => {
+    const authError = validateSecret(req);
+    if (authError) return authError;
+
+    const body = await req.json();
+    await ctx.runMutation(internal.data_ml.eventRec.upsertEventRecsBatch, body);
     return new Response('OK', { status: 200 });
   }),
 });

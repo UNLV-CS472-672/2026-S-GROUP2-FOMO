@@ -70,6 +70,16 @@ def get_by_event_id(event_id: str) -> list[dict[str, Any]]:
     return _get("/data-ml/get-by-event-id", {"eventId": event_id})  # type: ignore[no-any-return]
 
 
+def get_by_event_ids(event_ids: list[str]) -> list[dict[str, Any]]:
+    resp = requests.get(
+        f"{_get_base_url()}/data-ml/get-by-event-ids",
+        headers=_headers(),
+        params=[("eventId", event_id) for event_id in event_ids],
+    )
+    resp.raise_for_status()
+    return resp.json()  # type: ignore[no-any-return]
+
+
 def get_interactions_by_user_id(
     user_id: str, sinceMs: Optional[float] = None
 ) -> list[dict[str, Any]]:
@@ -79,8 +89,22 @@ def get_interactions_by_user_id(
     return _get("/data-ml/get-interactions", params)  # type: ignore[no-any-return]
 
 
+def get_interactions_by_user_ids(user_ids: list[str]) -> list[dict[str, Any]]:
+    resp = requests.get(
+        f"{_get_base_url()}/data-ml/get-interactions-by-user-ids",
+        headers=_headers(),
+        params=[("userId", user_id) for user_id in user_ids],
+    )
+    resp.raise_for_status()
+    return resp.json()  # type: ignore[no-any-return]
+
+
 def upsert_event_recs(user_id: str, event_ids: list[str]) -> None:
     _post("/data-ml/upsert-event-recs", {"userId": user_id, "eventIds": event_ids})
+
+
+def upsert_event_recs_batch(rows: list[dict[str, Any]]) -> None:
+    _post("/data-ml/upsert-event-recs-batch", {"rows": rows})
 
 
 def get_user_tag_weights_with_timestamp(user_id: str, num_tags: int) -> dict[str, Any]:

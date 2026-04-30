@@ -23,6 +23,23 @@ export const getByEventId = internalQuery({
   },
 });
 
+export const getByEventIds = internalQuery({
+  args: { eventIds: v.array(v.id('events')) },
+  handler: async (ctx, { eventIds }) => {
+    const uniqueEventIds = [...new Set(eventIds)];
+    const results = await Promise.all(
+      uniqueEventIds.map((eventId) =>
+        ctx.db
+          .query('eventTags')
+          .withIndex('by_event', (q) => q.eq('eventId', eventId))
+          .collect()
+      )
+    );
+
+    return results.flat();
+  },
+});
+
 export const upsertUserTagWeights = internalMutation({
   args: {
     userId: v.id('users'),
@@ -92,6 +109,22 @@ export const getInteractionsByUserId = internalQuery({
   },
 });
 
+export const getInteractionsByUserIds = internalQuery({
+  args: { userIds: v.array(v.id('users')) },
+  handler: async (ctx, { userIds }) => {
+    const results = await Promise.all(
+      userIds.map((userId) =>
+        ctx.db
+          .query('attendance')
+          .withIndex('by_userId', (q) => q.eq('userId', userId))
+          .collect()
+      )
+    );
+
+    return results.flat();
+  },
+});
+
 export const upsertEventRecs = internalMutation({
   args: {
     userId: v.id('users'),
@@ -108,6 +141,33 @@ export const upsertEventRecs = internalMutation({
     } else {
       await ctx.db.insert('eventRecs', { userId, eventIds });
     }
+  },
+});
+
+export const upsertEventRecsBatch = internalMutation({
+  args: {
+    rows: v.array(
+      v.object({
+        userId: v.id('users'),
+        eventIds: v.array(v.id('events')),
+      })
+    ),
+  },
+  handler: async (ctx, { rows }) => {
+    await Promise.all(
+      rows.map(async ({ userId, eventIds }) => {
+        const existing = await ctx.db
+          .query('eventRecs')
+          .withIndex('by_userId', (q) => q.eq('userId', userId))
+          .first();
+
+        if (existing) {
+          await ctx.db.patch(existing._id, { eventIds });
+        } else {
+          await ctx.db.insert('eventRecs', { userId, eventIds });
+        }
+      })
+    );
   },
 });
 

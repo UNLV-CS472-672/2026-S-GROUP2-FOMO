@@ -21,8 +21,13 @@ def init_tags() -> None:
 
 def event_multihot(event_id: str) -> NDArray[np.float32]:
     """Returns a (num_tags,) binary vector for one event."""
-    vec = np.zeros(NUM_TAGS, dtype=np.float32)
     event_tags = queries.get_by_event_id(event_id)
+    return event_multihot_from_rows(event_tags)
+
+
+def event_multihot_from_rows(event_tags: list[dict[str, str]]) -> NDArray[np.float32]:
+    """Returns a (num_tags,) binary vector from eventTags rows."""
+    vec = np.zeros(NUM_TAGS, dtype=np.float32)
     for row in event_tags:
         tag_id = row["tagId"]
         if tag_id in TAG_ID_TO_IDX:
@@ -34,7 +39,19 @@ def build_matrix(event_ids: list[str]) -> NDArray[np.float32]:
     """multihot matrix for list of event IDs."""
     if not event_ids:
         return np.zeros((0, NUM_TAGS), dtype=np.float32)
-    return np.array([event_multihot(eid) for eid in event_ids], dtype=np.float32)
+
+    event_tags = queries.get_by_event_ids(list(dict.fromkeys(event_ids)))
+    event_tags_by_id: dict[str, list[dict[str, str]]] = {}
+    for row in event_tags:
+        event_id = row["eventId"]
+        if event_id not in event_tags_by_id:
+            event_tags_by_id[event_id] = []
+        event_tags_by_id[event_id].append(row)
+
+    return np.array(
+        [event_multihot_from_rows(event_tags_by_id.get(event_id, [])) for event_id in event_ids],
+        dtype=np.float32,
+    )
 
 
 def build_weights(
