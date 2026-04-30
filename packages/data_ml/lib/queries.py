@@ -122,6 +122,18 @@ def get_user_tag_weights_with_timestamp(user_id: str, num_tags: int) -> dict[str
     return result
 
 
+def get_user_tag_weights_with_timestamps(
+    user_ids: list[str], num_tags: int
+) -> list[dict[str, Any]]:
+    resp = requests.get(
+        f"{_get_base_url()}/data-ml/get-user-tag-weights-timestamps",
+        headers=_headers(),
+        params=[("userId", user_id) for user_id in user_ids] + [("numTags", num_tags)],
+    )
+    resp.raise_for_status()
+    return resp.json()  # type: ignore[no-any-return]
+
+
 def upsert_user_tag_weights(user_id: str, weights: list[float]) -> None:
     _post("/data-ml/upsert-user-tag-weights", {"userId": user_id, "weights": weights})
 

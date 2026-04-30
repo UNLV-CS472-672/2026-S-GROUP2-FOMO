@@ -122,6 +122,25 @@ http.route({
 });
 
 http.route({
+  path: '/data-ml/get-user-tag-weights-timestamps',
+  method: 'GET',
+  handler: httpAction(async (ctx, req) => {
+    const authError = validateSecret(req);
+    if (authError) return authError;
+
+    const { searchParams } = new URL(req.url);
+    const userIds = searchParams.getAll('userId') as unknown as Id<'users'>[];
+    const numTags = Number(searchParams.get('numTags'));
+
+    const result = await ctx.runQuery(internal.data_ml.eventRec.getUserTagWeightsWithTimestamps, {
+      userIds,
+      numTags,
+    });
+    return new Response(JSON.stringify(result), { status: 200 });
+  }),
+});
+
+http.route({
   path: '/data-ml/get-interactions',
   method: 'GET',
   handler: httpAction(async (ctx, req) => {

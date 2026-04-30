@@ -49,6 +49,23 @@ async function upsertUserTagWeightsRow(ctx: MutationCtx, userId: Id<'users'>, we
   }
 }
 
+function formatUserTagWeightsWithTimestamp(
+  result: { weights: number[]; updatedAt: number } | null,
+  numTags: number
+) {
+  if (!result) {
+    return {
+      weights: new Array(numTags * 3).fill(0),
+      lastUpdatedAt: 0,
+    };
+  }
+
+  return {
+    weights: result.weights,
+    lastUpdatedAt: result.updatedAt,
+  };
+}
+
 export const getByEventId = internalQuery({
   args: { eventId: v.id('events') },
   handler: async (ctx, { eventId }) => {
@@ -232,17 +249,23 @@ export const getUserTagWeightsWithTimestamp = internalQuery({
       .withIndex('by_userId', (q) => q.eq('userId', userId))
       .unique();
 
-    if (!result) {
-      return {
-        weights: new Array(numTags * 3).fill(0),
-        lastUpdatedAt: 0,
-      };
-    }
+    return formatUserTagWeightsWithTimestamp(result, numTags);
+  },
+});
 
-    return {
-      weights: result.weights,
-      lastUpdatedAt: result.updatedAt,
-    };
+export const getUserTagWeightsWithTimestamps = internalQuery({
+  args: {
+    userIds: v.array(v.id('users')),
+    numTags: v.number(),
+  },
+  handler: async (ctx, { userIds, numTags }) => {
+    const rows = await ctx.db.query('userTagWeights').collect();
+    const rowsByUserId = new Map(rows.map((row) => [row.userId, row]));
+
+    return userIds.map((userId) => ({
+      userId,
+      ...formatUserTagWeightsWithTimestamp(rowsByUserId.get(userId) ?? null, numTags),
+    }));
   },
 });
 

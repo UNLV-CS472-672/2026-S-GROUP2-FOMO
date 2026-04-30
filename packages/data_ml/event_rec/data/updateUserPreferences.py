@@ -117,6 +117,16 @@ def get_user_raw_weights_and_last_updated(
     """Loads stored user weights and normalizes them to the expected shape."""
     user_weights_and_timestamp = queries.get_user_tag_weights_with_timestamp(user_id, NUM_TAGS)
 
+    return get_user_raw_weights_and_last_updated_from_result(
+        user_weights_and_timestamp
+    )
+
+
+def get_user_raw_weights_and_last_updated_from_result(
+    user_weights_and_timestamp: Optional[dict[str, object]],
+) -> tuple[float, NDArray[np.float32]]:
+    """Normalizes a stored weight/timestamp payload to the expected shape."""
+
     expected_dim = 3 * NUM_TAGS
     user_last_updated = -1.0
     user_raw_weights_nd = np.zeros(expected_dim, dtype=np.float32)
@@ -188,9 +198,18 @@ def main(users: list[str], update_db: bool) -> None:
     user_raw_weights_by_id: dict[str, NDArray[np.float32]] = {}
     interaction_rows = []
 
+    user_weights_and_timestamps = queries.get_user_tag_weights_with_timestamps(
+        users, NUM_TAGS
+    )
+    user_weights_and_timestamps_by_id = {
+        row["userId"]: row for row in user_weights_and_timestamps
+    }
+
     for user_id in users:
-        user_last_updated, user_raw_weights_nd = get_user_raw_weights_and_last_updated(
-            user_id
+        user_last_updated, user_raw_weights_nd = (
+            get_user_raw_weights_and_last_updated_from_result(
+                user_weights_and_timestamps_by_id.get(user_id)
+            )
         )
         user_raw_weights_by_id[user_id] = user_raw_weights_nd
 
