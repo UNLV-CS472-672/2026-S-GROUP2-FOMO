@@ -68,6 +68,8 @@ export function useSignup() {
   const [code, setCodeValue] = useState('');
   const [status, setStatus] = useState<SignUpStatus>('idle');
   const [errors, setErrors] = useState<SignUpErrors | null>(null);
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [avatarFileName, setAvatarFileName] = useState<string | null>(null);
   const [resendAvailableAt, setResendAvailableAt] = useState<number | null>(null);
   const [activeSignUp, setActiveSignUp] = useState<SignUpResource | null>(null);
   const [usernameEntryStep, setUsernameEntryStep] = useState<UsernameEntryStep>('password');
@@ -374,6 +376,7 @@ export function useSignup() {
       emailAddress,
       password,
       code,
+      avatarUri,
       resendAvailableAt,
       errors,
       isBusy,
@@ -389,6 +392,10 @@ export function useSignup() {
     setEmailAddress,
     setPassword,
     setCode,
+    setAvatarUri: (uri: string | null, fileName?: string | null) => {
+      setAvatarUri(uri);
+      setAvatarFileName(fileName ?? null);
+    },
     clearErrors,
     handleSsoError,
     completeSignUpWithUsername,

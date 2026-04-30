@@ -1,3 +1,4 @@
+import { useUploadPendingAvatar } from '@/features/auth/hooks/use-upload-pending-avatar';
 import { useTabBarHidden } from '@/lib/tab-bar-visibility';
 import { useAppTheme } from '@/lib/use-app-theme';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -50,6 +51,7 @@ function AnimatedTabBar(props: BottomTabBarProps) {
 }
 
 export default function TabLayout() {
+  useUploadPendingAvatar(); // NOTE: uploads avatar picked during signup once the user session is available
   const { theme: activeTheme } = useUniwind();
   const isDark = activeTheme === 'dark';
   const theme = useAppTheme();
