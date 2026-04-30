@@ -14,21 +14,6 @@ function validateSecret(req: Request): Response | null {
 }
 
 http.route({
-  path: '/data-ml/get-by-user-id',
-  method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
-
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId') as unknown as Id<'users'>;
-
-    const result = await ctx.runQuery(internal.data_ml.eventRec.getByUserId, { userId });
-    return new Response(JSON.stringify(result), { status: 200 });
-  }),
-});
-
-http.route({
   path: '/data-ml/get-by-event-id',
   method: 'GET',
   handler: httpAction(async (ctx, req) => {

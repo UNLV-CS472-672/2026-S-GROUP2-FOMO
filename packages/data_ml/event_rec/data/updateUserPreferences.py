@@ -41,12 +41,29 @@ def build_matrix(event_ids: list[str]) -> NDArray[np.float32]:
         return np.zeros((0, NUM_TAGS), dtype=np.float32)
 
     event_tags = queries.get_by_event_ids(list(dict.fromkeys(event_ids)))
+    return build_matrix_from_rows_by_event_id(
+        event_ids, group_event_tags_by_event_id(event_tags)
+    )
+
+
+def group_event_tags_by_event_id(
+    event_tags: list[dict[str, str]],
+) -> dict[str, list[dict[str, str]]]:
+    """Groups eventTags rows by eventId."""
     event_tags_by_id: dict[str, list[dict[str, str]]] = {}
     for row in event_tags:
         event_id = row["eventId"]
         if event_id not in event_tags_by_id:
             event_tags_by_id[event_id] = []
         event_tags_by_id[event_id].append(row)
+
+    return event_tags_by_id
+
+
+def build_matrix_from_rows_by_event_id(
+    event_ids: list[str], event_tags_by_id: dict[str, list[dict[str, str]]]
+) -> NDArray[np.float32]:
+    """Builds a multihot matrix from pre-grouped eventTags rows."""
 
     return np.array(
         [event_multihot_from_rows(event_tags_by_id.get(event_id, [])) for event_id in event_ids],
@@ -147,15 +164,21 @@ def get_user_raw_weights_and_last_updated_from_result(
 def build_user_feature_vector_from_interactions(
     user_raw_weights_nd: NDArray[np.float32],
     interactions: list[dict[str, str]],
+    event_tags_by_id: Optional[dict[str, list[dict[str, str]]]] = None,
 ) -> NDArray[np.float32]:
     """Builds a user feature vector from pre-fetched interaction rows."""
     going_ids, interested_ids, uninterested_ids = get_interaction_ids_from_rows(
         interactions
     )
 
-    att_mat = build_matrix(going_ids)
-    int_mat = build_matrix(interested_ids)
-    blk_mat = build_matrix(uninterested_ids)
+    if event_tags_by_id is None:
+        att_mat = build_matrix(going_ids)
+        int_mat = build_matrix(interested_ids)
+        blk_mat = build_matrix(uninterested_ids)
+    else:
+        att_mat = build_matrix_from_rows_by_event_id(going_ids, event_tags_by_id)
+        int_mat = build_matrix_from_rows_by_event_id(interested_ids, event_tags_by_id)
+        blk_mat = build_matrix_from_rows_by_event_id(uninterested_ids, event_tags_by_id)
 
     att_weights = build_weights(att_mat, row_weight=1.0)
     int_weights = build_weights(int_mat, row_weight=0.5)
@@ -221,6 +244,10 @@ def main(users: list[str], update_db: bool) -> None:
     all_interactions = (
         queries.get_interactions_by_users(interaction_rows) if interaction_rows else []
     )
+    all_event_ids = list(dict.fromkeys([row["eventId"] for row in all_interactions]))
+    all_event_tags = queries.get_by_event_ids(all_event_ids) if all_event_ids else []
+    event_tags_by_id = group_event_tags_by_event_id(all_event_tags)
+
     interactions_by_user_id: dict[str, list[dict[str, str]]] = {}
     for row in all_interactions:
         user_id = row["userId"]
@@ -232,6 +259,7 @@ def main(users: list[str], update_db: bool) -> None:
         user_feature_vectors[user_id] = build_user_feature_vector_from_interactions(
             user_raw_weights_by_id[user_id],
             interactions_by_user_id.get(user_id, []),
+            event_tags_by_id,
         )
 
     if update_db:
