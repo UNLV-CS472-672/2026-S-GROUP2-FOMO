@@ -5,6 +5,7 @@ import type { Doc } from '../_generated/dataModel';
 import { query, type QueryCtx } from '../_generated/server';
 import { __backend_only_guestOrAuthenticatedUser } from '../auth';
 import { getThreadedCommentsByPost } from '../comments';
+import { getEventRecIdsForUser, recommendationScoresFromRecIds } from '../eventRecs';
 import { getAttendeeCount } from './attendance';
 
 export function latLngToH3Index(lat: number, lng: number, resolution: number = 9): string {
@@ -87,13 +88,19 @@ function countComments(comments: Awaited<ReturnType<typeof getThreadedCommentsBy
 export const getEvents = query({
   args: {},
   handler: async (ctx) => {
-    const [, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
-
+    const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
     const events = await ctx.db.query('events').withIndex('by_startDate').collect();
+
+    let scoreByEventId: ReturnType<typeof recommendationScoresFromRecIds> | undefined;
+    if (!guestMode && viewer) {
+      const ids = await getEventRecIdsForUser(ctx, viewer._id);
+      if (ids.length) {
+        scoreByEventId = recommendationScoresFromRecIds(ids);
+      }
+    }
+
     return await Promise.all(
-      events.map((event, index) =>
-        serializeEvent(ctx, event, guestMode ? undefined : 1 / (index + 1))
-      )
+      events.map((event) => serializeEvent(ctx, event, scoreByEventId?.get(event._id)))
     );
   },
 });
