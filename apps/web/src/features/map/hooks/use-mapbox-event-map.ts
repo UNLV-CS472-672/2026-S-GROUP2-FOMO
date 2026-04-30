@@ -94,12 +94,7 @@ export function useMapboxEventMap({
     let didLoad = false;
 
     async function initMap() {
-      if (!mapContainerRef.current || mapRef.current || !hasResolvedLocation) {
-        return;
-      }
-
-      if (!mapboxToken) {
-        setLoadError('Mapbox token is missing. Set NEXT_PUBLIC_MAPBOX_TOKEN to render events.');
+      if (!mapContainerRef.current || mapRef.current) {
         return;
       }
 
@@ -161,7 +156,7 @@ export function useMapboxEventMap({
       mapRef.current = null;
       mapboxRef.current = null;
     };
-  }, [centerCoordinate, clearEventMarkers, clearLocationMarker, hasResolvedLocation, mapboxToken]);
+  }, [centerCoordinate, clearEventMarkers, clearLocationMarker, mapboxToken]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) {
