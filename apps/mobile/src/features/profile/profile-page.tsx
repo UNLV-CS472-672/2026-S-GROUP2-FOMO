@@ -122,6 +122,7 @@ export function ProfilePage({
   const acceptFriendRequest = useMutation(api.friends.acceptFriendRequest);
   const cancelFriendRequest = useMutation(api.friends.cancelFriendRequest);
   const declineFriendRequest = useMutation(api.friends.declineFriendRequest);
+  const removeFriend = useMutation(api.friends.removeFriend);
   const [activeTab, setActiveTab] = useState<'feed' | 'media'>('feed');
   const [isSendingFriendRequest, setIsSendingFriendRequest] = useState(false);
   const [isUpdatingFriendship, setIsUpdatingFriendship] = useState(false);
@@ -284,43 +285,83 @@ export function ProfilePage({
                         relationshipStatus === 'pending_sent'
                           ? 'Remove pending friend request'
                           : relationshipStatus === 'accepted'
-                            ? 'Friends'
+                            ? 'Remove friend'
                             : 'Add friend'
                       }
                       disabled={
                         relationshipStatus === undefined ||
-                        relationshipStatus === 'accepted' ||
                         isSendingFriendRequest ||
                         isUpdatingFriendship
                       }
                       iconName={
-                        relationshipStatus === 'pending_sent'
+                        relationshipStatus === 'accepted'
                           ? 'person-remove'
-                          : relationshipStatus === 'accepted'
-                            ? 'people'
+                          : relationshipStatus === 'pending_sent'
+                            ? 'hourglass-top'
                             : 'person-add-alt-1'
                       }
                       iconColor={theme.tint}
                       onPress={() => {
-                        if (relationshipStatus === 'pending_sent') {
-                          void (async () => {
-                            if (isUpdatingFriendship) {
-                              return;
-                            }
+                        if (relationshipStatus === 'accepted') {
+                          Alert.alert(
+                            'Remove friend',
+                            `Remove ${profile.user.username} as a friend?`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              {
+                                text: 'Remove',
+                                style: 'destructive',
+                                onPress: () => {
+                                  void (async () => {
+                                    if (isUpdatingFriendship) return;
+                                    setIsUpdatingFriendship(true);
+                                    try {
+                                      await removeFriend({ friendId: userId });
+                                    } catch (error) {
+                                      Alert.alert(
+                                        'Unable to remove friend',
+                                        error instanceof Error ? error.message : 'Try again.'
+                                      );
+                                    } finally {
+                                      setIsUpdatingFriendship(false);
+                                    }
+                                  })();
+                                },
+                              },
+                            ]
+                          );
+                          return;
+                        }
 
-                            setIsUpdatingFriendship(true);
-                            try {
-                              await cancelFriendRequest({ recipientId: userId });
-                            } catch (error) {
-                              console.error('Failed to cancel friend request', error);
-                              Alert.alert(
-                                'Unable to remove request',
-                                error instanceof Error ? error.message : 'Try again.'
-                              );
-                            } finally {
-                              setIsUpdatingFriendship(false);
-                            }
-                          })();
+                        if (relationshipStatus === 'pending_sent') {
+                          Alert.alert(
+                            'Cancel request',
+                            `Cancel your friend request to ${profile.user.username}?`,
+                            [
+                              { text: 'Keep', style: 'cancel' },
+                              {
+                                text: 'Cancel request',
+                                style: 'destructive',
+                                onPress: () => {
+                                  void (async () => {
+                                    if (isUpdatingFriendship) return;
+                                    setIsUpdatingFriendship(true);
+                                    try {
+                                      await cancelFriendRequest({ recipientId: userId });
+                                    } catch (error) {
+                                      console.error('Failed to cancel friend request', error);
+                                      Alert.alert(
+                                        'Unable to cancel request',
+                                        error instanceof Error ? error.message : 'Try again.'
+                                      );
+                                    } finally {
+                                      setIsUpdatingFriendship(false);
+                                    }
+                                  })();
+                                },
+                              },
+                            ]
+                          );
                           return;
                         }
 
