@@ -24,6 +24,7 @@ export default function AuthLayout() {
           headerBackButtonMenuEnabled: true,
         }}
       />
+      <Stack.Screen name="gallery-picker" options={{ title: 'Choose Photo' }} />
     </Stack>
   );
 }
