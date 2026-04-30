@@ -21,6 +21,10 @@ function usernameFromIdentity(identity: ClerkIdentity): string {
   return identity.nickname ?? clerkIdFromIdentity(identity);
 }
 
+function displayNameFromIdentity(identity: ClerkIdentity): string {
+  return identity.givenName ?? identity.name ?? identity.nickname ?? clerkIdFromIdentity(identity);
+}
+
 async function getConvexUserRowForIdentity(
   ctx: QueryCtx,
   identity: ClerkIdentity
@@ -88,6 +92,7 @@ export const ensureCurrentUser = mutation({
   args: {},
   handler: async (ctx) => {
     const existing = await __backend_only_getCurrentConvexUserAllowNull(ctx);
+
     if (existing) {
       return existing._id;
     }
@@ -98,8 +103,8 @@ export const ensureCurrentUser = mutation({
     return await ctx.db.insert('users', {
       clerkId: clerkIdFromIdentity(identity),
       username: usernameFromIdentity(identity),
-      displayName: usernameFromIdentity(identity),
-      avatarUrl: '',
+      displayName: displayNameFromIdentity(identity),
+      avatarUrl: identity.pictureUrl ?? '',
       bio: '',
     });
   },

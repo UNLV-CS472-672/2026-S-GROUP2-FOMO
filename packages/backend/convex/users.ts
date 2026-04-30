@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
-import { query, QueryCtx } from './_generated/server';
+import { mutation, query, QueryCtx } from './_generated/server';
 import {
   __backend_only_getAndAuthenticateCurrentConvexUser,
   __backend_only_guestOrAuthenticatedUser,
@@ -179,5 +179,44 @@ export const getProfileFeed = query({
     return await Promise.all(
       posts.map((post) => serializeProfileFeedPost(ctx, post, guestMode ? undefined : viewer._id))
     );
+  },
+});
+
+// TODO :: SHOULD BE REMOVED AFTER CLERK CONVEX WEBHOOK
+export const updateCurrentProfile = mutation({
+  args: {
+    username: v.string(),
+    bio: v.string(),
+  },
+  handler: async (ctx, { username, bio }) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
+      throw new Error('Username cannot be empty');
+    }
+
+    if (trimmedUsername !== user.username) {
+      const existing = await ctx.db
+        .query('users')
+        .withIndex('by_username', (q) => q.eq('username', trimmedUsername))
+        .first();
+      if (existing) {
+        throw new Error('Username is taken');
+      }
+    }
+
+    await ctx.db.patch(user._id, { username: trimmedUsername, bio: bio.trim() || undefined });
+  },
+});
+
+// TODO :: SHOULD BE REMOVED AFTER CLERK CONVEX WEBHOOK
+export const updateAvatarUrl = mutation({
+  args: {
+    avatarUrl: v.string(),
+  },
+  handler: async (ctx, { avatarUrl }) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    await ctx.db.patch(user._id, { avatarUrl });
   },
 });
