@@ -267,7 +267,7 @@ def test_get_user_tag_weights_raises_on_error() -> None:
 
 
 # ------------------------------
-#  get_by_event_id()
+#  get_by_event_id(s)()
 # ------------------------------
 
 def test_get_by_event_id_returns_list() -> None:
@@ -283,8 +283,27 @@ def test_get_by_event_id_calls_correct_path() -> None:
         mock_get.assert_called_once_with("/data-ml/get-by-event-id", {"eventId": "e1"})
 
 
+def test_get_by_event_ids_returns_list() -> None:
+    data = [{"eventId": "e1", "tagId": "t1"}, {"eventId": "e2", "tagId": "t2"}]
+    resp = _mock_response(data, 200)
+    with patch("queries.requests.get", return_value=resp):
+        result = queries.get_by_event_ids(["e1", "e2"])
+        assert result == data
+
+
+def test_get_by_event_ids_calls_correct_path() -> None:
+    resp = _mock_response([], 200)
+    with patch("queries.requests.get", return_value=resp) as mock_get:
+        queries.get_by_event_ids(["e1", "e2"])
+        mock_get.assert_called_once_with(
+            "https://example.convex.site/data-ml/get-by-event-ids",
+            headers={"x-cron-secret": "test-secret"},
+            params=[("eventId", "e1"), ("eventId", "e2")],
+        )
+
+
 # ------------------------------
-#  get_interactions_by_user_id()
+#  get_interactions_by_user_id(s)()
 # ------------------------------
 
 def test_get_interactions_by_user_id_returns_list() -> None:
@@ -315,6 +334,47 @@ def test_get_interactions_by_user_id_omits_since_ms_when_none() -> None:
         assert "sinceMs" not in params
 
 
+def test_get_interactions_by_user_ids_returns_list() -> None:
+    data = [{"userId": "u1", "eventId": "e1", "status": "going"}]
+    resp = _mock_response(data, 200)
+    with patch("queries.requests.get", return_value=resp):
+        result = queries.get_interactions_by_user_ids(["u1", "u2"])
+        assert result == data
+
+
+def test_get_interactions_by_user_ids_calls_correct_path() -> None:
+    resp = _mock_response([], 200)
+    with patch("queries.requests.get", return_value=resp) as mock_get:
+        queries.get_interactions_by_user_ids(["u1", "u2"])
+        mock_get.assert_called_once_with(
+            "https://example.convex.site/data-ml/get-interactions-by-user-ids",
+            headers={"x-cron-secret": "test-secret"},
+            params=[("userId", "u1"), ("userId", "u2")],
+        )
+
+
+def test_get_interactions_by_users_returns_list() -> None:
+    data = [{"userId": "u1", "eventId": "e1", "status": "going"}]
+    resp = _mock_response(data, 200)
+    with patch("queries.requests.post", return_value=resp):
+        result = queries.get_interactions_by_users(
+            [{"userId": "u1", "sinceMs": 1700000000.0}]
+        )
+        assert result == data
+
+
+def test_get_interactions_by_users_calls_correct_path() -> None:
+    rows = [{"userId": "u1", "sinceMs": 1700000000.0}, {"userId": "u2"}]
+    resp = _mock_response([], 200)
+    with patch("queries.requests.post", return_value=resp) as mock_post:
+        queries.get_interactions_by_users(rows)
+        mock_post.assert_called_once_with(
+            "https://example.convex.site/data-ml/get-interactions-by-users",
+            headers={"x-cron-secret": "test-secret"},
+            json={"rows": rows},
+        )
+
+
 # ------------------------------
 #  upsert_event_recs()
 # ------------------------------
@@ -332,6 +392,15 @@ def test_upsert_event_recs_empty_list() -> None:
         queries.upsert_event_recs("u1", [])
         _, body = mock_post.call_args.args
         assert body["eventIds"] == []
+
+
+def test_upsert_event_recs_batch_calls_correct_path() -> None:
+    rows = [{"userId": "u1", "eventIds": ["e1", "e2"]}]
+    with patch("queries._post") as mock_post:
+        queries.upsert_event_recs_batch(rows)
+        mock_post.assert_called_once_with(
+            "/data-ml/upsert-event-recs-batch", {"rows": rows}
+        )
 
 
 # ------------------------------
@@ -353,6 +422,25 @@ def test_get_user_tag_weights_with_timestamp_calls_correct_path() -> None:
         )
 
 
+def test_get_user_tag_weights_with_timestamps_returns_list() -> None:
+    data = [{"userId": "u1", "weights": [0.1, 0.2], "lastUpdatedAt": 1700000000.0}]
+    resp = _mock_response(data, 200)
+    with patch("queries.requests.get", return_value=resp):
+        result = queries.get_user_tag_weights_with_timestamps(["u1"], 3)
+        assert result == data
+
+
+def test_get_user_tag_weights_with_timestamps_calls_correct_path() -> None:
+    resp = _mock_response([], 200)
+    with patch("queries.requests.get", return_value=resp) as mock_get:
+        queries.get_user_tag_weights_with_timestamps(["u1", "u2"], 3)
+        mock_get.assert_called_once_with(
+            "https://example.convex.site/data-ml/get-user-tag-weights-timestamps",
+            headers={"x-cron-secret": "test-secret"},
+            params=[("userId", "u1"), ("userId", "u2"), ("numTags", 3)],
+        )
+
+
 # ------------------------------
 #  upsert_user_tag_weights()
 # ------------------------------
@@ -370,3 +458,12 @@ def test_upsert_user_tag_weights_empty_weights() -> None:
         queries.upsert_user_tag_weights("u1", [])
         _, body = mock_post.call_args.args
         assert body["weights"] == []
+
+
+def test_upsert_user_tag_weights_batch_calls_correct_path() -> None:
+    rows = [{"userId": "u1", "weights": [0.1, 0.5, 0.4]}]
+    with patch("queries._post") as mock_post:
+        queries.upsert_user_tag_weights_batch(rows)
+        mock_post.assert_called_once_with(
+            "/data-ml/upsert-user-tag-weights-batch", {"rows": rows}
+        )

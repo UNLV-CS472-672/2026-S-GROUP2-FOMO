@@ -26,15 +26,23 @@ from updateUserPreferences import (
 def mock_queries() -> Generator[dict[str, MagicMock], None, None]:
     with patch("updateUserPreferences.queries.query_all", return_value=[]) as mock_query_all, \
          patch("updateUserPreferences.queries.get_by_event_id", return_value=[]) as mock_get_by_event, \
+         patch("updateUserPreferences.queries.get_by_event_ids", return_value=[]) as mock_get_by_events, \
          patch("updateUserPreferences.queries.get_interactions_by_user_id", return_value=[]) as mock_get_interactions, \
+         patch("updateUserPreferences.queries.get_interactions_by_users", return_value=[]) as mock_get_interactions_batch, \
          patch("updateUserPreferences.queries.get_user_tag_weights_with_timestamp", return_value=None) as mock_get_weights_ts, \
-         patch("updateUserPreferences.queries.upsert_user_tag_weights") as mock_upsert:
+         patch("updateUserPreferences.queries.get_user_tag_weights_with_timestamps", return_value=[]) as mock_get_weights_tss, \
+         patch("updateUserPreferences.queries.upsert_user_tag_weights") as mock_upsert, \
+         patch("updateUserPreferences.queries.upsert_user_tag_weights_batch") as mock_upsert_batch:
         yield {
             "query_all": mock_query_all,
             "get_by_event_id": mock_get_by_event,
+            "get_by_event_ids": mock_get_by_events,
             "get_interactions_by_user_id": mock_get_interactions,
+            "get_interactions_by_users": mock_get_interactions_batch,
             "get_user_tag_weights_with_timestamp": mock_get_weights_ts,
+            "get_user_tag_weights_with_timestamps": mock_get_weights_tss,
             "upsert_user_tag_weights": mock_upsert,
+            "upsert_user_tag_weights_batch": mock_upsert_batch,
         }
 
 
@@ -164,13 +172,25 @@ def test_build_matrix_stacks_events(
     sample_event_tags_e1: list[dict[str, str]],
     sample_event_tags_e2: list[dict[str, str]],
 ) -> None:
-    mock_queries["get_by_event_id"].side_effect = [sample_event_tags_e1, sample_event_tags_e2]
+    mock_queries["get_by_event_ids"].return_value = sample_event_tags_e1 + sample_event_tags_e2
     mat = build_matrix(["e1", "e2"])
     assert mat.shape == (2, 3)
     np.testing.assert_array_equal(
         mat,
         np.array([[1.0, 1.0, 0.0], [0.0, 0.0, 1.0]], dtype=np.float32),
     )
+
+
+def test_build_matrix_fetches_event_tags_in_batch(
+    mock_queries: dict[str, MagicMock],
+    tags_initialized: None,
+    sample_event_tags_e1: list[dict[str, str]],
+    sample_event_tags_e2: list[dict[str, str]],
+) -> None:
+    mock_queries["get_by_event_ids"].return_value = sample_event_tags_e1 + sample_event_tags_e2
+    build_matrix(["e1", "e2", "e1"])
+    mock_queries["get_by_event_ids"].assert_called_once_with(["e1", "e2"])
+    mock_queries["get_by_event_id"].assert_not_called()
 
 
 # ------------------------------
@@ -328,7 +348,7 @@ def test_build_user_feature_vector_adds_new_event_deltas(
 ) -> None:
     """A new 'going' event should add normalized contributions to the going slice."""
     mock_queries["get_interactions_by_user_id"].return_value = [{"eventId": "e1", "status": "going"}]
-    mock_queries["get_by_event_id"].return_value = sample_event_tags_e1
+    mock_queries["get_by_event_ids"].return_value = sample_event_tags_e1
     vec = build_user_feature_vector("u1")
     going = vec[:3]
     # e1 has 2 tags (tech, music) -> each gets 0.5 of the row contribution.
@@ -347,7 +367,7 @@ def test_build_user_feature_vector_cold_start_plus_new_event(
         "lastUpdatedAt": 1700000000.0,
     }
     mock_queries["get_interactions_by_user_id"].return_value = [{"eventId": "e1", "status": "going"}]
-    mock_queries["get_by_event_id"].return_value = sample_event_tags_e1
+    mock_queries["get_by_event_ids"].return_value = sample_event_tags_e1
     vec = build_user_feature_vector("u1")
     going = vec[:3]
     # Cold-start [1, 0, 1] + e1 delta [0.5, 0.5, 0] = [1.5, 0.5, 1.0]
@@ -363,15 +383,18 @@ def mock_main_dependencies(
     mock_queries: dict[str, MagicMock],
 ) -> Generator[dict[str, MagicMock | dict[str, MagicMock]], None, None]:
     with patch("updateUserPreferences.init_tags") as mock_init, \
-         patch("updateUserPreferences.build_user_feature_vector") as mock_build:
+         patch("updateUserPreferences.get_user_raw_weights_and_last_updated_from_result") as mock_get_state, \
+         patch("updateUserPreferences.build_user_feature_vector_from_interactions") as mock_build:
 
+        mock_get_state.return_value = (-1.0, np.zeros(9, dtype=np.float32))
         mock_build.return_value = np.array(
             [0.5, 0.3, 0.2, 0.1, 0.4, 0.0, 0.2, 0.1, 0.0], dtype=np.float32
         )
 
         yield {
             "init_tags": mock_init,
-            "build_user_feature_vector": mock_build,
+            "get_user_raw_weights_and_last_updated_from_result": mock_get_state,
+            "build_user_feature_vector_from_interactions": mock_build,
             "queries": mock_queries,
         }
 
@@ -383,7 +406,7 @@ def test_main_calls_init_tags(mock_main_dependencies: dict[str, MagicMock]) -> N
 
 def test_main_calls_build_per_user(mock_main_dependencies: dict[str, MagicMock]) -> None:
     main(["u1", "u2"], update_db=False)
-    assert mock_main_dependencies["build_user_feature_vector"].call_count == 2
+    assert mock_main_dependencies["build_user_feature_vector_from_interactions"].call_count == 2
 
 
 def test_main_expands_all(mock_main_dependencies: dict[str, MagicMock]) -> None:
@@ -393,20 +416,52 @@ def test_main_expands_all(mock_main_dependencies: dict[str, MagicMock]) -> None:
         {"_id": "u3"},
     ]
     main(["ALL"], update_db=False)
-    assert mock_main_dependencies["build_user_feature_vector"].call_count == 3
+    assert mock_main_dependencies["build_user_feature_vector_from_interactions"].call_count == 3
+
+
+def test_main_batches_interaction_requests(
+    mock_main_dependencies: dict[str, MagicMock],
+) -> None:
+    mock_main_dependencies["queries"]["get_user_tag_weights_with_timestamps"].return_value = [
+        {"userId": "u1", "weights": [], "lastUpdatedAt": 1700000000.0},
+        {"userId": "u2", "weights": [], "lastUpdatedAt": 0},
+    ]
+    mock_main_dependencies["queries"]["get_interactions_by_users"].return_value = [
+        {"userId": "u1", "eventId": "e1", "status": "going"},
+        {"userId": "u1", "eventId": "e2", "status": "interested"},
+        {"userId": "u2", "eventId": "e1", "status": "uninterested"},
+    ]
+    mock_main_dependencies["get_user_raw_weights_and_last_updated_from_result"].side_effect = [
+        (1700000000.0, np.zeros(9, dtype=np.float32)),
+        (-1.0, np.zeros(9, dtype=np.float32)),
+    ]
+
+    main(["u1", "u2"], update_db=False)
+
+    mock_main_dependencies["queries"]["get_user_tag_weights_with_timestamps"].assert_called_once_with(
+        ["u1", "u2"], 0
+    )
+    mock_main_dependencies["queries"]["get_interactions_by_users"].assert_called_once_with(
+        [{"userId": "u1", "sinceMs": 1700000000.0}, {"userId": "u2"}]
+    )
+    mock_main_dependencies["queries"]["get_by_event_ids"].assert_called_once_with(
+        ["e1", "e2"]
+    )
 
 
 def test_main_calls_mutation_when_update_db_true(
     mock_main_dependencies: dict[str, MagicMock],
 ) -> None:
     main(["u1"], update_db=True)
-    mock_main_dependencies["queries"]["upsert_user_tag_weights"].assert_called_once()
+    mock_main_dependencies["queries"]["upsert_user_tag_weights_batch"].assert_called_once()
+    mock_main_dependencies["queries"]["upsert_user_tag_weights"].assert_not_called()
 
 
 def test_main_does_not_call_mutation_when_update_db_false(
     mock_main_dependencies: dict[str, MagicMock],
 ) -> None:
     main(["u1"], update_db=False)
+    mock_main_dependencies["queries"]["upsert_user_tag_weights_batch"].assert_not_called()
     mock_main_dependencies["queries"]["upsert_user_tag_weights"].assert_not_called()
 
 
@@ -414,14 +469,14 @@ def test_main_mutation_payload_correct_keys(
     mock_main_dependencies: dict[str, MagicMock],
 ) -> None:
     main(["u1"], update_db=True)
-    user_id, weights = mock_main_dependencies["queries"]["upsert_user_tag_weights"].call_args.args
-    assert user_id == "u1"
-    assert isinstance(weights, list)
+    rows = mock_main_dependencies["queries"]["upsert_user_tag_weights_batch"].call_args.args[0]
+    assert rows[0]["userId"] == "u1"
+    assert isinstance(rows[0]["weights"], list)
 
 
 def test_main_mutation_weights_are_list(
     mock_main_dependencies: dict[str, MagicMock],
 ) -> None:
     main(["u1"], update_db=True)
-    _, weights = mock_main_dependencies["queries"]["upsert_user_tag_weights"].call_args.args
-    assert isinstance(weights, list)
+    rows = mock_main_dependencies["queries"]["upsert_user_tag_weights_batch"].call_args.args[0]
+    assert isinstance(rows[0]["weights"], list)
