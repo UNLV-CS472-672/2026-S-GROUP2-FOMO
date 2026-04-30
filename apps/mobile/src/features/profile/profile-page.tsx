@@ -3,6 +3,7 @@ import { Screen } from '@/components/ui/screen';
 import { Avatar } from '@/features/posts/components/avatar';
 import { FeedCard } from '@/features/posts/components/feed-card';
 import type { FeedPost } from '@/features/posts/types';
+import { buildClerkImageFile } from '@/features/profile/clerk-image';
 import { MediaGrid, type GridMediaItem } from '@/features/profile/components/media-grid';
 import StatLabel from '@/features/profile/components/stat-label';
 import { useGuest } from '@/integrations/session/guest';
@@ -192,22 +193,6 @@ export function ProfilePage({
   const showHeaderFriendAction =
     viewerUserId && viewerUserId !== userId && relationshipStatus !== 'pending_received';
 
-  function buildClerkImageFile(uri: string) {
-    const normalizedUri = uri.split('?')[0] ?? uri;
-    const name = normalizedUri.split('/').pop() || `avatar-${Date.now()}.jpg`;
-    const extension = name.split('.').pop()?.toLowerCase();
-    const type =
-      extension === 'png'
-        ? 'image/png'
-        : extension === 'webp'
-          ? 'image/webp'
-          : extension === 'heic' || extension === 'heif'
-            ? 'image/heic'
-            : 'image/jpeg';
-
-    return { uri, name, type };
-  }
-
   async function handleUpdateProfileImageFromGallery() {
     if (!clerkUser || isUploadingAvatar) {
       return;
@@ -226,25 +211,26 @@ export function ProfilePage({
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.9,
       });
 
       if (result.canceled || !result.assets.length) {
         return;
       }
 
-      const selectedUri = result.assets[0]?.uri;
-      if (!selectedUri) {
+      const selectedAsset = result.assets[0];
+      const selectedUri = selectedAsset?.uri;
+      if (!selectedAsset || !selectedUri) {
         return;
       }
 
-      await clerkUser.setProfileImage({
-        file: buildClerkImageFile(selectedUri) as unknown as Parameters<
-          typeof clerkUser.setProfileImage
-        >[0]['file'],
+      const file = await buildClerkImageFile({
+        uri: selectedUri,
+        base64: selectedAsset.base64,
+        fileName: selectedAsset.fileName,
+        mimeType: selectedAsset.mimeType,
       });
+
+      await clerkUser.setProfileImage({ file });
       await clerkUser.reload();
     } catch (error) {
       console.error('Failed to update profile picture', error);

@@ -1,4 +1,5 @@
 import { Avatar } from '@/features/posts/components/avatar';
+import { buildClerkImageFile } from '@/features/profile/clerk-image';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { useUser } from '@clerk/expo';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -22,6 +23,7 @@ export default function EditProfileScreen() {
   const theme = useAppTheme();
   const params = useLocalSearchParams<{
     avatarUri?: string | string[];
+    avatarFileName?: string | string[];
     avatarNonce?: string | string[];
   }>();
 
@@ -31,10 +33,14 @@ export default function EditProfileScreen() {
     (clerkUser?.unsafeMetadata?.bio as string | undefined) ?? ''
   );
   const [pendingAvatarUri, setPendingAvatarUri] = useState<string | null>(null);
+  const [pendingAvatarFileName, setPendingAvatarFileName] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const avatarUriParam = Array.isArray(params.avatarUri) ? params.avatarUri[0] : params.avatarUri;
+  const avatarFileNameParam = Array.isArray(params.avatarFileName)
+    ? params.avatarFileName[0]
+    : params.avatarFileName;
   const avatarNonceParam = Array.isArray(params.avatarNonce)
     ? params.avatarNonce[0]
     : params.avatarNonce;
@@ -45,27 +51,12 @@ export default function EditProfileScreen() {
     }
 
     setPendingAvatarUri(avatarUriParam);
+    setPendingAvatarFileName(avatarFileNameParam ?? null);
     setErrorMessage('');
-  }, [avatarNonceParam, avatarUriParam]);
+  }, [avatarFileNameParam, avatarNonceParam, avatarUriParam]);
 
   function openGallery() {
     router.push('./gallery-picker');
-  }
-
-  function buildClerkImageFile(uri: string) {
-    const normalizedUri = uri.split('?')[0] ?? uri;
-    const name = normalizedUri.split('/').pop() || `avatar-${Date.now()}.jpg`;
-    const extension = name.split('.').pop()?.toLowerCase();
-    const type =
-      extension === 'png'
-        ? 'image/png'
-        : extension === 'webp'
-          ? 'image/webp'
-          : extension === 'heic' || extension === 'heif'
-            ? 'image/heic'
-            : 'image/jpeg';
-
-    return { uri, name, type };
   }
 
   async function handleSave() {
@@ -75,13 +66,16 @@ export default function EditProfileScreen() {
 
     try {
       if (pendingAvatarUri) {
-        await clerkUser.setProfileImage({
-          file: buildClerkImageFile(pendingAvatarUri) as unknown as Parameters<
-            typeof clerkUser.setProfileImage
-          >[0]['file'],
+        const file = await buildClerkImageFile({
+          uri: pendingAvatarUri,
+          fileName: pendingAvatarFileName,
         });
+
+        console.log('uploading file', file);
+        await clerkUser.setProfileImage({ file });
         await clerkUser.reload();
         setPendingAvatarUri(null);
+        setPendingAvatarFileName(null);
       }
 
       const trimmedBio = description.trim();
@@ -91,8 +85,9 @@ export default function EditProfileScreen() {
         await updateBio({ bio: trimmedBio });
       }
 
-      router.back();
+      router.replace('/profile');
     } catch (err) {
+      if (__DEV__) console.error('error saving profile', err);
       setErrorMessage(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setIsSaving(false);

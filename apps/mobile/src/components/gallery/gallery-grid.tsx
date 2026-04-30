@@ -21,7 +21,7 @@ type GalleryAsset = MediaLibrary.Asset;
 
 type GalleryGridProps = {
   mediaTypes?: MediaLibrary.MediaTypeValue[];
-  onSelectAsset: (uri: string, type: 'photo' | 'video') => void;
+  onSelectAsset: (uri: string, type: 'photo' | 'video', fileName?: string) => void;
   emptyMessage?: string;
   permissionDescription?: string;
 };
@@ -189,7 +189,7 @@ export function GalleryGrid({
     const info = await MediaLibrary.getAssetInfoAsync(asset.id);
     const uri = info.localUri ?? asset.uri;
     const type = isVideoAsset(asset) ? 'video' : 'photo';
-    onSelectAsset(uri, type);
+    onSelectAsset(uri, type, asset.filename);
   };
 
   const handleLoadMore = () => {

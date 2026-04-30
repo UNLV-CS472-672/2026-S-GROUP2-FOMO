@@ -6,12 +6,12 @@ const PHOTO_ONLY: MediaLibrary.MediaTypeValue[] = [MediaLibrary.MediaType.photo]
 
 export default function ProfileGalleryPickerScreen() {
   const router = useRouter();
-
-  const handleSelectAsset = (uri: string) => {
+  const handleSelectAsset = (uri: string, _type: 'photo' | 'video', fileName?: string) => {
     router.dismissTo({
       pathname: '/profile/edit',
       params: {
         avatarUri: uri,
+        avatarFileName: fileName,
         avatarNonce: String(Date.now()),
       },
     });
