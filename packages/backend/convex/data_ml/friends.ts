@@ -4,14 +4,14 @@
 
 import { v } from 'convex/values';
 
-import { query } from '../_generated/server';
+import { internalQuery, query } from '../_generated/server';
 
 import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../auth';
 
 // Checks if a user exists in "friends" via userId.
 // Given input "userA", checks for a matching "userB" if 'status' is accepted.
 // Considers both directions, since database is unidirectional.
-export const friendExists = query({
+export const friendExists = internalQuery({
   args: {
     userAId: v.id('users'),
     userBId: v.id('users'),
@@ -126,7 +126,7 @@ export const getFriends = query({
 });
 
 // Given a userId, return all accepted friend ids in either direction.
-export const getFriendIds = query({
+export const getFriendIds = internalQuery({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
     const [requestedFriends, receivedFriends] = await Promise.all([

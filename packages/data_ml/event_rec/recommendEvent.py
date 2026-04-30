@@ -3,36 +3,12 @@ import torch
 import numpy as np
 from numpy.typing import NDArray
 
-from convex import ConvexClient
-from dotenv import load_dotenv
-from typing import Optional, Any
-from datetime import datetime
 from pathlib import Path
+from lib import queries, log
 
 
-from models.twoTowerModel import UserTower, EventTower
-from data.updateUserPreferences import TAG_ID_TO_IDX, NUM_TAGS, init_tags
-
-load_dotenv()
-
-CONVEX_CLOUD_URL = os.getenv("CONVEX_CLOUD_URL")
-
-client: Optional[ConvexClient] = (
-    ConvexClient(CONVEX_CLOUD_URL) if CONVEX_CLOUD_URL else None
-)
-
-
-def get_client() -> ConvexClient:
-    if client is None:
-        raise RuntimeError("ConvexClient not initialized")
-    return client
-
-
-def log(message: str) -> None:
-    now = datetime.now()
-    pretty_time = f"[{now.strftime('%H:%M:%S %m/%d/%y')}]"
-    print(f"{pretty_time} {message}")
-
+from .models.twoTowerModel import UserTower, EventTower
+from .data.updateUserPreferences import TAG_ID_TO_IDX, NUM_TAGS, init_tags
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -51,22 +27,13 @@ def activation_fn(raw_weights: NDArray[np.float32]) -> NDArray[np.float32]:
     return result
 
 
-def get_tag_info(client: ConvexClient) -> tuple[int, dict[str, int]]:
-    tags = client.query("data_ml/universal:queryAll", {"table_name": "tags"})
-    tag_id_to_idx = {tag["_id"]: i for i, tag in enumerate(tags)}
-    return len(tags), tag_id_to_idx
 
-
-def get_user_features(
-    client: ConvexClient, users: list[str], num_tags: int
-) -> torch.Tensor:
+def get_user_features(users: list[str], num_tags: int) -> torch.Tensor:
     """
     Fetches the stored 3-slice user feature vectors from Convex.
     Shape: (num_users, 3 * num_tags)
     """
-    user_weights = client.query(
-        "data_ml/eventRec:getUserTagWeights", {"userIDs": users}
-    )
+    user_weights = queries.get_user_tag_weights(users)
     expected_dim = 3 * num_tags
 
     fixed = []
@@ -83,9 +50,8 @@ def get_user_features(
 
     fixed_np: NDArray[np.float32] = np.stack(fixed)
 
-    tag_prefs = client.query(
-        "data_ml/eventRec:getPreferredTagsByUserId", {"userIds": users}
-    )
+    tag_prefs = queries.get_preferred_tags_by_user_id(users)
+
     if not isinstance(tag_prefs, list):
         tag_prefs = []
 
@@ -100,15 +66,13 @@ def get_user_features(
     return torch.from_numpy(activation_fn(fixed_np + prior))
 
 
-def get_event_features(
-    client: ConvexClient, num_tags: int, tag_id_to_idx: dict[str, int]
-) -> tuple[list[str], NDArray[np.float32]]:
+def get_event_features(num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[list[str], NDArray[np.float32]]:
     """
     Builds the (num_tags + 4) feature vector for each event.
     Only returns events that haven't ended yet.
     Shape: (num_events, num_tags + 4)
     """
-    all_events = client.query("data_ml/universal:queryAll", {"table_name": "events"})
+    all_events = queries.query_all("events")
 
     event_ids = []
     event_rows = []
@@ -117,7 +81,7 @@ def get_event_features(
         eid = event["_id"]
         tags = np.zeros(num_tags, dtype=np.float32)
 
-        event_tags = client.query("data_ml/eventRec:getByEventId", {"eventId": eid})
+        event_tags = queries.get_by_event_id(eid)
         for row in event_tags:
             if row["tagId"] in tag_id_to_idx:
                 tags[tag_id_to_idx[row["tagId"]]] = 1.0
@@ -137,20 +101,18 @@ def get_event_features(
     return event_ids, np.array(event_rows, dtype=np.float32)
 
 
-def main(users: list[str], update_db: bool, model_path: str, k: int = 10) -> None:
-    client = get_client()
-
+def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> None:
     # Preprocessing
-    num_tags, tag_id_to_idx = get_tag_info(client)
+    num_tags, tag_id_to_idx = queries.get_tag_info()
 
     if len(users) == 1 and users[0] == "ALL":
-        all_users = client.query("data_ml/universal:queryAll", {"table_name": "users"})
-        users = [row["_id"] for row in all_users]
+        all_users = queries.query_all("users")
+        users     = [row["_id"] for row in all_users]
 
-    user_features = get_user_features(client, users, num_tags).to(DEVICE)
+    user_features          = get_user_features(users, num_tags).to(DEVICE)
     print(user_features)
-    event_ids, event_array = get_event_features(client, num_tags, tag_id_to_idx)
-    event_features = torch.from_numpy(event_array).to(DEVICE)
+    event_ids, event_array = get_event_features(num_tags, tag_id_to_idx)
+    event_features         = torch.from_numpy(event_array).to(DEVICE)
 
     # Load model
     user_tower = UserTower(num_tags=num_tags).to(DEVICE)
@@ -172,12 +134,8 @@ def main(users: list[str], update_db: bool, model_path: str, k: int = 10) -> Non
 
     # Hard mask blocked events so they can never surface in recommendations.
     for i, user_id in enumerate(users):
-        interactions = client.query(
-            "data_ml/eventRec:getInteractionsByUserId", {"userId": user_id}
-        )
-        blocked_ids = {
-            r["eventId"] for r in interactions if r["status"] == "uninterested"
-        }
+        interactions = queries.get_interactions_by_user_id(user_id)
+        blocked_ids = {r["eventId"] for r in interactions if r["status"] == "uninterested"}
         for j, eid in enumerate(event_ids):
             if eid in blocked_ids:
                 scores[i, j] = -1.0
@@ -197,19 +155,12 @@ def main(users: list[str], update_db: bool, model_path: str, k: int = 10) -> Non
     if update_db:
         for user_id, recs in recommendations.items():
             event_ids_ranked = [event_id for event_id, _ in recs]
-            client.mutation(
-                "data_ml/eventRec:upsertEventRecs",
-                {"userId": user_id, "eventIds": event_ids_ranked},
-            )
+            queries.upsert_event_recs(user_id, event_ids_ranked)
 
         print(f"Updated {len(recommendations)} users in Convex with {k} recs each.")
     else:
-        all_users_rows = client.query(
-            "data_ml/universal:queryAll", {"table_name": "users"}
-        )
-        all_events_rows = client.query(
-            "data_ml/universal:queryAll", {"table_name": "events"}
-        )
+        all_users_rows = queries.query_all("users")
+        all_events_rows = queries.query_all("events")
         user_name = {row["_id"]: row["username"] for row in all_users_rows}
         event_name = {row["_id"]: row["name"] for row in all_events_rows}
 

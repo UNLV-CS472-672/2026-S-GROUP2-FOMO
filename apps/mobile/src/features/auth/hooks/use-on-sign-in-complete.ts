@@ -1,6 +1,3 @@
-import { api } from '@fomo/backend/convex/_generated/api';
-import { useMutation } from 'convex/react';
-
 type ActivateSession = (params: { session: string }) => Promise<void>;
 
 type OnSignInCompleteArgs = {
@@ -9,8 +6,6 @@ type OnSignInCompleteArgs = {
 };
 
 export function useOnSignInComplete() {
-  const ensureUser = useMutation(api.auth.ensureCurrentUser);
-
   return async function onSignInComplete({ sessionId, setActive }: OnSignInCompleteArgs) {
     if (!sessionId) {
       throw new Error('Expected a Clerk session ID, but received null/undefined.');
@@ -21,7 +16,5 @@ export function useOnSignInComplete() {
     }
 
     await setActive({ session: sessionId });
-
-    await ensureUser({});
   };
 }

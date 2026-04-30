@@ -1,11 +1,21 @@
 import { Screen } from '@/components/ui/screen';
 import { FriendCell } from '@/features/profile/components/friend-cell';
 import { useAppTheme } from '@/lib/use-app-theme';
+import { Ionicons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
-import { useConvexAuth, useQuery } from 'convex/react';
+import type { Id } from '@fomo/backend/convex/_generated/dataModel';
+import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 /** Friends UI from this screen; embed in profile or use via {@link FriendsScreen}. */
 export function FriendsScreenContent() {
@@ -23,6 +33,18 @@ export function FriendsScreenContent() {
     isAuthenticated ? {} : 'skip'
   );
   const friendsResult = useQuery(api.data_ml.friends.getFriends, isAuthenticated ? {} : 'skip');
+  const removeFriend = useMutation(api.friends.removeFriend);
+
+  function handleRemoveFriend(friendId: Id<'users'>, username: string) {
+    Alert.alert('Remove friend', `Remove ${username} as a friend?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => void removeFriend({ friendId }),
+      },
+    ]);
+  }
 
   const recommendedFriends = friendRecResult?.recs ?? [];
 
@@ -111,6 +133,16 @@ export function FriendsScreenContent() {
                 displayName={f.displayName}
                 avatarUrl={f.avatarUrl}
                 onPress={() => handleFriendPress(String(f.id), f.username)}
+                rightAccessory={
+                  <Pressable
+                    onPress={() => handleRemoveFriend(f.id, f.username)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove ${f.username}`}
+                  >
+                    <Ionicons name="person-remove-outline" size={20} color={'#dc2626'} />
+                  </Pressable>
+                }
               />
             ))
           ) : (

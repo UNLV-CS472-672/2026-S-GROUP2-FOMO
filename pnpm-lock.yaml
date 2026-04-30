@@ -18,7 +18,7 @@ importers:
     devDependencies:
       '@commitlint/cli':
         specifier: ^19.6.0
-        version: 19.8.1(@types/node@25.5.0)(typescript@5.9.3)
+        version: 19.8.1(@types/node@20.19.32)(typescript@5.9.3)
       '@commitlint/config-conventional':
         specifier: ^19.6.0
         version: 19.8.1
@@ -28,6 +28,9 @@ importers:
       '@t3-oss/env-nextjs':
         specifier: ^0.13.10
         version: 0.13.11(typescript@5.9.3)(zod@3.25.76)
+      '@types/node':
+        specifier: ^20.19.32
+        version: 20.19.32
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -127,6 +130,9 @@ importers:
       expo-image:
         specifier: ~3.0.11
         version: 3.0.11(expo@54.0.34)(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.2.3)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6))(react@19.1.0)
+      expo-image-manipulator:
+        specifier: ~14.0.8
+        version: 14.0.8(expo@54.0.34)
       expo-image-picker:
         specifier: ~17.0.11
         version: 17.0.11(expo@54.0.34)
@@ -294,6 +300,9 @@ importers:
 
   packages/backend:
     dependencies:
+      '@clerk/backend':
+        specifier: ^3.4.1
+        version: 3.4.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@fomo/env':
         specifier: workspace:*
         version: link:../env
@@ -303,6 +312,9 @@ importers:
       h3-js:
         specifier: ^4.4.0
         version: 4.4.0(patch_hash=3609bf340e57eeded0e472f267b60e8b5de0f3c3886d992159bbc587ec8ff31c)
+      svix:
+        specifier: ^1.92.2
+        version: 1.92.2
     devDependencies:
       '@edge-runtime/vm':
         specifier: ^5.0.0
@@ -1151,10 +1163,10 @@ packages:
       }
     engines: { node: '>=18' }
 
-  '@clerk/backend@3.2.2':
+  '@clerk/backend@3.4.1':
     resolution:
       {
-        integrity: sha512-legJnKmsFWicG1jR093aiK/fWS75Xjcm6fu98xbZI0Gu/gfKdQFp4CGd68zmVWMklQo6CWCqGrqkrFKGBBX9EA==,
+        integrity: sha512-+Tgo1uPEFpBRvyFW3JtPbrTMRgiP+pWBo9gi2tTB0AxEqR2I/kSYy5l3+KqWciUpbVZtVvLXm1j+NEE2WEG+jg==,
       }
     engines: { node: '>=20.9.0' }
 
@@ -1284,6 +1296,21 @@ packages:
     resolution:
       {
         integrity: sha512-RLIs8gqSmciALkJ5caAed0+Xb38b0itW+lTwhZ2arqOcbY/nfJboZbfXKU5VDUbs4ivMD0xKKy6tHQTbpKgqmA==,
+      }
+    engines: { node: '>=20.9.0' }
+    peerDependencies:
+      react: 19.1.0
+      react-dom: 19.1.0
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+
+  '@clerk/shared@4.8.5':
+    resolution:
+      {
+        integrity: sha512-YxgUWHoKEXEbRPWPEcB2Q0o+NJkDc0/zQRp4QCsnGIM5e32hlBUwxcYpyDjDlZ2lYB+GUXHuEc3KETnxWGp26g==,
       }
     engines: { node: '>=20.9.0' }
     peerDependencies:
@@ -7198,6 +7225,14 @@ packages:
     peerDependencies:
       expo: '*'
 
+  expo-image-manipulator@14.0.8:
+    resolution:
+      {
+        integrity: sha512-sXsXjm7rIxLWZe0j2A41J/Ph53PpFJRdyzJ3EQ/qetxLUvS2m3K1sP5xy37px43qCf0l79N/i6XgFgenFV36/Q==,
+      }
+    peerDependencies:
+      expo: '*'
+
   expo-image-picker@17.0.11:
     resolution:
       {
@@ -11318,6 +11353,12 @@ packages:
       }
     engines: { node: '>= 0.4' }
 
+  svix@1.92.2:
+    resolution:
+      {
+        integrity: sha512-ZmuA3UVvlnF9EgxlzmPtF7CKjQb64Z6OFlyfdDfU0sdcC7dJa+3aOYX5B9mA+RS6ch1AxBa4UP/l6KmqfGtWBQ==,
+      }
+
   swr@2.3.4:
     resolution:
       {
@@ -11833,6 +11874,7 @@ packages:
       {
         integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==,
       }
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   validate-npm-package-name@5.0.1:
@@ -12989,9 +13031,9 @@ snapshots:
 
   '@bcoe/v8-coverage@1.0.2': {}
 
-  '@clerk/backend@3.2.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+  '@clerk/backend@3.4.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
     dependencies:
-      '@clerk/shared': 4.3.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@clerk/shared': 4.8.5(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       standardwebhooks: 1.0.0
       tslib: 2.8.1
     transitivePeerDependencies:
@@ -13079,7 +13121,7 @@ snapshots:
 
   '@clerk/nextjs@7.0.6(next@16.1.6(@babel/core@7.29.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
     dependencies:
-      '@clerk/backend': 3.2.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@clerk/backend': 3.4.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@clerk/react': 6.1.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@clerk/shared': 4.3.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       next: 16.1.6(@babel/core@7.29.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -13137,6 +13179,17 @@ snapshots:
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
 
+  '@clerk/shared@4.8.5(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      '@tanstack/query-core': 5.90.16
+      dequal: 2.0.3
+      glob-to-regexp: 0.4.1
+      js-cookie: 3.0.5
+      std-env: 3.10.0
+    optionalDependencies:
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
+
   '@clerk/ui@1.6.0(@solana/web3.js@1.98.4(bufferutil@4.1.0)(typescript@5.9.3))(@types/react@19.2.3)(bs58@5.0.0)(fastestsmallesttextencoderdecoder@1.0.22)(react-dom@19.1.0(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.2.3)(bufferutil@4.1.0)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)':
     dependencies:
       '@clerk/localizations': 4.5.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -13173,11 +13226,11 @@ snapshots:
       eventemitter3: 5.0.4
       preact: 10.28.4
 
-  '@commitlint/cli@19.8.1(@types/node@25.5.0)(typescript@5.9.3)':
+  '@commitlint/cli@19.8.1(@types/node@20.19.32)(typescript@5.9.3)':
     dependencies:
       '@commitlint/format': 19.8.1
       '@commitlint/lint': 19.8.1
-      '@commitlint/load': 19.8.1(@types/node@25.5.0)(typescript@5.9.3)
+      '@commitlint/load': 19.8.1(@types/node@20.19.32)(typescript@5.9.3)
       '@commitlint/read': 19.8.1
       '@commitlint/types': 19.8.1
       tinyexec: 1.0.2
@@ -13224,7 +13277,7 @@ snapshots:
       '@commitlint/rules': 19.8.1
       '@commitlint/types': 19.8.1
 
-  '@commitlint/load@19.8.1(@types/node@25.5.0)(typescript@5.9.3)':
+  '@commitlint/load@19.8.1(@types/node@20.19.32)(typescript@5.9.3)':
     dependencies:
       '@commitlint/config-validator': 19.8.1
       '@commitlint/execute-rule': 19.8.1
@@ -13232,7 +13285,7 @@ snapshots:
       '@commitlint/types': 19.8.1
       chalk: 5.6.2
       cosmiconfig: 9.0.0(typescript@5.9.3)
-      cosmiconfig-typescript-loader: 6.2.0(@types/node@25.5.0)(cosmiconfig@9.0.0(typescript@5.9.3))(typescript@5.9.3)
+      cosmiconfig-typescript-loader: 6.2.0(@types/node@20.19.32)(cosmiconfig@9.0.0(typescript@5.9.3))(typescript@5.9.3)
       lodash.isplainobject: 4.0.6
       lodash.merge: 4.6.2
       lodash.uniq: 4.5.0
@@ -15950,6 +16003,7 @@ snapshots:
   '@types/node@25.5.0':
     dependencies:
       undici-types: 7.18.2
+    optional: true
 
   '@types/parse-json@4.0.2': {}
 
@@ -16889,9 +16943,9 @@ snapshots:
 
   core-js@3.47.0: {}
 
-  cosmiconfig-typescript-loader@6.2.0(@types/node@25.5.0)(cosmiconfig@9.0.0(typescript@5.9.3))(typescript@5.9.3):
+  cosmiconfig-typescript-loader@6.2.0(@types/node@20.19.32)(cosmiconfig@9.0.0(typescript@5.9.3))(typescript@5.9.3):
     dependencies:
-      '@types/node': 25.5.0
+      '@types/node': 20.19.32
       cosmiconfig: 9.0.0(typescript@5.9.3)
       jiti: 2.6.1
       typescript: 5.9.3
@@ -17577,6 +17631,11 @@ snapshots:
   expo-image-loader@6.0.0(expo@54.0.34):
     dependencies:
       expo: 54.0.34(@babel/core@7.29.0)(@expo/metro-runtime@6.1.2)(bufferutil@4.1.0)(expo-router@6.0.23)(graphql@16.13.2)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.2.3)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6))(react@19.1.0)(utf-8-validate@6.0.6)
+
+  expo-image-manipulator@14.0.8(expo@54.0.34):
+    dependencies:
+      expo: 54.0.34(@babel/core@7.29.0)(@expo/metro-runtime@6.1.2)(bufferutil@4.1.0)(expo-router@6.0.23)(graphql@16.13.2)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.2.3)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6))(react@19.1.0)(utf-8-validate@6.0.6)
+      expo-image-loader: 6.0.0(expo@54.0.34)
 
   expo-image-picker@17.0.11(expo@54.0.34):
     dependencies:
@@ -20346,6 +20405,10 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
+  svix@1.92.2:
+    dependencies:
+      standardwebhooks: 1.0.0
+
   swr@2.3.4(react@19.1.0):
     dependencies:
       dequal: 2.0.3
@@ -20545,7 +20608,8 @@ snapshots:
 
   undici-types@6.21.0: {}
 
-  undici-types@7.18.2: {}
+  undici-types@7.18.2:
+    optional: true
 
   undici@6.23.0: {}
 

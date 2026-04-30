@@ -58,9 +58,11 @@ From `packages/backend`, run:
 
 ```bash
 pnpm exec convex env set CLERK_JWT_ISSUER_DOMAIN https://your-app.clerk.accounts.dev
+pnpm exec convex env set CLERK_WEBHOOK_SECRET whsec_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 pnpm exec convex env set TICKETMASTER_API_KEY your_ticketmaster_api_key
 ```
 
+`CLERK_WEBHOOK_SECRET` is required for Clerk webhook signature verification on `/webhooks/clerk`.
 `TICKETMASTER_API_KEY` is only required if you run Ticketmaster ingestion actions.
 
 ---

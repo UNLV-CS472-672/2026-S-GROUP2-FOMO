@@ -3,11 +3,11 @@
 // -------------------------------------------------------
 
 import { v } from 'convex/values';
-import { mutation } from '../_generated/server';
+import { internalMutation } from '../_generated/server';
 
 // If target user already has a row in "friendRecs", update the row.
 // If target doesn't exist in "friendRecs", add the row.
-export const upsert = mutation({
+export const upsert = internalMutation({
   args: {
     userId: v.id('users'),
     recs: v.array(

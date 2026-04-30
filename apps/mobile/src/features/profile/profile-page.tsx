@@ -3,16 +3,19 @@ import { Screen } from '@/components/ui/screen';
 import { Avatar } from '@/features/posts/components/avatar';
 import { FeedCard } from '@/features/posts/components/feed-card';
 import type { FeedPost } from '@/features/posts/types';
+import { buildClerkImageFile } from '@/features/profile/clerk-image';
 import { MediaGrid, type GridMediaItem } from '@/features/profile/components/media-grid';
 import StatLabel from '@/features/profile/components/stat-label';
 import { useGuest } from '@/integrations/session/guest';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { cn } from '@/lib/utils';
+import { useUser } from '@clerk/expo';
 import { MaterialIcons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { FunctionReturnType } from 'convex/server';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import type { ComponentProps, ReactNode } from 'react';
 import { useState } from 'react';
@@ -111,6 +114,7 @@ export function ProfilePage({
   const userId = profile.user._id;
   const theme = useAppTheme();
   const router = useRouter();
+  const { user: clerkUser } = useUser();
   const { isAuthenticated } = useConvexAuth();
   const { isGuestMode } = useGuest();
   const togglePostLike = useMutation(api.likes.togglePostLike);
@@ -118,9 +122,11 @@ export function ProfilePage({
   const acceptFriendRequest = useMutation(api.friends.acceptFriendRequest);
   const cancelFriendRequest = useMutation(api.friends.cancelFriendRequest);
   const declineFriendRequest = useMutation(api.friends.declineFriendRequest);
+  const removeFriend = useMutation(api.friends.removeFriend);
   const [activeTab, setActiveTab] = useState<'feed' | 'media'>('feed');
   const [isSendingFriendRequest, setIsSendingFriendRequest] = useState(false);
   const [isUpdatingFriendship, setIsUpdatingFriendship] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const friendship = useQuery(
     api.friends.getFriendshipStatusForUser,
     isAuthenticated && viewerUserId && viewerUserId !== userId ? { otherUserId: userId } : 'skip'
@@ -142,6 +148,7 @@ export function ProfilePage({
     }));
   const profileBio = profile.user.bio ?? bioFallback;
   const relationshipStatus = friendship?.status;
+  const isOwnProfile = viewerUserId === userId;
 
   async function handleSendFriendRequest() {
     if (!viewerUserId || viewerUserId === userId || isSendingFriendRequest) {
@@ -187,6 +194,56 @@ export function ProfilePage({
   const showHeaderFriendAction =
     viewerUserId && viewerUserId !== userId && relationshipStatus !== 'pending_received';
 
+  async function handleUpdateProfileImageFromGallery() {
+    if (!clerkUser || isUploadingAvatar) {
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(
+          'Photo access needed',
+          'Allow photo library access to choose a new profile picture.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+      });
+
+      if (result.canceled || !result.assets.length) {
+        return;
+      }
+
+      const selectedAsset = result.assets[0];
+      const selectedUri = selectedAsset?.uri;
+      if (!selectedAsset || !selectedUri) {
+        return;
+      }
+
+      const file = await buildClerkImageFile({
+        uri: selectedUri,
+        base64: selectedAsset.base64,
+        fileName: selectedAsset.fileName,
+        mimeType: selectedAsset.mimeType,
+      });
+
+      await clerkUser.setProfileImage({ file });
+      await clerkUser.reload();
+    } catch (error) {
+      console.error('Failed to update profile picture', error);
+      Alert.alert(
+        'Unable to update photo',
+        error instanceof Error ? error.message : 'Try again later.'
+      );
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  }
+
   return (
     <Screen className="flex-1">
       <ScrollView
@@ -194,13 +251,22 @@ export function ProfilePage({
         contentContainerClassName="pb-8"
       >
         <View className="flex-row items-start px-4 pb-4 pt-2">
-          <View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={isOwnProfile ? 'Edit profile picture' : 'Profile picture'}
+            disabled={!isOwnProfile || isUploadingAvatar}
+            hitSlop={8}
+            onPress={() => {
+              if (!isOwnProfile) return;
+              void handleUpdateProfileImageFromGallery();
+            }}
+          >
             <Avatar
               name={profile.user.displayName || profile.user.username}
               size={92}
               source={profile.user.avatarUrl ? { uri: profile.user.avatarUrl } : undefined}
             />
-          </View>
+          </Pressable>
 
           <View className="ml-3 flex-1 pr-0">
             <View className="flex-row items-center justify-between">
@@ -219,43 +285,83 @@ export function ProfilePage({
                         relationshipStatus === 'pending_sent'
                           ? 'Remove pending friend request'
                           : relationshipStatus === 'accepted'
-                            ? 'Friends'
+                            ? 'Remove friend'
                             : 'Add friend'
                       }
                       disabled={
                         relationshipStatus === undefined ||
-                        relationshipStatus === 'accepted' ||
                         isSendingFriendRequest ||
                         isUpdatingFriendship
                       }
                       iconName={
-                        relationshipStatus === 'pending_sent'
+                        relationshipStatus === 'accepted'
                           ? 'person-remove'
-                          : relationshipStatus === 'accepted'
-                            ? 'people'
+                          : relationshipStatus === 'pending_sent'
+                            ? 'hourglass-top'
                             : 'person-add-alt-1'
                       }
                       iconColor={theme.tint}
                       onPress={() => {
-                        if (relationshipStatus === 'pending_sent') {
-                          void (async () => {
-                            if (isUpdatingFriendship) {
-                              return;
-                            }
+                        if (relationshipStatus === 'accepted') {
+                          Alert.alert(
+                            'Remove friend',
+                            `Remove ${profile.user.username} as a friend?`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              {
+                                text: 'Remove',
+                                style: 'destructive',
+                                onPress: () => {
+                                  void (async () => {
+                                    if (isUpdatingFriendship) return;
+                                    setIsUpdatingFriendship(true);
+                                    try {
+                                      await removeFriend({ friendId: userId });
+                                    } catch (error) {
+                                      Alert.alert(
+                                        'Unable to remove friend',
+                                        error instanceof Error ? error.message : 'Try again.'
+                                      );
+                                    } finally {
+                                      setIsUpdatingFriendship(false);
+                                    }
+                                  })();
+                                },
+                              },
+                            ]
+                          );
+                          return;
+                        }
 
-                            setIsUpdatingFriendship(true);
-                            try {
-                              await cancelFriendRequest({ recipientId: userId });
-                            } catch (error) {
-                              console.error('Failed to cancel friend request', error);
-                              Alert.alert(
-                                'Unable to remove request',
-                                error instanceof Error ? error.message : 'Try again.'
-                              );
-                            } finally {
-                              setIsUpdatingFriendship(false);
-                            }
-                          })();
+                        if (relationshipStatus === 'pending_sent') {
+                          Alert.alert(
+                            'Cancel request',
+                            `Cancel your friend request to ${profile.user.username}?`,
+                            [
+                              { text: 'Keep', style: 'cancel' },
+                              {
+                                text: 'Cancel request',
+                                style: 'destructive',
+                                onPress: () => {
+                                  void (async () => {
+                                    if (isUpdatingFriendship) return;
+                                    setIsUpdatingFriendship(true);
+                                    try {
+                                      await cancelFriendRequest({ recipientId: userId });
+                                    } catch (error) {
+                                      console.error('Failed to cancel friend request', error);
+                                      Alert.alert(
+                                        'Unable to cancel request',
+                                        error instanceof Error ? error.message : 'Try again.'
+                                      );
+                                    } finally {
+                                      setIsUpdatingFriendship(false);
+                                    }
+                                  })();
+                                },
+                              },
+                            ]
+                          );
                           return;
                         }
 
