@@ -14,6 +14,16 @@ export default function ProfileLayout() {
       <Stack.Screen name="friends" options={{ title: 'Friends' }} />
       <Stack.Screen name="friend-requests" options={{ title: 'Friend Requests' }} />
       <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+      <Stack.Screen name="edit" options={{ title: 'Edit Profile' }} />
+      <Stack.Screen
+        name="gallery-picker"
+        options={{
+          title: 'Gallery',
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          animationDuration: 280,
+        }}
+      />
       <Stack.Screen name="media-feed" options={{ title: 'Media' }} />
     </Stack>
   );

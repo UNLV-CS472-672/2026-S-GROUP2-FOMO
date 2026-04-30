@@ -8,11 +8,13 @@ import StatLabel from '@/features/profile/components/stat-label';
 import { useGuest } from '@/integrations/session/guest';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { cn } from '@/lib/utils';
+import { useUser } from '@clerk/expo';
 import { MaterialIcons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { FunctionReturnType } from 'convex/server';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import type { ComponentProps, ReactNode } from 'react';
 import { useState } from 'react';
@@ -111,9 +113,11 @@ export function ProfilePage({
   const userId = profile.user._id;
   const theme = useAppTheme();
   const router = useRouter();
+  const { user: clerkUser } = useUser();
   const { isAuthenticated } = useConvexAuth();
   const { isGuestMode } = useGuest();
   const togglePostLike = useMutation(api.likes.togglePostLike);
+  const updateAvatarUrl = useMutation(api.users.updateAvatarUrl);
   const sendFriendRequest = useMutation(api.friends.sendFriendRequest);
   const acceptFriendRequest = useMutation(api.friends.acceptFriendRequest);
   const cancelFriendRequest = useMutation(api.friends.cancelFriendRequest);
@@ -121,6 +125,7 @@ export function ProfilePage({
   const [activeTab, setActiveTab] = useState<'feed' | 'media'>('feed');
   const [isSendingFriendRequest, setIsSendingFriendRequest] = useState(false);
   const [isUpdatingFriendship, setIsUpdatingFriendship] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const friendship = useQuery(
     api.friends.getFriendshipStatusForUser,
     isAuthenticated && viewerUserId && viewerUserId !== userId ? { otherUserId: userId } : 'skip'
@@ -142,6 +147,7 @@ export function ProfilePage({
     }));
   const profileBio = profile.user.bio ?? bioFallback;
   const relationshipStatus = friendship?.status;
+  const isOwnProfile = viewerUserId === userId;
 
   async function handleSendFriendRequest() {
     if (!viewerUserId || viewerUserId === userId || isSendingFriendRequest) {
@@ -187,6 +193,75 @@ export function ProfilePage({
   const showHeaderFriendAction =
     viewerUserId && viewerUserId !== userId && relationshipStatus !== 'pending_received';
 
+  function buildClerkImageFile(uri: string) {
+    const normalizedUri = uri.split('?')[0] ?? uri;
+    const name = normalizedUri.split('/').pop() || `avatar-${Date.now()}.jpg`;
+    const extension = name.split('.').pop()?.toLowerCase();
+    const type =
+      extension === 'png'
+        ? 'image/png'
+        : extension === 'webp'
+          ? 'image/webp'
+          : extension === 'heic' || extension === 'heif'
+            ? 'image/heic'
+            : 'image/jpeg';
+
+    return { uri, name, type };
+  }
+
+  async function handleUpdateProfileImageFromGallery() {
+    if (!clerkUser || isUploadingAvatar) {
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(
+          'Photo access needed',
+          'Allow photo library access to choose a new profile picture.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.9,
+      });
+
+      if (result.canceled || !result.assets.length) {
+        return;
+      }
+
+      const selectedUri = result.assets[0]?.uri;
+      if (!selectedUri) {
+        return;
+      }
+
+      await clerkUser.setProfileImage({
+        file: buildClerkImageFile(selectedUri) as unknown as Parameters<
+          typeof clerkUser.setProfileImage
+        >[0]['file'],
+      });
+      await clerkUser.reload();
+
+      if (clerkUser.imageUrl) {
+        await updateAvatarUrl({ avatarUrl: clerkUser.imageUrl });
+      }
+    } catch (error) {
+      console.error('Failed to update profile picture', error);
+      Alert.alert(
+        'Unable to update photo',
+        error instanceof Error ? error.message : 'Try again later.'
+      );
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  }
+
   return (
     <Screen className="flex-1">
       <ScrollView
@@ -194,13 +269,22 @@ export function ProfilePage({
         contentContainerClassName="pb-8"
       >
         <View className="flex-row items-start px-4 pb-4 pt-2">
-          <View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={isOwnProfile ? 'Edit profile picture' : 'Profile picture'}
+            disabled={!isOwnProfile || isUploadingAvatar}
+            hitSlop={8}
+            onPress={() => {
+              if (!isOwnProfile) return;
+              void handleUpdateProfileImageFromGallery();
+            }}
+          >
             <Avatar
               name={profile.user.displayName || profile.user.username}
               size={92}
               source={profile.user.avatarUrl ? { uri: profile.user.avatarUrl } : undefined}
             />
-          </View>
+          </Pressable>
 
           <View className="ml-3 flex-1 pr-0">
             <View className="flex-row items-center justify-between">
