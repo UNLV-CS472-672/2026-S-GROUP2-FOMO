@@ -1,17 +1,53 @@
 import { v } from 'convex/values';
-import { internalMutation, internalQuery, query } from '../_generated/server';
+import { Id } from '../_generated/dataModel';
+import {
+  internalMutation,
+  internalQuery,
+  MutationCtx,
+  query,
+  QueryCtx,
+} from '../_generated/server';
 import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../auth';
 
-export const getByUserId = internalQuery({
-  args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
-    return await ctx.db
-      .query('attendance')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
-      .filter((q) => q.eq(q.field('status'), 'going'))
-      .collect();
-  },
-});
+async function getInteractionsForUser(ctx: QueryCtx, userId: Id<'users'>, sinceMs?: number) {
+  const attendanceRows = await ctx.db
+    .query('attendance')
+    .withIndex('by_userId', (q) => q.eq('userId', userId))
+    .collect();
+
+  if (sinceMs === undefined) return attendanceRows;
+
+  const withEvents = await Promise.all(
+    attendanceRows.map(async (row) => {
+      const event = await ctx.db.get(row.eventId);
+      return { row, event };
+    })
+  );
+
+  return withEvents
+    .filter(({ event }) => event !== null && event.endDate >= sinceMs)
+    .map(({ row }) => row);
+}
+
+async function upsertUserTagWeightsRow(ctx: MutationCtx, userId: Id<'users'>, weights: number[]) {
+  const existing = await ctx.db
+    .query('userTagWeights')
+    .withIndex('by_userId', (q) => q.eq('userId', userId))
+    .first();
+
+  if (existing) {
+    await ctx.db.patch(existing._id, {
+      weights,
+      updatedAt: Date.now(),
+    });
+  } else {
+    await ctx.db.insert('userTagWeights', {
+      userId,
+      weights,
+      updatedAt: Date.now(),
+    });
+  }
+}
 
 export const getByEventId = internalQuery({
   args: { eventId: v.id('events') },
@@ -46,23 +82,23 @@ export const upsertUserTagWeights = internalMutation({
     weights: v.array(v.number()),
   },
   handler: async (ctx, { userId, weights }) => {
-    const existing = await ctx.db
-      .query('userTagWeights')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
-      .first();
+    await upsertUserTagWeightsRow(ctx, userId, weights);
+  },
+});
 
-    if (existing) {
-      await ctx.db.patch(existing._id, {
-        weights,
-        updatedAt: Date.now(),
-      });
-    } else {
-      await ctx.db.insert('userTagWeights', {
-        userId,
-        weights,
-        updatedAt: Date.now(),
-      });
-    }
+export const upsertUserTagWeightsBatch = internalMutation({
+  args: {
+    rows: v.array(
+      v.object({
+        userId: v.id('users'),
+        weights: v.array(v.number()),
+      })
+    ),
+  },
+  handler: async (ctx, { rows }) => {
+    await Promise.all(
+      rows.map(({ userId, weights }) => upsertUserTagWeightsRow(ctx, userId, weights))
+    );
   },
 });
 
@@ -87,25 +123,25 @@ export const getUserTagWeights = internalQuery({
 export const getInteractionsByUserId = internalQuery({
   args: { userId: v.id('users'), sinceMs: v.optional(v.number()) },
   handler: async (ctx, { userId, sinceMs }) => {
-    const attendanceRows = await ctx.db
-      .query('attendance')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
-      .collect();
-    // { userId, eventId, status }[]
+    return await getInteractionsForUser(ctx, userId, sinceMs);
+  },
+});
 
-    // No value passed for sinceMs, Don't want to filter
-    if (sinceMs === undefined) return attendanceRows;
-
-    const withEvents = await Promise.all(
-      attendanceRows.map(async (row) => {
-        const event = await ctx.db.get(row.eventId);
-        return { row, event };
+export const getInteractionsByUsers = internalQuery({
+  args: {
+    rows: v.array(
+      v.object({
+        userId: v.id('users'),
+        sinceMs: v.optional(v.number()),
       })
+    ),
+  },
+  handler: async (ctx, { rows }) => {
+    const results = await Promise.all(
+      rows.map(({ userId, sinceMs }) => getInteractionsForUser(ctx, userId, sinceMs))
     );
 
-    return withEvents
-      .filter(({ event }) => event !== null && event.endDate >= sinceMs)
-      .map(({ row }) => row);
+    return results.flat();
   },
 });
 

@@ -89,6 +89,16 @@ def get_interactions_by_user_id(
     return _get("/data-ml/get-interactions", params)  # type: ignore[no-any-return]
 
 
+def get_interactions_by_users(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    resp = requests.post(
+        f"{_get_base_url()}/data-ml/get-interactions-by-users",
+        headers=_headers(),
+        json={"rows": rows},
+    )
+    resp.raise_for_status()
+    return resp.json()  # type: ignore[no-any-return]
+
+
 def get_interactions_by_user_ids(user_ids: list[str]) -> list[dict[str, Any]]:
     resp = requests.get(
         f"{_get_base_url()}/data-ml/get-interactions-by-user-ids",
@@ -114,6 +124,10 @@ def get_user_tag_weights_with_timestamp(user_id: str, num_tags: int) -> dict[str
 
 def upsert_user_tag_weights(user_id: str, weights: list[float]) -> None:
     _post("/data-ml/upsert-user-tag-weights", {"userId": user_id, "weights": weights})
+
+
+def upsert_user_tag_weights_batch(rows: list[dict[str, Any]]) -> None:
+    _post("/data-ml/upsert-user-tag-weights-batch", {"rows": rows})
 
 def get_preferred_tags_by_user_id(user_ids: list[str]) -> list[str]:
     resp = requests.get(

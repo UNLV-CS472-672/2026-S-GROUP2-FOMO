@@ -92,6 +92,14 @@ def get_interaction_ids(
     else:
         interactions = queries.get_interactions_by_user_id(user_id)
 
+    return get_interaction_ids_from_rows(interactions)
+
+
+def get_interaction_ids_from_rows(
+    interactions: list[dict[str, str]],
+) -> tuple[list[str], list[str], list[str]]:
+    """Splits interaction rows into event ID lists by status."""
+
     going = [row["eventId"] for row in interactions if row["status"] == "going"]
     interested = [
         row["eventId"] for row in interactions if row["status"] == "interested"
@@ -103,11 +111,10 @@ def get_interaction_ids(
     return going, interested, uninterested
 
 
-def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
-    """
-    Builds full (3 * num_tags,) feature vector for one user:
-      [going_weights | interested_weights | uninterested_weights]
-    """
+def get_user_raw_weights_and_last_updated(
+    user_id: str,
+) -> tuple[float, NDArray[np.float32]]:
+    """Loads stored user weights and normalizes them to the expected shape."""
     user_weights_and_timestamp = queries.get_user_tag_weights_with_timestamp(user_id, NUM_TAGS)
 
     expected_dim = 3 * NUM_TAGS
@@ -124,9 +131,16 @@ def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
             elif len(raw) == NUM_TAGS:
                 user_raw_weights_nd[:NUM_TAGS] = raw
 
-    # Get event ids for events the user has attended, was interested, and has blocked
-    going_ids, interested_ids, uninterested_ids = get_interaction_ids(
-        user_id, user_last_updated
+    return user_last_updated, user_raw_weights_nd
+
+
+def build_user_feature_vector_from_interactions(
+    user_raw_weights_nd: NDArray[np.float32],
+    interactions: list[dict[str, str]],
+) -> NDArray[np.float32]:
+    """Builds a user feature vector from pre-fetched interaction rows."""
+    going_ids, interested_ids, uninterested_ids = get_interaction_ids_from_rows(
+        interactions
     )
 
     att_mat = build_matrix(going_ids)
@@ -144,6 +158,25 @@ def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
     return result + user_raw_weights_nd
 
 
+def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
+    """
+    Builds full (3 * num_tags,) feature vector for one user:
+      [going_weights | interested_weights | uninterested_weights]
+    """
+    user_last_updated, user_raw_weights_nd = get_user_raw_weights_and_last_updated(
+        user_id
+    )
+
+    if user_last_updated >= 0:
+        interactions = queries.get_interactions_by_user_id(user_id, user_last_updated)
+    else:
+        interactions = queries.get_interactions_by_user_id(user_id)
+
+    return build_user_feature_vector_from_interactions(
+        user_raw_weights_nd, interactions
+    )
+
+
 def main(users: list[str], update_db: bool) -> None:
     init_tags()
 
@@ -152,12 +185,42 @@ def main(users: list[str], update_db: bool) -> None:
         users = [row["_id"] for row in all_users]
 
     user_feature_vectors: dict[str, NDArray[np.float32]] = {}
+    user_raw_weights_by_id: dict[str, NDArray[np.float32]] = {}
+    interaction_rows = []
+
     for user_id in users:
-        user_feature_vectors[user_id] = build_user_feature_vector(user_id)
+        user_last_updated, user_raw_weights_nd = get_user_raw_weights_and_last_updated(
+            user_id
+        )
+        user_raw_weights_by_id[user_id] = user_raw_weights_nd
+
+        row: dict[str, float | str] = {"userId": user_id}
+        if user_last_updated >= 0:
+            row["sinceMs"] = user_last_updated
+        interaction_rows.append(row)
+
+    all_interactions = (
+        queries.get_interactions_by_users(interaction_rows) if interaction_rows else []
+    )
+    interactions_by_user_id: dict[str, list[dict[str, str]]] = {}
+    for row in all_interactions:
+        user_id = row["userId"]
+        if user_id not in interactions_by_user_id:
+            interactions_by_user_id[user_id] = []
+        interactions_by_user_id[user_id].append(row)
+
+    for user_id in users:
+        user_feature_vectors[user_id] = build_user_feature_vector_from_interactions(
+            user_raw_weights_by_id[user_id],
+            interactions_by_user_id.get(user_id, []),
+        )
 
     if update_db:
-        for user_id, vec in user_feature_vectors.items():
-            queries.upsert_user_tag_weights(user_id, vec.tolist())
+        rows = [
+            {"userId": user_id, "weights": vec.tolist()}
+            for user_id, vec in user_feature_vectors.items()
+        ]
+        queries.upsert_user_tag_weights_batch(rows)
         print(f"Updated {len(user_feature_vectors)} users in Convex.")
     else:
         for user_id, vec in user_feature_vectors.items():

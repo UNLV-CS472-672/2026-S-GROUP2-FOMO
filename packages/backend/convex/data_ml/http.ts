@@ -72,6 +72,19 @@ http.route({
 });
 
 http.route({
+  path: '/data-ml/upsert-user-tag-weights-batch',
+  method: 'POST',
+  handler: httpAction(async (ctx, req) => {
+    const authError = validateSecret(req);
+    if (authError) return authError;
+
+    const body = await req.json();
+    await ctx.runMutation(internal.data_ml.eventRec.upsertUserTagWeightsBatch, body);
+    return new Response('OK', { status: 200 });
+  }),
+});
+
+http.route({
   path: '/data-ml/get-user-tag-weights',
   method: 'GET',
   handler: httpAction(async (ctx, req) => {
@@ -121,6 +134,19 @@ http.route({
     const queryArgs = sinceMsRaw !== null ? { userId, sinceMs: Number(sinceMsRaw) } : { userId };
 
     const result = await ctx.runQuery(internal.data_ml.eventRec.getInteractionsByUserId, queryArgs);
+    return new Response(JSON.stringify(result), { status: 200 });
+  }),
+});
+
+http.route({
+  path: '/data-ml/get-interactions-by-users',
+  method: 'POST',
+  handler: httpAction(async (ctx, req) => {
+    const authError = validateSecret(req);
+    if (authError) return authError;
+
+    const body = await req.json();
+    const result = await ctx.runQuery(internal.data_ml.eventRec.getInteractionsByUsers, body);
     return new Response(JSON.stringify(result), { status: 200 });
   }),
 });
