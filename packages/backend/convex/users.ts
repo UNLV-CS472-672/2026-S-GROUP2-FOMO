@@ -1,4 +1,5 @@
 import type { UserJSON } from '@clerk/backend';
+import { env } from '@fomo/env/backend';
 import { v, type Validator } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
@@ -101,28 +102,31 @@ export const getCurrentProfileMinimal = query({
   },
 });
 
-function getUsername(data: UserJSON): string {
-  return data.username!;
-}
-
 function getDisplayName(data: UserJSON): string {
   return data.username!;
 }
 
+function clerkIdFromClerkUserId(clerkUserId: string): string {
+  // NOTE :: match the id as ctx.auth.getIdentity returns
+  return `${env.CLERK_JWT_ISSUER_DOMAIN}|${clerkUserId}`;
+}
+
 export const upsertFromClerk = internalMutation({
-  args: { data: v.any() as Validator<UserJSON> },
+  args: { data: v.any() as Validator<UserJSON> }, // no runtime validation, trust Clerk
   async handler(ctx, { data }) {
+    const normalizedClerkId = clerkIdFromClerkUserId(data.id);
+
     // Webhook source of truth for identity fields mirrored into Convex users.
     const userAttributes = {
-      clerkId: data.id,
-      username: getUsername(data),
+      clerkId: normalizedClerkId,
+      username: data.username!,
       displayName: getDisplayName(data),
       avatarUrl: data.image_url ?? '',
     };
 
     const existing = await ctx.db
       .query('users')
-      .withIndex('by_clerkId', (q) => q.eq('clerkId', data.id))
+      .withIndex('by_clerkId', (q) => q.eq('clerkId', normalizedClerkId))
       .unique();
 
     if (existing === null) {
@@ -160,9 +164,10 @@ export const updateBio = mutation({
 export const deleteFromClerk = internalMutation({
   args: { clerkUserId: v.string() },
   async handler(ctx, { clerkUserId }) {
+    const normalizedClerkId = clerkIdFromClerkUserId(clerkUserId);
     const existing = await ctx.db
       .query('users')
-      .withIndex('by_clerkId', (q) => q.eq('clerkId', clerkUserId))
+      .withIndex('by_clerkId', (q) => q.eq('clerkId', normalizedClerkId))
       .unique();
 
     if (existing !== null) {
