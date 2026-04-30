@@ -39,6 +39,9 @@ apps/web/.env.local
 # turbo
 .turbo
 
+# convex generated ai artifacts
+packages/backend/convex/_generated/ai/
+
 #user files
 .idea/
 
@@ -48,3 +51,9 @@ apps/web/.env.local
 # python
 .pytest_cache/
 __pycache__/
+
+AGENTS.md
+CLAUDE.md
+.agents/
+.junie/
+skills-lock.json
