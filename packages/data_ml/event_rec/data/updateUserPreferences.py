@@ -149,7 +149,9 @@ def get_user_raw_weights_and_last_updated_from_result(
     user_raw_weights_nd = np.zeros(expected_dim, dtype=np.float32)
 
     if user_weights_and_timestamp is not None:
-        user_last_updated = float(user_weights_and_timestamp.get("lastUpdatedAt", -1.0))
+        last_updated_at = user_weights_and_timestamp.get("lastUpdatedAt", -1.0)
+        if isinstance(last_updated_at, (str, int, float)):
+            user_last_updated = float(last_updated_at)
         user_raw_weights = user_weights_and_timestamp.get("weights")
         if user_raw_weights is not None:
             raw = np.array(user_raw_weights, dtype=np.float32)
@@ -219,7 +221,7 @@ def main(users: list[str], update_db: bool) -> None:
 
     user_feature_vectors: dict[str, NDArray[np.float32]] = {}
     user_raw_weights_by_id: dict[str, NDArray[np.float32]] = {}
-    interaction_rows = []
+    interaction_rows: list[dict[str, float | str]] = []
 
     user_weights_and_timestamps = queries.get_user_tag_weights_with_timestamps(
         users, NUM_TAGS
@@ -236,12 +238,12 @@ def main(users: list[str], update_db: bool) -> None:
         )
         user_raw_weights_by_id[user_id] = user_raw_weights_nd
 
-        row: dict[str, float | str] = {"userId": user_id}
+        interaction_row: dict[str, float | str] = {"userId": user_id}
         if user_last_updated >= 0:
-            row["sinceMs"] = user_last_updated
-        interaction_rows.append(row)
+            interaction_row["sinceMs"] = user_last_updated
+        interaction_rows.append(interaction_row)
 
-    all_interactions = (
+    all_interactions: list[dict[str, str]] = (
         queries.get_interactions_by_users(interaction_rows) if interaction_rows else []
     )
     all_event_ids = list(dict.fromkeys([row["eventId"] for row in all_interactions]))
@@ -249,11 +251,11 @@ def main(users: list[str], update_db: bool) -> None:
     event_tags_by_id = group_event_tags_by_event_id(all_event_tags)
 
     interactions_by_user_id: dict[str, list[dict[str, str]]] = {}
-    for row in all_interactions:
-        user_id = row["userId"]
+    for interaction in all_interactions:
+        user_id = interaction["userId"]
         if user_id not in interactions_by_user_id:
             interactions_by_user_id[user_id] = []
-        interactions_by_user_id[user_id].append(row)
+        interactions_by_user_id[user_id].append(interaction)
 
     for user_id in users:
         user_feature_vectors[user_id] = build_user_feature_vector_from_interactions(
