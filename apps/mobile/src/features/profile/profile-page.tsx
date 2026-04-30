@@ -117,7 +117,6 @@ export function ProfilePage({
   const { isAuthenticated } = useConvexAuth();
   const { isGuestMode } = useGuest();
   const togglePostLike = useMutation(api.likes.togglePostLike);
-  const updateAvatarUrl = useMutation(api.users.updateAvatarUrl);
   const sendFriendRequest = useMutation(api.friends.sendFriendRequest);
   const acceptFriendRequest = useMutation(api.friends.acceptFriendRequest);
   const cancelFriendRequest = useMutation(api.friends.cancelFriendRequest);
@@ -247,10 +246,6 @@ export function ProfilePage({
         >[0]['file'],
       });
       await clerkUser.reload();
-
-      if (clerkUser.imageUrl) {
-        await updateAvatarUrl({ avatarUrl: clerkUser.imageUrl });
-      }
     } catch (error) {
       console.error('Failed to update profile picture', error);
       Alert.alert(

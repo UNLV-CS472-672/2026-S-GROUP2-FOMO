@@ -25,17 +25,12 @@ export default function EditProfileScreen() {
     avatarNonce?: string | string[];
   }>();
 
-  // TODO :: SHOULD BE REMOVED AFTER CLERK CONVEX WEBHOOK
-  const updateCurrentProfile = useMutation(api.users.updateCurrentProfile);
-  // TODO :: SHOULD BE REMOVED AFTER CLERK CONVEX WEBHOOK
-  const updateAvatarUrl = useMutation(api.users.updateAvatarUrl);
+  const updateBio = useMutation(api.users.updateBio);
 
-  const [username, setUsername] = useState(clerkUser?.username ?? '');
   const [description, setDescription] = useState(
     (clerkUser?.unsafeMetadata?.bio as string | undefined) ?? ''
   );
   const [pendingAvatarUri, setPendingAvatarUri] = useState<string | null>(null);
-  const [usernameError, setUsernameError] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -54,7 +49,7 @@ export default function EditProfileScreen() {
   }, [avatarNonceParam, avatarUriParam]);
 
   function openGallery() {
-    router.push('/profile/gallery-picker');
+    router.push('./gallery-picker');
   }
 
   function buildClerkImageFile(uri: string) {
@@ -75,7 +70,6 @@ export default function EditProfileScreen() {
 
   async function handleSave() {
     if (!clerkUser) return;
-    setUsernameError('');
     setErrorMessage('');
     setIsSaving(true);
 
@@ -87,29 +81,19 @@ export default function EditProfileScreen() {
           >[0]['file'],
         });
         await clerkUser.reload();
-        if (clerkUser.imageUrl) {
-          await updateAvatarUrl({ avatarUrl: clerkUser.imageUrl });
-        }
         setPendingAvatarUri(null);
       }
 
-      const trimmedUsername = username.trim();
       const trimmedBio = description.trim();
-      const currentUsername = clerkUser.username ?? '';
       const currentBio = (clerkUser.unsafeMetadata?.bio as string | undefined) ?? '';
 
-      if (trimmedUsername !== currentUsername || trimmedBio !== currentBio) {
-        await updateCurrentProfile({ username: trimmedUsername, bio: trimmedBio });
+      if (trimmedBio !== currentBio) {
+        await updateBio({ bio: trimmedBio });
       }
 
       router.back();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Something went wrong';
-      if (msg === 'Username is taken') {
-        setUsernameError('Username is already taken');
-      } else {
-        setErrorMessage(msg);
-      }
+      setErrorMessage(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setIsSaving(false);
     }
@@ -141,24 +125,6 @@ export default function EditProfileScreen() {
             </View>
           </TouchableOpacity>
           <Text className="mt-2 text-sm text-muted-foreground">Tap to change photo</Text>
-        </View>
-
-        <View className="gap-1">
-          <Text className="text-sm font-medium text-foreground">Username</Text>
-          <TextInput
-            className="rounded-xl bg-card px-4 py-3 text-base text-foreground"
-            value={username}
-            onChangeText={(text) => {
-              setUsername(text);
-              setUsernameError('');
-            }}
-            autoCapitalize="none"
-            autoCorrect={false}
-            placeholder="Username"
-            placeholderTextColor={theme.mutedText}
-            accessibilityLabel="Username"
-          />
-          {usernameError ? <Text className="text-sm text-destructive">{usernameError}</Text> : null}
         </View>
 
         <View className="gap-1">
