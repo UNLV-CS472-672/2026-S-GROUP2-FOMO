@@ -54,8 +54,8 @@ export default function MapPage() {
     [events, markerImageUrls]
   );
   const selectedEvent = useMemo(
-    () => events.find((event) => event.id === selectedEventId) ?? null,
-    [events, selectedEventId]
+    () => eventsWithMarkerImages.find((event) => event.id === selectedEventId) ?? null,
+    [eventsWithMarkerImages, selectedEventId]
   );
 
   // 'popular' sorts by attendance (objective). 'foryou' uses the Two-Tower top-K recs in
@@ -64,16 +64,16 @@ export default function MapPage() {
   // list when recs haven't been computed for this user yet.
   const visibleEvents = useMemo(() => {
     if (feedMode === 'popular') {
-      return [...events].sort((a, b) => b.attendeeCount - a.attendeeCount);
+      return [...eventsWithMarkerImages].sort((a, b) => b.attendeeCount - a.attendeeCount);
     }
     if (eventRecs && eventRecs.length > 0) {
-      const eventById = new Map(events.map((event) => [event.id, event]));
+      const eventById = new Map(eventsWithMarkerImages.map((event) => [event.id, event]));
       return eventRecs
         .map((id) => eventById.get(id))
         .filter((event): event is NonNullable<typeof event> => event !== undefined);
     }
-    return events;
-  }, [events, eventRecs, feedMode]);
+    return eventsWithMarkerImages;
+  }, [eventsWithMarkerImages, eventRecs, feedMode]);
 
   // In 'foryou' with recs, weight by inverse rank (#1 rec = K, #K = 1) so visual scale is
   // comparable across users — model probabilities aren't (PR #140). Otherwise use attendance.

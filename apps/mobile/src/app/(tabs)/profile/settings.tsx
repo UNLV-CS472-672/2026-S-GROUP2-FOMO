@@ -2,16 +2,20 @@ import { Button, ButtonText } from '@/components/ui/button';
 import { DrawerModal } from '@/components/ui/drawer';
 import { signOutClerkExpo } from '@/features/auth/utils/clerk-sign-out';
 import { InterestsPicker } from '@/features/profile/components/interests-picker';
+import { ThemePicker } from '@/features/profile/components/theme-picker';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { useClerk } from '@clerk/expo';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 export default function SettingsScreen() {
   const clerk = useClerk();
+  const router = useRouter();
   const theme = useAppTheme();
+
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [interestsOpen, setInterestsOpen] = useState(false);
 
@@ -30,28 +34,36 @@ export default function SettingsScreen() {
       <ScrollView
         className="flex-1 bg-background"
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerClassName="grow p-6 gap-2"
+        contentContainerClassName="grow p-6 gap-4"
       >
-        <Text className="text-[30px] font-bold leading-8 text-foreground">Settings</Text>
-        <Text className="text-base leading-6 text-foreground">
-          Notification, privacy, and account preferences go here.
-        </Text>
+        <ThemePicker />
 
-        <View className="mt-6 gap-2">
-          <Pressable
-            className="flex-row items-center justify-between rounded-2xl border border-border bg-card px-4 py-3.5"
-            onPress={() => setInterestsOpen(true)}
-            accessibilityRole="button"
-          >
-            <View className="flex-row items-center gap-3">
-              <Ionicons name="pizza" size={20} color={theme.tint} />
-              <Text className="text-base font-medium text-foreground">Interests</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={theme.mutedText} />
-          </Pressable>
-        </View>
+        <Pressable
+          className="flex-row items-center justify-between rounded-2xl border border-border bg-card px-4 py-3.5"
+          onPress={() => setInterestsOpen(true)}
+          accessibilityRole="button"
+        >
+          <View className="flex-row items-center gap-3">
+            <Ionicons name="pizza" size={20} color={theme.tint} />
+            <Text className="text-base font-medium text-foreground">Interests</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={theme.mutedText} />
+        </Pressable>
 
-        <View className="mt-6">
+        <Pressable
+          className="flex-row items-center justify-between rounded-2xl border border-border bg-card px-4 py-3.5"
+          onPress={() => router.push('/(tabs)/profile/edit' as never)}
+          accessibilityRole="button"
+          accessibilityLabel="Edit profile"
+        >
+          <View className="flex-row items-center gap-3">
+            <Ionicons name="person-outline" size={20} color={theme.tint} />
+            <Text className="text-base font-medium text-foreground">Edit Profile</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={theme.mutedText} />
+        </Pressable>
+
+        <View className="mt-2">
           <Button
             variant="destructive"
             onPress={() => void handleLogout()}
