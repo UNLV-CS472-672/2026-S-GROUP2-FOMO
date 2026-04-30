@@ -5,7 +5,6 @@ import { RecenterButton } from '@/features/map/components/recenter-button';
 import { SearchDrawer } from '@/features/map/components/search';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { pointsToGeoJSON } from '@/features/map/utils/h3';
-import { useUser } from '@clerk/expo';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { env } from '@fomo/env/mobile';
 import { useIsFocused } from '@react-navigation/native';
@@ -23,33 +22,20 @@ const DEFAULT_ZOOM_LEVEL = 13;
 
 export default function MapScreen() {
   const { push } = useRouter();
-  const { isSignedIn } = useUser();
   const eventsRaw = useQuery(api.events.queries.getEvents);
   const events: EventSummary[] = useMemo(() => eventsRaw ?? [], [eventsRaw]);
-  const eventRecs = useQuery(
-    api.data_ml.eventRec.getCurrentUserEventRecs,
-    isSignedIn ? {} : 'skip'
-  );
   const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const [feedMode, setFeedMode] = useState<FeedMode>('foryou');
 
-  // 'popular' sorts by attendance (objective). 'foryou' uses the Two-Tower top-K recs in
-  // rank order (index 0 = #1 rec); we use array order rather than score because the model's
-  // probabilities aren't comparable across users (PR #140). Falls back to the full event
-  // list when recs haven't been computed for this user yet.
+  // `getEvents` includes recommendation scores when available. For "For You", prioritize
+  // higher scores and otherwise keep backend order for stable fallback behavior.
   const visibleEvents = useMemo(() => {
     if (feedMode === 'popular') {
       return [...events].sort((a, b) => b.attendeeCount - a.attendeeCount);
     }
-    if (eventRecs && eventRecs.length > 0) {
-      const eventById = new Map(events.map((event) => [event.id, event]));
-      return eventRecs
-        .map((id) => eventById.get(id))
-        .filter((event): event is EventSummary => event !== undefined);
-    }
-    return events;
-  }, [events, eventRecs, feedMode]);
+    return [...events].sort((a, b) => (b.recommendationScore ?? 0) - (a.recommendationScore ?? 0));
+  }, [events, feedMode]);
 
   const savedCameraRef = useRef<{
     centerCoordinate: [number, number];
@@ -70,15 +56,14 @@ export default function MapScreen() {
   const drawerAnimatedIndex = useSharedValue(0);
   const drawerAnimatedPosition = useSharedValue(0);
 
-  // In 'foryou' with recs, weight by inverse rank (#1 rec = K, #K = 1) so visual scale is
-  // comparable across users — model probabilities aren't (PR #140). Otherwise use attendance.
+  // In "For You", weight by ranked order in the already-sorted visible list.
   const eventWeights = useMemo(() => {
-    if (feedMode === 'foryou' && eventRecs && eventRecs.length > 0) {
-      const k = eventRecs.length;
-      return new Map(eventRecs.map((id, index) => [id, k - index]));
+    if (feedMode === 'foryou' && visibleEvents.length > 0) {
+      const k = visibleEvents.length;
+      return new Map(visibleEvents.map((event, index) => [event.id, k - index]));
     }
     return new Map(events.map((event) => [event.id, event.attendeeCount]));
-  }, [events, eventRecs, feedMode]);
+  }, [events, feedMode, visibleEvents]);
 
   const getWeight = (eventId: EventSummary['id']) => eventWeights.get(eventId) ?? 0;
 
