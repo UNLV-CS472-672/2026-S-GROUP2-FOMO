@@ -4,7 +4,9 @@ import { useAppTheme } from '@/lib/use-app-theme';
 import { useUser } from '@clerk/expo';
 import { MaterialIcons } from '@expo/vector-icons';
 import { api } from '@fomo/backend/convex/_generated/api';
-import { useMutation } from 'convex/react';
+import { BIO_MAX_LENGTH } from '@fomo/backend/convex/users';
+import { useMutation, useQuery } from 'convex/react';
+import type { FunctionReturnType } from 'convex/server';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -17,7 +19,24 @@ import {
   View,
 } from 'react-native';
 
+type Profile = NonNullable<FunctionReturnType<typeof api.users.getCurrentProfileMinimal>>;
+
 export default function EditProfileScreen() {
+  const { user: clerkUser } = useUser();
+  const profile = useQuery(api.users.getCurrentProfileMinimal);
+
+  if (!profile || !clerkUser) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  return <EditProfileForm profile={profile} />;
+}
+
+function EditProfileForm({ profile }: { profile: Profile }) {
   const router = useRouter();
   const { user: clerkUser } = useUser();
   const theme = useAppTheme();
@@ -29,11 +48,11 @@ export default function EditProfileScreen() {
 
   const updateBio = useMutation(api.users.updateBio);
 
-  const [description, setDescription] = useState(
-    (clerkUser?.unsafeMetadata?.bio as string | undefined) ?? ''
-  );
+  const [username, setUsername] = useState(profile.username ?? '');
+  const [description, setDescription] = useState(profile.bio ?? '');
   const [pendingAvatarUri, setPendingAvatarUri] = useState<string | null>(null);
   const [pendingAvatarFileName, setPendingAvatarFileName] = useState<string | null>(null);
+  const [usernameError, setUsernameError] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -46,10 +65,7 @@ export default function EditProfileScreen() {
     : params.avatarNonce;
 
   useEffect(() => {
-    if (!avatarUriParam) {
-      return;
-    }
-
+    if (!avatarUriParam) return;
     setPendingAvatarUri(avatarUriParam);
     setPendingAvatarFileName(avatarFileNameParam ?? null);
     setErrorMessage('');
@@ -62,6 +78,7 @@ export default function EditProfileScreen() {
   async function handleSave() {
     if (!clerkUser) return;
     setErrorMessage('');
+    setUsernameError('');
     setIsSaving(true);
 
     try {
@@ -71,21 +88,27 @@ export default function EditProfileScreen() {
           fileName: pendingAvatarFileName,
         });
 
-        console.log('uploading file', file);
         await clerkUser.setProfileImage({ file });
         await clerkUser.reload();
         setPendingAvatarUri(null);
         setPendingAvatarFileName(null);
       }
 
-      const trimmedBio = description.trim();
-      const currentBio = (clerkUser.unsafeMetadata?.bio as string | undefined) ?? '';
-
-      if (trimmedBio !== currentBio) {
-        await updateBio({ bio: trimmedBio });
+      const trimmedUsername = username.trim();
+      if (trimmedUsername && trimmedUsername !== clerkUser.username) {
+        try {
+          await clerkUser.update({ username: trimmedUsername });
+        } catch (err) {
+          if (__DEV__) console.error('error updating username', err);
+          setUsernameError(err instanceof Error ? err.message : 'Invalid username');
+          return;
+        }
       }
 
-      router.replace('/profile');
+      const trimmedBio = description.trim();
+      if (trimmedBio !== (profile.bio ?? '')) {
+        await updateBio({ bio: trimmedBio });
+      }
     } catch (err) {
       if (__DEV__) console.error('error saving profile', err);
       setErrorMessage(err instanceof Error ? err.message : 'Something went wrong');
@@ -123,13 +146,37 @@ export default function EditProfileScreen() {
         </View>
 
         <View className="gap-1">
-          <Text className="text-sm font-medium text-foreground">Bio</Text>
+          <Text className="text-sm font-medium text-foreground">Username</Text>
+          <TextInput
+            className="rounded-xl bg-card px-4 py-3 text-base text-foreground"
+            value={username}
+            onChangeText={(v) => {
+              setUsername(v);
+              setUsernameError('');
+            }}
+            placeholder="Username"
+            placeholderTextColor={theme.mutedText}
+            autoCapitalize="none"
+            autoCorrect={false}
+            accessibilityLabel="Username"
+          />
+          {usernameError ? <Text className="text-sm text-destructive">{usernameError}</Text> : null}
+        </View>
+
+        <View className="gap-1">
+          <View className="flex-row items-center justify-between">
+            <Text className="text-sm font-medium text-foreground">Bio</Text>
+            <Text className="text-xs text-muted-foreground">
+              {description.length}/{BIO_MAX_LENGTH}
+            </Text>
+          </View>
           <TextInput
             className="rounded-xl bg-card px-4 py-3 text-base text-foreground"
             value={description}
             onChangeText={setDescription}
             multiline
             numberOfLines={4}
+            maxLength={BIO_MAX_LENGTH}
             placeholder="Tell people about yourself"
             placeholderTextColor={theme.mutedText}
             style={{ minHeight: 100, textAlignVertical: 'top' }}

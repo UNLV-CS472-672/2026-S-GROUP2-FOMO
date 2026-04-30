@@ -3,14 +3,14 @@ import { env } from '@fomo/env/backend';
 import { v, type Validator } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
-import { internalMutation, mutation, query, QueryCtx, type MutationCtx } from './_generated/server';
+import { internalMutation, mutation, query, QueryCtx } from './_generated/server';
 import {
   __backend_only_getAndAuthenticateCurrentConvexUser,
   __backend_only_guestOrAuthenticatedUser,
 } from './auth';
 import { getThreadedCommentsByPost } from './comments';
 
-const BIO_MAX_LENGTH = 280;
+export const BIO_MAX_LENGTH = 250;
 
 function normalizeBio(bio: string): string {
   return bio.trim();
@@ -141,24 +141,22 @@ export const upsertFromClerk = internalMutation({
   },
 });
 
-async function updateBioForCurrentUser(ctx: MutationCtx, bio: string) {
-  const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
-  const nextBio = normalizeBio(bio);
-  validateBio(nextBio);
-
-  // Username/displayName/avatarUrl are Clerk-owned; webhook updates those fields.
-  await ctx.db.patch(user._id, { bio: nextBio });
-
-  return {
-    id: user._id,
-    username: user.username,
-    bio: nextBio,
-  };
-}
-
 export const updateBio = mutation({
   args: { bio: v.string() },
-  handler: async (ctx, { bio }) => updateBioForCurrentUser(ctx, bio),
+  handler: async (ctx, { bio }) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    const nextBio = normalizeBio(bio);
+    validateBio(nextBio);
+
+    // Username/displayName/avatarUrl are Clerk-owned; webhook updates those fields.
+    await ctx.db.patch(user._id, { bio: nextBio });
+
+    return {
+      id: user._id,
+      username: user.username,
+      bio: nextBio,
+    };
+  },
 });
 
 export const deleteFromClerk = internalMutation({
