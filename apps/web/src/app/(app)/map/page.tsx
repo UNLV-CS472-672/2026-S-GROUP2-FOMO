@@ -36,6 +36,14 @@ export default function MapPage() {
 
   const isDark = mounted && resolvedTheme === 'dark';
   const events = useMemo(() => queriedEvents ?? [], [queriedEvents]);
+
+  useEffect(() => {
+    if (queriedEvents === undefined) {
+      return;
+    }
+    console.log('[map] events received', queriedEvents);
+  }, [queriedEvents]);
+
   const handleResolveMarkerImage = useCallback((eventId: string, imageUrl: string | null) => {
     setMarkerImageUrls((current) =>
       current[eventId] === imageUrl ? current : { ...current, [eventId]: imageUrl }
