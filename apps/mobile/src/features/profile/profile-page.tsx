@@ -118,6 +118,7 @@ export function ProfilePage({
   const { isAuthenticated } = useConvexAuth();
   const { isGuestMode } = useGuest();
   const togglePostLike = useMutation(api.likes.togglePostLike);
+  const deletePost = useMutation(api.posts.deletePost);
   const sendFriendRequest = useMutation(api.friends.sendFriendRequest);
   const acceptFriendRequest = useMutation(api.friends.acceptFriendRequest);
   const cancelFriendRequest = useMutation(api.friends.cancelFriendRequest);
@@ -510,6 +511,18 @@ export function ProfilePage({
                       console.error('Failed to toggle profile post like', error);
                     });
                   }}
+                  onDelete={
+                    isOwnProfile
+                      ? () => {
+                          void deletePost({ postId: post.id as Id<'posts'> }).catch((error) => {
+                            Alert.alert(
+                              'Unable to delete post',
+                              error instanceof Error ? error.message : 'Try again.'
+                            );
+                          });
+                        }
+                      : undefined
+                  }
                 />
               ))}
             </View>

@@ -3,9 +3,10 @@ import { Avatar } from '@/features/posts/components/avatar';
 import { MediaCarousel } from '@/features/posts/components/media-carousel';
 import type { FeedPost } from '@/features/posts/types';
 import { formatRelativeTime } from '@/lib/format';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { FeedCardMedia } from './media';
 
 type FeedCardProps = {
@@ -15,6 +16,7 @@ type FeedCardProps = {
   disableAuthorPress?: boolean;
   onPressAuthor?: () => void;
   showEventLink?: boolean;
+  onDelete?: () => void;
 };
 
 export function FeedCard({
@@ -24,6 +26,7 @@ export function FeedCard({
   disableAuthorPress,
   onPressAuthor,
   showEventLink = false,
+  onDelete,
 }: FeedCardProps) {
   const router = useRouter();
   const [carouselIndex, setCarouselIndex] = useState<number | null>(null);
@@ -84,6 +87,19 @@ export function FeedCard({
             <Text className="text-[12px] text-muted-foreground">
               {formatRelativeTime(post.creationTime)}
             </Text>
+            {onDelete ? (
+              <Pressable
+                hitSlop={8}
+                onPress={() =>
+                  Alert.alert('Delete post', 'Are you sure you want to delete this post?', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Delete', style: 'destructive', onPress: onDelete },
+                  ])
+                }
+              >
+                <MaterialIcons name="more-vert" size={20} color="#9ca3af" />
+              </Pressable>
+            ) : null}
           </View>
         </View>
 
