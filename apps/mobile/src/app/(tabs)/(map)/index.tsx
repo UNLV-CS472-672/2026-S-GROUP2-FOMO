@@ -1,16 +1,18 @@
 import type { EventSummary } from '@/features/events/types';
 import { EventMarker } from '@/features/map/components/event-marker';
+import { FeedTabs, type FeedMode } from '@/features/map/components/feed-tabs';
 import { RecenterButton } from '@/features/map/components/recenter-button';
 import { SearchDrawer } from '@/features/map/components/search';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { pointsToGeoJSON } from '@/features/map/utils/h3';
+import { useUser } from '@clerk/expo';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { env } from '@fomo/env/mobile';
 import { useIsFocused } from '@react-navigation/native';
 import MapboxGL from '@rnmapbox/maps';
 import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
-import { useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
@@ -21,9 +23,33 @@ const DEFAULT_ZOOM_LEVEL = 13;
 
 export default function MapScreen() {
   const { push } = useRouter();
-  const events: EventSummary[] = useQuery(api.events.queries.getEvents) ?? [];
+  const { isSignedIn } = useUser();
+  const eventsRaw = useQuery(api.events.queries.getEvents);
+  const events: EventSummary[] = useMemo(() => eventsRaw ?? [], [eventsRaw]);
+  const eventRecs = useQuery(
+    api.data_ml.eventRec.getCurrentUserEventRecs,
+    isSignedIn ? {} : 'skip'
+  );
   const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);
+  const [feedMode, setFeedMode] = useState<FeedMode>('foryou');
+
+  // 'popular' sorts by attendance (objective). 'foryou' uses the Two-Tower top-K recs in
+  // rank order (index 0 = #1 rec); we use array order rather than score because the model's
+  // probabilities aren't comparable across users (PR #140). Falls back to the full event
+  // list when recs haven't been computed for this user yet.
+  const visibleEvents = useMemo(() => {
+    if (feedMode === 'popular') {
+      return [...events].sort((a, b) => b.attendeeCount - a.attendeeCount);
+    }
+    if (eventRecs && eventRecs.length > 0) {
+      const eventById = new Map(events.map((event) => [event.id, event]));
+      return eventRecs
+        .map((id) => eventById.get(id))
+        .filter((event): event is EventSummary => event !== undefined);
+    }
+    return events;
+  }, [events, eventRecs, feedMode]);
 
   const savedCameraRef = useRef<{
     centerCoordinate: [number, number];
@@ -44,19 +70,28 @@ export default function MapScreen() {
   const drawerAnimatedIndex = useSharedValue(0);
   const drawerAnimatedPosition = useSharedValue(0);
 
+  // In 'foryou' with recs, weight by inverse rank (#1 rec = K, #K = 1) so visual scale is
+  // comparable across users — model probabilities aren't (PR #140). Otherwise use attendance.
+  const eventWeights = useMemo(() => {
+    if (feedMode === 'foryou' && eventRecs && eventRecs.length > 0) {
+      const k = eventRecs.length;
+      return new Map(eventRecs.map((id, index) => [id, k - index]));
+    }
+    return new Map(events.map((event) => [event.id, event.attendeeCount]));
+  }, [events, eventRecs, feedMode]);
+
+  const getWeight = (eventId: EventSummary['id']) => eventWeights.get(eventId) ?? 0;
+
   const heatmapGeoJSON = pointsToGeoJSON(
-    events.map((event) => ({
+    visibleEvents.map((event) => ({
       latitude: event.location.latitude,
       longitude: event.location.longitude,
-      weight: event.attendeeCount,
+      weight: getWeight(event.id),
     }))
   );
-  const minWeight =
-    events.length === 0 ? 0 : Math.min(...events.map((event) => event.attendeeCount));
-  const maxWeight =
-    events.length === 0 ? 1 : Math.max(...events.map((event) => event.attendeeCount));
-
-  // TODO: Add a map toggle to size icons by recommendation score or popularity.
+  const visibleWeights = visibleEvents.map((event) => getWeight(event.id));
+  const minWeight = visibleWeights.length === 0 ? 0 : Math.min(...visibleWeights);
+  const maxWeight = visibleWeights.length === 0 ? 1 : Math.max(...visibleWeights);
 
   if (!centerCoordinate) {
     return (
@@ -118,14 +153,14 @@ export default function MapScreen() {
           />
         )}
 
-        {events.map((event) => (
+        {visibleEvents.map((event) => (
           <EventMarker
             key={event.id}
             id={event.id}
             coordinate={[event.location.longitude, event.location.latitude]}
             label={event.name}
             mediaId={event.mediaId}
-            weight={event.attendeeCount}
+            weight={getWeight(event.id)}
             minWeight={minWeight}
             maxWeight={maxWeight}
             onPress={() =>
@@ -194,6 +229,8 @@ export default function MapScreen() {
           })
         }
       />
+
+      <FeedTabs value={feedMode} onChange={setFeedMode} />
     </View>
   );
 }

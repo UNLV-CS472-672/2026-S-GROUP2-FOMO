@@ -1,7 +1,8 @@
 import { v } from 'convex/values';
-import { mutation, query } from '../_generated/server';
+import { internalMutation, internalQuery, query } from '../_generated/server';
+import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../auth';
 
-export const getByUserId = query({
+export const getByUserId = internalQuery({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
     return await ctx.db
@@ -12,7 +13,7 @@ export const getByUserId = query({
   },
 });
 
-export const getByEventId = query({
+export const getByEventId = internalQuery({
   args: { eventId: v.id('events') },
   handler: async (ctx, { eventId }) => {
     return await ctx.db
@@ -22,7 +23,7 @@ export const getByEventId = query({
   },
 });
 
-export const upsertUserTagWeights = mutation({
+export const upsertUserTagWeights = internalMutation({
   args: {
     userId: v.id('users'),
     weights: v.array(v.number()),
@@ -48,7 +49,7 @@ export const upsertUserTagWeights = mutation({
   },
 });
 
-export const getUserTagWeights = query({
+export const getUserTagWeights = internalQuery({
   args: { userIDs: v.array(v.id('users')) },
   handler: async (ctx, { userIDs }) => {
     const results = await Promise.all(
@@ -66,7 +67,7 @@ export const getUserTagWeights = query({
   },
 });
 
-export const getInteractionsByUserId = query({
+export const getInteractionsByUserId = internalQuery({
   args: { userId: v.id('users'), sinceMs: v.optional(v.number()) },
   handler: async (ctx, { userId, sinceMs }) => {
     const attendanceRows = await ctx.db
@@ -91,7 +92,7 @@ export const getInteractionsByUserId = query({
   },
 });
 
-export const upsertEventRecs = mutation({
+export const upsertEventRecs = internalMutation({
   args: {
     userId: v.id('users'),
     eventIds: v.array(v.id('events')),
@@ -103,31 +104,63 @@ export const upsertEventRecs = mutation({
       .first();
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
-        eventIds,
-      });
+      await ctx.db.patch(existing._id, { eventIds });
     } else {
-      await ctx.db.insert('eventRecs', {
-        userId,
-        eventIds,
-      });
+      await ctx.db.insert('eventRecs', { userId, eventIds });
     }
   },
 });
 
-export const getUserTagWeightsWithTimestamp = query({
-  args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
+// Returns the current user's top-K event IDs in rank order
+// (index 0 = #1 rec). Returns null when no recs have been computed yet.
+export const getCurrentUserEventRecs = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    const doc = await ctx.db
+      .query('eventRecs')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .unique();
+    return doc?.eventIds ?? null;
+  },
+});
+
+export const getUserTagWeightsWithTimestamp = internalQuery({
+  args: {
+    userId: v.id('users'),
+    numTags: v.number(),
+  },
+  handler: async (ctx, { userId, numTags }) => {
     const result = await ctx.db
       .query('userTagWeights')
       .withIndex('by_userId', (q) => q.eq('userId', userId))
       .unique();
 
-    if (!result) return null;
+    if (!result) {
+      return {
+        weights: new Array(numTags * 3).fill(0),
+        lastUpdatedAt: 0,
+      };
+    }
 
     return {
       weights: result.weights,
       lastUpdatedAt: result.updatedAt,
     };
+  },
+});
+
+export const getPreferredTagsByUserId = internalQuery({
+  args: { userIds: v.array(v.id('users')) },
+  handler: async (ctx, { userIds }) => {
+    return await Promise.all(
+      userIds.map(async (userId) => {
+        const doc = await ctx.db
+          .query('userTagPreferences')
+          .withIndex('by_userId', (q) => q.eq('userId', userId))
+          .unique();
+        return doc?.tags ?? [];
+      })
+    );
   },
 });
