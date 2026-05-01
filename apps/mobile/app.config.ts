@@ -45,7 +45,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     'expo-router',
     '@rnmapbox/maps',
-    ['@clerk/expo', { appleSignIn: false }],
+    ['@clerk/expo', { appleSignIn: true }],
     [
       'expo-build-properties',
       {
