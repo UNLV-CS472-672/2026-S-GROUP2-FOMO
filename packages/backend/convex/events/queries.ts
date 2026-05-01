@@ -1,7 +1,7 @@
 import { latLngToCell } from 'h3-js';
 
 import { v } from 'convex/values';
-import type { Doc } from '../_generated/dataModel';
+import type { Doc, Id } from '../_generated/dataModel';
 import { query, type QueryCtx } from '../_generated/server';
 import { __backend_only_guestOrAuthenticatedUser } from '../auth';
 import { getThreadedCommentsByPost } from '../comments';
@@ -51,7 +51,15 @@ async function serializeExternalEvent(
   event: Doc<'externalEvents'>,
   recommendationScore?: number
 ) {
-  const attendeeCount = await getAttendeeCount(ctx, event._id);
+  const [attendeeCount, eventTagLinks] = await Promise.all([
+    getAttendeeCount(ctx, event._id),
+    ctx.db
+      .query('eventTags')
+      .withIndex('by_event', (q) => q.eq('eventId', event._id as Id<'events'>))
+      .collect(),
+  ]);
+
+  const tags = await Promise.all(eventTagLinks.map(async (link) => await ctx.db.get(link.tagId)));
 
   return {
     id: event._id,
@@ -59,7 +67,7 @@ async function serializeExternalEvent(
     name: event.name,
     caption: event.caption,
     organization: event.organization,
-    tags: [],
+    tags: tags.flatMap((tag) => (tag ? [tag.name] : [])),
     location: event.location,
     attendeeCount,
     startDate: event.startDate,
