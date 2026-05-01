@@ -157,4 +157,9 @@ export default defineSchema({
     userId: v.id('users'),
     eventIds: v.array(v.id('events')),
   }).index('by_userId', ['userId']),
+
+  support: defineTable({
+    email: v.string(),
+    description: v.string(),
+  }),
 });
