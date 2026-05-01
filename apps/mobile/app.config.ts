@@ -22,14 +22,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       ITSAppUsesNonExemptEncryption: false,
       LSApplicationQueriesSchemes: ['comgooglemaps'],
       NSLocationWhenInUseUsageDescription:
-        'Fomo uses your location to show events near you on the map.',
+        'Fomo uses your location to show nearby events on the map, such as helping you discover what is happening around your current area.',
       NSCameraUsageDescription:
-        'Fomo uses your camera so you can capture photos and videos for posts.',
+        'Fomo uses your camera so you can capture photos and videos to create posts and update your profile.',
       NSPhotoLibraryUsageDescription:
-        'Fomo needs access to your photos so you can choose media for posts.',
+        'Fomo needs access to your photo library so you can select photos and videos to include in your posts and profile.',
       NSPhotoLibraryAddUsageDescription:
-        'Fomo needs permission to save photos and videos to your library.',
-      NSMicrophoneUsageDescription: 'Fomo uses your microphone when recording videos.',
+        'Fomo needs permission to save photos and videos you create or export in the app back to your photo library.',
+      NSMicrophoneUsageDescription:
+        'Fomo uses your microphone when you record videos or use voice search to find events.',
     },
   },
   android: {
@@ -69,23 +70,27 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-location',
       {
-        locationWhenInUsePermission: 'Fomo uses your location to show events near you on the map.',
+        locationWhenInUsePermission:
+          'Fomo uses your location to show nearby events on the map, such as helping you discover what is happening around your current area.',
       },
     ],
     [
       'expo-speech-recognition',
       {
-        microphonePermission: 'Fomo uses your microphone so you can search with your voice.',
+        microphonePermission:
+          'Fomo uses your microphone so you can search for events with your voice instead of typing.',
         speechRecognitionPermission:
-          'Fomo uses speech recognition so you can search events with your voice.',
+          'Fomo uses speech recognition to turn your voice into text when you search for events hands-free.',
         androidSpeechServicePackages: ['com.google.android.googlequicksearchbox'],
       },
     ],
     [
       'expo-media-library',
       {
-        photosPermission: 'Allow $(PRODUCT_NAME) to access your photos.',
-        savePhotosPermission: 'Allow $(PRODUCT_NAME) to save photos.',
+        photosPermission:
+          'Fomo needs access to your photo library so you can select photos and videos to include in your posts and profile.',
+        savePhotosPermission:
+          'Fomo needs permission to save photos and videos you create or export in the app back to your photo library.',
         isAccessMediaLocationEnabled: true,
       },
     ],
@@ -93,16 +98,21 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'react-native-vision-camera',
       {
         enableMicrophonePermission: true,
-        cameraPermissionText: '$(PRODUCT_NAME) needs access to your Camera.',
-        microphonePermissionText: '$(PRODUCT_NAME) needs access to your Microphone.',
+        cameraPermissionText:
+          'Fomo needs access to your camera so you can capture photos and videos to create posts and update your profile.',
+        microphonePermissionText:
+          'Fomo needs access to your microphone so you can record audio in videos and search for events with your voice.',
       },
     ],
     [
       'expo-image-picker',
       {
-        photosPermission: 'Fomo needs access to your photos so you can choose media for posts.',
-        cameraPermission: 'Fomo uses your camera so you can take photos for posts.',
-        microphonePermission: 'Fomo uses your microphone when recording videos.',
+        photosPermission:
+          'Fomo needs access to your photo library so you can select photos and videos to include in your posts and profile.',
+        cameraPermission:
+          'Fomo uses your camera so you can capture photos and videos to create posts and update your profile.',
+        microphonePermission:
+          'Fomo uses your microphone when you record videos or use voice search to find events.',
       },
     ],
     'expo-video',
