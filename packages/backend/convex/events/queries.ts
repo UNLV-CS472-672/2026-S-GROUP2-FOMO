@@ -5,6 +5,7 @@ import type { Doc } from '../_generated/dataModel';
 import { query, type QueryCtx } from '../_generated/server';
 import { __backend_only_guestOrAuthenticatedUser } from '../auth';
 import { getThreadedCommentsByPost } from '../comments';
+import { getAvatarUrlForUser, getDisplayNameForUser, getUsernameForUser } from '../user_identity';
 import { getAttendeeCount } from './attendance';
 
 export function latLngToH3Index(lat: number, lng: number, resolution: number = 9): string {
@@ -91,9 +92,9 @@ async function serializeEventFeedPost(
     id: post._id,
     caption: post.caption ?? '',
     creationTime: post._creationTime,
-    authorName: author?.displayName || author?.username || 'Unknown user',
-    authorUsername: author?.username ?? '',
-    authorAvatarUrl: author?.avatarUrl || '',
+    authorName: getDisplayNameForUser(author),
+    authorUsername: getUsernameForUser(author),
+    authorAvatarUrl: getAvatarUrlForUser(author),
     likes: post.likeCount ?? likes.length,
     liked: viewerId ? likes.some((like) => like.userId === viewerId) : false,
     mediaIds,
@@ -198,7 +199,7 @@ export const getTopMediaPosts = query({
           liked: like !== null,
           matchedTagCount: 0,
           creationTime: post._creationTime,
-          authorName: author?.displayName || author?.username || 'Unknown user',
+          authorName: getDisplayNameForUser(author),
         };
       })
     );
