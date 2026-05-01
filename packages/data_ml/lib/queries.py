@@ -67,7 +67,7 @@ def get_user_tag_weights(users: list[str]) -> list[Optional[float]]:
 
 
 def get_by_event_id(event_id: str) -> list[dict[str, Any]]:
-    return _get("/data-ml/get-by-event-id", {"eventId": event_id})  # type: ignore[no-any-return]
+    return get_by_event_ids([event_id])
 
 
 def get_by_event_ids(event_ids: list[str]) -> list[dict[str, Any]]:
@@ -83,10 +83,10 @@ def get_by_event_ids(event_ids: list[str]) -> list[dict[str, Any]]:
 def get_interactions_by_user_id(
     user_id: str, sinceMs: Optional[float] = None
 ) -> list[dict[str, Any]]:
-    params: dict[str, Any] = {"userId": user_id}
+    row: dict[str, Any] = {"userId": user_id}
     if sinceMs is not None:
-        params["sinceMs"] = sinceMs
-    return _get("/data-ml/get-interactions", params)  # type: ignore[no-any-return]
+        row["sinceMs"] = sinceMs
+    return get_interactions_by_users([row])
 
 
 def get_interactions_by_users(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -110,7 +110,7 @@ def get_interactions_by_user_ids(user_ids: list[str]) -> list[dict[str, Any]]:
 
 
 def upsert_event_recs(user_id: str, event_ids: list[str]) -> None:
-    _post("/data-ml/upsert-event-recs", {"userId": user_id, "eventIds": event_ids})
+    upsert_event_recs_batch([{"userId": user_id, "eventIds": event_ids}])
 
 
 def upsert_event_recs_batch(rows: list[dict[str, Any]]) -> None:
@@ -118,8 +118,12 @@ def upsert_event_recs_batch(rows: list[dict[str, Any]]) -> None:
 
 
 def get_user_tag_weights_with_timestamp(user_id: str, num_tags: int) -> dict[str, Any]:
-    result: dict[str, Any] = _get("/data-ml/get-user-tag-weights-timestamp", {"userId": user_id, "numTags": num_tags})
-    return result
+    results = get_user_tag_weights_with_timestamps([user_id], num_tags)
+    if results:
+        result = dict(results[0])
+        result.pop("userId", None)
+        return result
+    return {"weights": [0] * (num_tags * 3), "lastUpdatedAt": 0}
 
 
 def get_user_tag_weights_with_timestamps(
@@ -135,7 +139,7 @@ def get_user_tag_weights_with_timestamps(
 
 
 def upsert_user_tag_weights(user_id: str, weights: list[float]) -> None:
-    _post("/data-ml/upsert-user-tag-weights", {"userId": user_id, "weights": weights})
+    upsert_user_tag_weights_batch([{"userId": user_id, "weights": weights}])
 
 
 def upsert_user_tag_weights_batch(rows: list[dict[str, Any]]) -> None:

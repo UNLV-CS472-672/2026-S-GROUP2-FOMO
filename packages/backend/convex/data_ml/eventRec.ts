@@ -66,16 +66,6 @@ function formatUserTagWeightsWithTimestamp(
   };
 }
 
-export const getByEventId = internalQuery({
-  args: { eventId: v.id('events') },
-  handler: async (ctx, { eventId }) => {
-    return await ctx.db
-      .query('eventTags')
-      .withIndex('by_event', (q) => q.eq('eventId', eventId))
-      .collect();
-  },
-});
-
 export const getByEventIds = internalQuery({
   args: { eventIds: v.array(v.id('events')) },
   handler: async (ctx, { eventIds }) => {
@@ -90,16 +80,6 @@ export const getByEventIds = internalQuery({
     );
 
     return results.flat();
-  },
-});
-
-export const upsertUserTagWeights = internalMutation({
-  args: {
-    userId: v.id('users'),
-    weights: v.array(v.number()),
-  },
-  handler: async (ctx, { userId, weights }) => {
-    await upsertUserTagWeightsRow(ctx, userId, weights);
   },
 });
 
@@ -137,13 +117,6 @@ export const getUserTagWeights = internalQuery({
   },
 });
 
-export const getInteractionsByUserId = internalQuery({
-  args: { userId: v.id('users'), sinceMs: v.optional(v.number()) },
-  handler: async (ctx, { userId, sinceMs }) => {
-    return await getInteractionsForUser(ctx, userId, sinceMs);
-  },
-});
-
 export const getInteractionsByUsers = internalQuery({
   args: {
     rows: v.array(
@@ -175,25 +148,6 @@ export const getInteractionsByUserIds = internalQuery({
     );
 
     return results.flat();
-  },
-});
-
-export const upsertEventRecs = internalMutation({
-  args: {
-    userId: v.id('users'),
-    eventIds: v.array(v.id('events')),
-  },
-  handler: async (ctx, { userId, eventIds }) => {
-    const existing = await ctx.db
-      .query('eventRecs')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
-      .first();
-
-    if (existing) {
-      await ctx.db.patch(existing._id, { eventIds });
-    } else {
-      await ctx.db.insert('eventRecs', { userId, eventIds });
-    }
   },
 });
 
@@ -235,21 +189,6 @@ export const getCurrentUserEventRecs = query({
       .withIndex('by_userId', (q) => q.eq('userId', user._id))
       .unique();
     return doc?.eventIds ?? null;
-  },
-});
-
-export const getUserTagWeightsWithTimestamp = internalQuery({
-  args: {
-    userId: v.id('users'),
-    numTags: v.number(),
-  },
-  handler: async (ctx, { userId, numTags }) => {
-    const result = await ctx.db
-      .query('userTagWeights')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
-      .unique();
-
-    return formatUserTagWeightsWithTimestamp(result, numTags);
   },
 });
 
