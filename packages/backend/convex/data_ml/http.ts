@@ -1,3 +1,4 @@
+import type { HttpRouter } from 'convex/server';
 import { internal } from '../_generated/api';
 import { Id, TableNames } from '../_generated/dataModel';
 import { httpAction } from '../_generated/server';
@@ -10,7 +11,7 @@ function validateSecret(req: Request): Response | null {
   return null;
 }
 
-export function registerDataMlRoutes(http: httpRouter) {
+export function registerDataMlRoutes(http: HttpRouter) {
   http.route({
     path: '/data-ml/get-by-user-id',
     method: 'GET',
