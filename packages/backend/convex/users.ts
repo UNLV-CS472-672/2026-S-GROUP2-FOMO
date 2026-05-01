@@ -3,12 +3,13 @@ import { env } from '@fomo/env/backend';
 import { v, type Validator } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
-import { internalMutation, mutation, query, QueryCtx } from './_generated/server';
+import { internalMutation, mutation, query, QueryCtx, type MutationCtx } from './_generated/server';
 import {
   __backend_only_getAndAuthenticateCurrentConvexUser,
   __backend_only_guestOrAuthenticatedUser,
 } from './auth';
 import { getThreadedCommentsByPost } from './comments';
+import { getAvatarUrlForUser, getDisplayNameForUser, getUsernameForUser } from './user_identity';
 
 export const BIO_MAX_LENGTH = 250;
 
@@ -111,6 +112,93 @@ function clerkIdFromClerkUserId(clerkUserId: string): string {
   return `${env.CLERK_JWT_ISSUER_DOMAIN}|${clerkUserId}`;
 }
 
+async function anonymizeDeletedUser(ctx: MutationCtx, user: Doc<'users'>) {
+  const [
+    attendance,
+    sentFriendships,
+    receivedFriendships,
+    friendRecs,
+    userTagWeights,
+    userTagPrefs,
+    eventRecs,
+    hostedEvents,
+  ] = await Promise.all([
+    ctx.db
+      .query('attendance')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .collect(),
+    ctx.db
+      .query('friends')
+      .withIndex('by_requesterId', (q) => q.eq('requesterId', user._id))
+      .collect(),
+    ctx.db
+      .query('friends')
+      .withIndex('by_recipientId', (q) => q.eq('recipientId', user._id))
+      .collect(),
+    ctx.db
+      .query('friendRecs')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .collect(),
+    ctx.db
+      .query('userTagWeights')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .collect(),
+    ctx.db
+      .query('userTagPreferences')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .collect(),
+    ctx.db
+      .query('eventRecs')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .collect(),
+    ctx.db.query('events').collect(),
+  ]);
+
+  for (const row of attendance) {
+    await ctx.db.delete(row._id);
+  }
+
+  for (const friendship of [...sentFriendships, ...receivedFriendships]) {
+    const existingFriendship = await ctx.db.get(friendship._id);
+    if (existingFriendship) {
+      await ctx.db.delete(friendship._id);
+    }
+  }
+
+  for (const rec of friendRecs) {
+    await ctx.db.delete(rec._id);
+  }
+
+  for (const row of userTagWeights) {
+    await ctx.db.delete(row._id);
+  }
+
+  for (const row of userTagPrefs) {
+    await ctx.db.delete(row._id);
+  }
+
+  for (const row of eventRecs) {
+    await ctx.db.delete(row._id);
+  }
+
+  for (const event of hostedEvents) {
+    if (!event.hostIds.includes(user._id)) {
+      continue;
+    }
+
+    await ctx.db.patch(event._id, {
+      hostIds: event.hostIds.filter((hostId: Id<'users'>) => hostId !== user._id),
+    });
+  }
+
+  await ctx.db.patch(user._id, {
+    deletedAt: Date.now(),
+    displayName: '',
+    avatarUrl: '',
+    bio: '',
+  });
+}
+
 export const upsertFromClerk = internalMutation({
   args: { data: v.any() as Validator<UserJSON> }, // no runtime validation, trust Clerk
   async handler(ctx, { data }) {
@@ -137,7 +225,10 @@ export const upsertFromClerk = internalMutation({
       return;
     }
 
-    await ctx.db.patch(existing._id, userAttributes);
+    await ctx.db.patch(existing._id, {
+      ...userAttributes,
+      deletedAt: undefined,
+    });
   },
 });
 
@@ -169,7 +260,7 @@ export const deleteFromClerk = internalMutation({
       .unique();
 
     if (existing !== null) {
-      await ctx.db.delete(existing._id);
+      await anonymizeDeletedUser(ctx, existing);
     }
   },
 });
@@ -189,7 +280,7 @@ export const getProfileById = query({
   handler: async (ctx, { userId }) => {
     const user = await ctx.db.get(userId);
 
-    if (!user) {
+    if (!user || user.deletedAt != null) {
       return null;
     }
 
@@ -207,7 +298,7 @@ export const getProfileByUsername = query({
       .withIndex('by_username', (q) => q.eq('username', username))
       .first();
 
-    if (!user) {
+    if (!user || user.deletedAt != null) {
       return null;
     }
 
@@ -238,9 +329,9 @@ async function serializeProfileFeedPost(
     id: post._id,
     caption: post.caption ?? '',
     creationTime: post._creationTime,
-    authorName: author?.displayName || author?.username || 'Unknown user',
-    authorUsername: author?.username ?? '',
-    authorAvatarUrl: author?.avatarUrl || '',
+    authorName: getDisplayNameForUser(author),
+    authorUsername: getUsernameForUser(author),
+    authorAvatarUrl: getAvatarUrlForUser(author),
     likes: post.likeCount ?? likes.length,
     liked: viewerId ? likes.some((like) => like.userId === viewerId) : false,
     mediaIds: post.mediaIds ?? [],

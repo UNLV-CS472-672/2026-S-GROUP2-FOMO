@@ -6,6 +6,7 @@ import {
   __backend_only_getAndAuthenticateCurrentConvexUser,
   __backend_only_guestOrAuthenticatedUser,
 } from './auth';
+import { getAvatarUrlForUser, getDisplayNameForUser } from './user_identity';
 
 export type SerializedComment = {
   id: Id<'comments'>;
@@ -104,8 +105,8 @@ export async function getThreadedCommentsByPost(ctx: QueryCtx, postId: Doc<'post
       return {
         id: comment._id,
         text: comment.text,
-        authorName: commentAuthor?.displayName || commentAuthor?.username || 'Unknown user',
-        authorAvatarUrl: commentAuthor?.avatarUrl || '',
+        authorName: getDisplayNameForUser(commentAuthor),
+        authorAvatarUrl: getAvatarUrlForUser(commentAuthor),
         creationTime: comment._creationTime,
         likes: comment.likeCount ?? 0,
         liked: likedCommentIds.has(comment._id),

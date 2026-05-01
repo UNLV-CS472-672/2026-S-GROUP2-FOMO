@@ -1,4 +1,5 @@
 import { Button, ButtonText } from '@/components/ui/button';
+import { AppleButton } from '@/features/auth/components/apple-button';
 import { GoogleButton } from '@/features/auth/components/google-button';
 import { AuthInput } from '@/features/auth/components/input';
 import { Text, View } from 'react-native';
@@ -9,11 +10,14 @@ type IdentifierStepProps = {
   placeholder: string;
   buttonLabel: string;
   dividerLabel: string;
+  isAppleLoading?: boolean;
+  isAppleDisabled?: boolean;
   isBusy?: boolean;
   isGoogleLoading?: boolean;
   isGoogleDisabled?: boolean;
   isPrimaryLoading?: boolean;
   error?: string;
+  onApplePress?: () => void;
   onChangeText: (value: string) => void;
   onPrimaryPress: () => void;
   onGooglePress: () => void;
@@ -25,17 +29,29 @@ export function IdentifierStep({
   placeholder,
   buttonLabel,
   dividerLabel,
+  isAppleLoading = false,
+  isAppleDisabled = false,
   isBusy = false,
   isGoogleLoading = false,
   isGoogleDisabled = false,
   isPrimaryLoading = false,
   error,
+  onApplePress,
   onChangeText,
   onPrimaryPress,
   onGooglePress,
 }: IdentifierStepProps) {
   return (
     <>
+      {onApplePress ? (
+        <AppleButton
+          mode={mode}
+          onPress={onApplePress}
+          loading={isAppleLoading}
+          disabled={isAppleDisabled || isBusy}
+        />
+      ) : null}
+
       <GoogleButton
         mode={mode}
         onPress={onGooglePress}

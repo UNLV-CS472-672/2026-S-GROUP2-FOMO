@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 
 import { mutation, query } from './_generated/server';
 import { __backend_only_getAndAuthenticateCurrentConvexUser } from './auth';
+import { getAvatarUrlForUser, getDisplayNameForUser } from './user_identity';
 
 export const createPost = mutation({
   args: {
@@ -58,8 +59,8 @@ export const getPostById = query({
 
         return {
           id: comment._id,
-          authorName: commentAuthor?.displayName || commentAuthor?.username || 'Unknown user',
-          authorAvatarUrl: commentAuthor?.avatarUrl || '',
+          authorName: getDisplayNameForUser(commentAuthor),
+          authorAvatarUrl: getAvatarUrlForUser(commentAuthor),
           text: comment.text,
         };
       })
@@ -70,8 +71,8 @@ export const getPostById = query({
       caption: post.caption ?? '',
       mediaIds,
       likeCount: post.likeCount ?? 0,
-      authorName: author?.displayName || author?.username || 'Unknown user',
-      authorAvatarUrl: author?.avatarUrl || '',
+      authorName: getDisplayNameForUser(author),
+      authorAvatarUrl: getAvatarUrlForUser(author),
       comments: commentsWithAuthors,
     };
   },
