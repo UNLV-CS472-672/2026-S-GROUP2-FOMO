@@ -2,6 +2,7 @@ import { Button, ButtonText } from '@/components/ui/button';
 import { AppleButton } from '@/features/auth/components/apple-button';
 import { GoogleButton } from '@/features/auth/components/google-button';
 import { AuthInput } from '@/features/auth/components/input';
+import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
 type IdentifierStepProps = {
@@ -16,7 +17,9 @@ type IdentifierStepProps = {
   isGoogleLoading?: boolean;
   isGoogleDisabled?: boolean;
   isPrimaryLoading?: boolean;
+  primaryDisabled?: boolean;
   error?: string;
+  footer?: ReactNode;
   onApplePress?: () => void;
   onChangeText: (value: string) => void;
   onPrimaryPress: () => void;
@@ -35,7 +38,9 @@ export function IdentifierStep({
   isGoogleLoading = false,
   isGoogleDisabled = false,
   isPrimaryLoading = false,
+  primaryDisabled = false,
   error,
+  footer,
   onApplePress,
   onChangeText,
   onPrimaryPress,
@@ -78,9 +83,14 @@ export function IdentifierStep({
         error={error}
       />
 
-      <Button onPress={onPrimaryPress} disabled={!value.trim() || isBusy || isGoogleDisabled}>
+      <Button
+        onPress={onPrimaryPress}
+        disabled={!value.trim() || isBusy || isGoogleDisabled || primaryDisabled}
+      >
         <ButtonText>{isPrimaryLoading ? 'Sending code...' : buttonLabel}</ButtonText>
       </Button>
+
+      {footer}
     </>
   );
 }
