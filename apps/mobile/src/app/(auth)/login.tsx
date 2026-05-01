@@ -4,12 +4,12 @@ import { IdentifierStep } from '@/features/auth/components/steps/identifier';
 import { PasswordStep } from '@/features/auth/components/steps/password';
 import { VerificationStep } from '@/features/auth/components/steps/verification';
 import { AuthWrapper } from '@/features/auth/components/wrapper';
-import { useGoogleSignIn } from '@/features/auth/hooks/use-google-sign-in';
 import { useLogin } from '@/features/auth/hooks/use-login';
+import { useSocialSignIn } from '@/features/auth/hooks/use-social-sign-in';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { useNavigation } from 'expo-router';
 import { useLayoutEffect } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native';
 
 export default function LoginScreen() {
   const theme = useAppTheme();
@@ -29,7 +29,7 @@ export default function LoginScreen() {
     onVerifyCodePress,
     onPasswordSignInPress,
   } = useLogin();
-  const { loadingProvider, signInWith } = useGoogleSignIn({
+  const { loadingProvider, signInWith } = useSocialSignIn({
     clearErrors,
     handleError: handleSsoError,
     intent: 'signin',
@@ -80,10 +80,13 @@ export default function LoginScreen() {
           buttonLabel="Continue"
           dividerLabel="or continue with"
           isBusy={state.isBusy}
+          isAppleLoading={loadingProvider === 'apple'}
+          isAppleDisabled={loadingProvider !== null}
           isGoogleLoading={loadingProvider === 'google'}
           isGoogleDisabled={loadingProvider !== null}
           isPrimaryLoading={state.isSendingCode}
           error={state.errors?.identifier}
+          onApplePress={Platform.OS === 'ios' ? () => signInWith('apple') : undefined}
           onChangeText={setIdentifier}
           onPrimaryPress={continueWithIdentifier}
           onGooglePress={() => signInWith('google')}

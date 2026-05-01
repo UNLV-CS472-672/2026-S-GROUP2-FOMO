@@ -5,13 +5,13 @@ import { PasswordStep } from '@/features/auth/components/steps/password';
 import { UsernameStep } from '@/features/auth/components/steps/username';
 import { VerificationStep } from '@/features/auth/components/steps/verification';
 import { AuthWrapper } from '@/features/auth/components/wrapper';
-import { useGoogleSignIn } from '@/features/auth/hooks/use-google-sign-in';
 import { useSignup } from '@/features/auth/hooks/use-signup';
+import { useSocialSignIn } from '@/features/auth/hooks/use-social-sign-in';
 import { setPendingSignupAvatar } from '@/features/auth/utils/pending-signup-avatar';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useEffect, useLayoutEffect } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Text, View } from 'react-native';
 
 export default function SignUpScreen() {
   const theme = useAppTheme();
@@ -39,7 +39,7 @@ export default function SignUpScreen() {
     pendingUsernameSetup,
     isCompletingUsername,
     completeSignUpWithUsername,
-  } = useGoogleSignIn({
+  } = useSocialSignIn({
     clearErrors,
     handleError: handleSsoError,
     intent: 'signup',
@@ -129,10 +129,13 @@ export default function SignUpScreen() {
           buttonLabel="Continue with email"
           dividerLabel="or sign up with email"
           isBusy={state.isBusy}
+          isAppleLoading={loadingProvider === 'apple'}
+          isAppleDisabled={loadingProvider !== null}
           isGoogleLoading={loadingProvider === 'google'}
           isGoogleDisabled={loadingProvider !== null}
           isPrimaryLoading={state.isSendingCode}
           error={state.errors?.email}
+          onApplePress={Platform.OS === 'ios' ? () => signInWith('apple') : undefined}
           onChangeText={setEmailAddress}
           onPrimaryPress={onStartEmailSignUp}
           onGooglePress={() => signInWith('google')}
