@@ -1,9 +1,7 @@
-import { httpRouter } from 'convex/server';
+import type { HttpRouter } from 'convex/server';
 import { internal } from '../_generated/api';
 import { Id, TableNames } from '../_generated/dataModel';
 import { httpAction } from '../_generated/server';
-
-const http = httpRouter();
 
 function validateSecret(req: Request): Response | null {
   const secret = req.headers.get('x-cron-secret');
@@ -13,262 +11,268 @@ function validateSecret(req: Request): Response | null {
   return null;
 }
 
-http.route({
-  path: '/data-ml/get-by-user-id',
-  method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
+export function registerDataMlRoutes(http: HttpRouter) {
+  http.route({
+    path: '/data-ml/get-by-user-id',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId') as unknown as Id<'users'>;
+      const { searchParams } = new URL(req.url);
+      const userId = searchParams.get('userId') as unknown as Id<'users'>;
 
-    const result = await ctx.runQuery(internal.data_ml.eventRec.getByUserId, { userId });
-    return new Response(JSON.stringify(result), { status: 200 });
-  }),
-});
+      const result = await ctx.runQuery(internal.data_ml.eventRec.getByUserId, { userId });
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
 
-http.route({
-  path: '/data-ml/get-by-event-id',
-  method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
+  http.route({
+    path: '/data-ml/get-by-event-id',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-    const { searchParams } = new URL(req.url);
-    const eventId = searchParams.get('eventId') as unknown as Id<'events'>;
+      const { searchParams } = new URL(req.url);
+      const eventId = searchParams.get('eventId') as unknown as Id<'events'>;
 
-    const result = await ctx.runQuery(internal.data_ml.eventRec.getByEventId, { eventId });
-    return new Response(JSON.stringify(result), { status: 200 });
-  }),
-});
+      const result = await ctx.runQuery(internal.data_ml.eventRec.getByEventId, { eventId });
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
 
-http.route({
-  path: '/data-ml/upsert-user-tag-weights',
-  method: 'POST',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
+  http.route({
+    path: '/data-ml/upsert-user-tag-weights',
+    method: 'POST',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-    const body = await req.json();
-    await ctx.runMutation(internal.data_ml.eventRec.upsertUserTagWeights, body);
-    return new Response('OK', { status: 200 });
-  }),
-});
+      const body = await req.json();
+      await ctx.runMutation(internal.data_ml.eventRec.upsertUserTagWeights, body);
+      return new Response('OK', { status: 200 });
+    }),
+  });
 
-http.route({
-  path: '/data-ml/get-user-tag-weights',
-  method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
+  http.route({
+    path: '/data-ml/get-user-tag-weights',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-    const { searchParams } = new URL(req.url);
-    const userIds = searchParams.getAll('userId') as unknown as Id<'users'>[];
+      const { searchParams } = new URL(req.url);
+      const userIds = searchParams.getAll('userId') as unknown as Id<'users'>[];
 
-    const result = await ctx.runQuery(internal.data_ml.eventRec.getUserTagWeights, {
-      userIDs: userIds,
-    });
-    return new Response(JSON.stringify(result), { status: 200 });
-  }),
-});
+      const result = await ctx.runQuery(internal.data_ml.eventRec.getUserTagWeights, {
+        userIDs: userIds,
+      });
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
 
-http.route({
-  path: '/data-ml/get-user-tag-weights-timestamp',
-  method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
+  http.route({
+    path: '/data-ml/get-user-tag-weights-timestamp',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-    const { searchParams } = new URL(req.url);
+      const { searchParams } = new URL(req.url);
 
-    const userId = searchParams.get('userId') as unknown as Id<'users'>;
-    const numTags = Number(searchParams.get('numTags'));
+      const userId = searchParams.get('userId') as unknown as Id<'users'>;
+      const numTags = Number(searchParams.get('numTags'));
 
-    const result = await ctx.runQuery(internal.data_ml.eventRec.getUserTagWeightsWithTimestamp, {
-      userId,
-      numTags,
-    });
-    return new Response(JSON.stringify(result), { status: 200 });
-  }),
-});
+      const result = await ctx.runQuery(internal.data_ml.eventRec.getUserTagWeightsWithTimestamp, {
+        userId,
+        numTags,
+      });
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
 
-http.route({
-  path: '/data-ml/get-interactions',
-  method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
+  http.route({
+    path: '/data-ml/get-interactions',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId') as unknown as Id<'users'>;
-    const sinceMsRaw = searchParams.get('sinceMs');
-    const queryArgs = sinceMsRaw !== null ? { userId, sinceMs: Number(sinceMsRaw) } : { userId };
+      const { searchParams } = new URL(req.url);
+      const userId = searchParams.get('userId') as unknown as Id<'users'>;
+      const sinceMsRaw = searchParams.get('sinceMs');
+      const queryArgs = sinceMsRaw !== null ? { userId, sinceMs: Number(sinceMsRaw) } : { userId };
 
-    const result = await ctx.runQuery(internal.data_ml.eventRec.getInteractionsByUserId, queryArgs);
-    return new Response(JSON.stringify(result), { status: 200 });
-  }),
-});
+      const result = await ctx.runQuery(
+        internal.data_ml.eventRec.getInteractionsByUserId,
+        queryArgs
+      );
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
 
-http.route({
-  path: '/data-ml/upsert-event-recs',
-  method: 'POST',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
+  http.route({
+    path: '/data-ml/upsert-event-recs',
+    method: 'POST',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-    const body = await req.json();
-    await ctx.runMutation(internal.data_ml.eventRec.upsertEventRecs, body);
-    return new Response('OK', { status: 200 });
-  }),
-});
+      const body = await req.json();
+      await ctx.runMutation(internal.data_ml.eventRec.upsertEventRecs, body);
+      return new Response('OK', { status: 200 });
+    }),
+  });
 
-http.route({
-  path: '/data-ml/upsert-friend-recs',
-  method: 'POST',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
+  http.route({
+    path: '/data-ml/upsert-friend-recs',
+    method: 'POST',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-    const body = await req.json();
-    await ctx.runMutation(internal.data_ml.friendRecs.upsert, body);
-    return new Response('OK', { status: 200 });
-  }),
-});
+      const body = await req.json();
+      await ctx.runMutation(internal.data_ml.friendRecs.upsert, body);
+      return new Response('OK', { status: 200 });
+    }),
+  });
 
-http.route({
-  path: '/data-ml/friend-exists',
-  method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
+  http.route({
+    path: '/data-ml/friend-exists',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-    const { searchParams } = new URL(req.url);
-    const userAId = searchParams.get('userAId') as unknown as Id<'users'>;
-    const userBId = searchParams.get('userBId') as unknown as Id<'users'>;
+      const { searchParams } = new URL(req.url);
+      const userAId = searchParams.get('userAId') as unknown as Id<'users'>;
+      const userBId = searchParams.get('userBId') as unknown as Id<'users'>;
 
-    const result = await ctx.runQuery(internal.data_ml.friends.friendExists, { userAId, userBId });
-    return new Response(JSON.stringify(result), { status: 200 });
-  }),
-});
+      const result = await ctx.runQuery(internal.data_ml.friends.friendExists, {
+        userAId,
+        userBId,
+      });
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
 
-http.route({
-  path: '/data-ml/get-friend-ids',
-  method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
+  http.route({
+    path: '/data-ml/get-friend-ids',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId') as unknown as Id<'users'>;
+      const { searchParams } = new URL(req.url);
+      const userId = searchParams.get('userId') as unknown as Id<'users'>;
 
-    const result = await ctx.runQuery(internal.data_ml.friends.getFriendIds, { userId });
-    return new Response(JSON.stringify(result), { status: 200 });
-  }),
-});
+      const result = await ctx.runQuery(internal.data_ml.friends.getFriendIds, { userId });
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
 
-http.route({
-  path: '/data-ml/query-all',
-  method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
+  http.route({
+    path: '/data-ml/query-all',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-    const { searchParams } = new URL(req.url);
-    const table_name = searchParams.get('table_name') as unknown as TableNames;
+      const { searchParams } = new URL(req.url);
+      const table_name = searchParams.get('table_name') as unknown as TableNames;
 
-    const result = await ctx.runQuery(internal.data_ml.universal.queryAll, { table_name });
-    return new Response(JSON.stringify(result), { status: 200 });
-  }),
-});
+      const result = await ctx.runQuery(internal.data_ml.universal.queryAll, { table_name });
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
 
-http.route({
-  path: '/data-ml/user-exists',
-  method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
+  http.route({
+    path: '/data-ml/user-exists',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId') as unknown as Id<'users'>;
+      const { searchParams } = new URL(req.url);
+      const userId = searchParams.get('userId') as unknown as Id<'users'>;
 
-    const result = await ctx.runQuery(internal.data_ml.users.userExists, { userId });
-    return new Response(JSON.stringify(result), { status: 200 });
-  }),
-});
+      const result = await ctx.runQuery(internal.data_ml.users.userExists, { userId });
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
 
-http.route({
-  path: '/data-ml/get-all-user-ids',
-  method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
+  http.route({
+    path: '/data-ml/get-all-user-ids',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-    const result = await ctx.runQuery(internal.data_ml.users.getAllUserIds, {});
-    return new Response(JSON.stringify(result), { status: 200 });
-  }),
-});
+      const result = await ctx.runQuery(internal.data_ml.users.getAllUserIds, {});
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
 
-http.route({
-  path: '/data-ml/get-name-by-id',
-  method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
+  http.route({
+    path: '/data-ml/get-name-by-id',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId') as unknown as Id<'users'>;
+      const { searchParams } = new URL(req.url);
+      const userId = searchParams.get('userId') as unknown as Id<'users'>;
 
-    const result = await ctx.runQuery(internal.data_ml.users.getNameById, { userId });
-    return new Response(JSON.stringify(result), { status: 200 });
-  }),
-});
+      const result = await ctx.runQuery(internal.data_ml.users.getNameById, { userId });
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
 
-http.route({
-  path: '/data-ml/get-preferred-tags-by-user-id',
-  method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
+  http.route({
+    path: '/data-ml/get-preferred-tags-by-user-id',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-    const { searchParams } = new URL(req.url);
-    const userIds = searchParams.getAll('userId') as unknown as Id<'users'>[];
+      const { searchParams } = new URL(req.url);
+      const userIds = searchParams.getAll('userId') as unknown as Id<'users'>[];
 
-    const result = await ctx.runQuery(internal.data_ml.eventRec.getPreferredTagsByUserId, {
-      userIds,
-    });
-    return new Response(JSON.stringify(result), { status: 200 });
-  }),
-});
+      const result = await ctx.runQuery(internal.data_ml.eventRec.getPreferredTagsByUserId, {
+        userIds,
+      });
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
+  
+    http.route({
+    path: '/data-ml/get-users-with-recent-activity',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-http.route({
-  path: '/data-ml/get-users-with-recent-activity',
-  method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
+      const { searchParams } = new URL(req.url);
+      const numTagsRaw = searchParams.get('numTags');
+      const numTags = numTagsRaw !== null ? Number(numTagsRaw) : undefined;
 
-    const { searchParams } = new URL(req.url);
-    const numTagsRaw = searchParams.get('numTags');
-    const numTags = numTagsRaw !== null ? Number(numTagsRaw) : undefined;
+      const result = await ctx.runMutation(internal.data_ml.eventRec.getUsersWithRecentActivity, {
+        numTags,
+      });
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
 
-    const result = await ctx.runMutation(internal.data_ml.eventRec.getUsersWithRecentActivity, {
-      numTags,
-    });
-    return new Response(JSON.stringify(result), { status: 200 });
-  }),
-});
+  http.route({
+    path: '/data-ml/get-all-events-after-now',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
 
-http.route({
-  path: '/data-ml/get-all-events-after-now',
-  method: 'GET',
-  handler: httpAction(async (ctx, req) => {
-    const authError = validateSecret(req);
-    if (authError) return authError;
-
-    const result = await ctx.runQuery(internal.data_ml.eventRec.getAllEventsAfterNow);
-    return new Response(JSON.stringify(result), { status: 200 });
-  }),
-});
-
-export default http;
+      const result = await ctx.runQuery(internal.data_ml.eventRec.getAllEventsAfterNow);
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
+}

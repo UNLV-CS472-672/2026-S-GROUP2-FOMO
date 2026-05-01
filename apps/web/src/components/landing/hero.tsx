@@ -7,7 +7,7 @@ import { Button } from '../ui/button';
 
 export function Hero() {
   return (
-    <section className="relative flex items-center justify-center h-full mt-20 overflow-hidden flex-col gap-10">
+    <section className="relative z-10 mt-20 flex h-full flex-col items-center justify-center gap-10 overflow-hidden">
       {/* logo */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -69,7 +69,7 @@ export function Hero() {
           delay: 2.2,
           ease: [0.25, 0.46, 0.45, 0.94],
         }}
-        className="flex items-center gap-3"
+        className="relative z-10 flex items-center gap-3"
       >
         <Show when="signed-out">
           <Button size="lg" className="text-xl px-4 py-6" asChild>

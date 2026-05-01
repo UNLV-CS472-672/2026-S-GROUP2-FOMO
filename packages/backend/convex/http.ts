@@ -5,8 +5,11 @@ import { Webhook } from 'svix';
 
 import { internal } from './_generated/api';
 import { httpAction } from './_generated/server';
+import { registerDataMlRoutes } from './data_ml/http';
 
 const http = httpRouter();
+
+registerDataMlRoutes(http);
 
 const clerkWebhookHandler = httpAction(async (ctx, request) => {
   console.log('[clerk-webhook] request received', {
