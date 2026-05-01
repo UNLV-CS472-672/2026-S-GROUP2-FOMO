@@ -95,7 +95,7 @@ export default defineSchema({
     .index('by_user_event', ['userId', 'eventId']),
 
   eventTags: defineTable({
-    eventId: v.id('events'),
+    eventId: v.union(v.id('events'), v.id('externalEvents')),
     tagId: v.id('tags'),
   })
     .index('by_event', ['eventId'])

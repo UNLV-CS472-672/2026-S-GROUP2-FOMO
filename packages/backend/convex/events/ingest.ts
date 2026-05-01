@@ -1,13 +1,15 @@
 import { env } from '@fomo/env/backend';
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
-import { action, internalMutation } from '../_generated/server';
+import type { Id } from '../_generated/dataModel';
+import { action, internalMutation, type MutationCtx } from '../_generated/server';
 import { latLngToH3Index } from './queries';
 
 const normalizedEventValidator = v.object({
   name: v.string(),
   organization: v.string(),
   description: v.string(),
+  tagNames: v.optional(v.array(v.string())),
   startDate: v.number(),
   endDate: v.number(),
   location: v.object({
@@ -21,6 +23,7 @@ type NormalizedEvent = {
   name: string;
   organization: string;
   description: string;
+  tagNames: string[];
   startDate: number;
   endDate: number;
   location: {
@@ -44,6 +47,19 @@ type TicketmasterEvent = {
     start?: { dateTime?: string; localDate?: string };
     end?: { dateTime?: string; localDate?: string };
   };
+  classifications?: TicketmasterClassification[];
+};
+
+type TicketmasterClassificationValue = {
+  name?: string;
+};
+
+type TicketmasterClassification = {
+  segment?: TicketmasterClassificationValue;
+  genre?: TicketmasterClassificationValue;
+  subGenre?: TicketmasterClassificationValue;
+  type?: TicketmasterClassificationValue;
+  subType?: TicketmasterClassificationValue;
 };
 
 type TicketmasterAttractionResponse = {
@@ -131,6 +147,42 @@ const TICKETMASTER_SEGMENTS = {
   miscellaneous: 'Miscellaneous',
 } as const;
 
+const TICKETMASTER_CATEGORY_TAGS: Record<string, string[]> = {
+  music: ['music', 'concert'],
+  concert: ['music', 'concert'],
+  concerts: ['music', 'concert'],
+  'hip-hop/rap': ['music', 'rap', 'concert'],
+  rap: ['music', 'rap', 'concert'],
+  'r&b': ['music', 'r&b', 'concert'],
+  'r&b/urban soul': ['music', 'r&b', 'concert'],
+  rock: ['music', 'concert'],
+  pop: ['music', 'concert'],
+  electronic: ['music', 'concert', 'party'],
+  latin: ['music', 'concert', 'culture'],
+  jazz: ['music', 'concert'],
+  comedy: ['culture'],
+  sports: ['games'],
+  sport: ['games'],
+  basketball: ['games'],
+  football: ['games'],
+  baseball: ['games'],
+  hockey: ['games'],
+  'arts & theatre': ['art', 'culture'],
+  arts: ['art', 'culture'],
+  theatre: ['art', 'culture'],
+  theater: ['art', 'culture'],
+  'fine art': ['art', 'culture'],
+  dance: ['music', 'art', 'culture'],
+  family: ['culture'],
+  film: ['culture'],
+  movie: ['culture'],
+  movies: ['culture'],
+  miscellaneous: ['culture'],
+  misc: ['culture'],
+  convention: ['convention', 'vendors'],
+  expo: ['convention', 'vendors'],
+};
+
 function resolveTicketmasterCategoryFilter(category?: string): string | null {
   const trimmed = category?.trim();
   if (!trimmed) return null;
@@ -140,6 +192,76 @@ function resolveTicketmasterCategoryFilter(category?: string): string | null {
   if (mapped) return mapped;
 
   return trimmed;
+}
+
+function normalizeTicketmasterCategory(value?: string): string | null {
+  const normalized = value?.trim().toLowerCase();
+  if (!normalized || normalized === 'undefined' || normalized === 'n/a') {
+    return null;
+  }
+
+  return normalized;
+}
+
+function tagNamesForTicketmasterEvent(event: TicketmasterEvent): string[] {
+  const tagNames = new Set<string>();
+
+  for (const classification of event.classifications ?? []) {
+    const categories = [
+      classification.segment?.name,
+      classification.genre?.name,
+      classification.subGenre?.name,
+      classification.type?.name,
+      classification.subType?.name,
+    ];
+
+    for (const category of categories) {
+      const mappedTags = TICKETMASTER_CATEGORY_TAGS[normalizeTicketmasterCategory(category) ?? ''];
+      for (const tagName of mappedTags ?? []) {
+        tagNames.add(tagName);
+      }
+    }
+  }
+
+  return [...tagNames];
+}
+
+async function syncExternalEventTags(
+  ctx: MutationCtx,
+  eventId: Id<'externalEvents'>,
+  tagIds: Id<'tags'>[]
+): Promise<boolean> {
+  const uniqueTagIds = [...new Set(tagIds)];
+  const desiredTagIds = new Set(uniqueTagIds.map(String));
+  const existingLinks = await ctx.db
+    .query('eventTags')
+    .withIndex('by_event', (q) => q.eq('eventId', eventId))
+    .collect();
+
+  let changed = false;
+  const linksToDelete = existingLinks.filter((link) => !desiredTagIds.has(String(link.tagId)));
+  if (linksToDelete.length > 0) {
+    changed = true;
+  }
+
+  await Promise.all(linksToDelete.map((link) => ctx.db.delete(link._id)));
+
+  const existingTagIds = new Set(existingLinks.map((link) => String(link.tagId)));
+  const tagIdsToInsert = uniqueTagIds.filter((tagId) => !existingTagIds.has(String(tagId)));
+  if (tagIdsToInsert.length > 0) {
+    changed = true;
+  }
+
+  await Promise.all(
+    tagIdsToInsert.map((tagId) =>
+      ctx.db.insert('eventTags', {
+        eventId,
+        tagId,
+      })
+    )
+  );
+
+  return changed;
 }
 
 function parseTimestamp(dateTime?: string, localDate?: string): number | null {
@@ -163,7 +285,9 @@ function parseCoordinate(value?: string): number | null {
   return parsed;
 }
 
-function uniqueEventKey(event: NormalizedEvent): string {
+function uniqueEventKey(
+  event: Pick<NormalizedEvent, 'name' | 'organization' | 'startDate'>
+): string {
   return `${event.name.trim().toLowerCase()}::${event.organization.trim().toLowerCase()}::${event.startDate}`;
 }
 
@@ -267,6 +391,7 @@ function normalizeTicketmasterEvent(
     name,
     organization,
     description: description.slice(0, 4000),
+    tagNames: tagNamesForTicketmasterEvent(event),
     startDate,
     endDate,
     location: {
@@ -337,8 +462,20 @@ export const upsertNormalizedEvents = internalMutation({
         .withIndex('by_externalKey', (q) => q.eq('externalKey', externalKey))
         .unique();
 
+      const tagIds = (
+        await Promise.all(
+          (event.tagNames ?? []).map(async (tagName) => {
+            const tag = await ctx.db
+              .query('tags')
+              .withIndex('by_name', (q) => q.eq('name', tagName))
+              .unique();
+            return tag?._id ?? null;
+          })
+        )
+      ).filter((tagId): tagId is Id<'tags'> => tagId !== null);
+
       if (!existing) {
-        await ctx.db.insert('externalEvents', {
+        const eventId = await ctx.db.insert('externalEvents', {
           externalKey,
           name: event.name,
           organization: event.organization,
@@ -347,6 +484,7 @@ export const upsertNormalizedEvents = internalMutation({
           endDate: event.endDate,
           location: event.location,
         });
+        await syncExternalEventTags(ctx, eventId, tagIds);
         inserted += 1;
         continue;
       }
@@ -367,9 +505,15 @@ export const upsertNormalizedEvents = internalMutation({
           endDate: event.endDate,
           location: event.location,
         });
+        await syncExternalEventTags(ctx, existing._id, tagIds);
         updated += 1;
       } else {
-        unchanged += 1;
+        const tagsChanged = await syncExternalEventTags(ctx, existing._id, tagIds);
+        if (tagsChanged) {
+          updated += 1;
+        } else {
+          unchanged += 1;
+        }
       }
     }
 

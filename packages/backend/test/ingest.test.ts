@@ -151,6 +151,73 @@ describe('api.events.ingest', () => {
         },
       });
     });
+
+    it('syncs mapped tag links for external events', async () => {
+      const t = setup();
+
+      await t.run(async (ctx) => {
+        await ctx.db.insert('tags', { name: 'music' });
+        await ctx.db.insert('tags', { name: 'concert' });
+        await ctx.db.insert('tags', { name: 'rap' });
+      });
+
+      await t.mutation(internal.events.ingest.upsertNormalizedEvents, {
+        events: [
+          {
+            name: 'Tagged Event',
+            organization: 'Tagged Venue',
+            description: 'Tagged description',
+            tagNames: ['music', 'concert', 'missing-tag'],
+            startDate: 100,
+            endDate: 160,
+            location: {
+              latitude: 36.3,
+              longitude: -115.3,
+              h3Index: 'new-h3',
+            },
+          },
+        ],
+      });
+
+      await t.mutation(internal.events.ingest.upsertNormalizedEvents, {
+        events: [
+          {
+            name: 'Tagged Event',
+            organization: 'Tagged Venue',
+            description: 'Tagged description',
+            tagNames: ['rap'],
+            startDate: 100,
+            endDate: 160,
+            location: {
+              latitude: 36.3,
+              longitude: -115.3,
+              h3Index: 'new-h3',
+            },
+          },
+        ],
+      });
+
+      const tagNames = await t.run(async (ctx) => {
+        const event = await ctx.db
+          .query('externalEvents')
+          .withIndex('by_externalKey', (q) =>
+            q.eq('externalKey', 'tagged event::tagged venue::100')
+          )
+          .unique();
+        if (!event) {
+          throw new Error('Expected external event to exist');
+        }
+
+        const links = await ctx.db
+          .query('eventTags')
+          .withIndex('by_event', (q) => q.eq('eventId', event._id))
+          .collect();
+        const tags = await Promise.all(links.map((link) => ctx.db.get(link.tagId)));
+        return tags.flatMap((tag) => (tag ? [tag.name] : []));
+      });
+
+      expect(tagNames).toEqual(['rap']);
+    });
   });
 
   describe('syncTicketmasterLasVegas', () => {
@@ -173,6 +240,12 @@ describe('api.events.ingest', () => {
               events: [
                 {
                   name: 'Alpha',
+                  classifications: [
+                    {
+                      segment: { name: 'Music' },
+                      genre: { name: 'Hip-Hop/Rap' },
+                    },
+                  ],
                   _embedded: {
                     attractions: [{ id: 'attr_shared' }],
                     venues: [
@@ -298,6 +371,7 @@ describe('api.events.ingest', () => {
         name: 'Alpha',
         organization: 'Venue One',
         description: 'Shared attraction description',
+        tagNames: ['music', 'concert', 'rap'],
         startDate: Date.parse('2026-05-01T00:00:00Z'),
         endDate: Date.parse('2026-05-01T02:00:00Z'),
       });

@@ -12,7 +12,7 @@ This package contains Convex functions and backend logic.
 
 The Ticketmaster ingestion action is:
 
-- `eventsIngest:syncTicketmasterLasVegas`
+- `events/ingest:syncTicketmasterLasVegas`
 
 ### 1. Set backend env vars
 
@@ -41,13 +41,13 @@ Keep this running in one terminal.
 ### 3. Dry run ingestion (no DB writes)
 
 ```bash
-pnpm exec convex run eventsIngest:syncTicketmasterLasVegas '{"dryRun":true,"eventCount":15}'
+pnpm exec convex run events/ingest:syncTicketmasterLasVegas '{"dryRun":true,"eventCount":15}'
 ```
 
 ### 4. Run ingestion (writes to `events`)
 
 ```bash
-pnpm exec convex run eventsIngest:syncTicketmasterLasVegas '{"dryRun":false,"eventCount":15}'
+pnpm exec convex run events/ingest:syncTicketmasterLasVegas '{"dryRun":false,"eventCount":15}'
 ```
 
 ### 5. Verify in dashboard

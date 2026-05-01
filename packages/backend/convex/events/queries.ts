@@ -51,7 +51,15 @@ async function serializeExternalEvent(
   event: Doc<'externalEvents'>,
   recommendationScore?: number
 ) {
-  const attendeeCount = await getAttendeeCount(ctx, event._id);
+  const [attendeeCount, eventTagLinks] = await Promise.all([
+    getAttendeeCount(ctx, event._id),
+    ctx.db
+      .query('eventTags')
+      .withIndex('by_event', (q) => q.eq('eventId', event._id))
+      .collect(),
+  ]);
+
+  const tags = await Promise.all(eventTagLinks.map(async (link) => await ctx.db.get(link.tagId)));
 
   return {
     id: event._id,
@@ -59,7 +67,7 @@ async function serializeExternalEvent(
     name: event.name,
     caption: event.caption,
     organization: event.organization,
-    tags: [],
+    tags: tags.flatMap((tag) => (tag ? [tag.name] : [])),
     location: event.location,
     attendeeCount,
     startDate: event.startDate,
