@@ -1,4 +1,4 @@
-import type { EventSummary } from '@/features/events/types';
+import type { EventSummary, ExternalEventSummary } from '@/features/events/types';
 import { EventMarker } from '@/features/map/components/event-marker';
 import { FeedTabs, type FeedMode } from '@/features/map/components/feed-tabs';
 import { RecenterButton } from '@/features/map/components/recenter-button';
@@ -25,7 +25,13 @@ export default function MapScreen() {
   const { push } = useRouter();
   const { isSignedIn } = useUser();
   const eventsRaw = useQuery(api.events.queries.getEvents);
+  const externalEventsRaw = useQuery(api.events.queries.getExternalEvents);
   const events: EventSummary[] = useMemo(() => eventsRaw ?? [], [eventsRaw]);
+  const externalEvents: ExternalEventSummary[] = useMemo(
+    () => externalEventsRaw ?? [],
+    [externalEventsRaw]
+  );
+  const allEvents = useMemo(() => [...events, ...externalEvents], [events, externalEvents]);
   const eventRecs = useQuery(
     api.data_ml.eventRec.getCurrentUserEventRecs,
     isSignedIn ? {} : 'skip'
@@ -40,16 +46,17 @@ export default function MapScreen() {
   // list when recs haven't been computed for this user yet.
   const visibleEvents = useMemo(() => {
     if (feedMode === 'popular') {
-      return [...events].sort((a, b) => b.attendeeCount - a.attendeeCount);
+      return [...allEvents].sort((a, b) => b.attendeeCount - a.attendeeCount);
     }
     if (eventRecs && eventRecs.length > 0) {
       const eventById = new Map(events.map((event) => [event.id, event]));
-      return eventRecs
+      const recEvents = eventRecs
         .map((id) => eventById.get(id))
         .filter((event): event is EventSummary => event !== undefined);
+      return [...recEvents, ...externalEvents];
     }
-    return events;
-  }, [events, eventRecs, feedMode]);
+    return allEvents;
+  }, [allEvents, events, externalEvents, eventRecs, feedMode]);
 
   const savedCameraRef = useRef<{
     centerCoordinate: [number, number];
@@ -77,8 +84,8 @@ export default function MapScreen() {
       const k = eventRecs.length;
       return new Map(eventRecs.map((id, index) => [id, k - index]));
     }
-    return new Map(events.map((event) => [event.id, event.attendeeCount]));
-  }, [events, eventRecs, feedMode]);
+    return new Map(allEvents.map((event) => [event.id, event.attendeeCount]));
+  }, [allEvents, eventRecs, feedMode]);
 
   const getWeight = (eventId: EventSummary['id']) => eventWeights.get(eventId) ?? 0;
 
@@ -163,12 +170,19 @@ export default function MapScreen() {
             weight={getWeight(event.id)}
             minWeight={minWeight}
             maxWeight={maxWeight}
-            onPress={() =>
-              push({
-                pathname: '/(tabs)/(map)/event/[eventId]',
-                params: { eventId: event.id },
-              })
-            }
+            onPress={() => {
+              if ('externalKey' in event) {
+                push({
+                  pathname: '/(tabs)/(map)/event/external/[eventId]',
+                  params: { eventId: event.id },
+                });
+              } else {
+                push({
+                  pathname: '/(tabs)/(map)/event/[eventId]',
+                  params: { eventId: event.id },
+                });
+              }
+            }}
           />
         ))}
 

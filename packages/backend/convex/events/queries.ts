@@ -144,9 +144,14 @@ export const getExternalEvents = query({
   handler: async (ctx) => {
     const [, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
 
-    const events = await ctx.db.query('externalEvents').withIndex('by_startDate').collect();
+    const now = Date.now();
+    const events = await ctx.db
+      .query('externalEvents')
+      .withIndex('by_startDate', (q) => q.lte('startDate', now))
+      .collect();
+    const activeEvents = events.filter((e) => e.endDate >= now);
     return await Promise.all(
-      events.map((event, index) =>
+      activeEvents.map((event, index) =>
         serializeExternalEvent(ctx, event, guestMode ? undefined : 1 / (index + 1))
       )
     );
