@@ -46,6 +46,30 @@ async function serializeEvent(ctx: QueryCtx, event: Doc<'events'>, recommendatio
   };
 }
 
+async function serializeExternalEvent(
+  ctx: QueryCtx,
+  event: Doc<'externalEvents'>,
+  recommendationScore?: number
+) {
+  const attendeeCount = await getAttendeeCount(ctx, event._id);
+
+  return {
+    id: event._id,
+    externalKey: event.externalKey,
+    name: event.name,
+    caption: event.caption,
+    organization: event.organization,
+    tags: [],
+    location: event.location,
+    attendeeCount,
+    startDate: event.startDate,
+    endDate: event.endDate,
+    mediaId: null,
+    hostIds: [],
+    recommendationScore,
+  };
+}
+
 async function serializeEventFeedPost(
   ctx: QueryCtx,
   post: Doc<'posts'>,
@@ -107,6 +131,32 @@ export const getEventById = query({
     }
 
     return await serializeEvent(ctx, event);
+  },
+});
+
+export const getExternalEvents = query({
+  args: {},
+  handler: async (ctx) => {
+    const [, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
+
+    const events = await ctx.db.query('externalEvents').withIndex('by_startDate').collect();
+    return await Promise.all(
+      events.map((event, index) =>
+        serializeExternalEvent(ctx, event, guestMode ? undefined : 1 / (index + 1))
+      )
+    );
+  },
+});
+
+export const getExternalEventsById = query({
+  args: { eventId: v.id('externalEvents') },
+  handler: async (ctx, { eventId }) => {
+    const event = await ctx.db.get(eventId);
+    if (!event) {
+      return null;
+    }
+
+    return await serializeExternalEvent(ctx, event);
   },
 });
 
