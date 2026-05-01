@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { useMutation } from 'convex/react';
 import { MailIcon, MessageSquareIcon } from 'lucide-react';
+import Link from 'next/link';
 import { type FormEvent, useState } from 'react';
 
 const fieldClassName =
@@ -70,6 +71,13 @@ export default function SupportPage() {
             <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
               Send a quick note and the Fomo team can follow up about account issues, bugs, event
               problems, or anything else you run into.
+            </p>
+            <p className="text-sm leading-6 text-muted-foreground">
+              For information about how Fomo handles data, view our{' '}
+              <Link href="/privacy" className="underline underline-offset-4 hover:text-foreground">
+                privacy policy
+              </Link>
+              .
             </p>
           </div>
 
