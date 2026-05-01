@@ -24,8 +24,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   //TODO decide with team on uppercase letters or not
-  title: 'FOMO',
-  description: 'FOMO web app',
+  title: 'Fomo',
+  description: 'Fomo — Find Out More Often',
 };
 
 export default function RootLayout({

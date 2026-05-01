@@ -22,7 +22,7 @@ export function SignedInStatus() {
     return (
       <>
         <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-          Welcome to FOMO
+          Welcome to Fomo
         </h1>
         <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
           Sign in with the button in the top right to access your account.
