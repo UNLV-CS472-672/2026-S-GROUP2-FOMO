@@ -35,7 +35,9 @@ function countsAsAttendee(attendance: Doc<'attendance'>) {
   return (attendance.status ?? 'going') === 'going';
 }
 
-export async function getAttendeeCount(ctx: QueryCtx, eventId: Id<'events'>) {
+type AttendanceEventId = Id<'events'> | Id<'externalEvents'>;
+
+export async function getAttendeeCount(ctx: QueryCtx, eventId: AttendanceEventId) {
   const attendees = await ctx.db
     .query('attendance')
     .withIndex('by_event', (q) => q.eq('eventId', eventId))
