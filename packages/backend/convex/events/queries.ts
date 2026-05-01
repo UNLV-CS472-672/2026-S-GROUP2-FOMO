@@ -1,7 +1,7 @@
 import { latLngToCell } from 'h3-js';
 
 import { v } from 'convex/values';
-import type { Doc, Id } from '../_generated/dataModel';
+import type { Doc } from '../_generated/dataModel';
 import { query, type QueryCtx } from '../_generated/server';
 import { __backend_only_guestOrAuthenticatedUser } from '../auth';
 import { getThreadedCommentsByPost } from '../comments';
@@ -55,7 +55,7 @@ async function serializeExternalEvent(
     getAttendeeCount(ctx, event._id),
     ctx.db
       .query('eventTags')
-      .withIndex('by_event', (q) => q.eq('eventId', event._id as Id<'events'>))
+      .withIndex('by_event', (q) => q.eq('eventId', event._id))
       .collect(),
   ]);
 

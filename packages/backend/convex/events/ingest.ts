@@ -235,7 +235,7 @@ async function syncExternalEventTags(
   const desiredTagIds = new Set(uniqueTagIds.map(String));
   const existingLinks = await ctx.db
     .query('eventTags')
-    .withIndex('by_event', (q) => q.eq('eventId', eventId as Id<'events'>))
+    .withIndex('by_event', (q) => q.eq('eventId', eventId))
     .collect();
 
   let changed = false;
@@ -255,7 +255,7 @@ async function syncExternalEventTags(
   await Promise.all(
     tagIdsToInsert.map((tagId) =>
       ctx.db.insert('eventTags', {
-        eventId: eventId as Id<'events'>,
+        eventId,
         tagId,
       })
     )
@@ -285,7 +285,9 @@ function parseCoordinate(value?: string): number | null {
   return parsed;
 }
 
-function uniqueEventKey(event: NormalizedEvent): string {
+function uniqueEventKey(
+  event: Pick<NormalizedEvent, 'name' | 'organization' | 'startDate'>
+): string {
   return `${event.name.trim().toLowerCase()}::${event.organization.trim().toLowerCase()}::${event.startDate}`;
 }
 
