@@ -7,7 +7,7 @@ export default function HomePage() {
   return (
     <>
       <Header />
-      <main className="relative mx-auto flex min-h-screen max-w-screen-2xl flex-col px-6 pt-28 md:px-16">
+      <main className="relative isolate mx-auto flex min-h-screen max-w-screen-2xl flex-col px-6 pt-28 md:px-16">
         <Hero />
         <LandingNoise />
         <footer className="mt-auto border-t border-border/60 py-6">
