@@ -113,7 +113,7 @@ export function CreateCameraCaptureView({
           >
             {isRequestingCameraPermission ? <ActivityIndicator color="#fff" /> : null}
             <Text className="font-semibold text-white">
-              {mustOpenSettingsForCamera ? 'Open Settings' : 'Allow Camera Access'}
+              {mustOpenSettingsForCamera ? 'Open Settings' : 'Continue'}
             </Text>
           </Pressable>
           {mustOpenSettingsForCamera ? (

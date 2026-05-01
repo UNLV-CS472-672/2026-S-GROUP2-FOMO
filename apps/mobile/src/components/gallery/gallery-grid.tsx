@@ -223,7 +223,7 @@ export function GalleryGrid({
         >
           {isRequestingPermission ? <ActivityIndicator color={theme.tintForeground} /> : null}
           <Text className="font-semibold text-primary-foreground">
-            {mustOpenSettings ? 'Open Settings' : 'Allow Library Access'}
+            {mustOpenSettings ? 'Open Settings' : 'Continue'}
           </Text>
         </Pressable>
         {mustOpenSettings ? (
