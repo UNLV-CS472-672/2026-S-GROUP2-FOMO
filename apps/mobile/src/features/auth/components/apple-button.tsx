@@ -1,6 +1,9 @@
-import { Button, ButtonText } from '@/components/ui/button';
-import { useAppTheme } from '@/lib/use-app-theme';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  AppleAuthenticationButton,
+  AppleAuthenticationButtonStyle,
+  AppleAuthenticationButtonType,
+} from 'expo-apple-authentication';
+import { useColorScheme, View } from 'react-native';
 
 type AppleButtonProps = {
   onPress: () => void;
@@ -10,19 +13,26 @@ type AppleButtonProps = {
 };
 
 export function AppleButton({ onPress, loading, disabled, mode = 'login' }: AppleButtonProps) {
-  const theme = useAppTheme();
-  const label = mode === 'signup' ? 'Sign up with Apple' : 'Log in with Apple';
+  const colorScheme = useColorScheme();
+  const isDisabled = Boolean(disabled || loading);
 
   return (
-    <Button
-      variant="secondary"
-      size="lg"
-      onPress={onPress}
-      disabled={disabled || loading}
-      className="flex-row items-center justify-center gap-2"
-    >
-      <Ionicons name="logo-apple" size={20} color={theme.primaryText} />
-      <ButtonText variant="secondary">{label}</ButtonText>
-    </Button>
+    <View className={isDisabled ? 'opacity-50' : undefined}>
+      <AppleAuthenticationButton
+        buttonType={
+          mode === 'signup'
+            ? AppleAuthenticationButtonType.SIGN_UP
+            : AppleAuthenticationButtonType.SIGN_IN
+        }
+        buttonStyle={
+          colorScheme === 'dark'
+            ? AppleAuthenticationButtonStyle.WHITE
+            : AppleAuthenticationButtonStyle.BLACK
+        }
+        cornerRadius={16}
+        style={{ width: '100%', height: 56 }}
+        onPress={isDisabled ? () => {} : onPress}
+      />
+    </View>
   );
 }
