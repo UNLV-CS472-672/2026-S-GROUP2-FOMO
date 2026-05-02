@@ -157,8 +157,14 @@ class TestGetEventFeatures:
         tag_id_to_idx = {"tag1": 0, "tag2": 1, "tag3": 2}
 
         with patch("event_rec.recommendEvent.queries.query_all", return_value=sample_events), \
-             patch("event_rec.recommendEvent.queries.get_by_event_id",
-                   side_effect=lambda eid: sample_event_tags.get(eid, [])):
+             patch(
+                 "event_rec.recommendEvent.queries.get_by_event_ids",
+                 return_value=[
+                     {"eventId": event_id, **tag_row}
+                     for event_id, tag_rows in sample_event_tags.items()
+                     for tag_row in tag_rows
+                 ],
+             ):
             event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
 
         assert len(event_ids) == 2
@@ -173,8 +179,14 @@ class TestGetEventFeatures:
         tag_id_to_idx = {"tag1": 0, "tag2": 1, "tag3": 2}
 
         with patch("event_rec.recommendEvent.queries.query_all", return_value=sample_events), \
-             patch("event_rec.recommendEvent.queries.get_by_event_id",
-                   side_effect=lambda eid: sample_event_tags.get(eid, [])):
+             patch(
+                 "event_rec.recommendEvent.queries.get_by_event_ids",
+                 return_value=[
+                     {"eventId": event_id, **tag_row}
+                     for event_id, tag_rows in sample_event_tags.items()
+                     for tag_row in tag_rows
+                 ],
+             ):
             event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
 
         assert event_features[0, 0] == 1.0
@@ -190,8 +202,14 @@ class TestGetEventFeatures:
         event_tags = {"event1": [{"tagId": "tag1"}, {"tagId": "tag2"}]}
 
         with patch("event_rec.recommendEvent.queries.query_all", return_value=[sample_events[0]]), \
-             patch("event_rec.recommendEvent.queries.get_by_event_id",
-                   side_effect=lambda eid: event_tags.get(eid, [])):
+             patch(
+                 "event_rec.recommendEvent.queries.get_by_event_ids",
+                 return_value=[
+                     {"eventId": event_id, **tag_row}
+                     for event_id, tag_rows in event_tags.items()
+                     for tag_row in tag_rows
+                 ],
+             ):
             event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
 
         assert abs(event_features[0, num_tags] - 2.0 / MAX_TAGS) < 1e-6
@@ -205,8 +223,10 @@ class TestGetEventFeatures:
         tag_id_to_idx = {"tag1": 0, "tag2": 1, "tag3": 2}
 
         with patch("event_rec.recommendEvent.queries.query_all", return_value=[sample_events[0]]), \
-             patch("event_rec.recommendEvent.queries.get_by_event_id",
-                   return_value=sample_event_tags["event1"]):
+             patch(
+                 "event_rec.recommendEvent.queries.get_by_event_ids",
+                 return_value=[{"eventId": "event1", **tag_row} for tag_row in sample_event_tags["event1"]],
+             ):
             event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
 
         assert abs(event_features[0, num_tags + 1] - 5.0 / 6.0) < 1e-6
@@ -221,12 +241,39 @@ class TestGetEventFeatures:
         tag_id_to_idx = {"tag1": 0, "tag2": 1, "tag3": 2}
 
         with patch("event_rec.recommendEvent.queries.query_all", return_value=sample_events), \
-             patch("event_rec.recommendEvent.queries.get_by_event_id",
-                   side_effect=lambda eid: sample_event_tags.get(eid, [])):
+             patch(
+                 "event_rec.recommendEvent.queries.get_by_event_ids",
+                 return_value=[
+                     {"eventId": event_id, **tag_row}
+                     for event_id, tag_rows in sample_event_tags.items()
+                     for tag_row in tag_rows
+                 ],
+             ):
             event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
 
         assert event_features[0, num_tags + 3] == 0.0
         assert event_features[1, num_tags + 3] == 1.0
+
+    def test_fetches_event_tags_in_batch(
+        self,
+        sample_events: List[Dict[str, Any]],
+        sample_event_tags: Dict[str, List[Dict[str, Any]]],
+    ) -> None:
+        num_tags = 3
+        tag_id_to_idx = {"tag1": 0, "tag2": 1, "tag3": 2}
+
+        with patch("event_rec.recommendEvent.queries.query_all", return_value=sample_events), \
+             patch(
+                 "event_rec.recommendEvent.queries.get_by_event_ids",
+                 return_value=[
+                     {"eventId": event_id, **tag_row}
+                     for event_id, tag_rows in sample_event_tags.items()
+                     for tag_row in tag_rows
+                 ],
+             ) as mock_get_by_event_ids:
+            get_event_features(num_tags, tag_id_to_idx)
+
+        mock_get_by_event_ids.assert_called_once_with(["event1", "event2"])
 
 
 # ------------------------------
@@ -245,9 +292,9 @@ def _make_tower_mock(output_fn: Any = None) -> MagicMock:
 
 class TestMain:
     @patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id")
-    @patch("event_rec.recommendEvent.queries.upsert_event_recs")
-    @patch("event_rec.recommendEvent.queries.get_interactions_by_user_id")
-    @patch("event_rec.recommendEvent.queries.get_by_event_id")
+    @patch("event_rec.recommendEvent.queries.upsert_event_recs_batch")
+    @patch("event_rec.recommendEvent.queries.get_interactions_by_user_ids")
+    @patch("event_rec.recommendEvent.queries.get_by_event_ids")
     @patch("event_rec.recommendEvent.queries.get_user_tag_weights")
     @patch("event_rec.recommendEvent.queries.query_all")
     @patch("event_rec.recommendEvent.queries.get_tag_info")
@@ -262,7 +309,7 @@ class TestMain:
         mock_get_tag_info: MagicMock,
         mock_query_all: MagicMock,
         mock_get_weights: MagicMock,
-        mock_get_by_event: MagicMock,
+        mock_get_by_events: MagicMock,
         mock_get_interactions: MagicMock,
         mock_upsert: MagicMock,
         mock_get_preferred_tags: MagicMock,
@@ -277,8 +324,16 @@ class TestMain:
         mock_get_tag_info.return_value = (num_tags, tag_id_to_idx)
         mock_query_all.side_effect = lambda t: sample_users if t == "users" else sample_events
         mock_get_weights.side_effect = lambda users: [np.random.rand(3 * num_tags).tolist() for _ in users]
-        mock_get_by_event.side_effect = lambda eid: sample_event_tags.get(eid, [])
-        mock_get_interactions.side_effect = lambda uid: sample_interactions.get(uid, [])
+        mock_get_by_events.return_value = [
+            {"eventId": event_id, **tag_row}
+            for event_id, tag_rows in sample_event_tags.items()
+            for tag_row in tag_rows
+        ]
+        mock_get_interactions.return_value = [
+            {"userId": user_id, **row}
+            for user_id, rows in sample_interactions.items()
+            for row in rows
+        ]
         mock_torch_load.return_value = {"user_tower": {}, "event_tower": {}}
         mock_user_tower.return_value = _make_tower_mock()
         mock_event_tower.return_value = _make_tower_mock()
@@ -289,9 +344,9 @@ class TestMain:
             pytest.fail(f"main() raised {type(e).__name__} unexpectedly: {e}")
 
     @patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id")
-    @patch("event_rec.recommendEvent.queries.upsert_event_recs")
-    @patch("event_rec.recommendEvent.queries.get_interactions_by_user_id")
-    @patch("event_rec.recommendEvent.queries.get_by_event_id")
+    @patch("event_rec.recommendEvent.queries.upsert_event_recs_batch")
+    @patch("event_rec.recommendEvent.queries.get_interactions_by_user_ids")
+    @patch("event_rec.recommendEvent.queries.get_by_event_ids")
     @patch("event_rec.recommendEvent.queries.get_user_tag_weights")
     @patch("event_rec.recommendEvent.queries.query_all")
     @patch("event_rec.recommendEvent.queries.get_tag_info")
@@ -306,7 +361,7 @@ class TestMain:
         mock_get_tag_info: MagicMock,
         mock_query_all: MagicMock,
         mock_get_weights: MagicMock,
-        mock_get_by_event: MagicMock,
+        mock_get_by_events: MagicMock,
         mock_get_interactions: MagicMock,
         mock_upsert: MagicMock,
         mock_get_preferred_tags: MagicMock,
@@ -321,8 +376,16 @@ class TestMain:
         mock_get_tag_info.return_value = (num_tags, tag_id_to_idx)
         mock_query_all.side_effect = lambda t: sample_users if t == "users" else sample_events
         mock_get_weights.side_effect = lambda users: [np.random.rand(3 * num_tags).tolist() for _ in users]
-        mock_get_by_event.side_effect = lambda eid: sample_event_tags.get(eid, [])
-        mock_get_interactions.side_effect = lambda uid: sample_interactions.get(uid, [])
+        mock_get_by_events.return_value = [
+            {"eventId": event_id, **tag_row}
+            for event_id, tag_rows in sample_event_tags.items()
+            for tag_row in tag_rows
+        ]
+        mock_get_interactions.return_value = [
+            {"userId": user_id, **row}
+            for user_id, rows in sample_interactions.items()
+            for row in rows
+        ]
         mock_torch_load.return_value = {"user_tower": {}, "event_tower": {}}
         mock_user_tower.return_value = _make_tower_mock()
         mock_event_tower.return_value = _make_tower_mock()
@@ -333,9 +396,9 @@ class TestMain:
             pytest.fail(f"main() with 'ALL' users raised {type(e).__name__} unexpectedly: {e}")
 
     @patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id")
-    @patch("event_rec.recommendEvent.queries.upsert_event_recs")
-    @patch("event_rec.recommendEvent.queries.get_interactions_by_user_id")
-    @patch("event_rec.recommendEvent.queries.get_by_event_id")
+    @patch("event_rec.recommendEvent.queries.upsert_event_recs_batch")
+    @patch("event_rec.recommendEvent.queries.get_interactions_by_user_ids")
+    @patch("event_rec.recommendEvent.queries.get_by_event_ids")
     @patch("event_rec.recommendEvent.queries.get_user_tag_weights")
     @patch("event_rec.recommendEvent.queries.query_all")
     @patch("event_rec.recommendEvent.queries.get_tag_info")
@@ -350,7 +413,7 @@ class TestMain:
         mock_get_tag_info: MagicMock,
         mock_query_all: MagicMock,
         mock_get_weights: MagicMock,
-        mock_get_by_event: MagicMock,
+        mock_get_by_events: MagicMock,
         mock_get_interactions: MagicMock,
         mock_upsert: MagicMock,
         mock_get_preferred_tags: MagicMock,
@@ -365,8 +428,16 @@ class TestMain:
         mock_get_tag_info.return_value = (num_tags, tag_id_to_idx)
         mock_query_all.side_effect = lambda t: sample_users if t == "users" else sample_events
         mock_get_weights.side_effect = lambda users: [np.random.rand(3 * num_tags).tolist() for _ in users]
-        mock_get_by_event.side_effect = lambda eid: sample_event_tags.get(eid, [])
-        mock_get_interactions.side_effect = lambda uid: sample_interactions.get(uid, [])
+        mock_get_by_events.return_value = [
+            {"eventId": event_id, **tag_row}
+            for event_id, tag_rows in sample_event_tags.items()
+            for tag_row in tag_rows
+        ]
+        mock_get_interactions.return_value = [
+            {"userId": user_id, **row}
+            for user_id, rows in sample_interactions.items()
+            for row in rows
+        ]
         mock_torch_load.return_value = {"user_tower": {}, "event_tower": {}}
         mock_user_tower.return_value = _make_tower_mock(lambda x: torch.ones(x.shape[0], 64))
         mock_event_tower.return_value = _make_tower_mock(lambda x: torch.ones(x.shape[0], 64))
@@ -374,9 +445,9 @@ class TestMain:
         main(["user1"], update_db=False, model_path="dummy.pt", k=10)
 
     @patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id")
-    @patch("event_rec.recommendEvent.queries.upsert_event_recs")
-    @patch("event_rec.recommendEvent.queries.get_interactions_by_user_id")
-    @patch("event_rec.recommendEvent.queries.get_by_event_id")
+    @patch("event_rec.recommendEvent.queries.upsert_event_recs_batch")
+    @patch("event_rec.recommendEvent.queries.get_interactions_by_user_ids")
+    @patch("event_rec.recommendEvent.queries.get_by_event_ids")
     @patch("event_rec.recommendEvent.queries.get_user_tag_weights")
     @patch("event_rec.recommendEvent.queries.query_all")
     @patch("event_rec.recommendEvent.queries.get_tag_info")
@@ -391,7 +462,7 @@ class TestMain:
         mock_get_tag_info: MagicMock,
         mock_query_all: MagicMock,
         mock_get_weights: MagicMock,
-        mock_get_by_event: MagicMock,
+        mock_get_by_events: MagicMock,
         mock_get_interactions: MagicMock,
         mock_upsert: MagicMock,
         mock_get_preferred_tags: MagicMock,
@@ -406,19 +477,28 @@ class TestMain:
         mock_get_tag_info.return_value = (num_tags, tag_id_to_idx)
         mock_query_all.side_effect = lambda t: sample_users if t == "users" else sample_events
         mock_get_weights.side_effect = lambda users: [np.random.rand(3 * num_tags).tolist() for _ in users]
-        mock_get_by_event.side_effect = lambda eid: sample_event_tags.get(eid, [])
-        mock_get_interactions.side_effect = lambda uid: sample_interactions.get(uid, [])
+        mock_get_by_events.return_value = [
+            {"eventId": event_id, **tag_row}
+            for event_id, tag_rows in sample_event_tags.items()
+            for tag_row in tag_rows
+        ]
+        mock_get_interactions.return_value = [
+            {"userId": user_id, **row}
+            for user_id, rows in sample_interactions.items()
+            for row in rows
+        ]
         mock_torch_load.return_value = {"user_tower": {}, "event_tower": {}}
         mock_user_tower.return_value = _make_tower_mock()
         mock_event_tower.return_value = _make_tower_mock()
 
         main(["user1", "user2"], update_db=True, model_path="dummy.pt", k=2)
 
-        assert mock_upsert.call_count == 2
-        for call in mock_upsert.call_args_list:
-            user_id, event_ids = call.args
-            assert isinstance(event_ids, list)
-            assert len(event_ids) == 2  # k=2
+        mock_upsert.assert_called_once()
+        rows = mock_upsert.call_args.args[0]
+        assert len(rows) == 2
+        for row in rows:
+            assert isinstance(row["eventIds"], list)
+            assert len(row["eventIds"]) == 2
 
 
 if __name__ == "__main__":
