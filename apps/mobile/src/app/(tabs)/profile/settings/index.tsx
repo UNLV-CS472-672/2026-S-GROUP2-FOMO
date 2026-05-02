@@ -183,53 +183,59 @@ export default function SettingsScreen() {
         </View>
       </ScrollView>
 
-      <DrawerModal
-        open={appearanceOpen}
-        onClose={() => setAppearanceOpen(false)}
-        snapPoints={['28%']}
-        enablePanDownToClose
-        backdropAppearsOnIndex={0}
-        backdropDisappearsOnIndex={-1}
-      >
-        <View className="px-6 pb-6 pt-2">
-          <Text className="mb-4 text-[17px] font-bold text-foreground">Appearance</Text>
-          <ThemePicker />
-        </View>
-      </DrawerModal>
+      {appearanceOpen ? (
+        <DrawerModal
+          open
+          onClose={() => setAppearanceOpen(false)}
+          snapPoints={['28%']}
+          enablePanDownToClose
+          backdropAppearsOnIndex={0}
+          backdropDisappearsOnIndex={-1}
+        >
+          <View className="px-6 pb-6 pt-2">
+            <Text className="mb-4 text-[17px] font-bold text-foreground">Appearance</Text>
+            <ThemePicker />
+          </View>
+        </DrawerModal>
+      ) : null}
 
-      <DrawerModal
-        open={interestsOpen}
-        onClose={() => setInterestsOpen(false)}
-        snapPoints={['48%']}
-        enablePanDownToClose
-        backdropAppearsOnIndex={0}
-        backdropDisappearsOnIndex={-1}
-      >
-        <View className="mx-6 mb-4">
-          <Text className="text-[17px] font-bold text-foreground">Interests</Text>
-          <Text className="mt-1 text-sm text-muted-foreground">
-            Update the tags that describe what you want to see more of.
-          </Text>
-        </View>
-        <BottomSheetScrollView keyboardShouldPersistTaps="handled">
-          <InterestsPicker
-            variant="sheet"
-            title="Interests"
-            subtitle=""
-            saveLabel="Save interests"
-            savingLabel="Saving..."
-            successMessage="Your interests have been updated."
-            onSaved={() => setInterestsOpen(false)}
-          />
-        </BottomSheetScrollView>
-      </DrawerModal>
+      {interestsOpen ? (
+        <DrawerModal
+          open
+          onClose={() => setInterestsOpen(false)}
+          snapPoints={['48%']}
+          enablePanDownToClose
+          backdropAppearsOnIndex={0}
+          backdropDisappearsOnIndex={-1}
+        >
+          <View className="mx-6 mb-4">
+            <Text className="text-[17px] font-bold text-foreground">Interests</Text>
+            <Text className="mt-1 text-sm text-muted-foreground">
+              Update the tags that describe what you want to see more of.
+            </Text>
+          </View>
+          <BottomSheetScrollView keyboardShouldPersistTaps="handled">
+            <InterestsPicker
+              variant="sheet"
+              title="Interests"
+              subtitle=""
+              saveLabel="Save interests"
+              savingLabel="Saving..."
+              successMessage="Your interests have been updated."
+              onSaved={() => setInterestsOpen(false)}
+            />
+          </BottomSheetScrollView>
+        </DrawerModal>
+      ) : null}
 
-      <DeleteAccountDrawer
-        open={deleteAccountOpen}
-        isDeletingAccount={isDeletingAccount}
-        onClose={() => setDeleteAccountOpen(false)}
-        onDeleteAccount={() => void handleDeleteAccount()}
-      />
+      {deleteAccountOpen ? (
+        <DeleteAccountDrawer
+          open
+          isDeletingAccount={isDeletingAccount}
+          onClose={() => setDeleteAccountOpen(false)}
+          onDeleteAccount={() => void handleDeleteAccount()}
+        />
+      ) : null}
     </>
   );
 }
