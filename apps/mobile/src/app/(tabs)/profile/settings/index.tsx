@@ -11,11 +11,14 @@ import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Image, ScrollView, Text, View } from 'react-native';
 
 const TERMS_URL = 'https://fomo-app.dev/terms';
 const PRIVACY_URL = 'https://fomo-app.dev/privacy';
+const DRAWER_INTERACTION_LOCK_MS = 300;
+
+type SettingsDrawer = 'appearance' | 'interests' | 'delete-account' | null;
 
 export default function SettingsScreen() {
   const clerk = useClerk();
@@ -23,15 +26,38 @@ export default function SettingsScreen() {
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
-  const [interestsOpen, setInterestsOpen] = useState(false);
-  const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const [activeDrawer, setActiveDrawer] = useState<SettingsDrawer>(null);
+  const [isInteractionLocked, setIsInteractionLocked] = useState(false);
 
   const blockedUsers = useQuery(api.moderation.block.getBlockedUsers, {});
   const blockedCount = blockedUsers?.length;
 
   const initials =
     [user?.firstName?.[0], user?.lastName?.[0]].filter(Boolean).join('').toUpperCase() || '?';
+  const isDrawerOpen = activeDrawer !== null;
+
+  useEffect(() => {
+    if (!isInteractionLocked) {
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setIsInteractionLocked(false);
+    }, DRAWER_INTERACTION_LOCK_MS);
+
+    return () => clearTimeout(timeout);
+  }, [isInteractionLocked]);
+
+  function openDrawer(nextDrawer: Exclude<SettingsDrawer, null>) {
+    if (isInteractionLocked) return;
+    setIsInteractionLocked(true);
+    setActiveDrawer(nextDrawer);
+  }
+
+  function closeDrawer() {
+    setIsInteractionLocked(true);
+    setActiveDrawer(null);
+  }
 
   function confirmLogout() {
     Alert.alert('Log out', 'Are you sure you want to log out?', [
@@ -57,7 +83,7 @@ export default function SettingsScreen() {
 
     try {
       await user.delete();
-      setDeleteAccountOpen(false);
+      closeDrawer();
       await signOutClerkExpo(clerk);
       Alert.alert('Account deleted', 'Your account has been permanently deleted.');
     } catch (error) {
@@ -76,6 +102,8 @@ export default function SettingsScreen() {
         className="flex-1 bg-background"
         contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="grow p-6 gap-6"
+        pointerEvents={isDrawerOpen || isInteractionLocked ? 'none' : 'auto'}
+        scrollEnabled={!isDrawerOpen && !isInteractionLocked}
       >
         {/* Profile summary */}
         <View className="items-center gap-3 pb-2">
@@ -98,12 +126,12 @@ export default function SettingsScreen() {
             <SettingsRow
               icon="color-palette-outline"
               label="Appearance"
-              onPress={() => setAppearanceOpen(true)}
+              onPress={() => openDrawer('appearance')}
             />
             <SettingsRow
               icon="pizza"
               label="Interests"
-              onPress={() => setInterestsOpen(true)}
+              onPress={() => openDrawer('interests')}
               isLast
             />
           </View>
@@ -126,7 +154,7 @@ export default function SettingsScreen() {
             <SettingsRow
               icon="trash-outline"
               label="Delete Account"
-              onPress={() => setDeleteAccountOpen(true)}
+              onPress={() => openDrawer('delete-account')}
               destructive
               isLast
             />
@@ -183,53 +211,59 @@ export default function SettingsScreen() {
         </View>
       </ScrollView>
 
-      <DrawerModal
-        open={appearanceOpen}
-        onClose={() => setAppearanceOpen(false)}
-        snapPoints={['28%']}
-        enablePanDownToClose
-        backdropAppearsOnIndex={0}
-        backdropDisappearsOnIndex={-1}
-      >
-        <View className="px-6 pb-6 pt-2">
-          <Text className="mb-4 text-[17px] font-bold text-foreground">Appearance</Text>
-          <ThemePicker />
-        </View>
-      </DrawerModal>
+      {activeDrawer === 'appearance' ? (
+        <DrawerModal
+          open
+          onClose={closeDrawer}
+          snapPoints={['28%']}
+          enablePanDownToClose
+          backdropAppearsOnIndex={0}
+          backdropDisappearsOnIndex={-1}
+        >
+          <View className="px-6 pb-6 pt-2">
+            <Text className="mb-4 text-[17px] font-bold text-foreground">Appearance</Text>
+            <ThemePicker />
+          </View>
+        </DrawerModal>
+      ) : null}
 
-      <DrawerModal
-        open={interestsOpen}
-        onClose={() => setInterestsOpen(false)}
-        snapPoints={['48%']}
-        enablePanDownToClose
-        backdropAppearsOnIndex={0}
-        backdropDisappearsOnIndex={-1}
-      >
-        <View className="mx-6 mb-4">
-          <Text className="text-[17px] font-bold text-foreground">Interests</Text>
-          <Text className="mt-1 text-sm text-muted-foreground">
-            Update the tags that describe what you want to see more of.
-          </Text>
-        </View>
-        <BottomSheetScrollView keyboardShouldPersistTaps="handled">
-          <InterestsPicker
-            variant="sheet"
-            title="Interests"
-            subtitle=""
-            saveLabel="Save interests"
-            savingLabel="Saving..."
-            successMessage="Your interests have been updated."
-            onSaved={() => setInterestsOpen(false)}
-          />
-        </BottomSheetScrollView>
-      </DrawerModal>
+      {activeDrawer === 'interests' ? (
+        <DrawerModal
+          open
+          onClose={closeDrawer}
+          snapPoints={['48%']}
+          enablePanDownToClose
+          backdropAppearsOnIndex={0}
+          backdropDisappearsOnIndex={-1}
+        >
+          <View className="mx-6 mb-4">
+            <Text className="text-[17px] font-bold text-foreground">Interests</Text>
+            <Text className="mt-1 text-sm text-muted-foreground">
+              Update the tags that describe what you want to see more of.
+            </Text>
+          </View>
+          <BottomSheetScrollView keyboardShouldPersistTaps="handled">
+            <InterestsPicker
+              variant="sheet"
+              title="Interests"
+              subtitle=""
+              saveLabel="Save interests"
+              savingLabel="Saving..."
+              successMessage="Your interests have been updated."
+              onSaved={closeDrawer}
+            />
+          </BottomSheetScrollView>
+        </DrawerModal>
+      ) : null}
 
-      <DeleteAccountDrawer
-        open={deleteAccountOpen}
-        isDeletingAccount={isDeletingAccount}
-        onClose={() => setDeleteAccountOpen(false)}
-        onDeleteAccount={() => void handleDeleteAccount()}
-      />
+      {activeDrawer === 'delete-account' ? (
+        <DeleteAccountDrawer
+          open
+          isDeletingAccount={isDeletingAccount}
+          onClose={closeDrawer}
+          onDeleteAccount={() => void handleDeleteAccount()}
+        />
+      ) : null}
     </>
   );
 }
