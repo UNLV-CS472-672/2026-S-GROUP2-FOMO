@@ -13,6 +13,16 @@ NUM_TAGS = 0
 # Maps tag _id (string) to its index in multihot/weight vectors.
 TAG_ID_TO_IDX: dict[str, int] = {}
 
+# Constants
+W_MAX_GOING       = 6.0   # cap for "going" tag weight
+W_MAX_INTERESTED  = 5.0   # cap for "interested"
+W_MAX_BLOCKED     = 8.0   # cap for "blocked" (higher — explicit signal)
+W_FLOOR           = 0.05  # never decay below this
+DECAY_THRESHOLD   = 1.0   # only decay weights above this
+DECAY_RATE_GOING  = 0.95  # multiply per "decay event"
+DECAY_RATE_INT    = 0.95
+DECAY_RATE_UNINT  = 0.99  # blocked decays much slower
+DECAY_CEILING     = 0.5  # max absolute decrease per decay event
 
 def init_tags() -> None:
     """init tags"""
@@ -23,6 +33,41 @@ def init_tags() -> None:
     tags = queries.query_all("tags")
     TAG_ID_TO_IDX = {tag["_id"]: i for i, tag in enumerate(tags)}
     NUM_TAGS = len(TAG_ID_TO_IDX)
+
+
+def apply_weight_decay(
+    stored_weights: NDArray[np.float32],
+    update_contribution: NDArray[np.float32],
+    discard_contribution: NDArray[np.float32],
+    threshold: float,
+    decay_rate: float,
+    floor: float,
+    cap: float,
+    ceiling: float,
+) -> NDArray[np.float32]:
+    # A tag is "touched this round" if it appears in either update or discard.
+    # Toggles (going -> interested) touch the tag in both slices, which is fine.
+    touched = (update_contribution != 0) | (discard_contribution != 0)
+    above_threshold = stored_weights > threshold
+    decay_mask = (~touched) & above_threshold
+
+    # Multiplicative decay
+    decayed = np.where(decay_mask, stored_weights * decay_rate, stored_weights)
+
+    # Decay ceiling: don't let any single weight drop more than `ceiling` in one round.
+    # For a weight w being decayed, the lowest it's allowed to go is (w - ceiling).
+    max_drop_floor = stored_weights - ceiling
+    decayed = np.maximum(decayed, max_drop_floor)
+
+    # Hard floor: never go below this regardless of decay
+    decayed = np.maximum(decayed, floor)
+
+    # Apply net delta after decay
+    delta = update_contribution - discard_contribution
+    result = decayed + delta
+
+    # Per-bucket cap on max stored weight
+    return np.minimum(result, cap)
 
 
 def event_multihot_from_rows(event_tags: list[dict[str, str]]) -> NDArray[np.float32]:
@@ -84,7 +129,7 @@ def build_matrix_from_rows_by_event_id(
 
 def build_weights(
     update_mat: NDArray[np.float32], discard_mat: NDArray[np.float32], row_weight: float = 1.0
-) -> NDArray[np.float32]:
+) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
     """
     Converts an (n_events, num_tags) matrix into a (num_tags,) bounded weight vector.
 
@@ -117,7 +162,7 @@ def build_weights(
         discard_tag_weights = discard_normalized.sum(axis=0) * row_weight
 
     # Can be negative now
-    return update_tag_weights - discard_tag_weights
+    return update_tag_weights, discard_tag_weights
 
 
 def get_interaction_ids_from_rows(
@@ -198,17 +243,31 @@ def build_user_feature_vector_from_interactions(
 
     # Per-bucket row weights: blocked has the strongest signal because explicit
     # rejection is a stronger preference indicator than passive interest.
-    att_weights = build_weights(att_mat, remove_att_mat, row_weight=1.0)
-    int_weights = build_weights(int_mat, remove_int, row_weight=0.5)
-    blk_weights = build_weights(unint_mat, remove_unint, row_weight=2.0)
+    update_att_weights, discard_att_weights = build_weights(att_mat, remove_att_mat, row_weight=1.25) # Rarer to go, stronger signal
+    update_int_weights, discard_int_weights = build_weights(int_mat, remove_int, row_weight=0.5)
+    update_blk_weights, discard_blk_weights = build_weights(unint_mat, remove_unint, row_weight=1.0)
 
-    # Final layout: [going (NUM_TAGS) | interested (NUM_TAGS) | uninterested (NUM_TAGS)]
-    result: NDArray[np.float32] = np.concatenate(
-        [att_weights, int_weights, blk_weights]
+    att_new = apply_weight_decay(att_old, update_att_weights, discard_att_weights,
+                                 DECAY_THRESHOLD, DECAY_RATE_GOING, W_FLOOR, W_MAX_GOING, DECAY_CEILING)
+    int_new = apply_weight_decay(int_old, update_int_weights, discard_int_weights,
+                                 DECAY_THRESHOLD, DECAY_RATE_INT, W_FLOOR, W_MAX_INTERESTED, DECAY_CEILING)
+    blk_new = apply_weight_decay(blk_old, update_blk_weights, discard_blk_weights,
+                                 DECAY_THRESHOLD, DECAY_RATE_UNINT, W_FLOOR, W_MAX_BLOCKED, DECAY_CEILING)
+
+    new_user_weights_nd = np.concatenate(
+        [att_new, int_new, blk_new]
+    ).astype(np.float32)
+
+    update_contributions: NDArray[np.float32] = np.concatenate(
+        [update_att_weights, update_int_weights, update_blk_weights]
+    ).astype(np.float32)
+    
+    discard_contributions: NDArray[np.float32] = np.concatenate(
+        [discard_att_weights, discard_int_weights, discard_blk_weights]
     ).astype(np.float32)
 
     # Logically this will still always be positive.
-    final = result + user_raw_weights_nd
+    final = update_contributions + (new_user_weights_nd - discard_contributions)
     final[np.abs(final) < 1e-6] = 0 # Floating point precision
 
     return final
