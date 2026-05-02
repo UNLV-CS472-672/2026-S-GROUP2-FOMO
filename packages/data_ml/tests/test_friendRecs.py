@@ -8,6 +8,7 @@ from typing import Generator
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "friendRec"))
 from friendRecs import (
+    get_blocked_user_lookup,
     join_user_events,
     raw_matrix_events,
     raw_matrix_eventTags,
@@ -79,6 +80,10 @@ def sample_postTags() -> list[dict[str, str]]:
     ]
 
 @pytest.fixture
+def sample_blocked_users() -> list[dict[str, str]]:
+    return []
+
+@pytest.fixture
 def sample_similarity_df() -> pd.DataFrame:
     data = {
         "Hackathon": [1, 1, 0],
@@ -101,6 +106,7 @@ def mock_queries(
     sample_eventTags: list[dict[str, str]],
     sample_posts: list[dict[str, str]],
     sample_postTags: list[dict[str, str]],
+    sample_blocked_users: list[dict[str, str]],
 ) -> Generator[dict[str, MagicMock], None, None]:
     dispatch = {
         "attendance": sample_users_to_events,
@@ -110,6 +116,7 @@ def mock_queries(
         "users": sample_users,
         "posts": sample_posts,
         "postTags": sample_postTags,
+        "blockedUsers": sample_blocked_users,
     }
     with patch("friendRecs.queries.query_all", side_effect=lambda t: dispatch.get(t, [])), \
          patch("friendRecs.queries.get_friend_ids", return_value=[]) as mock_get_friend_ids, \
@@ -122,6 +129,29 @@ def mock_queries(
             "user_exists": mock_user_exists,
             "get_all_user_ids": mock_get_ids,
         }
+
+
+# ------------------------------
+#  get_blocked_user_lookup()
+# ------------------------------
+
+def test_get_blocked_user_lookup_returns_symmetric_lookup(
+    mock_queries: dict[str, MagicMock],
+) -> None:
+    with patch(
+        "friendRecs.queries.query_all",
+        return_value=[
+            {"blockerId": "u1", "blockedUserId": "u2"},
+            {"blockerId": "u3", "blockedUserId": "u1"},
+        ],
+    ):
+        blocked_lookup = get_blocked_user_lookup()
+
+    assert blocked_lookup == {
+        "u1": {"u2", "u3"},
+        "u2": {"u1"},
+        "u3": {"u1"},
+    }
 
 
 # ------------------------------
@@ -324,6 +354,25 @@ def test_upsert_friend_recs_recipient_filtering(
     rec_ids = [r["userId"] for r in recs]
     assert "u1" not in rec_ids
 
+def test_upsert_friend_recs_filters_users_blocked_by_target_user(
+    mock_queries: dict[str, MagicMock], sample_score_df: pd.DataFrame
+) -> None:
+    blocked_lookup = {"u1": {"u2"}, "u2": {"u1"}}
+    upsert_friend_recs(sample_score_df, "u1", 2, blocked_lookup)
+    _, recs = mock_queries["upsert_friend_recs"].call_args.args
+    rec_ids = [r["userId"] for r in recs]
+    assert "u2" not in rec_ids
+    assert rec_ids == ["u1"]
+
+def test_upsert_friend_recs_filters_users_who_blocked_target_user(
+    mock_queries: dict[str, MagicMock], sample_score_df: pd.DataFrame
+) -> None:
+    blocked_lookup = {"u1": {"u2"}, "u2": {"u1"}}
+    upsert_friend_recs(sample_score_df, "u1", 2, blocked_lookup)
+    _, recs = mock_queries["upsert_friend_recs"].call_args.args
+    rec_ids = [r["userId"] for r in recs]
+    assert "u2" not in rec_ids
+
 def test_upsert_friend_recs_pending_not_filtered(
     mock_queries: dict[str, MagicMock], sample_score_df: pd.DataFrame
 ) -> None:
@@ -405,6 +454,7 @@ def test_main_one_user_calls_sim_scores_weighted(mock_main_dependencies: dict[st
 def test_main_one_user_calls_upsert_friend_recs(mock_main_dependencies: dict[str, MagicMock]) -> None:
     main_one_user("alice", 5)
     mock_main_dependencies["upsert_friend_recs"].assert_called_once()
+    assert len(mock_main_dependencies["upsert_friend_recs"].call_args.args) == 4
 
 
 # ------------------------------
@@ -470,3 +520,4 @@ def test_main_all_users_upserts_for_each_user(mock_main_all_users_dependencies: 
     assert mock_main_all_users_dependencies["upsert_friend_recs"].call_count == len(user_ids)
     called_user_ids = [call_args[0][1] for call_args in mock_main_all_users_dependencies["upsert_friend_recs"].call_args_list]
     assert called_user_ids == user_ids
+    assert all(len(call_args.args) == 4 for call_args in mock_main_all_users_dependencies["upsert_friend_recs"].call_args_list)
