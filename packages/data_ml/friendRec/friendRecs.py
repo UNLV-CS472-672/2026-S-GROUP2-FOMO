@@ -2,6 +2,22 @@ import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 from lib import queries, log
 
+
+# Build a symmetric lookup of users who should never be recommended to each other.
+def get_blocked_user_lookup() -> dict[str, set[str]]:
+    blocked_rows = queries.query_all("blockedUsers")
+    blocked_lookup: dict[str, set[str]] = {}
+
+    for row in blocked_rows:
+        blocker_id = row["blockerId"]
+        blocked_user_id = row["blockedUserId"]
+
+        blocked_lookup.setdefault(blocker_id, set()).add(blocked_user_id)
+        blocked_lookup.setdefault(blocked_user_id, set()).add(blocker_id)
+
+    return blocked_lookup
+
+
 # Combines "attendance" and "events" into a single dataframe.
 def join_user_events() -> pd.DataFrame:
 
@@ -124,7 +140,12 @@ def sim_scores_weighted(events: pd.DataFrame, event_tags: pd.DataFrame, post_tag
 
 
 # Send recommended friends to Convex server.
-def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> None:
+def upsert_friend_recs(
+    sim_scores: pd.DataFrame,
+    userId: str,
+    rec_amt: int,
+    blocked_lookup: dict[str, set[str]] | None = None,
+) -> None:
 
     # For user, sort similarity scores by highest.
     sim_scores = sim_scores.dropna(subset = ["similarity_score"])
@@ -141,12 +162,14 @@ def upsert_friend_recs(sim_scores: pd.DataFrame, userId: str, rec_amt: int) -> N
     )
 
     existing_friend_ids = set(queries.get_friend_ids(userId))
+    blocked_user_ids = blocked_lookup.get(userId, set()) if blocked_lookup else set()
+    excluded_user_ids = existing_friend_ids | blocked_user_ids
 
-    # Parse out any userIds that are already friends.
+    # Parse out any userIds that are already friends or blocked in either direction.
     top_sim_scores = [
         {"userId": friendId, "score": float(score)}
         for friendId, score in top_sim_scores["similarity_score"].items()
-        if friendId not in existing_friend_ids
+        if friendId not in excluded_user_ids
     ]
 
     # If list is larger than rec_amt, truncate.
@@ -164,6 +187,8 @@ def main_one_user(user: str, rec_amt: int) -> None:
     if not queries.user_exists(user):
         raise Exception(f"\"{user}\" cannot be found in users.")
 
+    blocked_lookup = get_blocked_user_lookup()
+
     raw_events_df          = raw_matrix_events()
     raw_eventTags_df       = raw_matrix_eventTags()
     raw_postTags_df        = raw_matrix_postTags()
@@ -178,12 +203,13 @@ def main_one_user(user: str, rec_amt: int) -> None:
 
     simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
 
-    upsert_friend_recs(simscores_weighted, user, rec_amt)
+    upsert_friend_recs(simscores_weighted, user, rec_amt, blocked_lookup)
 
 
 # Generate friend recommendations for all users.
 def main_all_users(rec_amt: int) -> None:
     user_ids = queries.get_all_user_ids()
+    blocked_lookup = get_blocked_user_lookup()
 
     # Build all raw matrices once and only generate similarity scores for each user
     raw_events_df = raw_matrix_events()
@@ -200,7 +226,7 @@ def main_all_users(rec_amt: int) -> None:
         simscores_postTags_df = get_user_scores(matrix_postTags, user_id)
 
         simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
-        upsert_friend_recs(simscores_weighted, user_id, rec_amt)
+        upsert_friend_recs(simscores_weighted, user_id, rec_amt, blocked_lookup)
 
 
 
