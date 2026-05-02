@@ -9,6 +9,7 @@ import {
   __backend_only_guestOrAuthenticatedUser,
 } from './auth';
 import { getThreadedCommentsByPost } from './comments';
+import { getBlockedUserIds } from './moderation/block';
 import { getAvatarUrlForUser, getDisplayNameForUser, getUsernameForUser } from './user_identity';
 
 export const BIO_MAX_LENGTH = 250;
@@ -278,10 +279,18 @@ export const getProfileById = query({
     userId: v.id('users'),
   },
   handler: async (ctx, { userId }) => {
+    const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
     const user = await ctx.db.get(userId);
 
     if (!user || user.deletedAt != null) {
       return null;
+    }
+
+    if (!guestMode) {
+      const blockedUserIds = await getBlockedUserIds(ctx, viewer._id);
+      if (blockedUserIds.has(userId)) {
+        return null;
+      }
     }
 
     return await buildProfile(ctx, user);
@@ -293,6 +302,7 @@ export const getProfileByUsername = query({
     username: v.string(),
   },
   handler: async (ctx, { username }) => {
+    const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
     const user = await ctx.db
       .query('users')
       .withIndex('by_username', (q) => q.eq('username', username))
@@ -300,6 +310,13 @@ export const getProfileByUsername = query({
 
     if (!user || user.deletedAt != null) {
       return null;
+    }
+
+    if (!guestMode) {
+      const blockedUserIds = await getBlockedUserIds(ctx, viewer._id);
+      if (blockedUserIds.has(user._id)) {
+        return null;
+      }
     }
 
     return await buildProfile(ctx, user);
@@ -329,6 +346,7 @@ async function serializeProfileFeedPost(
     id: post._id,
     caption: post.caption ?? '',
     creationTime: post._creationTime,
+    authorId: post.authorId,
     authorName: getDisplayNameForUser(author),
     authorUsername: getUsernameForUser(author),
     authorAvatarUrl: getAvatarUrlForUser(author),
@@ -346,6 +364,9 @@ export const getProfileFeed = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
     const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
+    const blockedUserIds = guestMode
+      ? new Set<Id<'users'>>()
+      : await getBlockedUserIds(ctx, viewer._id);
 
     const posts = await ctx.db
       .query('posts')
@@ -354,7 +375,9 @@ export const getProfileFeed = query({
       .collect();
 
     return await Promise.all(
-      posts.map((post) => serializeProfileFeedPost(ctx, post, guestMode ? undefined : viewer._id))
+      posts
+        .filter((post) => !blockedUserIds.has(post.authorId))
+        .map((post) => serializeProfileFeedPost(ctx, post, guestMode ? undefined : viewer._id))
     );
   },
 });

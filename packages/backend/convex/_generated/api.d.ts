@@ -26,6 +26,8 @@ import type * as files from "../files.js";
 import type * as friends from "../friends.js";
 import type * as http from "../http.js";
 import type * as likes from "../likes.js";
+import type * as moderation_block from "../moderation/block.js";
+import type * as moderation_report from "../moderation/report.js";
 import type * as posts from "../posts.js";
 import type * as seed from "../seed.js";
 import type * as support from "../support.js";
@@ -59,6 +61,8 @@ declare const fullApi: ApiFromModules<{
   friends: typeof friends;
   http: typeof http;
   likes: typeof likes;
+  "moderation/block": typeof moderation_block;
+  "moderation/report": typeof moderation_report;
   posts: typeof posts;
   seed: typeof seed;
   support: typeof support;
