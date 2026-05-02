@@ -98,7 +98,7 @@ def build_weights(
     # longer (i.e., the contribution that needs to be removed). Returning
     # update - discard is the delta to apply to stored weights for this bucket.
     if update_mat.shape[0] == 0:
-        update_tag_weights = np.zeros(NUM_TAGS, dtype=np.float32)
+        update_tag_weights: NDArray[np.float32] = np.zeros(NUM_TAGS, dtype=np.float32)
     else:
         # Normalize each event's row so its tags sum to 1, then sum across
         # events. Result: events with many tags spread their signal thinner
@@ -106,15 +106,15 @@ def build_weights(
         update_row_sums = update_mat.sum(axis=1, keepdims=True)
         update_row_sums[update_row_sums == 0] = 1.0
         updated_normalized = update_mat / update_row_sums
-        update_tag_weights: NDArray[np.float32] = updated_normalized.sum(axis=0) * row_weight
+        update_tag_weights = updated_normalized.sum(axis=0) * row_weight
 
     if discard_mat.shape[0] == 0:
-        discard_tag_weights = np.zeros(NUM_TAGS, dtype=np.float32)
+        discard_tag_weights: NDArray[np.float32] = np.zeros(NUM_TAGS, dtype=np.float32)
     else:
         discard_row_sums = discard_mat.sum(axis=1, keepdims=True)
         discard_row_sums[discard_row_sums == 0] = 1.0
         discard_normalized = discard_mat / discard_row_sums
-        discard_tag_weights: NDArray[np.float32] = discard_normalized.sum(axis=0) * row_weight
+        discard_tag_weights = discard_normalized.sum(axis=0) * row_weight
 
     # Can be negative now
     return update_tag_weights - discard_tag_weights
@@ -156,15 +156,16 @@ def get_user_raw_weights_and_last_updated(
     """Loads stored user weights and normalizes them to the expected shape."""
     user_weights_and_timestamp = queries.get_user_tag_weights_with_timestamp(user_id, NUM_TAGS)
 
-    return get_user_raw_weights_and_last_updated_from_result(
-        user_weights_and_timestamp
-    )
+    user_last_updated, user_raw_weights = user_weights_and_timestamp[user_id]
+    user_raw_weights_nd = np.array(user_raw_weights)
+
+    return user_last_updated, user_raw_weights_nd
 
 
 def build_user_feature_vector_from_interactions(
     user_raw_weights_nd: NDArray[np.float32],
     interactions: list[dict[str, str]],
-    event_tags_by_id: dict[str, list[dict[str, str]]],
+    event_tags_by_id: Optional[dict[str, list[dict[str, str]]]] = None,
 ) -> NDArray[np.float32]:
     """Builds a user feature vector from pre-fetched interaction rows."""
     # interactions only contains rows where status changed since the last
@@ -279,7 +280,7 @@ def main(users: list[str], update_db: bool) -> None:
     # attendance rows to consider (only those changed since the last weight
     # update for this user).
     for user_id in users:
-        user_last_updated, user_raw_weights = user_weights_and_timestamps_by_id.get(user_id)
+        user_last_updated, user_raw_weights = user_weights_and_timestamps_by_id[user_id]
         user_raw_weights_nd = np.array(user_raw_weights)
 
         user_raw_weights_by_id[user_id] = user_raw_weights_nd
