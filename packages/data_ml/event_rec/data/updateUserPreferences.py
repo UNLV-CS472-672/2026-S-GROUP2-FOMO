@@ -7,12 +7,18 @@ from typing import Optional
 from lib import queries
 
 
+# Number of tags in the system, populated by init_tags(). Drives all vector dimensions:
+# multihot vectors are length NUM_TAGS, full feature vectors are length 3 * NUM_TAGS.
 NUM_TAGS = 0
+# Maps tag _id (string) to its index in multihot/weight vectors.
 TAG_ID_TO_IDX: dict[str, int] = {}
 
 
 def init_tags() -> None:
     """init tags"""
+    # Must be called before any other function in this module so NUM_TAGS and
+    # TAG_ID_TO_IDX are populated. Tag index assignment is whatever order the
+    # query returns; consistent across a single run.
     global NUM_TAGS, TAG_ID_TO_IDX
     tags = queries.query_all("tags")
     TAG_ID_TO_IDX = {tag["_id"]: i for i, tag in enumerate(tags)}
@@ -21,6 +27,8 @@ def init_tags() -> None:
 
 def event_multihot_from_rows(event_tags: list[dict[str, str]]) -> NDArray[np.float32]:
     """Returns a (num_tags,) binary vector from eventTags rows."""
+    # 1.0 at each tag's index, 0.0 elsewhere. Tags not in TAG_ID_TO_IDX are
+    # silently skipped (stale tag references).
     vec = np.zeros(NUM_TAGS, dtype=np.float32)
     for row in event_tags:
         tag_id = row["tagId"]
@@ -31,9 +39,14 @@ def event_multihot_from_rows(event_tags: list[dict[str, str]]) -> NDArray[np.flo
 
 def build_matrix(event_ids: list[str]) -> NDArray[np.float32]:
     """multihot matrix for list of event IDs."""
+    # Per-event-query path. Used by single-user code that doesn't have
+    # pre-fetched event tags. Main batched flow uses
+    # build_matrix_from_rows_by_event_id directly.
     if not event_ids:
         return np.zeros((0, NUM_TAGS), dtype=np.float32)
 
+    # Dedupe before querying to avoid wasted reads when the same event
+    # appears multiple times across buckets.
     event_tags = queries.get_by_event_ids(list(dict.fromkeys(event_ids)))
     return build_matrix_from_rows_by_event_id(
         event_ids, group_event_tags_by_event_id(event_tags)
@@ -44,6 +57,8 @@ def group_event_tags_by_event_id(
     event_tags: list[dict[str, str]],
 ) -> dict[str, list[dict[str, str]]]:
     """Groups eventTags rows by eventId."""
+    # Used to build a lookup table once per recompute so per-event multihot
+    # construction is a dict get instead of another DB query.
     event_tags_by_id: dict[str, list[dict[str, str]]] = {}
     for row in event_tags:
         event_id = row["eventId"]
@@ -58,7 +73,9 @@ def build_matrix_from_rows_by_event_id(
     event_ids: list[str], event_tags_by_id: dict[str, list[dict[str, str]]]
 ) -> NDArray[np.float32]:
     """Builds a multihot matrix from pre-grouped eventTags rows."""
-
+    # One row per event_id in the order given. event_ids may contain duplicates
+    # (e.g., same event in multiple status buckets across a batch); each
+    # duplicate produces a row, contributing again on purpose.
     return np.array(
         [event_multihot_from_rows(event_tags_by_id.get(event_id, [])) for event_id in event_ids],
         dtype=np.float32,
@@ -76,9 +93,16 @@ def build_weights(
       - interested: 0.5  (half signal)
       - blocked: 1.0  (full signal - strong negative preference)
     """
+    # update_mat: events whose current status puts them in this bucket.
+    # discard_mat: events whose previous status was in this bucket but is no
+    # longer (i.e., the contribution that needs to be removed). Returning
+    # update - discard is the delta to apply to stored weights for this bucket.
     if update_mat.shape[0] == 0:
         update_tag_weights = np.zeros(NUM_TAGS, dtype=np.float32)
     else:
+        # Normalize each event's row so its tags sum to 1, then sum across
+        # events. Result: events with many tags spread their signal thinner
+        # than narrowly-tagged events.
         update_row_sums = update_mat.sum(axis=1, keepdims=True)
         update_row_sums[update_row_sums == 0] = 1.0
         updated_normalized = update_mat / update_row_sums
@@ -103,6 +127,10 @@ def get_interaction_ids_from_rows(
     tuple[list[str], list[str], list[str]],  # previous: (going, interested, uninterested)
 ]:
     """Splits interaction rows into event ID lists by status."""
+    # Returns parallel buckets for current and previous status. The TS layer
+    # only returns rows where status != previousStatus, so an event can land
+    # in different buckets between current and previous (this is how toggles
+    # are handled). Rows with no previous status only contribute to current.
     cur_going, cur_int, cur_unint = [], [], []
     prev_going, prev_int, prev_unint = [], [], []
 
@@ -139,11 +167,16 @@ def build_user_feature_vector_from_interactions(
     event_tags_by_id: dict[str, list[dict[str, str]]],
 ) -> NDArray[np.float32]:
     """Builds a user feature vector from pre-fetched interaction rows."""
+    # interactions only contains rows where status changed since the last
+    # weight update. The deltas are added on top of the user's stored weights
+    # rather than recomputed from scratch.
     (going_ids, interested_ids, uninterested_ids), (prev_going_ids, prev_interested_ids, prev_uninterested_ids) = get_interaction_ids_from_rows(
         interactions
     )
 
     if event_tags_by_id is None:
+        # Fallback path: no pre-fetched tag dict, query per event. Not used by
+        # the batched main flow.
         att_mat = build_matrix(going_ids)
         int_mat = build_matrix(interested_ids)
         unint_mat = build_matrix(uninterested_ids)
@@ -152,6 +185,8 @@ def build_user_feature_vector_from_interactions(
         remove_int = build_matrix(prev_interested_ids)
         remove_unint = build_matrix(prev_uninterested_ids)
     else:
+        # Batched path: every event's tags are already in event_tags_by_id, so
+        # multihot construction is pure dict lookups, no DB calls.
         att_mat = build_matrix_from_rows_by_event_id(going_ids, event_tags_by_id)
         int_mat = build_matrix_from_rows_by_event_id(interested_ids, event_tags_by_id)
         unint_mat = build_matrix_from_rows_by_event_id(uninterested_ids, event_tags_by_id)
@@ -160,16 +195,22 @@ def build_user_feature_vector_from_interactions(
         remove_int = build_matrix_from_rows_by_event_id(prev_interested_ids, event_tags_by_id)
         remove_unint = build_matrix_from_rows_by_event_id(prev_uninterested_ids, event_tags_by_id)
 
+    # Per-bucket row weights: blocked has the strongest signal because explicit
+    # rejection is a stronger preference indicator than passive interest.
     att_weights = build_weights(att_mat, remove_att_mat, row_weight=1.0)
     int_weights = build_weights(int_mat, remove_int, row_weight=0.5)
     blk_weights = build_weights(unint_mat, remove_unint, row_weight=2.0)
 
+    # Final layout: [going (NUM_TAGS) | interested (NUM_TAGS) | uninterested (NUM_TAGS)]
     result: NDArray[np.float32] = np.concatenate(
         [att_weights, int_weights, blk_weights]
     ).astype(np.float32)
 
-    # Logically this will still always be positive
-    return result + user_raw_weights_nd
+    # Logically this will still always be positive.
+    final = result + user_raw_weights_nd
+    final[np.abs(final) < 1e-6] = 0 # Floating point precision
+
+    return final
 
 
 def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
@@ -177,6 +218,7 @@ def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
     Builds full (3 * num_tags,) feature vector for one user:
       [going_weights | interested_weights | uninterested_weights]
     """
+    # Single-user path. Main batched flow doesn't use this.
     user_last_updated, user_raw_weights_nd = get_user_raw_weights_and_last_updated(
         user_id
     )
@@ -201,6 +243,8 @@ def main(users: list[str], update_db: bool) -> None:
     user_weights_and_timestamps_by_id: dict[str, tuple[float, list[float] | None]] = {}
     active_users = False
 
+    # Resolve user list. ALL queries every user, ACTIVE only those with new
+    # interactions since their last weight update (the cron-friendly path).
     if len(users) == 1:
         if users[0] == "ALL":
             all_users = queries.query_all("users")
@@ -219,6 +263,8 @@ def main(users: list[str], update_db: bool) -> None:
                     row["weights"],
                 )
 
+    # ACTIVE already returned weights+timestamps, so this query is only
+    # needed for the non-ACTIVE case.
     if not active_users:
         user_weights_and_timestamps = queries.get_user_tag_weights_with_timestamps(
             users, NUM_TAGS
@@ -229,6 +275,9 @@ def main(users: list[str], update_db: bool) -> None:
                 row["weights"],
             )
 
+    # Build interaction request payload. sinceMs tells the TS layer which
+    # attendance rows to consider (only those changed since the last weight
+    # update for this user).
     for user_id in users:
         user_last_updated, user_raw_weights = user_weights_and_timestamps_by_id.get(user_id)
         user_raw_weights_nd = np.array(user_raw_weights)
@@ -237,13 +286,20 @@ def main(users: list[str], update_db: bool) -> None:
 
         interaction_rows.append({"userId": user_id, "sinceMs": user_last_updated})
 
+    # Single batched call for all users' changed interactions. The TS mutation
+    # also marks each returned row's previousStatus = status as a side effect,
+    # so the next run sees these rows as already-folded-in.
     all_interactions: list[dict[str, str]] = (
         queries.get_interactions_by_users(interaction_rows) if interaction_rows else []
     )
+    # One batched call for every event referenced across all users, so the
+    # per-event tag lookup later is dict-only.
     all_event_ids = list(dict.fromkeys([row["eventId"] for row in all_interactions]))
     all_event_tags = queries.get_by_event_ids(all_event_ids) if all_event_ids else []
     event_tags_by_id = group_event_tags_by_event_id(all_event_tags)
 
+    # Bucket interactions by user so each feature-vector build sees only
+    # that user's rows.
     interactions_by_user_id: dict[str, list[dict[str, str]]] = {}
     for interaction in all_interactions:
         user_id = interaction["userId"]
@@ -259,6 +315,7 @@ def main(users: list[str], update_db: bool) -> None:
         )
 
     if update_db:
+        # Single batched upsert for everyone updated this run.
         rows = [
             {"userId": user_id, "weights": vec.tolist()}
             for user_id, vec in user_feature_vectors.items()
@@ -266,6 +323,7 @@ def main(users: list[str], update_db: bool) -> None:
         queries.upsert_user_tag_weights_batch(rows)
         print(f"Updated {len(user_feature_vectors)} users in Convex.")
     else:
+        # Dry-run: print top-5 tags per bucket for each user, no DB write.
         for user_id, vec in user_feature_vectors.items():
             att = vec[:NUM_TAGS]
             int_ = vec[NUM_TAGS : 2 * NUM_TAGS]
