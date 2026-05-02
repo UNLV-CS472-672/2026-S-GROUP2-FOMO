@@ -1,7 +1,6 @@
-import { Button, ButtonText } from '@/components/ui/button';
 import { DrawerModal } from '@/components/ui/drawer';
-import { AuthInput } from '@/features/auth/components/input';
 import { signOutClerkExpo } from '@/features/auth/utils/clerk-sign-out';
+import { DeleteAccountDrawer } from '@/features/profile/components/delete-account-drawer';
 import { InterestsPicker } from '@/features/profile/components/interests-picker';
 import { SettingsRow } from '@/features/profile/components/settings-row';
 import { SettingsSectionLabel } from '@/features/profile/components/settings-section-label';
@@ -15,7 +14,6 @@ import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Alert, Image, ScrollView, Text, View } from 'react-native';
 
-const DELETE_ACCOUNT_CONFIRMATION = 'Delete account';
 const TERMS_URL = 'https://fomo-app.dev/terms';
 const PRIVACY_URL = 'https://fomo-app.dev/privacy';
 
@@ -26,14 +24,11 @@ export default function SettingsScreen() {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
-  const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [interestsOpen, setInterestsOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
 
   const blockedUsers = useQuery(api.moderation.block.getBlockedUsers, {});
   const blockedCount = blockedUsers?.length;
-
-  const canDeleteAccount = deleteConfirmation.trim() === DELETE_ACCOUNT_CONFIRMATION;
 
   const initials =
     [user?.firstName?.[0], user?.lastName?.[0]].filter(Boolean).join('').toUpperCase() || '?';
@@ -56,14 +51,13 @@ export default function SettingsScreen() {
   }
 
   async function handleDeleteAccount() {
-    if (isDeletingAccount || !canDeleteAccount || !user) return;
+    if (isDeletingAccount || !user) return;
 
     setIsDeletingAccount(true);
 
     try {
       await user.delete();
       setDeleteAccountOpen(false);
-      setDeleteConfirmation('');
       await signOutClerkExpo(clerk);
       Alert.alert('Account deleted', 'Your account has been permanently deleted.');
     } catch (error) {
@@ -167,7 +161,7 @@ export default function SettingsScreen() {
           <SettingsSectionLabel>Support</SettingsSectionLabel>
           <View className="overflow-hidden rounded-2xl border border-border bg-card">
             <SettingsRow
-              icon="help-buoy-outline"
+              icon="chatbubbles-outline"
               label="Contact Support"
               onPress={() => router.push('/(tabs)/profile/settings/support')}
               isLast
@@ -230,65 +224,12 @@ export default function SettingsScreen() {
         </BottomSheetScrollView>
       </DrawerModal>
 
-      <DrawerModal
+      <DeleteAccountDrawer
         open={deleteAccountOpen}
-        onClose={() => {
-          if (isDeletingAccount) return;
-          setDeleteAccountOpen(false);
-          setDeleteConfirmation('');
-        }}
-        snapPoints={['55%']}
-        enablePanDownToClose={!isDeletingAccount}
-        backdropAppearsOnIndex={0}
-        backdropDisappearsOnIndex={-1}
-        keyboardBehavior="interactive"
-      >
-        <View className="px-6 pb-8 pt-2">
-          <Text className="text-[17px] font-bold text-foreground">Delete account</Text>
-          <Text className="mt-2 text-sm leading-6 text-muted-foreground">
-            This permanently deletes your Fomo account. Your posts and comments will remain visible
-            as <Text className="font-semibold text-foreground">Deleted account</Text>. To confirm,
-            type{' '}
-            <Text className="font-semibold text-foreground">{DELETE_ACCOUNT_CONFIRMATION}</Text>{' '}
-            below.
-          </Text>
-
-          <View className="mt-5">
-            <AuthInput
-              label="Confirmation"
-              value={deleteConfirmation}
-              onChangeText={setDeleteConfirmation}
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isDeletingAccount}
-              placeholder={DELETE_ACCOUNT_CONFIRMATION}
-            />
-          </View>
-
-          <View className="mt-6 gap-3">
-            <Button
-              variant="destructive"
-              disabled={!canDeleteAccount || isDeletingAccount}
-              onPress={() => void handleDeleteAccount()}
-            >
-              <ButtonText variant="destructive">
-                {isDeletingAccount ? 'Deleting account...' : 'Delete account permanently'}
-              </ButtonText>
-            </Button>
-
-            <Button
-              variant="secondary"
-              disabled={isDeletingAccount}
-              onPress={() => {
-                setDeleteAccountOpen(false);
-                setDeleteConfirmation('');
-              }}
-            >
-              <ButtonText variant="secondary">Cancel</ButtonText>
-            </Button>
-          </View>
-        </View>
-      </DrawerModal>
+        isDeletingAccount={isDeletingAccount}
+        onClose={() => setDeleteAccountOpen(false)}
+        onDeleteAccount={() => void handleDeleteAccount()}
+      />
     </>
   );
 }
