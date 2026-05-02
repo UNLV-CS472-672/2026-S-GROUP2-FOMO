@@ -36,6 +36,10 @@ function isLibraryAccessGranted(response: MediaLibrary.PermissionResponse) {
   return response.granted || response.status === MediaLibrary.PermissionStatus.GRANTED;
 }
 
+function canPromptForLibraryAccess(response: MediaLibrary.PermissionResponse) {
+  return response.canAskAgain || response.status === MediaLibrary.PermissionStatus.UNDETERMINED;
+}
+
 export function GalleryGrid({
   mediaTypes = [MediaLibrary.MediaType.photo, MediaLibrary.MediaType.video],
   onSelectAsset,
@@ -153,8 +157,24 @@ export function GalleryGrid({
           setIsCheckingPermission(true);
         }
 
-        const perm = await getReadPermission();
+        let perm = await getReadPermission();
         if (cancelled) return;
+
+        if (
+          !initialPermissionPassDone.current &&
+          !isLibraryAccessGranted(perm) &&
+          canPromptForLibraryAccess(perm)
+        ) {
+          setIsRequestingPermission(true);
+          try {
+            perm = await MediaLibrary.requestPermissionsAsync(false, readGranular);
+          } finally {
+            if (!cancelled) {
+              setIsRequestingPermission(false);
+            }
+          }
+          if (cancelled) return;
+        }
 
         const granted = isLibraryAccessGranted(perm);
         setMustOpenSettings(!granted && !perm.canAskAgain);
@@ -182,7 +202,7 @@ export function GalleryGrid({
       return () => {
         cancelled = true;
       };
-    }, [getReadPermission, loadPage])
+    }, [getReadPermission, loadPage, readGranular])
   );
 
   const handleSelectAsset = async (asset: GalleryAsset) => {
