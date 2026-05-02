@@ -14,6 +14,7 @@ export default function ProfileLayout() {
       <Stack.Screen name="friends" options={{ title: 'Friends' }} />
       <Stack.Screen name="friend-requests" options={{ title: 'Friend Requests' }} />
       <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+      <Stack.Screen name="connected-accounts" options={{ title: 'Connected Accounts' }} />
       <Stack.Screen name="blocked-users" options={{ title: 'Blocked Users' }} />
       <Stack.Screen name="edit" options={{ title: 'Edit Profile' }} />
       <Stack.Screen

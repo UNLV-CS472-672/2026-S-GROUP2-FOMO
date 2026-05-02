@@ -125,6 +125,17 @@ export default function SettingsScreen() {
               icon="person-outline"
               label="Edit Profile"
               onPress={() => router.push('/(tabs)/profile/edit')}
+            />
+            <SettingsRow
+              icon="link-outline"
+              label="Connected Accounts"
+              onPress={() => router.push('/(tabs)/profile/connected-accounts')}
+            />
+            <SettingsRow
+              icon="trash-outline"
+              label="Delete Account"
+              onPress={() => setDeleteAccountOpen(true)}
+              destructive
               isLast
             />
           </View>
@@ -145,24 +156,13 @@ export default function SettingsScreen() {
         </View>
 
         {/* Log out */}
-        <View className="overflow-hidden rounded-2xl border border-border bg-card">
-          <SettingsRow
-            icon="log-out-outline"
-            label={isSigningOut ? 'Logging out...' : 'Log out'}
-            onPress={confirmLogout}
-            isLast
-          />
-        </View>
-
-        {/* Danger zone */}
         <View>
-          <SettingsSectionLabel>Danger zone</SettingsSectionLabel>
+          <SettingsSectionLabel>Session</SettingsSectionLabel>
           <View className="overflow-hidden rounded-2xl border border-border bg-card">
             <SettingsRow
-              icon="trash-outline"
-              label="Delete Account"
-              onPress={() => setDeleteAccountOpen(true)}
-              destructive
+              icon="log-out-outline"
+              label={isSigningOut ? 'Logging out...' : 'Log out'}
+              onPress={confirmLogout}
               isLast
             />
           </View>
