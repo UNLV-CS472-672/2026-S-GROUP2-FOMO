@@ -20,6 +20,33 @@ export async function getBlockedUserIds(
   return new Set(blockedUsers.map((row) => row.blockedUserId));
 }
 
+// Returns IDs of users that should be hidden from viewerId's perspective:
+// users they blocked + users who blocked them.
+export async function getHiddenUserIds(
+  ctx: QueryCtx,
+  viewerId?: Id<'users'>
+): Promise<Set<Id<'users'>>> {
+  if (!viewerId) {
+    return new Set();
+  }
+
+  const [blockedByViewer, blockingViewer] = await Promise.all([
+    ctx.db
+      .query('blockedUsers')
+      .withIndex('by_blockerId', (q) => q.eq('blockerId', viewerId))
+      .collect(),
+    ctx.db
+      .query('blockedUsers')
+      .withIndex('by_blockedUserId', (q) => q.eq('blockedUserId', viewerId))
+      .collect(),
+  ]);
+
+  return new Set([
+    ...blockedByViewer.map((r) => r.blockedUserId),
+    ...blockingViewer.map((r) => r.blockerId),
+  ]);
+}
+
 export const getBlockedUsers = query({
   args: {},
   handler: async (ctx) => {

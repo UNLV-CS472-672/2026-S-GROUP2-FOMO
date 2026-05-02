@@ -5,7 +5,7 @@ import type { Doc } from '../_generated/dataModel';
 import { query, type QueryCtx } from '../_generated/server';
 import { __backend_only_guestOrAuthenticatedUser } from '../auth';
 import { getThreadedCommentsByPost } from '../comments';
-import { getBlockedUserIds } from '../moderation/block';
+import { getHiddenUserIds } from '../moderation/block';
 import { getAvatarUrlForUser, getDisplayNameForUser, getUsernameForUser } from '../user_identity';
 import { getAttendeeCount } from './attendance';
 
@@ -167,7 +167,7 @@ export const getTopMediaPosts = query({
   args: { eventId: v.id('events') },
   handler: async (ctx, { eventId }) => {
     const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
-    const blockedUserIds = guestMode ? new Set() : await getBlockedUserIds(ctx, viewer._id);
+    const blockedUserIds = guestMode ? new Set() : await getHiddenUserIds(ctx, viewer._id);
 
     const posts = await ctx.db
       .query('posts')
@@ -218,7 +218,7 @@ export const getEventFeed = query({
   },
   handler: async (ctx, { eventId, sortBy, mediaOnly }) => {
     const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
-    const blockedUserIds = guestMode ? new Set() : await getBlockedUserIds(ctx, viewer._id);
+    const blockedUserIds = guestMode ? new Set() : await getHiddenUserIds(ctx, viewer._id);
     const posts = await ctx.db
       .query('posts')
       .withIndex('by_event', (q) => q.eq('eventId', eventId))

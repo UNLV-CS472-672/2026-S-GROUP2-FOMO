@@ -9,7 +9,7 @@ import {
   __backend_only_guestOrAuthenticatedUser,
 } from './auth';
 import { getThreadedCommentsByPost } from './comments';
-import { getBlockedUserIds } from './moderation/block';
+import { getHiddenUserIds } from './moderation/block';
 import { getAvatarUrlForUser, getDisplayNameForUser, getUsernameForUser } from './user_identity';
 
 export const BIO_MAX_LENGTH = 250;
@@ -287,7 +287,7 @@ export const getProfileById = query({
     }
 
     if (!guestMode) {
-      const blockedUserIds = await getBlockedUserIds(ctx, viewer._id);
+      const blockedUserIds = await getHiddenUserIds(ctx, viewer._id);
       if (blockedUserIds.has(userId)) {
         return null;
       }
@@ -313,7 +313,7 @@ export const getProfileByUsername = query({
     }
 
     if (!guestMode) {
-      const blockedUserIds = await getBlockedUserIds(ctx, viewer._id);
+      const blockedUserIds = await getHiddenUserIds(ctx, viewer._id);
       if (blockedUserIds.has(user._id)) {
         return null;
       }
@@ -366,7 +366,7 @@ export const getProfileFeed = query({
     const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
     const blockedUserIds = guestMode
       ? new Set<Id<'users'>>()
-      : await getBlockedUserIds(ctx, viewer._id);
+      : await getHiddenUserIds(ctx, viewer._id);
 
     const posts = await ctx.db
       .query('posts')

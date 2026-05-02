@@ -6,7 +6,7 @@ import {
   __backend_only_getAndAuthenticateCurrentConvexUser,
   __backend_only_guestOrAuthenticatedUser,
 } from './auth';
-import { getBlockedUserIds } from './moderation/block';
+import { getHiddenUserIds } from './moderation/block';
 import { getAvatarUrlForUser, getDisplayNameForUser } from './user_identity';
 
 export type SerializedComment = {
@@ -84,7 +84,7 @@ export async function getThreadedCommentsByPost(ctx: QueryCtx, postId: Doc<'post
   const viewerId = guestMode ? undefined : viewer._id;
   const blockedUserIds = guestMode
     ? new Set<Id<'users'>>()
-    : await getBlockedUserIds(ctx, viewer._id);
+    : await getHiddenUserIds(ctx, viewer._id);
   const [comments, viewerLikes] = await Promise.all([
     ctx.db
       .query('comments')
