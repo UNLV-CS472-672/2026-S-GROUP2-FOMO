@@ -59,7 +59,6 @@ export const seedData = internalMutation({
           (await ctx.db.insert('users', {
             clerkId: u.clerkId,
             username: u.name.toLowerCase(),
-            displayName: u.name,
             avatarUrl: '',
             bio: '',
           }))

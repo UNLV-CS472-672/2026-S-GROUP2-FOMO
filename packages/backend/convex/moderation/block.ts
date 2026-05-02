@@ -3,6 +3,11 @@ import { v } from 'convex/values';
 import type { Id } from '../_generated/dataModel';
 import { mutation, query, type QueryCtx } from '../_generated/server';
 import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../auth';
+import {
+  DELETED_ACCOUNT_DISPLAY_NAME,
+  getAvatarUrlForUser,
+  isDeletedAccount,
+} from '../user_identity';
 
 export async function getBlockedUserIds(
   ctx: QueryCtx,
@@ -63,11 +68,11 @@ export const getBlockedUsers = query({
           return null;
         }
 
+        const deleted = isDeletedAccount(user);
         return {
           id: user._id,
-          username: user.username,
-          displayName: user.displayName,
-          avatarUrl: user.avatarUrl,
+          username: deleted ? DELETED_ACCOUNT_DISPLAY_NAME : user.username,
+          avatarUrl: getAvatarUrlForUser(user),
           blockedAt: row._creationTime,
         };
       })

@@ -1,6 +1,5 @@
 type UserIdentity = {
   username?: string | null;
-  displayName?: string | null;
   avatarUrl?: string | null;
   deletedAt?: number | null;
 };
@@ -19,7 +18,7 @@ export function isDeletedAccount(user: UserIdentity | null | undefined) {
 export function getDisplayNameForUser(user: UserIdentity | null | undefined) {
   if (!user) return 'Unknown user';
   if (isDeletedAccount(user)) return DELETED_ACCOUNT_DISPLAY_NAME;
-  return user.displayName || user.username || 'Unknown user';
+  return user.username || 'Unknown user';
 }
 
 export function getUsernameForUser(user: UserIdentity | null | undefined) {

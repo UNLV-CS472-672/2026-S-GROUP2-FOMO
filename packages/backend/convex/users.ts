@@ -97,16 +97,11 @@ export const getCurrentProfileMinimal = query({
     return {
       id: user._id,
       username: user.username,
-      displayName: user.displayName,
       avatarUrl: user.avatarUrl,
       bio: user.bio,
     };
   },
 });
-
-function getDisplayName(data: UserJSON): string {
-  return data.username!;
-}
 
 function clerkIdFromClerkUserId(clerkUserId: string): string {
   // NOTE :: match the id as ctx.auth.getIdentity returns
@@ -194,7 +189,6 @@ async function anonymizeDeletedUser(ctx: MutationCtx, user: Doc<'users'>) {
 
   await ctx.db.patch(user._id, {
     deletedAt: Date.now(),
-    displayName: '',
     avatarUrl: '',
     bio: '',
   });
@@ -209,7 +203,6 @@ export const upsertFromClerk = internalMutation({
     const userAttributes = {
       clerkId: normalizedClerkId,
       username: data.username!,
-      displayName: getDisplayName(data),
       avatarUrl: data.image_url ?? '',
     };
 
@@ -240,7 +233,7 @@ export const updateBio = mutation({
     const nextBio = normalizeBio(bio);
     validateBio(nextBio);
 
-    // Username/displayName/avatarUrl are Clerk-owned; webhook updates those fields.
+    // Username/avatarUrl are Clerk-owned; webhook updates those fields.
     await ctx.db.patch(user._id, { bio: nextBio });
 
     return {

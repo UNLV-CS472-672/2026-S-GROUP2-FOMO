@@ -71,7 +71,7 @@ export const getEventAttendees = query({
       .filter((attendee): attendee is Doc<'users'> => attendee !== null)
       .map((attendee) => ({
         id: attendee._id,
-        name: attendee.displayName || attendee.username,
+        name: attendee.username,
         username: attendee.username,
         avatarUrl: attendee.avatarUrl || null,
       }));

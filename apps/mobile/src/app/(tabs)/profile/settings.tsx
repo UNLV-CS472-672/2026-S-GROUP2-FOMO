@@ -62,7 +62,6 @@ export default function SettingsScreen() {
       setDeleteAccountOpen(false);
       setDeleteConfirmation('');
       await signOutClerkExpo(clerk);
-      router.replace('/(auth)/welcome');
       Alert.alert('Account deleted', 'Your account has been permanently deleted.');
     } catch (error) {
       Alert.alert(

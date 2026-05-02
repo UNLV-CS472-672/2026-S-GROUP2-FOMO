@@ -195,7 +195,7 @@ export function ProfilePage({
       >
         <View className="flex-row items-start px-4 pb-4 pt-2">
           <Avatar
-            name={profile.user.displayName || profile.user.username}
+            name={profile.user.username}
             size={92}
             source={profile.user.avatarUrl ? { uri: profile.user.avatarUrl } : undefined}
           />
@@ -204,9 +204,6 @@ export function ProfilePage({
             <View className="flex-row items-center justify-between">
               <View className="flex-1 pr-3">
                 <Text className="text-lg font-bold text-foreground">{profile.user.username}</Text>
-                {profile.user.displayName ? (
-                  <Text className="text-sm text-muted-foreground">{profile.user.displayName}</Text>
-                ) : null}
               </View>
               {profileAction || showHeaderFriendAction || onPressSettings ? (
                 <View className="-mr-3 flex-row items-center gap-1">

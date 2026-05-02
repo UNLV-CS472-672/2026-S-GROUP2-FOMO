@@ -48,7 +48,7 @@ export default function BlockedUsersScreen() {
           >
             <View className="flex-row items-center gap-3">
               <Avatar
-                name={blockedUser.displayName || blockedUser.username}
+                name={blockedUser.username}
                 size={40}
                 source={blockedUser.avatarUrl ? { uri: blockedUser.avatarUrl } : undefined}
               />
@@ -56,9 +56,6 @@ export default function BlockedUsersScreen() {
                 <Text className="text-base font-medium text-foreground">
                   {blockedUser.username}
                 </Text>
-                {blockedUser.displayName ? (
-                  <Text className="text-sm text-muted-foreground">{blockedUser.displayName}</Text>
-                ) : null}
               </View>
             </View>
 
