@@ -9,6 +9,8 @@ import {
   __backend_only_guestOrAuthenticatedUser,
 } from './auth';
 import { getThreadedCommentsByPost } from './comments';
+import { getHiddenUserIds } from './moderation/block';
+import { getHiddenPostIds } from './moderation/report';
 import { getAvatarUrlForUser, getDisplayNameForUser, getUsernameForUser } from './user_identity';
 
 export const BIO_MAX_LENGTH = 250;
@@ -96,16 +98,11 @@ export const getCurrentProfileMinimal = query({
     return {
       id: user._id,
       username: user.username,
-      displayName: user.displayName,
       avatarUrl: user.avatarUrl,
       bio: user.bio,
     };
   },
 });
-
-function getDisplayName(data: UserJSON): string {
-  return data.username!;
-}
 
 function clerkIdFromClerkUserId(clerkUserId: string): string {
   // NOTE :: match the id as ctx.auth.getIdentity returns
@@ -193,7 +190,6 @@ async function anonymizeDeletedUser(ctx: MutationCtx, user: Doc<'users'>) {
 
   await ctx.db.patch(user._id, {
     deletedAt: Date.now(),
-    displayName: '',
     avatarUrl: '',
     bio: '',
   });
@@ -208,7 +204,6 @@ export const upsertFromClerk = internalMutation({
     const userAttributes = {
       clerkId: normalizedClerkId,
       username: data.username!,
-      displayName: getDisplayName(data),
       avatarUrl: data.image_url ?? '',
     };
 
@@ -239,7 +234,7 @@ export const updateBio = mutation({
     const nextBio = normalizeBio(bio);
     validateBio(nextBio);
 
-    // Username/displayName/avatarUrl are Clerk-owned; webhook updates those fields.
+    // Username/avatarUrl are Clerk-owned; webhook updates those fields.
     await ctx.db.patch(user._id, { bio: nextBio });
 
     return {
@@ -278,10 +273,18 @@ export const getProfileById = query({
     userId: v.id('users'),
   },
   handler: async (ctx, { userId }) => {
+    const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
     const user = await ctx.db.get(userId);
 
     if (!user || user.deletedAt != null) {
       return null;
+    }
+
+    if (!guestMode) {
+      const blockedUserIds = await getHiddenUserIds(ctx, viewer._id);
+      if (blockedUserIds.has(userId)) {
+        return null;
+      }
     }
 
     return await buildProfile(ctx, user);
@@ -293,6 +296,7 @@ export const getProfileByUsername = query({
     username: v.string(),
   },
   handler: async (ctx, { username }) => {
+    const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
     const user = await ctx.db
       .query('users')
       .withIndex('by_username', (q) => q.eq('username', username))
@@ -300,6 +304,13 @@ export const getProfileByUsername = query({
 
     if (!user || user.deletedAt != null) {
       return null;
+    }
+
+    if (!guestMode) {
+      const blockedUserIds = await getHiddenUserIds(ctx, viewer._id);
+      if (blockedUserIds.has(user._id)) {
+        return null;
+      }
     }
 
     return await buildProfile(ctx, user);
@@ -329,6 +340,7 @@ async function serializeProfileFeedPost(
     id: post._id,
     caption: post.caption ?? '',
     creationTime: post._creationTime,
+    authorId: post.authorId,
     authorName: getDisplayNameForUser(author),
     authorUsername: getUsernameForUser(author),
     authorAvatarUrl: getAvatarUrlForUser(author),
@@ -346,6 +358,9 @@ export const getProfileFeed = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
     const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
+    const [blockedUserIds, hiddenPostIds] = guestMode
+      ? [new Set<Id<'users'>>(), new Set<Id<'posts'>>()]
+      : await Promise.all([getHiddenUserIds(ctx, viewer._id), getHiddenPostIds(ctx, viewer._id)]);
 
     const posts = await ctx.db
       .query('posts')
@@ -354,7 +369,10 @@ export const getProfileFeed = query({
       .collect();
 
     return await Promise.all(
-      posts.map((post) => serializeProfileFeedPost(ctx, post, guestMode ? undefined : viewer._id))
+      posts
+        .filter((post) => !blockedUserIds.has(post.authorId))
+        .filter((post) => !hiddenPostIds.has(post._id))
+        .map((post) => serializeProfileFeedPost(ctx, post, guestMode ? undefined : viewer._id))
     );
   },
 });
