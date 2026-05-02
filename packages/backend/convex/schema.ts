@@ -68,7 +68,7 @@ export default defineSchema({
       v.union(v.literal('going'), v.literal('interested'), v.literal('uninterested'))
     ),
     notification: v.optional(v.union(v.literal('all'), v.literal('friends'), v.literal('none'))),
-    updatedAt: v.number(),
+    updatedAt: v.number(), // IMPORTANT: if field is missing, set it to optional, run "npx convex run runMigrations:runSetDefaultUpdatedAt", then remove optional.
     previousStatus: v.optional(
       v.union(v.literal('going'), v.literal('interested'), v.literal('uninterested'))
     ),
