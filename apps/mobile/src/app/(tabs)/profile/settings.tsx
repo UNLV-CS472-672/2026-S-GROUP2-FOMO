@@ -186,7 +186,7 @@ export default function SettingsScreen() {
       <DrawerModal
         open={interestsOpen}
         onClose={() => setInterestsOpen(false)}
-        snapPoints={['75%']}
+        snapPoints={['48%']}
         enablePanDownToClose
         backdropAppearsOnIndex={0}
         backdropDisappearsOnIndex={-1}
