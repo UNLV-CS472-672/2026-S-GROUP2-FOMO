@@ -19,6 +19,7 @@ from friendRecs import (
     upsert_friend_recs,
     main_one_user,
     main_all_users,
+    main_dirty_users,
 )
 
 
@@ -521,3 +522,91 @@ def test_main_all_users_upserts_for_each_user(mock_main_all_users_dependencies: 
     called_user_ids = [call_args[0][1] for call_args in mock_main_all_users_dependencies["upsert_friend_recs"].call_args_list]
     assert called_user_ids == user_ids
     assert all(len(call_args.args) == 4 for call_args in mock_main_all_users_dependencies["upsert_friend_recs"].call_args_list)
+
+
+# ------------------------------
+#  main_dirty_users()
+# ------------------------------
+
+@pytest.fixture
+def mock_main_dirty_users_dependencies(
+    mock_queries: dict[str, MagicMock],
+) -> Generator[dict[str, MagicMock | list[str]], None, None]:
+    dirty_user_ids = ["u1", "u2"]
+
+    with patch("friendRecs.queries.get_users_needing_friend_rec", return_value=dirty_user_ids) as mock_get_dirty, \
+         patch("friendRecs.raw_matrix_events") as mock_raw_events, \
+         patch("friendRecs.raw_matrix_eventTags") as mock_raw_event_tags, \
+         patch("friendRecs.raw_matrix_postTags") as mock_raw_post_tags, \
+         patch("friendRecs.build_similarity_matrix") as mock_build_matrix, \
+         patch("friendRecs.get_user_scores") as mock_get_user_scores, \
+         patch("friendRecs.sim_scores_weighted") as mock_weighted, \
+         patch("friendRecs.upsert_friend_recs") as mock_upsert:
+
+        mock_raw_events.return_value = MagicMock()
+        mock_raw_event_tags.return_value = MagicMock()
+        mock_raw_post_tags.return_value = MagicMock()
+        mock_build_matrix.return_value = MagicMock()
+        mock_get_user_scores.return_value = MagicMock()
+        mock_weighted.return_value = MagicMock()
+
+        yield {
+            "dirty_user_ids":              dirty_user_ids,
+            "get_users_needing_friend_rec": mock_get_dirty,
+            "raw_matrix_events":           mock_raw_events,
+            "raw_matrix_eventTags":        mock_raw_event_tags,
+            "raw_matrix_postTags":         mock_raw_post_tags,
+            "build_similarity_matrix":     mock_build_matrix,
+            "get_user_scores":             mock_get_user_scores,
+            "sim_scores_weighted":         mock_weighted,
+            "upsert_friend_recs":          mock_upsert,
+        }
+
+
+def test_main_dirty_users_exits_early_when_no_dirty_users(
+    mock_queries: dict[str, MagicMock],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with patch("friendRecs.queries.get_users_needing_friend_rec", return_value=[]), \
+         patch("friendRecs.raw_matrix_events") as mock_raw_events:
+        main_dirty_users(5)
+        mock_raw_events.assert_not_called()
+    assert "No users need friend rec update." in capsys.readouterr().out
+
+
+def test_main_dirty_users_builds_raw_matrices_once(
+    mock_main_dirty_users_dependencies: dict[str, MagicMock],
+) -> None:
+    main_dirty_users(5)
+    mock_main_dirty_users_dependencies["raw_matrix_events"].assert_called_once()
+    mock_main_dirty_users_dependencies["raw_matrix_eventTags"].assert_called_once()
+    mock_main_dirty_users_dependencies["raw_matrix_postTags"].assert_called_once()
+
+
+def test_main_dirty_users_builds_similarity_matrices_once(
+    mock_main_dirty_users_dependencies: dict[str, MagicMock],
+) -> None:
+    main_dirty_users(5)
+    assert mock_main_dirty_users_dependencies["build_similarity_matrix"].call_count == 3
+
+
+def test_main_dirty_users_upserts_only_for_dirty_users(
+    mock_main_dirty_users_dependencies: dict[str, MagicMock],
+) -> None:
+    dirty_user_ids = mock_main_dirty_users_dependencies["dirty_user_ids"]
+    main_dirty_users(5)
+    assert mock_main_dirty_users_dependencies["upsert_friend_recs"].call_count == len(dirty_user_ids)
+    called_user_ids = [
+        call_args[0][1] for call_args in mock_main_dirty_users_dependencies["upsert_friend_recs"].call_args_list
+    ]
+    assert called_user_ids == dirty_user_ids
+
+
+def test_main_dirty_users_prints_updated_count(
+    mock_main_dirty_users_dependencies: dict[str, MagicMock],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    dirty_user_ids = mock_main_dirty_users_dependencies["dirty_user_ids"]
+    main_dirty_users(5)
+    out = capsys.readouterr().out
+    assert f"Updated {len(dirty_user_ids)} users" in out

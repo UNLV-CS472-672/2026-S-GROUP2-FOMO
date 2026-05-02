@@ -114,12 +114,18 @@ def get_event_features(num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[li
 
 
 def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> None:
-    # Preprocessing
-    num_tags, tag_id_to_idx = queries.get_tag_info()
+    if len(users) == 1:
+        if users[0] == "ALL":
+            all_users = queries.query_all("users")
+            users = [row["_id"] for row in all_users]
+        elif users[0] == "DIRTY":
+            users = queries.get_users_needing_event_rec()
+            if not users:
+                log("No users need event rec update.")
+                return
 
-    if len(users) == 1 and users[0] == "ALL":
-        all_users = queries.query_all("users")
-        users     = [row["_id"] for row in all_users]
+    # Preprocessing — deferred until we know there's work to do
+    num_tags, tag_id_to_idx = queries.get_tag_info()
 
     user_features          = get_user_features(users, num_tags).to(DEVICE)
     event_ids, event_array = get_event_features(num_tags, tag_id_to_idx)
@@ -199,7 +205,7 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
                 )
 
 
-USERS = ["ALL"]
+USERS = ["DIRTY"]
 UPDATE_DB = True
 
 if __name__ == "__main__":  # pragma: no cover

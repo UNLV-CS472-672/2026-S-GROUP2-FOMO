@@ -269,4 +269,28 @@ export function registerDataMlRoutes(http: HttpRouter) {
       return new Response(JSON.stringify(result), { status: 200 });
     }),
   });
+
+  http.route({
+    path: '/data-ml/get-users-needing-event-rec',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
+
+      const result = await ctx.runQuery(internal.data_ml.eventRec.getUsersNeedingEventRec);
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
+
+  http.route({
+    path: '/data-ml/get-users-needing-friend-rec',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
+
+      const result = await ctx.runQuery(internal.data_ml.friendRecs.getUsersNeedingFriendRec);
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
 }
