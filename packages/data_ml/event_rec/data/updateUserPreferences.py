@@ -19,12 +19,6 @@ def init_tags() -> None:
     NUM_TAGS = len(TAG_ID_TO_IDX)
 
 
-def event_multihot(event_id: str) -> NDArray[np.float32]:
-    """Returns a (num_tags,) binary vector for one event."""
-    event_tags = queries.get_by_event_id(event_id)
-    return event_multihot_from_rows(event_tags)
-
-
 def event_multihot_from_rows(event_tags: list[dict[str, str]]) -> NDArray[np.float32]:
     """Returns a (num_tags,) binary vector from eventTags rows."""
     vec = np.zeros(NUM_TAGS, dtype=np.float32)
@@ -72,7 +66,7 @@ def build_matrix_from_rows_by_event_id(
 
 
 def build_weights(
-    mat: NDArray[np.float32], row_weight: float = 1.0
+    update_mat: NDArray[np.float32], discard_mat: NDArray[np.float32], row_weight: float = 1.0
 ) -> NDArray[np.float32]:
     """
     Converts an (n_events, num_tags) matrix into a (num_tags,) bounded weight vector.
@@ -82,50 +76,50 @@ def build_weights(
       - interested: 0.5  (half signal)
       - blocked: 1.0  (full signal - strong negative preference)
     """
-    if mat.shape[0] == 0:
-        return np.zeros(NUM_TAGS, dtype=np.float32)
-
-    row_sums = mat.sum(axis=1, keepdims=True)
-    row_sums[row_sums == 0] = 1.0
-    normalized = mat / row_sums
-    tag_weights: NDArray[np.float32] = normalized.sum(axis=0) * row_weight
-
-    return tag_weights
-
-
-#
-
-
-def get_interaction_ids(
-    user_id: str, user_last_updated: float
-) -> tuple[list[str], list[str], list[str]]:
-    """
-    Returns rows from usersToEvents with fields:
-    { eventId: str, interactionType: "going" | "interested" | "uninterested" }
-    """
-    
-    if user_last_updated >= 0:
-        interactions = queries.get_interactions_by_user_id(user_id, user_last_updated)
+    if update_mat.shape[0] == 0:
+        update_tag_weights = np.zeros(NUM_TAGS, dtype=np.float32)
     else:
-        interactions = queries.get_interactions_by_user_id(user_id)
+        update_row_sums = update_mat.sum(axis=1, keepdims=True)
+        update_row_sums[update_row_sums == 0] = 1.0
+        updated_normalized = update_mat / update_row_sums
+        update_tag_weights: NDArray[np.float32] = updated_normalized.sum(axis=0) * row_weight
 
-    return get_interaction_ids_from_rows(interactions)
+    if discard_mat.shape[0] == 0:
+        discard_tag_weights = np.zeros(NUM_TAGS, dtype=np.float32)
+    else:
+        discard_row_sums = discard_mat.sum(axis=1, keepdims=True)
+        discard_row_sums[discard_row_sums == 0] = 1.0
+        discard_normalized = discard_mat / discard_row_sums
+        discard_tag_weights: NDArray[np.float32] = discard_normalized.sum(axis=0) * row_weight
+
+    # Can be negative now
+    return update_tag_weights - discard_tag_weights
 
 
 def get_interaction_ids_from_rows(
     interactions: list[dict[str, str]],
-) -> tuple[list[str], list[str], list[str]]:
+) -> tuple[
+    tuple[list[str], list[str], list[str]],  # current: (going, interested, uninterested)
+    tuple[list[str], list[str], list[str]],  # previous: (going, interested, uninterested)
+]:
     """Splits interaction rows into event ID lists by status."""
+    cur_going, cur_int, cur_unint = [], [], []
+    prev_going, prev_int, prev_unint = [], [], []
 
-    going = [row["eventId"] for row in interactions if row["status"] == "going"]
-    interested = [
-        row["eventId"] for row in interactions if row["status"] == "interested"
-    ]
-    uninterested = [
-        row["eventId"] for row in interactions if row["status"] == "uninterested"
-    ]
+    for row in interactions:
+        eid = row["eventId"]
+        status = row.get("status")
+        prev_status = row.get("previousStatus")
 
-    return going, interested, uninterested
+        if status == "going": cur_going.append(eid)
+        elif status == "interested": cur_int.append(eid)
+        elif status == "uninterested": cur_unint.append(eid)
+
+        if prev_status == "going": prev_going.append(eid)
+        elif prev_status == "interested": prev_int.append(eid)
+        elif prev_status == "uninterested": prev_unint.append(eid)
+
+    return (cur_going, cur_int, cur_unint), (prev_going, prev_int, prev_unint)
 
 
 def get_user_raw_weights_and_last_updated(
@@ -139,53 +133,42 @@ def get_user_raw_weights_and_last_updated(
     )
 
 
-def get_user_raw_weights_and_last_updated_from_result(
-    user_weights_and_timestamp: Optional[dict[str, object]],
-) -> tuple[float, NDArray[np.float32]]:
-    """Normalizes a stored weight/timestamp payload to the expected shape."""
-
-    expected_dim = 3 * NUM_TAGS
-    user_last_updated = -1.0
-    user_raw_weights_nd = np.zeros(expected_dim, dtype=np.float32)
-
-    if user_weights_and_timestamp is not None:
-        last_updated_at = user_weights_and_timestamp.get("lastUpdatedAt", -1.0)
-        if isinstance(last_updated_at, (str, int, float)):
-            user_last_updated = float(last_updated_at)
-        user_raw_weights = user_weights_and_timestamp.get("weights")
-
-        user_raw_weights_nd = np.array(user_raw_weights, dtype=np.float32)
-
-    return user_last_updated, user_raw_weights_nd
-
-
 def build_user_feature_vector_from_interactions(
     user_raw_weights_nd: NDArray[np.float32],
     interactions: list[dict[str, str]],
-    event_tags_by_id: Optional[dict[str, list[dict[str, str]]]] = None,
+    event_tags_by_id: dict[str, list[dict[str, str]]],
 ) -> NDArray[np.float32]:
     """Builds a user feature vector from pre-fetched interaction rows."""
-    going_ids, interested_ids, uninterested_ids = get_interaction_ids_from_rows(
+    (going_ids, interested_ids, uninterested_ids), (prev_going_ids, prev_interested_ids, prev_uninterested_ids) = get_interaction_ids_from_rows(
         interactions
     )
 
     if event_tags_by_id is None:
         att_mat = build_matrix(going_ids)
         int_mat = build_matrix(interested_ids)
-        blk_mat = build_matrix(uninterested_ids)
+        unint_mat = build_matrix(uninterested_ids)
+
+        remove_att_mat = build_matrix(prev_going_ids)
+        remove_int = build_matrix(prev_interested_ids)
+        remove_unint = build_matrix(prev_uninterested_ids)
     else:
         att_mat = build_matrix_from_rows_by_event_id(going_ids, event_tags_by_id)
         int_mat = build_matrix_from_rows_by_event_id(interested_ids, event_tags_by_id)
-        blk_mat = build_matrix_from_rows_by_event_id(uninterested_ids, event_tags_by_id)
+        unint_mat = build_matrix_from_rows_by_event_id(uninterested_ids, event_tags_by_id)
 
-    att_weights = build_weights(att_mat, row_weight=1.0)
-    int_weights = build_weights(int_mat, row_weight=0.5)
-    blk_weights = build_weights(blk_mat, row_weight=2.0)
+        remove_att_mat = build_matrix_from_rows_by_event_id(prev_going_ids, event_tags_by_id)
+        remove_int = build_matrix_from_rows_by_event_id(prev_interested_ids, event_tags_by_id)
+        remove_unint = build_matrix_from_rows_by_event_id(prev_uninterested_ids, event_tags_by_id)
+
+    att_weights = build_weights(att_mat, remove_att_mat, row_weight=1.0)
+    int_weights = build_weights(int_mat, remove_int, row_weight=0.5)
+    blk_weights = build_weights(unint_mat, remove_unint, row_weight=2.0)
 
     result: NDArray[np.float32] = np.concatenate(
         [att_weights, int_weights, blk_weights]
     ).astype(np.float32)
 
+    # Logically this will still always be positive
     return result + user_raw_weights_nd
 
 
@@ -211,7 +194,12 @@ def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
 def main(users: list[str], update_db: bool) -> None:
     init_tags()
 
-    prefetched_state: dict[str, tuple[float, list[float] | None]] = {}
+    user_feature_vectors: dict[str, NDArray[np.float32]] = {}
+    user_raw_weights_by_id: dict[str, NDArray[np.float32]] = {}
+    interaction_rows: list[dict[str, float | str]] = []
+
+    user_weights_and_timestamps_by_id: dict[str, tuple[float, list[float] | None]] = {}
+    active_users = False
 
     if len(users) == 1:
         if users[0] == "ALL":
@@ -220,37 +208,34 @@ def main(users: list[str], update_db: bool) -> None:
         elif users[0] == "ACTIVE":
             # Guaranteed to have weights and lastUpdated if this query is ran
             # Can batch users for build_user_feature. Either all users have weights passed in or none do
+            active_users = True
+
             active_rows = queries.query_active(NUM_TAGS)
             users = [row["userId"] for row in active_rows]
+
             for row in active_rows:
-                prefetched_state[row["userId"]] = (
-                    float(row["lastUpdated"]),
+                user_weights_and_timestamps_by_id[row["userId"]] = (
+                    float(row["updatedAt"]),
                     row["weights"],
                 )
 
-    user_feature_vectors: dict[str, NDArray[np.float32]] = {}
-    user_raw_weights_by_id: dict[str, NDArray[np.float32]] = {}
-    interaction_rows: list[dict[str, float | str]] = []
-
-    user_weights_and_timestamps = queries.get_user_tag_weights_with_timestamps(
-        users, NUM_TAGS
-    )
-    user_weights_and_timestamps_by_id = {
-        row["userId"]: row for row in user_weights_and_timestamps
-    }
+    if not active_users:
+        user_weights_and_timestamps = queries.get_user_tag_weights_with_timestamps(
+            users, NUM_TAGS
+        )
+        for row in user_weights_and_timestamps:
+            user_weights_and_timestamps_by_id[row["userId"]] = (
+                float(row["updatedAt"]),
+                row["weights"],
+            )
 
     for user_id in users:
-        user_last_updated, user_raw_weights_nd = (
-            get_user_raw_weights_and_last_updated_from_result(
-                user_weights_and_timestamps_by_id.get(user_id)
-            )
-        )
+        user_last_updated, user_raw_weights = user_weights_and_timestamps_by_id.get(user_id)
+        user_raw_weights_nd = np.array(user_raw_weights)
+
         user_raw_weights_by_id[user_id] = user_raw_weights_nd
 
-        interaction_row: dict[str, float | str] = {"userId": user_id}
-        if user_last_updated >= 0:
-            interaction_row["sinceMs"] = user_last_updated
-        interaction_rows.append(interaction_row)
+        interaction_rows.append({"userId": user_id, "sinceMs": user_last_updated})
 
     all_interactions: list[dict[str, str]] = (
         queries.get_interactions_by_users(interaction_rows) if interaction_rows else []
@@ -267,19 +252,11 @@ def main(users: list[str], update_db: bool) -> None:
         interactions_by_user_id[user_id].append(interaction)
 
     for user_id in users:
-# <<<<<<< refactor/pull_active_users
-#         last_updated, raw_weights = None, None
-#         if user_id in prefetched_state:
-#             last_updated, raw_weights = prefetched_state[user_id]
-
-#         user_feature_vectors[user_id] = build_user_feature_vector(user_id, last_updated=last_updated, weights=raw_weights)
-# =======
         user_feature_vectors[user_id] = build_user_feature_vector_from_interactions(
             user_raw_weights_by_id[user_id],
             interactions_by_user_id.get(user_id, []),
             event_tags_by_id,
         )
-# >>>>>>> main
 
     if update_db:
         rows = [

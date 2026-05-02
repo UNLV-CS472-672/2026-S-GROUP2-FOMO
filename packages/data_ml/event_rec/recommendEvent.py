@@ -76,7 +76,7 @@ def get_event_features(num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[li
 
     if not all_events:
         return [], np.zeros((0, num_tags + 4), dtype=np.float32)
-#     all_events = queries.query_all("events")
+
     all_event_ids = [event["_id"] for event in all_events]
     all_event_tags = queries.get_by_event_ids(all_event_ids)
     event_tags_by_id: dict[str, list[dict[str, str]]] = {}

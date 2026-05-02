@@ -68,8 +68,13 @@ export default defineSchema({
       v.union(v.literal('going'), v.literal('interested'), v.literal('uninterested'))
     ),
     notification: v.optional(v.union(v.literal('all'), v.literal('friends'), v.literal('none'))),
+    updatedAt: v.number(),
+    previousStatus: v.optional(
+      v.union(v.literal('going'), v.literal('interested'), v.literal('uninterested'))
+    ),
   })
     .index('by_userId', ['userId'])
+    .index('by_userId_updatedAt', ['userId', 'updatedAt'])
     .index('by_event', ['eventId'])
     .index('by_user_event', ['userId', 'eventId']),
 

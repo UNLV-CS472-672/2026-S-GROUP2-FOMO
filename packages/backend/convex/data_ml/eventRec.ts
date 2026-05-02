@@ -1,32 +1,29 @@
 import { v } from 'convex/values';
 import { Id } from '../_generated/dataModel';
-import {
-  internalMutation,
-  internalQuery,
-  MutationCtx,
-  query,
-  QueryCtx,
-} from '../_generated/server';
+import { internalMutation, internalQuery, MutationCtx, query } from '../_generated/server';
 import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../auth';
 
-async function getInteractionsForUser(ctx: QueryCtx, userId: Id<'users'>, sinceMs?: number) {
+async function getInteractionsForUser(ctx: MutationCtx, userId: Id<'users'>, sinceMs?: number) {
+  if (sinceMs === undefined) {
+    return await ctx.db
+      .query('attendance')
+      .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .collect();
+  }
+  // Incremental path: only rows touched since last weight update,
+  // and only where status actually differs from what we last folded in.
   const attendanceRows = await ctx.db
     .query('attendance')
-    .withIndex('by_userId', (q) => q.eq('userId', userId))
+    .withIndex('by_userId_updatedAt', (q) => q.eq('userId', userId).gte('updatedAt', sinceMs))
+    .filter((q) => q.neq(q.field('status'), q.field('previousStatus'))) // Only get rows where the interaction is different from last we updated weights
     .collect();
 
-  if (sinceMs === undefined) return attendanceRows;
-
-  const withEvents = await Promise.all(
-    attendanceRows.map(async (row) => {
-      const event = await ctx.db.get(row.eventId);
-      return { row, event };
-    })
+  // Mark these rows as processed by setting previousStatus = status.
+  await Promise.all(
+    attendanceRows.map((row) => ctx.db.patch(row._id, { previousStatus: row.status }))
   );
 
-  return withEvents
-    .filter(({ event }) => event !== null && event.endDate >= sinceMs)
-    .map(({ row }) => row);
+  return attendanceRows;
 }
 
 async function upsertUserTagWeightsRow(ctx: MutationCtx, userId: Id<'users'>, weights: number[]) {
@@ -56,13 +53,13 @@ function formatUserTagWeightsWithTimestamp(
   if (!result) {
     return {
       weights: new Array(numTags * 3).fill(0),
-      lastUpdatedAt: 0,
+      updatedAt: 0,
     };
   }
 
   return {
     weights: result.weights,
-    lastUpdatedAt: result.updatedAt,
+    updatedAt: result.updatedAt,
   };
 }
 
@@ -117,7 +114,7 @@ export const getUserTagWeights = internalQuery({
   },
 });
 
-export const getInteractionsByUsers = internalQuery({
+export const getInteractionsByUsers = internalMutation({
   args: {
     rows: v.array(
       v.object({
@@ -237,7 +234,7 @@ export const getUsersWithRecentActivity = internalMutation({
           .withIndex('by_userId', (q) => q.eq('userId', userId))
           .unique();
 
-        const lastUpdated = weightsRow?.updatedAt ?? 0;
+        const updatedAt = weightsRow?.updatedAt ?? 0;
 
         const newestInteraction = await ctx.db
           .query('attendance')
@@ -247,7 +244,7 @@ export const getUsersWithRecentActivity = internalMutation({
 
         const needsSeeding = weightsRow === null;
         const hasRecentActivity =
-          newestInteraction !== null && newestInteraction.updatedAt > lastUpdated;
+          newestInteraction !== null && newestInteraction.updatedAt > updatedAt;
 
         if (!hasRecentActivity) {
           if (needsSeeding && numTags !== undefined) {
@@ -265,7 +262,7 @@ export const getUsersWithRecentActivity = internalMutation({
 
         return {
           userId,
-          lastUpdated,
+          updatedAt,
           weights,
         };
       })
