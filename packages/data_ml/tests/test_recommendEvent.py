@@ -535,5 +535,72 @@ class TestMain:
             assert len(row["eventIds"]) == 2
 
 
+    @patch("event_rec.recommendEvent.queries.get_tag_info")
+    @patch("event_rec.recommendEvent.queries.get_users_needing_event_rec")
+    def test_main_dirty_mode_exits_early_when_no_users(
+        self,
+        mock_get_dirty: MagicMock,
+        mock_get_tag_info: MagicMock,
+    ) -> None:
+        mock_get_dirty.return_value = []
+        main(["DIRTY"], update_db=False, model_path="dummy.pt")
+        mock_get_tag_info.assert_not_called()
+
+    @patch("event_rec.recommendEvent.queries.get_users_needing_event_rec")
+    @patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id")
+    @patch("event_rec.recommendEvent.queries.upsert_event_recs_batch")
+    @patch("event_rec.recommendEvent.queries.get_interactions_by_user_ids")
+    @patch("event_rec.recommendEvent.queries.get_by_event_ids")
+    @patch("event_rec.recommendEvent.queries.get_user_tag_weights")
+    @patch("event_rec.recommendEvent.queries.get_all_events_after_now")
+    @patch("event_rec.recommendEvent.queries.query_all")
+    @patch("event_rec.recommendEvent.queries.get_tag_info")
+    @patch("event_rec.recommendEvent.torch.load")
+    @patch("event_rec.recommendEvent.UserTower")
+    @patch("event_rec.recommendEvent.EventTower")
+    def test_main_dirty_mode_processes_flagged_users(
+        self,
+        mock_event_tower: MagicMock,
+        mock_user_tower: MagicMock,
+        mock_torch_load: MagicMock,
+        mock_get_tag_info: MagicMock,
+        mock_query_all: MagicMock,
+        mock_get_all_events: MagicMock,
+        mock_get_weights: MagicMock,
+        mock_get_by_events: MagicMock,
+        mock_get_interactions: MagicMock,
+        mock_upsert: MagicMock,
+        mock_get_preferred_tags: MagicMock,
+        mock_get_dirty: MagicMock,
+        sample_tags: List[Dict[str, Any]],
+        sample_users: List[Dict[str, Any]],
+        sample_events: List[Dict[str, Any]],
+        flat_event_tag_rows: List[Dict[str, Any]],
+        sample_interactions: Dict[str, List[Dict[str, Any]]],
+    ) -> None:
+        mock_get_dirty.return_value = ["user1"]
+        _setup_main_mocks(
+            {
+                "event_tower": mock_event_tower,
+                "user_tower": mock_user_tower,
+                "torch_load": mock_torch_load,
+                "get_tag_info": mock_get_tag_info,
+                "query_all": mock_query_all,
+                "get_all_events": mock_get_all_events,
+                "get_weights": mock_get_weights,
+                "get_by_events": mock_get_by_events,
+                "get_interactions": mock_get_interactions,
+                "get_preferred_tags": mock_get_preferred_tags,
+            },
+            sample_tags, sample_users, sample_events, flat_event_tag_rows, sample_interactions,
+        )
+        try:
+            main(["DIRTY"], update_db=False, model_path="dummy.pt")
+        except Exception as e:
+            pytest.fail(f"main() with 'DIRTY' raised {type(e).__name__} unexpectedly: {e}")
+        mock_get_dirty.assert_called_once()
+        mock_get_tag_info.assert_called_once()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

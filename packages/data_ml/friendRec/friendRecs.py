@@ -242,7 +242,7 @@ def main_all_users(rec_amt: int) -> None:
 USER     = "n17849zzm0xksq2x2wh0gpcqs584x1q6"  # By user_id, Claude
 REC_AMT  = 5         # friendRecs schema only currently supports 5.
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     log("Updating friend recommendations...")
     main_dirty_users(REC_AMT)
     log("Friend recommendations updated.")
