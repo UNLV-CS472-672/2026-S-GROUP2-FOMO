@@ -2,13 +2,6 @@
 
 import { useUser } from '@clerk/nextjs';
 
-function formatName(name: string | null | undefined): string {
-  return (name ?? 'there')
-    .split(' ')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
-}
-
 export function SignedInStatus() {
   const { isLoaded, isSignedIn, user } = useUser();
 
@@ -31,14 +24,10 @@ export function SignedInStatus() {
     );
   }
 
-  const displayName = formatName(
-    user.fullName ?? user.firstName ?? user.primaryEmailAddress?.emailAddress ?? undefined
-  );
-
   return (
     <>
       <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-        Welcome, {displayName}
+        Welcome, {user.username ?? 'there'}
       </h1>
       <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
         You&apos;re signed in.

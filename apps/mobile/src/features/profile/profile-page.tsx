@@ -1,5 +1,6 @@
 import { Button, ButtonText } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
+import { ProfileActionMenu } from '@/features/moderation/profile-action-menu';
 import { Avatar } from '@/features/posts/components/avatar';
 import { FeedCard } from '@/features/posts/components/feed-card';
 import type { FeedPost } from '@/features/posts/types';
@@ -59,7 +60,7 @@ export function ProfileStateScreen({
   );
 }
 
-function ProfileIconAction({
+export function ProfileIconAction({
   accessibilityLabel,
   className,
   disabled,
@@ -186,7 +187,6 @@ export function ProfilePage({
     viewerUserId && viewerUserId !== userId && relationshipStatus === 'pending_received';
   const showHeaderFriendAction =
     viewerUserId && viewerUserId !== userId && relationshipStatus !== 'pending_received';
-
   return (
     <Screen className="flex-1">
       <ScrollView
@@ -195,7 +195,7 @@ export function ProfilePage({
       >
         <View className="flex-row items-start px-4 pb-4 pt-2">
           <Avatar
-            name={profile.user.displayName || profile.user.username}
+            name={profile.user.username}
             size={92}
             source={profile.user.avatarUrl ? { uri: profile.user.avatarUrl } : undefined}
           />
@@ -204,9 +204,6 @@ export function ProfilePage({
             <View className="flex-row items-center justify-between">
               <View className="flex-1 pr-3">
                 <Text className="text-lg font-bold text-foreground">{profile.user.username}</Text>
-                {profile.user.displayName ? (
-                  <Text className="text-sm text-muted-foreground">{profile.user.displayName}</Text>
-                ) : null}
               </View>
               {profileAction || showHeaderFriendAction || onPressSettings ? (
                 <View className="-mr-3 flex-row items-center gap-1">
@@ -303,6 +300,11 @@ export function ProfilePage({
                       }}
                     />
                   ) : null}
+                  <ProfileActionMenu
+                    userId={userId}
+                    mutedColor={theme.mutedText}
+                    onAfterBlock={() => router.back()}
+                  />
                   {onPressSettings ? (
                     <Button
                       variant="ghost"
