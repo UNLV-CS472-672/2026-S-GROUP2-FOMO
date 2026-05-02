@@ -11,10 +11,13 @@ import { api } from '@fomo/backend/convex/_generated/api';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Alert, Image, ScrollView, Text, View } from 'react-native';
 
 const DELETE_ACCOUNT_CONFIRMATION = 'Delete account';
+const TERMS_URL = 'https://fomo-app.dev/terms';
+const PRIVACY_URL = 'https://fomo-app.dev/privacy';
 
 export default function SettingsScreen() {
   const clerk = useClerk();
@@ -90,12 +93,7 @@ export default function SettingsScreen() {
             )}
           </View>
           <View className="items-center gap-0.5">
-            <Text className="text-lg font-bold text-foreground">
-              {user?.fullName ?? user?.username}
-            </Text>
-            {user?.username && (
-              <Text className="text-sm text-muted-foreground">@{user.username}</Text>
-            )}
+            <Text className="text-lg font-bold text-foreground">{user?.username}</Text>
           </View>
         </View>
 
@@ -124,12 +122,12 @@ export default function SettingsScreen() {
             <SettingsRow
               icon="person-outline"
               label="Edit Profile"
-              onPress={() => router.push('/(tabs)/profile/edit')}
+              onPress={() => router.push('/(tabs)/profile/settings/edit')}
             />
             <SettingsRow
               icon="link-outline"
               label="Connected Accounts"
-              onPress={() => router.push('/(tabs)/profile/connected-accounts')}
+              onPress={() => router.push('/(tabs)/profile/settings/connected-accounts')}
             />
             <SettingsRow
               icon="trash-outline"
@@ -149,7 +147,29 @@ export default function SettingsScreen() {
               icon="ban-outline"
               label="Blocked Users"
               value={blockedCount}
-              onPress={() => router.push('/(tabs)/profile/blocked-users')}
+              onPress={() => router.push('/(tabs)/profile/settings/blocked-users')}
+            />
+            <SettingsRow
+              icon="document-text-outline"
+              label="Terms of Use"
+              onPress={() => void WebBrowser.openBrowserAsync(TERMS_URL)}
+            />
+            <SettingsRow
+              icon="shield-checkmark-outline"
+              label="Privacy Policy"
+              onPress={() => void WebBrowser.openBrowserAsync(PRIVACY_URL)}
+              isLast
+            />
+          </View>
+        </View>
+
+        <View>
+          <SettingsSectionLabel>Support</SettingsSectionLabel>
+          <View className="overflow-hidden rounded-2xl border border-border bg-card">
+            <SettingsRow
+              icon="help-buoy-outline"
+              label="Contact Support"
+              onPress={() => router.push('/(tabs)/profile/settings/support')}
               isLast
             />
           </View>

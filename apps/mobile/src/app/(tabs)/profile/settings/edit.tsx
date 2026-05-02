@@ -72,7 +72,7 @@ function EditProfileForm({ profile }: { profile: Profile }) {
   }, [avatarFileNameParam, avatarNonceParam, avatarUriParam]);
 
   function openGallery() {
-    router.push('./gallery-picker');
+    router.push('/(tabs)/profile/settings/gallery-picker');
   }
 
   async function handleSave() {
