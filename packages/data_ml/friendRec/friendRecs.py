@@ -64,6 +64,8 @@ def raw_matrix_postTags() -> pd.DataFrame:
     users_df = users_df[["_id"]]
 
     posts_json = queries.query_all("posts")
+    if not posts_json:
+        return pd.DataFrame()
     posts_df = pd.json_normalize(posts_json)
     posts_df = posts_df[["_id", "authorId"]]
 
@@ -73,10 +75,14 @@ def raw_matrix_postTags() -> pd.DataFrame:
 
     # Join "postTags" and "tags" dataframes
     postTags_json = queries.query_all("postTags")
+    if not postTags_json:
+        return pd.DataFrame()
     postTags_df = pd.json_normalize(postTags_json)
     postTags_df = postTags_df[["postId", "tagId"]]
 
     tags_json = queries.query_all("tags")
+    if not tags_json:
+        return pd.DataFrame()
     tags_df = pd.json_normalize(tags_json)
     tags_df = tags_df[["_id", "name"]]
 
@@ -181,6 +187,35 @@ def main_one_user(user: str, rec_amt: int) -> None:
     upsert_friend_recs(simscores_weighted, user, rec_amt)
 
 
+# Generate friend recommendations only for users flagged as needing an update.
+# Still builds full matrices so cosine similarity is computed against all users.
+def main_dirty_users(rec_amt: int) -> None:
+    dirty_user_ids = queries.get_users_needing_friend_rec()
+    if not dirty_user_ids:
+        log("No users need friend rec update.")
+        return
+
+    raw_events_df    = raw_matrix_events()
+    raw_eventTags_df = raw_matrix_eventTags()
+    raw_postTags_df  = raw_matrix_postTags()
+
+    matrix_events    = build_similarity_matrix(raw_events_df)
+    matrix_eventTags = build_similarity_matrix(raw_eventTags_df)
+    matrix_postTags  = build_similarity_matrix(raw_postTags_df)
+
+    updated = 0
+    for user_id in dirty_user_ids:
+        simscores_events_df    = get_user_scores(matrix_events, user_id)
+        simscores_eventTags_df = get_user_scores(matrix_eventTags, user_id)
+        simscores_postTags_df  = get_user_scores(matrix_postTags, user_id)
+
+        simscores_weighted = sim_scores_weighted(simscores_events_df, simscores_eventTags_df, simscores_postTags_df)
+        upsert_friend_recs(simscores_weighted, user_id, rec_amt)
+        updated += 1
+
+    log(f"Updated {updated} users in Convex with up to {rec_amt} friend recs each.")
+
+
 # Generate friend recommendations for all users.
 def main_all_users(rec_amt: int) -> None:
     user_ids = queries.get_all_user_ids()
@@ -209,6 +244,6 @@ REC_AMT  = 5         # friendRecs schema only currently supports 5.
 
 if __name__ == "__main__":
     log("Updating friend recommendations...")
-    main_all_users(REC_AMT)
+    main_dirty_users(REC_AMT)
     log("Friend recommendations updated.")
 

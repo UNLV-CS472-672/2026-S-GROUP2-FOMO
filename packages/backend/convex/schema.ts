@@ -22,6 +22,8 @@ export default defineSchema({
     username: v.string(), // should be unique and this is the main display/handle on frontend
     avatarUrl: v.string(), // should get from clerk
     deletedAt: v.optional(v.number()),
+    eventRecNeedsUpdate: v.optional(v.boolean()),
+    friendRecNeedsUpdate: v.optional(v.boolean()),
   })
     .index('by_clerkId', ['clerkId'])
     .index('by_username', ['username']),
