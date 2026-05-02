@@ -93,7 +93,10 @@ def event_tags_by_id_e1_e2(
     sample_event_tags_e2: list[dict[str, str]],
 ) -> dict[str, list[dict[str, str]]]:
     """Pre-grouped lookup table covering e1 and e2."""
-    return group_event_tags_by_event_id(sample_event_tags_e1 + sample_event_tags_e2)
+    result: dict[str, list[dict[str, str]]] = group_event_tags_by_event_id(
+        sample_event_tags_e1 + sample_event_tags_e2
+    )
+    return result
 
 
 # ------------------------------
