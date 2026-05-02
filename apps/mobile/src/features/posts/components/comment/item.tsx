@@ -1,3 +1,4 @@
+import { CommentActionMenu } from '@/features/moderation/comment-action-menu';
 import { Avatar } from '@/features/posts/components/avatar';
 import { FeedComment } from '@/features/posts/types';
 import { formatRelativeTime } from '@/lib/format';
@@ -21,9 +22,16 @@ type CommentItemProps = {
   readOnly: boolean;
   onReply: (target: NonNullable<ReplyTarget>) => void;
   onToggleLike: () => void;
+  onAfterBlock?: () => void;
 };
 
-export function CommentItem({ comment, readOnly, onReply, onToggleLike }: CommentItemProps) {
+export function CommentItem({
+  comment,
+  readOnly,
+  onReply,
+  onToggleLike,
+  onAfterBlock,
+}: CommentItemProps) {
   const theme = useAppTheme();
   const translateX = useSharedValue(0);
 
@@ -97,6 +105,7 @@ export function CommentItem({ comment, readOnly, onReply, onToggleLike }: Commen
                       </Text>
                     </>
                   ) : null}
+                  <CommentActionMenu comment={comment} onAfterBlock={onAfterBlock} />
                 </View>
               </View>
             </View>

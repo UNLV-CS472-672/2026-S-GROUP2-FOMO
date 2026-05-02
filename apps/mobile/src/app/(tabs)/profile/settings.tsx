@@ -48,7 +48,7 @@ export default function SettingsScreen() {
       setDeleteAccountOpen(false);
       setDeleteConfirmation('');
       await signOutClerkExpo(clerk);
-      router.replace('/(auth)/welcome' as never);
+      router.replace('/(auth)/welcome');
       Alert.alert('Account deleted', 'Your account has been permanently deleted.');
     } catch (error) {
       Alert.alert(
@@ -83,13 +83,26 @@ export default function SettingsScreen() {
 
         <Pressable
           className="flex-row items-center justify-between rounded-2xl border border-border bg-card px-4 py-3.5"
-          onPress={() => router.push('/(tabs)/profile/edit' as never)}
+          onPress={() => router.push('/(tabs)/profile/edit')}
           accessibilityRole="button"
           accessibilityLabel="Edit profile"
         >
           <View className="flex-row items-center gap-3">
             <Ionicons name="person-outline" size={20} color={theme.tint} />
             <Text className="text-base font-medium text-foreground">Edit Profile</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={theme.mutedText} />
+        </Pressable>
+
+        <Pressable
+          className="flex-row items-center justify-between rounded-2xl border border-border bg-card px-4 py-3.5"
+          onPress={() => router.push('/(tabs)/profile/blocked-users')}
+          accessibilityRole="button"
+          accessibilityLabel="Blocked users"
+        >
+          <View className="flex-row items-center gap-3">
+            <Ionicons name="ban-outline" size={20} color={theme.tint} />
+            <Text className="text-base font-medium text-foreground">Blocked Users</Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={theme.mutedText} />
         </Pressable>

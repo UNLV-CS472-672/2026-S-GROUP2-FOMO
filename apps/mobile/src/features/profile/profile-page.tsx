@@ -1,5 +1,6 @@
 import { Button, ButtonText } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
+import { ProfileActionMenu } from '@/features/moderation/profile-action-menu';
 import { Avatar } from '@/features/posts/components/avatar';
 import { FeedCard } from '@/features/posts/components/feed-card';
 import type { FeedPost } from '@/features/posts/types';
@@ -59,7 +60,7 @@ export function ProfileStateScreen({
   );
 }
 
-function ProfileIconAction({
+export function ProfileIconAction({
   accessibilityLabel,
   className,
   disabled,
@@ -186,7 +187,6 @@ export function ProfilePage({
     viewerUserId && viewerUserId !== userId && relationshipStatus === 'pending_received';
   const showHeaderFriendAction =
     viewerUserId && viewerUserId !== userId && relationshipStatus !== 'pending_received';
-
   return (
     <Screen className="flex-1">
       <ScrollView
@@ -303,6 +303,11 @@ export function ProfilePage({
                       }}
                     />
                   ) : null}
+                  <ProfileActionMenu
+                    userId={userId}
+                    mutedColor={theme.mutedText}
+                    onAfterBlock={() => router.back()}
+                  />
                   {onPressSettings ? (
                     <Button
                       variant="ghost"
