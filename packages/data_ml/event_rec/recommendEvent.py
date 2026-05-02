@@ -76,6 +76,15 @@ def get_event_features(num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[li
 
     if not all_events:
         return [], np.zeros((0, num_tags + 4), dtype=np.float32)
+#     all_events = queries.query_all("events")
+    all_event_ids = [event["_id"] for event in all_events]
+    all_event_tags = queries.get_by_event_ids(all_event_ids)
+    event_tags_by_id: dict[str, list[dict[str, str]]] = {}
+    for row in all_event_tags:
+        event_id = row["eventId"]
+        if event_id not in event_tags_by_id:
+            event_tags_by_id[event_id] = []
+        event_tags_by_id[event_id].append(row)
 
     event_ids = []
     event_rows = []
@@ -84,7 +93,7 @@ def get_event_features(num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[li
         eid = event["_id"]
         tags = np.zeros(num_tags, dtype=np.float32)
 
-        event_tags = queries.get_by_event_id(eid)
+        event_tags = event_tags_by_id.get(eid, [])
         for row in event_tags:
             if row["tagId"] in tag_id_to_idx:
                 tags[tag_id_to_idx[row["tagId"]]] = 1.0
@@ -135,9 +144,15 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
     scores = (raw_scores + 1.0) / 2.0
 
     # Hard mask blocked events so they can never surface in recommendations.
+    all_interactions = queries.get_interactions_by_user_ids(users)
+    blocked_ids_by_user: dict[str, set[str]] = {user_id: set() for user_id in users}
+    for row in all_interactions:
+        user_id = row["userId"]
+        if row["status"] == "uninterested" and user_id in blocked_ids_by_user:
+            blocked_ids_by_user[user_id].add(row["eventId"])
+
     for i, user_id in enumerate(users):
-        interactions = queries.get_interactions_by_user_id(user_id)
-        blocked_ids = {r["eventId"] for r in interactions if r["status"] == "uninterested"}
+        blocked_ids = blocked_ids_by_user.get(user_id, set())
         for j, eid in enumerate(event_ids):
             if eid in blocked_ids:
                 scores[i, j] = -1.0
@@ -155,9 +170,11 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
 
     # Write to Convex / Print
     if update_db:
+        rows = []
         for user_id, recs in recommendations.items():
             event_ids_ranked = [event_id for event_id, _ in recs]
-            queries.upsert_event_recs(user_id, event_ids_ranked)
+            rows.append({"userId": user_id, "eventIds": event_ids_ranked})
+        queries.upsert_event_recs_batch(rows)
 
         print(f"Updated {len(recommendations)} users in Convex with {k} recs each.")
     else:

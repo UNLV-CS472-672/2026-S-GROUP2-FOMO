@@ -31,6 +31,7 @@ import type * as seed from "../seed.js";
 import type * as support from "../support.js";
 import type * as tags from "../tags.js";
 import type * as temp_seed from "../temp_seed.js";
+import type * as user_identity from "../user_identity.js";
 import type * as users from "../users.js";
 
 import type {
@@ -63,6 +64,7 @@ declare const fullApi: ApiFromModules<{
   support: typeof support;
   tags: typeof tags;
   temp_seed: typeof temp_seed;
+  user_identity: typeof user_identity;
   users: typeof users;
 }>;
 
