@@ -6,6 +6,7 @@ import { query, type QueryCtx } from '../_generated/server';
 import { __backend_only_guestOrAuthenticatedUser } from '../auth';
 import { getThreadedCommentsByPost } from '../comments';
 import { getHiddenUserIds } from '../moderation/block';
+import { getHiddenPostIds } from '../moderation/report';
 import { getAvatarUrlForUser, getDisplayNameForUser, getUsernameForUser } from '../user_identity';
 import { getAttendeeCount } from './attendance';
 
@@ -167,7 +168,9 @@ export const getTopMediaPosts = query({
   args: { eventId: v.id('events') },
   handler: async (ctx, { eventId }) => {
     const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
-    const blockedUserIds = guestMode ? new Set() : await getHiddenUserIds(ctx, viewer._id);
+    const [blockedUserIds, hiddenPostIds] = guestMode
+      ? [new Set(), new Set()]
+      : await Promise.all([getHiddenUserIds(ctx, viewer._id), getHiddenPostIds(ctx, viewer._id)]);
 
     const posts = await ctx.db
       .query('posts')
@@ -176,6 +179,7 @@ export const getTopMediaPosts = query({
 
     const topPosts = posts
       .filter((post) => !blockedUserIds.has(post.authorId))
+      .filter((post) => !hiddenPostIds.has(post._id))
       .filter((post) => (post.mediaIds?.length ?? 0) > 0)
       .sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0) || b._creationTime - a._creationTime)
       .slice(0, 3);
@@ -218,7 +222,9 @@ export const getEventFeed = query({
   },
   handler: async (ctx, { eventId, sortBy, mediaOnly }) => {
     const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
-    const blockedUserIds = guestMode ? new Set() : await getHiddenUserIds(ctx, viewer._id);
+    const [blockedUserIds, hiddenPostIds] = guestMode
+      ? [new Set(), new Set()]
+      : await Promise.all([getHiddenUserIds(ctx, viewer._id), getHiddenPostIds(ctx, viewer._id)]);
     const posts = await ctx.db
       .query('posts')
       .withIndex('by_event', (q) => q.eq('eventId', eventId))
@@ -226,6 +232,7 @@ export const getEventFeed = query({
       .collect();
 
     posts.splice(0, posts.length, ...posts.filter((post) => !blockedUserIds.has(post.authorId)));
+    posts.splice(0, posts.length, ...posts.filter((post) => !hiddenPostIds.has(post._id)));
 
     if (mediaOnly) {
       posts.splice(0, posts.length, ...posts.filter((post) => (post.mediaIds?.length ?? 0) > 0));

@@ -1,8 +1,24 @@
 import { v } from 'convex/values';
 
 import type { Id } from '../_generated/dataModel';
-import { mutation, type MutationCtx } from '../_generated/server';
+import { mutation, type MutationCtx, type QueryCtx } from '../_generated/server';
 import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../auth';
+
+export async function getHiddenPostIds(
+  ctx: QueryCtx,
+  viewerId?: Id<'users'>
+): Promise<Set<Id<'posts'>>> {
+  if (!viewerId) {
+    return new Set();
+  }
+
+  const hiddenPosts = await ctx.db
+    .query('hiddenPosts')
+    .withIndex('by_viewerId', (q) => q.eq('viewerId', viewerId))
+    .collect();
+
+  return new Set(hiddenPosts.map((row) => row.postId));
+}
 
 async function createReport(
   ctx: MutationCtx,
@@ -79,6 +95,19 @@ export const reportPost = mutation({
     const post = await ctx.db.get(postId);
     if (!post) {
       throw new Error('Post not found.');
+    }
+
+    const existingHiddenPost = await ctx.db
+      .query('hiddenPosts')
+      .withIndex('by_viewerId_postId', (q) => q.eq('viewerId', reporter._id).eq('postId', postId))
+      .unique();
+
+    if (!existingHiddenPost) {
+      await ctx.db.insert('hiddenPosts', {
+        viewerId: reporter._id,
+        postId,
+        hiddenReason: 'reported',
+      });
     }
 
     await createReport(ctx, {

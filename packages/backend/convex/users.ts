@@ -10,6 +10,7 @@ import {
 } from './auth';
 import { getThreadedCommentsByPost } from './comments';
 import { getHiddenUserIds } from './moderation/block';
+import { getHiddenPostIds } from './moderation/report';
 import { getAvatarUrlForUser, getDisplayNameForUser, getUsernameForUser } from './user_identity';
 
 export const BIO_MAX_LENGTH = 250;
@@ -357,9 +358,9 @@ export const getProfileFeed = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
     const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
-    const blockedUserIds = guestMode
-      ? new Set<Id<'users'>>()
-      : await getHiddenUserIds(ctx, viewer._id);
+    const [blockedUserIds, hiddenPostIds] = guestMode
+      ? [new Set<Id<'users'>>(), new Set<Id<'posts'>>()]
+      : await Promise.all([getHiddenUserIds(ctx, viewer._id), getHiddenPostIds(ctx, viewer._id)]);
 
     const posts = await ctx.db
       .query('posts')
@@ -370,6 +371,7 @@ export const getProfileFeed = query({
     return await Promise.all(
       posts
         .filter((post) => !blockedUserIds.has(post.authorId))
+        .filter((post) => !hiddenPostIds.has(post._id))
         .map((post) => serializeProfileFeedPost(ctx, post, guestMode ? undefined : viewer._id))
     );
   },

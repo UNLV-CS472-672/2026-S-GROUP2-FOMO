@@ -71,7 +71,12 @@ export function PostActionMenu({ post }: PostActionMenuProps) {
         title="Report post"
         onSubmit={(reason) => {
           void reportPost({ postId: post.id as Id<'posts'>, reason })
-            .then(() => Alert.alert('Report submitted', 'Thanks. We will review this report.'))
+            .then(() =>
+              Alert.alert(
+                'Report submitted',
+                'Thanks. We will review this report, and this post has been removed from your view.'
+              )
+            )
             .catch((error) =>
               Alert.alert(
                 'Unable to submit report',

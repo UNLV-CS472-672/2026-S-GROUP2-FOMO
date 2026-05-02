@@ -192,6 +192,15 @@ export default defineSchema({
     .index('by_targetCommentId', ['targetCommentId'])
     .index('by_targetEventId', ['targetEventId']),
 
+  hiddenPosts: defineTable({
+    viewerId: v.id('users'),
+    postId: v.id('posts'),
+    hiddenReason: v.union(v.literal('reported')),
+  })
+    .index('by_viewerId', ['viewerId'])
+    .index('by_postId', ['postId'])
+    .index('by_viewerId_postId', ['viewerId', 'postId']),
+
   support: defineTable({
     email: v.string(),
     description: v.string(),
