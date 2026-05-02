@@ -127,8 +127,8 @@ export const seedData = internalMutation({
           caption: e.description,
           mediaId,
           hostIds: [u1],
-          startDate: Date.now() + 24 * 60 * 60 * 1000,
-          endDate: Date.now() + 26 * 60 * 60 * 1000,
+          startDate: Date.now() - 24 * 60 * 60 * 1000,
+          endDate: Date.now() - 20 * 60 * 60 * 1000,
           location: e.location,
         })
       );
@@ -136,6 +136,8 @@ export const seedData = internalMutation({
     const [e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16, e17] = eventIds;
 
     //  Attendance (the interaction signal that drives recs)
+    //  previousStatus is intentionally left undefined so the first weight
+    //  recompute folds these in (filter is status !== previousStatus).
     const userEventPairs: {
       userId: any;
       eventId: any;
@@ -234,9 +236,13 @@ export const seedData = internalMutation({
     for (const pair of userEventPairs) {
       const existing = await ctx.db
         .query('attendance')
-        .withIndex('by_user_event', (q) => q.eq('userId', pair.userId).eq('eventId', pair.eventId))
-        .unique();
-      if (!existing) await ctx.db.insert('attendance', pair);
+        .filter((q) =>
+          q.and(q.eq(q.field('userId'), pair.userId), q.eq(q.field('eventId'), pair.eventId))
+        )
+        .first();
+      if (!existing) {
+        await ctx.db.insert('attendance', { ...pair, updatedAt: Date.now() });
+      }
     }
 
     //  Event Tags (the content signal that drives recs)
@@ -325,8 +331,8 @@ export const seedData = internalMutation({
       if (!existing) await ctx.db.insert('eventTags', pair);
     }
 
-    //  Per-user preferred tag names (single source of truth for both
-    //  userTagPreferences and userTagWeights cold-start values).
+    //  Per-user preferred tag names (cold-start signal stored in userTagPreferences only).
+    //  userTagWeights is populated by the recompute script from actual attendance.
     const userPreferredTagNames: { userId: any; preferred: string[] }[] = [
       { userId: u1, preferred: ['study', 'food', 'culture', 'college', 'insightful'] },
       { userId: u2, preferred: ['music', 'concert', 'rap', 'r&b', 'chill'] },
@@ -354,36 +360,6 @@ export const seedData = internalMutation({
       await ctx.db.insert('userTagPreferences', {
         userId: entry.userId,
         tags: tagIdList,
-        updatedAt: Date.now(),
-      });
-    }
-
-    //  userTagWeights (cold-start: 1.0 at preferred tag indices, 0.0 elsewhere)
-    const NUM_TAGS = tagNames.length;
-    const tagIndex: Record<string, number> = {};
-    tagNames.forEach((name, i) => {
-      tagIndex[name] = i;
-    });
-
-    const buildColdStartWeights = (preferredTagNames: string[]): number[] => {
-      const weights = new Array(NUM_TAGS).fill(0);
-      for (const name of preferredTagNames) {
-        const idx = tagIndex[name];
-        if (idx !== undefined) weights[idx] = 1;
-      }
-      return weights;
-    };
-
-    for (const entry of userPreferredTagNames) {
-      const existing = await ctx.db
-        .query('userTagWeights')
-        .withIndex('by_userId', (q) => q.eq('userId', entry.userId))
-        .unique();
-      if (existing) continue;
-
-      await ctx.db.insert('userTagWeights', {
-        userId: entry.userId,
-        weights: buildColdStartWeights(entry.preferred),
         updatedAt: Date.now(),
       });
     }

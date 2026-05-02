@@ -72,7 +72,11 @@ def get_event_features(num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[li
     Only returns events that haven't ended yet.
     Shape: (num_events, num_tags + 4)
     """
-    all_events = queries.query_all("events")
+    all_events = queries.get_all_events_after_now()
+
+    if not all_events:
+        return [], np.zeros((0, num_tags + 4), dtype=np.float32)
+
     all_event_ids = [event["_id"] for event in all_events]
     all_event_tags = queries.get_by_event_ids(all_event_ids)
     event_tags_by_id: dict[str, list[dict[str, str]]] = {}
@@ -118,7 +122,6 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
         users     = [row["_id"] for row in all_users]
 
     user_features          = get_user_features(users, num_tags).to(DEVICE)
-    print(user_features)
     event_ids, event_array = get_event_features(num_tags, tag_id_to_idx)
     event_features         = torch.from_numpy(event_array).to(DEVICE)
 
@@ -208,12 +211,7 @@ if __name__ == "__main__":  # pragma: no cover
 
 """ 
 TODO: 
-    1. (updateUserPreferences.py) Currently collects all attended events and cold start info and then performs calculations
-       Need to update it so it performs running calculations. 
-            - Could be done by checking when the weights were calculated last and only select events 
-               that fall after that date.
-            - Problem: Formula may need to be adjusted to acomodate for this
-            - Could just ignore this issue. MVP!
+    1. Query optimizaiton
     2. (updateUserPreferences.py) Optional: Add weight decay so weights can also decrease. Possibly could be done by decrementing
                  some weights if a user hasn't attended an event with said tag for the past X events.
                  Idk how to really do that with a running weight adjustment though

@@ -84,7 +84,7 @@ export function registerDataMlRoutes(http: HttpRouter) {
       if (authError) return authError;
 
       const body = await req.json();
-      const result = await ctx.runQuery(internal.data_ml.eventRec.getInteractionsByUsers, body);
+      const result = await ctx.runMutation(internal.data_ml.eventRec.getInteractionsByUsers, body);
       return new Response(JSON.stringify(result), { status: 200 });
     }),
   });
@@ -236,6 +236,36 @@ export function registerDataMlRoutes(http: HttpRouter) {
       const result = await ctx.runQuery(internal.data_ml.eventRec.getPreferredTagsByUserId, {
         userIds,
       });
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
+
+  http.route({
+    path: '/data-ml/get-users-with-recent-activity',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
+
+      const { searchParams } = new URL(req.url);
+      const numTagsRaw = searchParams.get('numTags');
+      const numTags = numTagsRaw !== null ? Number(numTagsRaw) : undefined;
+
+      const result = await ctx.runMutation(internal.data_ml.eventRec.getUsersWithRecentActivity, {
+        numTags,
+      });
+      return new Response(JSON.stringify(result), { status: 200 });
+    }),
+  });
+
+  http.route({
+    path: '/data-ml/get-all-events-after-now',
+    method: 'GET',
+    handler: httpAction(async (ctx, req) => {
+      const authError = validateSecret(req);
+      if (authError) return authError;
+
+      const result = await ctx.runQuery(internal.data_ml.eventRec.getAllEventsAfterNow);
       return new Response(JSON.stringify(result), { status: 200 });
     }),
   });

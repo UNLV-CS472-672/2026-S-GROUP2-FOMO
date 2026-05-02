@@ -1,32 +1,29 @@
 import { v } from 'convex/values';
 import { Id } from '../_generated/dataModel';
-import {
-  internalMutation,
-  internalQuery,
-  MutationCtx,
-  query,
-  QueryCtx,
-} from '../_generated/server';
+import { internalMutation, internalQuery, MutationCtx, query } from '../_generated/server';
 import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../auth';
 
-async function getInteractionsForUser(ctx: QueryCtx, userId: Id<'users'>, sinceMs?: number) {
+async function getInteractionsForUser(ctx: MutationCtx, userId: Id<'users'>, sinceMs?: number) {
+  if (sinceMs === undefined) {
+    return await ctx.db
+      .query('attendance')
+      .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .collect();
+  }
+  // Incremental path: only rows touched since last weight update,
+  // and only where status actually differs from what we last folded in.
   const attendanceRows = await ctx.db
     .query('attendance')
-    .withIndex('by_userId', (q) => q.eq('userId', userId))
+    .withIndex('by_userId_updatedAt', (q) => q.eq('userId', userId).gte('updatedAt', sinceMs))
+    .filter((q) => q.neq(q.field('status'), q.field('previousStatus'))) // Only get rows where the interaction is different from last we updated weights
     .collect();
 
-  if (sinceMs === undefined) return attendanceRows;
-
-  const withEvents = await Promise.all(
-    attendanceRows.map(async (row) => {
-      const event = await ctx.db.get(row.eventId);
-      return { row, event };
-    })
+  // Mark these rows as processed by setting previousStatus = status.
+  await Promise.all(
+    attendanceRows.map((row) => ctx.db.patch(row._id, { previousStatus: row.status }))
   );
 
-  return withEvents
-    .filter(({ event }) => event !== null && event.endDate >= sinceMs)
-    .map(({ row }) => row);
+  return attendanceRows;
 }
 
 async function upsertUserTagWeightsRow(ctx: MutationCtx, userId: Id<'users'>, weights: number[]) {
@@ -56,13 +53,13 @@ function formatUserTagWeightsWithTimestamp(
   if (!result) {
     return {
       weights: new Array(numTags * 3).fill(0),
-      lastUpdatedAt: 0,
+      updatedAt: 0,
     };
   }
 
   return {
     weights: result.weights,
-    lastUpdatedAt: result.updatedAt,
+    updatedAt: result.updatedAt,
   };
 }
 
@@ -117,7 +114,7 @@ export const getUserTagWeights = internalQuery({
   },
 });
 
-export const getInteractionsByUsers = internalQuery({
+export const getInteractionsByUsers = internalMutation({
   args: {
     rows: v.array(
       v.object({
@@ -220,5 +217,78 @@ export const getPreferredTagsByUserId = internalQuery({
         return doc?.tags ?? [];
       })
     );
+  },
+});
+
+export const getUsersWithRecentActivity = internalMutation({
+  args: { numTags: v.optional(v.number()) },
+  handler: async (ctx, { numTags }) => {
+    const allUsers = await ctx.db.query('users').collect();
+
+    const results = await Promise.all(
+      allUsers.map(async (user) => {
+        const userId = user._id;
+
+        const weightsRow = await ctx.db
+          .query('userTagWeights')
+          .withIndex('by_userId', (q) => q.eq('userId', userId))
+          .unique();
+
+        const updatedAt = weightsRow?.updatedAt ?? 0;
+
+        const newestInteraction = await ctx.db
+          .query('attendance')
+          .withIndex('by_userId_updatedAt', (q) => q.eq('userId', userId))
+          .order('desc')
+          .first();
+
+        const needsSeeding = weightsRow === null;
+        const hasRecentActivity =
+          newestInteraction !== null && newestInteraction.updatedAt > updatedAt;
+
+        if (!hasRecentActivity) {
+          if (needsSeeding && numTags !== undefined) {
+            await ctx.db.insert('userTagWeights', {
+              userId,
+              weights: new Array(numTags * 3).fill(0),
+              updatedAt: Date.now(),
+            });
+          }
+          return null;
+        }
+
+        const weights =
+          weightsRow?.weights ?? (numTags !== undefined ? new Array(numTags * 3).fill(0) : null);
+
+        return {
+          userId,
+          updatedAt,
+          weights,
+        };
+      })
+    );
+
+    return results.filter((r): r is NonNullable<typeof r> => r !== null);
+  },
+});
+
+export const getAllEventsAfterNow = internalQuery({
+  handler: async (ctx) => {
+    const now = Date.now();
+
+    const events = await ctx.db
+      .query('events')
+      .withIndex('by_endDate', (q) => q.gte('endDate', now))
+      .collect();
+
+    const externalEvents = await ctx.db
+      .query('externalEvents')
+      .withIndex('by_endDate', (q) => q.gte('endDate', now))
+      .collect();
+
+    return [
+      ...events.map((e) => ({ ...e, source: 'internal' as const })),
+      ...externalEvents.map((e) => ({ ...e, source: 'external' as const })),
+    ];
   },
 });

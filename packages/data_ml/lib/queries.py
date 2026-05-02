@@ -45,6 +45,10 @@ def get_friend_ids(user_id: str) -> list[str]:
 def query_all(table_name: str) -> list[dict[str, Any]]:
     return _get("/data-ml/query-all", {"table_name": table_name})  # type: ignore[no-any-return]
 
+def query_active(num_tags: int | None) -> list[dict[str, Any]]:
+    if num_tags is not None:
+        return _get("/data-ml/get-users-with-recent-activity", {"numTags": num_tags}) # type: ignore[no-any-return]
+    return _get("/data-ml/get-users-with-recent-activity") # type: ignore[no-any-return]
 
 def upsert_friend_recs(userId: str, top_sim_scores: list[dict[str, Any]]) -> None:
     _post("/data-ml/upsert-friend-recs", {"userId": userId, "recs": top_sim_scores})
@@ -153,3 +157,6 @@ def get_preferred_tags_by_user_id(user_ids: list[str]) -> list[str]:
     )
     resp.raise_for_status()
     return resp.json()  # type: ignore[no-any-return]
+
+def get_all_events_after_now() -> list[dict[str, Any]]:
+    return _get("/data-ml/get-all-events-after-now") # type: ignore[no-any-return]
