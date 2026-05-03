@@ -61,6 +61,18 @@ export default function SecurityScreen() {
         </View>
 
         <View>
+          <SettingsSectionLabel>Devices</SettingsSectionLabel>
+          <View className="overflow-hidden rounded-2xl border border-border bg-card">
+            <SettingsRow
+              icon="phone-portrait-outline"
+              label="Active Devices"
+              onPress={() => router.push('/(tabs)/profile/settings/security/active-devices')}
+              isLast
+            />
+          </View>
+        </View>
+
+        <View>
           <SettingsSectionLabel>Account</SettingsSectionLabel>
           <View className="overflow-hidden rounded-2xl border border-border bg-card">
             <SettingsRow
