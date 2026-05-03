@@ -160,3 +160,9 @@ def get_preferred_tags_by_user_id(user_ids: list[str]) -> list[str]:
 
 def get_all_events_after_now() -> list[dict[str, Any]]:
     return _get("/data-ml/get-all-events-after-now") # type: ignore[no-any-return]
+
+def get_users_needing_event_rec() -> list[str]:
+    return _get("/data-ml/get-users-needing-event-rec")  # type: ignore[no-any-return]
+
+def get_users_needing_friend_rec() -> list[str]:
+    return _get("/data-ml/get-users-needing-friend-rec")  # type: ignore[no-any-return]

@@ -21,6 +21,7 @@ export const createPost = mutation({
       eventId,
     });
     await Promise.all(tagIds.map((tagId) => ctx.db.insert('postTags', { postId, tagId })));
+    await ctx.db.patch(user._id, { friendRecNeedsUpdate: true });
     return postId;
   },
 });

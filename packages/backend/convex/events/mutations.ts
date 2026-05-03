@@ -28,6 +28,11 @@ export const createEvent = mutation({
       ...(mediaId !== undefined && { mediaId }),
     });
     await Promise.all(tagIds.map((tagId) => ctx.db.insert('eventTags', { eventId, tagId })));
+
+    // New event changes the pool for all users' recommendations
+    const allUsers = await ctx.db.query('users').collect();
+    await Promise.all(allUsers.map((u) => ctx.db.patch(u._id, { eventRecNeedsUpdate: true })));
+
     return eventId;
   },
 });

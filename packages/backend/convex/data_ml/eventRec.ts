@@ -104,9 +104,10 @@ export const upsertUserTagWeightsBatch = internalMutation({
   },
   handler: async (ctx, { rows }) => {
     await Promise.all(
-      rows.map(({ userId, weights, lastDecayedAt }) =>
-        upsertUserTagWeightsRow(ctx, userId, weights, lastDecayedAt)
-      )
+      rows.map(async ({ userId, weights }) => {
+        await upsertUserTagWeightsRow(ctx, userId, weights, lastDecayedAt)
+        await ctx.db.patch(userId, { eventRecNeedsUpdate: true });
+      })
     );
   },
 });
@@ -185,6 +186,8 @@ export const upsertEventRecsBatch = internalMutation({
         } else {
           await ctx.db.insert('eventRecs', { userId, eventIds });
         }
+
+        await ctx.db.patch(userId, { eventRecNeedsUpdate: false });
       })
     );
   },
@@ -287,6 +290,13 @@ export const getUsersWithRecentActivity = internalMutation({
     );
 
     return results.filter((r): r is NonNullable<typeof r> => r !== null);
+  },
+});
+
+export const getUsersNeedingEventRec = internalQuery({
+  handler: async (ctx) => {
+    const users = await ctx.db.query('users').collect();
+    return users.filter((u) => u.eventRecNeedsUpdate === true).map((u) => u._id);
   },
 });
 

@@ -463,3 +463,47 @@ def test_upsert_user_tag_weights_batch_calls_correct_path() -> None:
         mock_post.assert_called_once_with(
             "/data-ml/upsert-user-tag-weights-batch", {"rows": rows}
         )
+
+
+# ------------------------------
+#  get_users_needing_event_rec()
+# ------------------------------
+
+def test_get_users_needing_event_rec_returns_list() -> None:
+    with patch("queries._get", return_value=["u1", "u2"]):
+        result = queries.get_users_needing_event_rec()
+        assert result == ["u1", "u2"]
+
+
+def test_get_users_needing_event_rec_returns_empty_list() -> None:
+    with patch("queries._get", return_value=[]):
+        result = queries.get_users_needing_event_rec()
+        assert result == []
+
+
+def test_get_users_needing_event_rec_calls_correct_path() -> None:
+    with patch("queries._get", return_value=[]) as mock_get:
+        queries.get_users_needing_event_rec()
+        mock_get.assert_called_once_with("/data-ml/get-users-needing-event-rec")
+
+
+# ------------------------------
+#  get_users_needing_friend_rec()
+# ------------------------------
+
+def test_get_users_needing_friend_rec_returns_list() -> None:
+    with patch("queries._get", return_value=["u3", "u4"]):
+        result = queries.get_users_needing_friend_rec()
+        assert result == ["u3", "u4"]
+
+
+def test_get_users_needing_friend_rec_returns_empty_list() -> None:
+    with patch("queries._get", return_value=[]):
+        result = queries.get_users_needing_friend_rec()
+        assert result == []
+
+
+def test_get_users_needing_friend_rec_calls_correct_path() -> None:
+    with patch("queries._get", return_value=[]) as mock_get:
+        queries.get_users_needing_friend_rec()
+        mock_get.assert_called_once_with("/data-ml/get-users-needing-friend-rec")

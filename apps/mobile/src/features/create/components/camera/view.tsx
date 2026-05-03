@@ -4,7 +4,6 @@ import { LatestGalleryImage } from '@/features/create/components/latest-gallery-
 import { useCapture } from '@/features/create/hooks/use-capture';
 import type { CreateMode } from '@/features/create/types';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -63,15 +62,15 @@ export function CreateCameraCaptureView({
     }
   }, [refreshCameraPermission]);
 
-  useFocusEffect(
-    useCallback(() => {
-      refreshCameraPermission();
+  useEffect(() => {
+    refreshCameraPermission();
 
-      if (Camera.getCameraPermissionStatus() === 'not-determined') {
-        void requestCameraAccess();
-      }
-    }, [refreshCameraPermission, requestCameraAccess])
-  );
+    if (!isActive || Camera.getCameraPermissionStatus() !== 'not-determined') {
+      return;
+    }
+
+    void requestCameraAccess();
+  }, [isActive, refreshCameraPermission, requestCameraAccess]);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
