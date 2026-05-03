@@ -11,11 +11,9 @@ export default function SettingsLayout() {
     >
       <Stack.Screen name="index" options={{ title: 'Settings' }} />
       <Stack.Screen name="support" options={{ title: 'Support' }} />
-      <Stack.Screen name="connected-accounts" options={{ title: 'Connected Accounts' }} />
       <Stack.Screen name="blocked-users" options={{ title: 'Blocked Users' }} />
-      <Stack.Screen name="edit" options={{ title: 'Edit Profile' }} />
+      <Stack.Screen name="edit-profile" options={{ title: 'Edit Profile' }} />
       <Stack.Screen name="security" options={{ headerShown: false }} />
-      <Stack.Screen name="signed-in-devices" options={{ title: 'Active Devices' }} />
       <Stack.Screen
         name="gallery-picker"
         options={{

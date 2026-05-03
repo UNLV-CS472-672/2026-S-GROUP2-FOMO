@@ -122,7 +122,7 @@ export default function SettingsScreen() {
             <SettingsRow
               icon="person-outline"
               label="Edit Profile"
-              onPress={() => router.push('/(tabs)/profile/settings/edit')}
+              onPress={() => router.push('/(tabs)/profile/settings/edit-profile')}
             />
             <SettingsRow
               icon="lock-closed-outline"
