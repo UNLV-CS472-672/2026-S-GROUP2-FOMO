@@ -188,6 +188,11 @@ export function useSocialSignIn({
       }
 
       if (isUsernameMissing(signUpResource, signUpMeta)) {
+        if (!isSignupIntent) {
+          handleError(new Error(buildNoSocialAccountMessage(provider)));
+          return;
+        }
+
         if (!signUpResource) {
           handleError(
             new Error(`Unable to continue ${getProviderLabel(provider)} sign up. Please try again.`)
