@@ -22,6 +22,8 @@ export default defineSchema({
     username: v.string(), // should be unique and this is the main display/handle on frontend
     avatarUrl: v.string(), // should get from clerk
     deletedAt: v.optional(v.number()),
+    eventRecNeedsUpdate: v.optional(v.boolean()),
+    friendRecNeedsUpdate: v.optional(v.boolean()),
   })
     .index('by_clerkId', ['clerkId'])
     .index('by_username', ['username']),
@@ -68,7 +70,7 @@ export default defineSchema({
       v.union(v.literal('going'), v.literal('interested'), v.literal('uninterested'))
     ),
     notification: v.optional(v.union(v.literal('all'), v.literal('friends'), v.literal('none'))),
-    updatedAt: v.number(),
+    updatedAt: v.number(), // IMPORTANT: if field is missing, set it to optional, run "npx convex run runMigrations:runSetDefaultUpdatedAt", then remove optional.
     previousStatus: v.optional(
       v.union(v.literal('going'), v.literal('interested'), v.literal('uninterested'))
     ),

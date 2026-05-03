@@ -9,11 +9,11 @@ function ProviderIcon({ provider }: { provider: string }) {
   const theme = useAppTheme();
 
   if (provider.includes('apple')) {
-    return <Ionicons name="logo-apple" size={20} color={theme.primaryText} />;
+    return <Ionicons name="logo-apple" size={26} color={theme.text} />;
   }
 
   if (provider.includes('google')) {
-    return <Image source={googleGLogo} style={{ width: 20, height: 20 }} resizeMode="contain" />;
+    return <Image source={googleGLogo} style={{ width: 26, height: 26 }} resizeMode="contain" />;
   }
 
   return <Ionicons name="link-outline" size={18} color={theme.tint} />;

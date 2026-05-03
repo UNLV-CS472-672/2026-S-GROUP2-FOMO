@@ -8,6 +8,7 @@ from typing import Generator
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "friendRec"))
 from friendRecs import (
+    get_blocked_user_lookup,
     join_user_events,
     raw_matrix_events,
     raw_matrix_eventTags,
@@ -18,6 +19,7 @@ from friendRecs import (
     upsert_friend_recs,
     main_one_user,
     main_all_users,
+    main_dirty_users,
 )
 
 
@@ -79,6 +81,10 @@ def sample_postTags() -> list[dict[str, str]]:
     ]
 
 @pytest.fixture
+def sample_blocked_users() -> list[dict[str, str]]:
+    return []
+
+@pytest.fixture
 def sample_similarity_df() -> pd.DataFrame:
     data = {
         "Hackathon": [1, 1, 0],
@@ -101,6 +107,7 @@ def mock_queries(
     sample_eventTags: list[dict[str, str]],
     sample_posts: list[dict[str, str]],
     sample_postTags: list[dict[str, str]],
+    sample_blocked_users: list[dict[str, str]],
 ) -> Generator[dict[str, MagicMock], None, None]:
     dispatch = {
         "attendance": sample_users_to_events,
@@ -110,6 +117,7 @@ def mock_queries(
         "users": sample_users,
         "posts": sample_posts,
         "postTags": sample_postTags,
+        "blockedUsers": sample_blocked_users,
     }
     with patch("friendRecs.queries.query_all", side_effect=lambda t: dispatch.get(t, [])), \
          patch("friendRecs.queries.get_friend_ids", return_value=[]) as mock_get_friend_ids, \
@@ -122,6 +130,29 @@ def mock_queries(
             "user_exists": mock_user_exists,
             "get_all_user_ids": mock_get_ids,
         }
+
+
+# ------------------------------
+#  get_blocked_user_lookup()
+# ------------------------------
+
+def test_get_blocked_user_lookup_returns_symmetric_lookup(
+    mock_queries: dict[str, MagicMock],
+) -> None:
+    with patch(
+        "friendRecs.queries.query_all",
+        return_value=[
+            {"blockerId": "u1", "blockedUserId": "u2"},
+            {"blockerId": "u3", "blockedUserId": "u1"},
+        ],
+    ):
+        blocked_lookup = get_blocked_user_lookup()
+
+    assert blocked_lookup == {
+        "u1": {"u2", "u3"},
+        "u2": {"u1"},
+        "u3": {"u1"},
+    }
 
 
 # ------------------------------
@@ -324,6 +355,25 @@ def test_upsert_friend_recs_recipient_filtering(
     rec_ids = [r["userId"] for r in recs]
     assert "u1" not in rec_ids
 
+def test_upsert_friend_recs_filters_users_blocked_by_target_user(
+    mock_queries: dict[str, MagicMock], sample_score_df: pd.DataFrame
+) -> None:
+    blocked_lookup = {"u1": {"u2"}, "u2": {"u1"}}
+    upsert_friend_recs(sample_score_df, "u1", 2, blocked_lookup)
+    _, recs = mock_queries["upsert_friend_recs"].call_args.args
+    rec_ids = [r["userId"] for r in recs]
+    assert "u2" not in rec_ids
+    assert rec_ids == ["u1"]
+
+def test_upsert_friend_recs_filters_users_who_blocked_target_user(
+    mock_queries: dict[str, MagicMock], sample_score_df: pd.DataFrame
+) -> None:
+    blocked_lookup = {"u1": {"u2"}, "u2": {"u1"}}
+    upsert_friend_recs(sample_score_df, "u1", 2, blocked_lookup)
+    _, recs = mock_queries["upsert_friend_recs"].call_args.args
+    rec_ids = [r["userId"] for r in recs]
+    assert "u2" not in rec_ids
+
 def test_upsert_friend_recs_pending_not_filtered(
     mock_queries: dict[str, MagicMock], sample_score_df: pd.DataFrame
 ) -> None:
@@ -405,6 +455,7 @@ def test_main_one_user_calls_sim_scores_weighted(mock_main_dependencies: dict[st
 def test_main_one_user_calls_upsert_friend_recs(mock_main_dependencies: dict[str, MagicMock]) -> None:
     main_one_user("alice", 5)
     mock_main_dependencies["upsert_friend_recs"].assert_called_once()
+    assert len(mock_main_dependencies["upsert_friend_recs"].call_args.args) == 4
 
 
 # ------------------------------
@@ -470,3 +521,92 @@ def test_main_all_users_upserts_for_each_user(mock_main_all_users_dependencies: 
     assert mock_main_all_users_dependencies["upsert_friend_recs"].call_count == len(user_ids)
     called_user_ids = [call_args[0][1] for call_args in mock_main_all_users_dependencies["upsert_friend_recs"].call_args_list]
     assert called_user_ids == user_ids
+    assert all(len(call_args.args) == 4 for call_args in mock_main_all_users_dependencies["upsert_friend_recs"].call_args_list)
+
+
+# ------------------------------
+#  main_dirty_users()
+# ------------------------------
+
+@pytest.fixture
+def mock_main_dirty_users_dependencies(
+    mock_queries: dict[str, MagicMock],
+) -> Generator[dict[str, MagicMock | list[str]], None, None]:
+    dirty_user_ids = ["u1", "u2"]
+
+    with patch("friendRecs.queries.get_users_needing_friend_rec", return_value=dirty_user_ids) as mock_get_dirty, \
+         patch("friendRecs.raw_matrix_events") as mock_raw_events, \
+         patch("friendRecs.raw_matrix_eventTags") as mock_raw_event_tags, \
+         patch("friendRecs.raw_matrix_postTags") as mock_raw_post_tags, \
+         patch("friendRecs.build_similarity_matrix") as mock_build_matrix, \
+         patch("friendRecs.get_user_scores") as mock_get_user_scores, \
+         patch("friendRecs.sim_scores_weighted") as mock_weighted, \
+         patch("friendRecs.upsert_friend_recs") as mock_upsert:
+
+        mock_raw_events.return_value = MagicMock()
+        mock_raw_event_tags.return_value = MagicMock()
+        mock_raw_post_tags.return_value = MagicMock()
+        mock_build_matrix.return_value = MagicMock()
+        mock_get_user_scores.return_value = MagicMock()
+        mock_weighted.return_value = MagicMock()
+
+        yield {
+            "dirty_user_ids":              dirty_user_ids,
+            "get_users_needing_friend_rec": mock_get_dirty,
+            "raw_matrix_events":           mock_raw_events,
+            "raw_matrix_eventTags":        mock_raw_event_tags,
+            "raw_matrix_postTags":         mock_raw_post_tags,
+            "build_similarity_matrix":     mock_build_matrix,
+            "get_user_scores":             mock_get_user_scores,
+            "sim_scores_weighted":         mock_weighted,
+            "upsert_friend_recs":          mock_upsert,
+        }
+
+
+def test_main_dirty_users_exits_early_when_no_dirty_users(
+    mock_queries: dict[str, MagicMock],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with patch("friendRecs.queries.get_users_needing_friend_rec", return_value=[]), \
+         patch("friendRecs.raw_matrix_events") as mock_raw_events:
+        main_dirty_users(5)
+        mock_raw_events.assert_not_called()
+    assert "No users need friend rec update." in capsys.readouterr().out
+
+
+def test_main_dirty_users_builds_raw_matrices_once(
+    mock_main_dirty_users_dependencies: dict[str, MagicMock],
+) -> None:
+    main_dirty_users(5)
+    mock_main_dirty_users_dependencies["raw_matrix_events"].assert_called_once()
+    mock_main_dirty_users_dependencies["raw_matrix_eventTags"].assert_called_once()
+    mock_main_dirty_users_dependencies["raw_matrix_postTags"].assert_called_once()
+
+
+def test_main_dirty_users_builds_similarity_matrices_once(
+    mock_main_dirty_users_dependencies: dict[str, MagicMock],
+) -> None:
+    main_dirty_users(5)
+    assert mock_main_dirty_users_dependencies["build_similarity_matrix"].call_count == 3
+
+
+def test_main_dirty_users_upserts_only_for_dirty_users(
+    mock_main_dirty_users_dependencies: dict[str, MagicMock],
+) -> None:
+    dirty_user_ids = mock_main_dirty_users_dependencies["dirty_user_ids"]
+    main_dirty_users(5)
+    assert mock_main_dirty_users_dependencies["upsert_friend_recs"].call_count == len(dirty_user_ids)
+    called_user_ids = [
+        call_args[0][1] for call_args in mock_main_dirty_users_dependencies["upsert_friend_recs"].call_args_list
+    ]
+    assert called_user_ids == dirty_user_ids
+
+
+def test_main_dirty_users_prints_updated_count(
+    mock_main_dirty_users_dependencies: dict[str, MagicMock],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    dirty_user_ids = mock_main_dirty_users_dependencies["dirty_user_ids"]
+    main_dirty_users(5)
+    out = capsys.readouterr().out
+    assert f"Updated {len(dirty_user_ids)} users" in out

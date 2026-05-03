@@ -114,6 +114,7 @@ export const setViewerAttendance = mutation({
     if (attendance === null) {
       if (existingAttendance) {
         await ctx.db.delete(existingAttendance._id);
+        await ctx.db.patch(user._id, { friendRecNeedsUpdate: true });
       }
 
       return { attendance: null, notification };
@@ -134,6 +135,8 @@ export const setViewerAttendance = mutation({
         updatedAt: Date.now(),
       });
     }
+
+    await ctx.db.patch(user._id, { friendRecNeedsUpdate: true });
 
     return { attendance, notification };
   },
