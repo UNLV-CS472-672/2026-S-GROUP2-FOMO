@@ -122,9 +122,13 @@ export default function MapPage() {
       return '';
     }
 
-    const styleId = isDark ? 'dark-v11' : 'streets-v12';
     const [lng, lat] = centerCoordinate;
-    return `https://api.mapbox.com/styles/v1/mapbox/${styleId}/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
+
+    if (isDark) {
+      return `https://api.mapbox.com/styles/v1/fomo-map-dev/cmnl4z51o002k01sl36v21n8r/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
+    }
+
+    return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
   }, [centerCoordinate, isDark, mounted]);
 
   return (
