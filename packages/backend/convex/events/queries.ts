@@ -108,19 +108,40 @@ function countComments(comments: Awaited<ReturnType<typeof getThreadedCommentsBy
   return comments.reduce((total, comment) => total + 1 + countComments(comment.replies), 0);
 }
 
+// Events show on the map if they start within this much time from now —
+// covers tonight's concerts even when viewed in the morning.
+const UPCOMING_WINDOW_MS = 24 * 60 * 60 * 1000;
+// A past event stays visible while attendees are still posting about it.
+const POST_ACTIVITY_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 export const getEvents = query({
   args: {},
   handler: async (ctx) => {
     const [, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
 
     const now = Date.now();
+    const upcomingCutoff = now + UPCOMING_WINDOW_MS;
+    const recentPostThreshold = now - POST_ACTIVITY_WINDOW_MS;
     const events = await ctx.db
       .query('events')
-      .withIndex('by_startDate', (q) => q.lte('startDate', now))
+      .withIndex('by_startDate', (q) => q.lte('startDate', upcomingCutoff))
       .collect();
-    const activeEvents = events.filter((e) => e.endDate >= now);
+
+    const visible = await Promise.all(
+      events.map(async (event) => {
+        if (event.endDate >= now) return event;
+        const recentPost = await ctx.db
+          .query('posts')
+          .withIndex('by_event', (q) => q.eq('eventId', event._id))
+          .filter((q) => q.gte(q.field('_creationTime'), recentPostThreshold))
+          .first();
+        return recentPost ? event : null;
+      })
+    );
+    const filtered = visible.filter((e): e is Doc<'events'> => e !== null);
+
     return await Promise.all(
-      activeEvents.map((event, index) =>
+      filtered.map((event, index) =>
         serializeEvent(ctx, event, guestMode ? undefined : 1 / (index + 1))
       )
     );
@@ -139,15 +160,31 @@ export const getEventById = query({
   },
 });
 
+// Unfiltered list of internal events for surfaces (e.g. the create-post search)
+// where users need to attach posts to past events too.
+export const getAllInternalEvents = query({
+  args: {},
+  handler: async (ctx) => {
+    const [, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
+    const events = await ctx.db.query('events').withIndex('by_startDate').collect();
+    return await Promise.all(
+      events.map((event, index) =>
+        serializeEvent(ctx, event, guestMode ? undefined : 1 / (index + 1))
+      )
+    );
+  },
+});
+
 export const getExternalEvents = query({
   args: {},
   handler: async (ctx) => {
     const [, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
 
     const now = Date.now();
+    const upcomingCutoff = now + UPCOMING_WINDOW_MS;
     const events = await ctx.db
       .query('externalEvents')
-      .withIndex('by_startDate', (q) => q.lte('startDate', now))
+      .withIndex('by_startDate', (q) => q.lte('startDate', upcomingCutoff))
       .collect();
     const activeEvents = events.filter((e) => e.endDate >= now);
     return await Promise.all(
@@ -167,6 +204,39 @@ export const getExternalEventsById = query({
     }
 
     return await serializeExternalEvent(ctx, event);
+  },
+});
+
+export const getPastEvents = query({
+  args: {},
+  handler: async (ctx) => {
+    await __backend_only_guestOrAuthenticatedUser(ctx);
+
+    const now = Date.now();
+    const [internal, external] = await Promise.all([
+      ctx.db
+        .query('events')
+        .withIndex('by_endDate', (q) => q.lt('endDate', now))
+        .collect(),
+      ctx.db
+        .query('externalEvents')
+        .withIndex('by_endDate', (q) => q.lt('endDate', now))
+        .collect(),
+    ]);
+
+    const all: (Doc<'events'> | Doc<'externalEvents'>)[] = [...internal, ...external];
+    all.sort((a, b) => b.endDate - a.endDate);
+
+    return all.map((event) => ({
+      id: event._id,
+      name: event.name,
+      caption: event.caption,
+      organization: 'organization' in event ? event.organization : null,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      mediaId: 'mediaId' in event ? (event.mediaId ?? null) : null,
+      isExternal: 'externalKey' in event,
+    }));
   },
 });
 
