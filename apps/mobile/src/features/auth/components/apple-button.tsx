@@ -17,7 +17,7 @@ export function AppleButton({ onPress, loading, disabled, mode = 'login' }: Appl
   const isDisabled = Boolean(disabled || loading);
 
   return (
-    <View className={isDisabled ? 'opacity-50 -mb-2' : '-mb-3'}>
+    <View className={isDisabled ? 'opacity-50 -mb-2.5' : '-mb-2.5'}>
       <AppleAuthenticationButton
         buttonType={
           mode === 'signup'
