@@ -20,27 +20,26 @@ export function GoogleButton({ onPress, loading, disabled, mode = 'login' }: Goo
       accessibilityLabel={label}
       className={
         disabled || loading
-          ? 'h-14 w-full flex-row items-center justify-center opacity-50'
-          : 'h-14 w-full flex-row items-center justify-center'
+          ? 'h-12 w-full flex-row items-center justify-center opacity-50 rounded-full'
+          : 'h-12 w-full flex-row items-center justify-center rounded-full'
       }
       style={{
         backgroundColor: isDark ? '#131314' : '#FFFFFF',
         borderColor: isDark ? '#8E918F' : '#747775',
         borderWidth: 1,
-        borderRadius: 16,
       }}
     >
       <Image
         source={require('../../../../../../assets/auth/google/g-logo.png')}
-        style={{ width: 20, height: 20, marginRight: 12 }}
+        style={{ width: 16, height: 16, marginRight: 5 }}
         resizeMode="contain"
         accessible={false}
       />
       <Text
         style={{
           color: isDark ? '#E3E3E3' : '#1F1F1F',
-          fontSize: 20,
-          lineHeight: 24,
+          fontSize: 17,
+          lineHeight: 26,
           fontWeight: '600',
         }}
       >
