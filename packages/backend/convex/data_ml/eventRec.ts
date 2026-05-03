@@ -194,7 +194,7 @@ export const getCurrentUserEventRecs = query({
   },
 });
 
-export const getUserTagWeightsWithTimestamp = internalQuery({
+export const getUserTagWeightsWithTimestamps = internalQuery({
   args: {
     userIds: v.array(v.id('users')),
     numTags: v.number(),
