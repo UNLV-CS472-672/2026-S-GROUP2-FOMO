@@ -1,3 +1,5 @@
+import darkLogo from '@/assets/logos/fomo-dark.png';
+import lightLogo from '@/assets/logos/fomo-light.png';
 import { DrawerModal } from '@/components/ui/drawer';
 import { signOutClerkExpo } from '@/features/auth/utils/clerk-sign-out';
 import { InterestsPicker } from '@/features/profile/components/interests-picker';
@@ -8,10 +10,12 @@ import { useClerk, useUser } from '@clerk/expo';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useQuery } from 'convex/react';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { Alert, Image, ScrollView, Text, View } from 'react-native';
+import { useUniwind } from 'uniwind';
 
 const TERMS_URL = 'https://fomo-app.dev/terms';
 const PRIVACY_URL = 'https://fomo-app.dev/privacy';
@@ -23,6 +27,7 @@ export default function SettingsScreen() {
   const clerk = useClerk();
   const { user } = useUser();
   const router = useRouter();
+  const { theme } = useUniwind();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState<SettingsDrawer>(null);
   const [isInteractionLocked, setIsInteractionLocked] = useState(false);
@@ -33,6 +38,9 @@ export default function SettingsScreen() {
   const initials =
     [user?.firstName?.[0], user?.lastName?.[0]].filter(Boolean).join('').toUpperCase() || '?';
   const isDrawerOpen = activeDrawer !== null;
+  const isDark = theme === 'dark';
+  const logoSource = isDark ? darkLogo : lightLogo;
+  const appVersion = Constants.expoConfig?.version ?? 'Unknown';
 
   useEffect(() => {
     if (!isInteractionLocked) {
@@ -140,7 +148,7 @@ export default function SettingsScreen() {
             <SettingsRow
               icon="ban-outline"
               label="Blocked Users"
-              value={blockedCount}
+              value={blockedCount || undefined}
               onPress={() => router.push('/(tabs)/profile/settings/blocked-users')}
             />
             <SettingsRow
@@ -180,6 +188,11 @@ export default function SettingsScreen() {
               isLast
             />
           </View>
+        </View>
+
+        <View className="items-center gap-2 pb-2 pt-5">
+          <Image source={logoSource} style={{ width: 100, height: 48 }} resizeMode="contain" />
+          <Text className="text-xs text-muted-foreground">Version {appVersion}</Text>
         </View>
       </ScrollView>
 
