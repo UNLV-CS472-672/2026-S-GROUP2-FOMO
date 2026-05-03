@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from typing import Optional
 from lib import queries
 
+import time
 
 # Number of tags in the system, populated by init_tags(). Drives all vector dimensions:
 # multihot vectors are length NUM_TAGS, full feature vectors are length 3 * NUM_TAGS.
@@ -23,6 +24,8 @@ DECAY_RATE_GOING  = 0.95  # multiply per "decay event"
 DECAY_RATE_INT    = 0.95
 DECAY_RATE_UNINT  = 0.99  # blocked decays much slower
 DECAY_CEILING     = 0.5  # max absolute decrease per decay event
+NOW_MS = time.time() * 1000.0
+DECAY_INTERVAL_MS = 3 * 24 * 3600 * 1000.0  # Every 3 days
 
 def init_tags() -> None:
     """init tags"""
@@ -36,38 +39,18 @@ def init_tags() -> None:
 
 
 def apply_weight_decay(
-    stored_weights: NDArray[np.float32],
-    update_contribution: NDArray[np.float32],
-    discard_contribution: NDArray[np.float32],
-    threshold: float,
-    decay_rate: float,
-    floor: float,
-    cap: float,
-    ceiling: float,
+    stored_weights, update_contribution, discard_contribution,
+    threshold, decay_rate, floor, ceiling,
 ) -> NDArray[np.float32]:
-    # A tag is "touched this round" if it appears in either update or discard.
-    # Toggles (going -> interested) touch the tag in both slices, which is fine.
     touched = (update_contribution != 0) | (discard_contribution != 0)
     above_threshold = stored_weights > threshold
     decay_mask = (~touched) & above_threshold
 
-    # Multiplicative decay
     decayed = np.where(decay_mask, stored_weights * decay_rate, stored_weights)
-
-    # Decay ceiling: don't let any single weight drop more than `ceiling` in one round.
-    # For a weight w being decayed, the lowest it's allowed to go is (w - ceiling).
     max_drop_floor = stored_weights - ceiling
     decayed = np.maximum(decayed, max_drop_floor)
-
-    # Hard floor: never go below this regardless of decay
     decayed = np.maximum(decayed, floor)
-
-    # Apply net delta after decay
-    delta = update_contribution - discard_contribution
-    result = decayed + delta
-
-    # Per-bucket cap on max stored weight
-    return np.minimum(result, cap)
+    return decayed
 
 
 def event_multihot_from_rows(event_tags: list[dict[str, str]]) -> NDArray[np.float32]:
@@ -197,20 +180,22 @@ def get_interaction_ids_from_rows(
 
 def get_user_raw_weights_and_last_updated(
     user_id: str,
-) -> tuple[float, NDArray[np.float32]]:
+) -> tuple[float, NDArray[np.float32], float]:
     """Loads stored user weights and normalizes them to the expected shape."""
     user_weights_and_timestamp = queries.get_user_tag_weights_with_timestamp(user_id, NUM_TAGS)
 
-    user_last_updated, user_raw_weights = user_weights_and_timestamp[user_id]
-    user_raw_weights_nd = np.array(user_raw_weights)
+    user_last_updated = float(result["updatedAt"])
+    user_raw_weights_nd = np.array(result["weights"])
+    last_decayed_at = float(result["lastDecayedAt"])
 
-    return user_last_updated, user_raw_weights_nd
+    return user_last_updated, user_raw_weights_nd, last_decayed_at
 
 
 def build_user_feature_vector_from_interactions(
     user_raw_weights_nd: NDArray[np.float32],
     interactions: list[dict[str, str]],
     event_tags_by_id: Optional[dict[str, list[dict[str, str]]]] = None,
+    should_decay: bool = False,
 ) -> NDArray[np.float32]:
     """Builds a user feature vector from pre-fetched interaction rows."""
     # interactions only contains rows where status changed since the last
@@ -247,12 +232,21 @@ def build_user_feature_vector_from_interactions(
     update_int_weights, discard_int_weights = build_weights(int_mat, remove_int, row_weight=0.5)
     update_blk_weights, discard_blk_weights = build_weights(unint_mat, remove_unint, row_weight=1.0)
 
-    att_new = apply_weight_decay(att_old, update_att_weights, discard_att_weights,
-                                 DECAY_THRESHOLD, DECAY_RATE_GOING, W_FLOOR, W_MAX_GOING, DECAY_CEILING)
-    int_new = apply_weight_decay(int_old, update_int_weights, discard_int_weights,
-                                 DECAY_THRESHOLD, DECAY_RATE_INT, W_FLOOR, W_MAX_INTERESTED, DECAY_CEILING)
-    blk_new = apply_weight_decay(blk_old, update_blk_weights, discard_blk_weights,
-                                 DECAY_THRESHOLD, DECAY_RATE_UNINT, W_FLOOR, W_MAX_BLOCKED, DECAY_CEILING)
+    att_old = user_raw_weights_nd[:NUM_TAGS]
+    int_old = user_raw_weights_nd[NUM_TAGS:2 * NUM_TAGS]
+    blk_old = user_raw_weights_nd[2 * NUM_TAGS:]
+
+    if should_decay:
+        att_new = apply_weight_decay(att_old, update_att_weights, discard_att_weights,
+                                     DECAY_THRESHOLD, DECAY_RATE_GOING, W_FLOOR, DECAY_CEILING)
+        int_new = apply_weight_decay(int_old, update_int_weights, discard_int_weights,
+                                     DECAY_THRESHOLD, DECAY_RATE_INT, W_FLOOR, DECAY_CEILING)
+        blk_new = apply_weight_decay(blk_old, update_blk_weights, discard_blk_weights,
+                                     DECAY_THRESHOLD, DECAY_RATE_UNINT, W_FLOOR, DECAY_CEILING)
+    else:
+        att_new = att_old
+        int_new = int_old
+        blk_new = blk_old
 
     new_user_weights_nd = np.concatenate(
         [att_new, int_new, blk_new]
@@ -267,9 +261,14 @@ def build_user_feature_vector_from_interactions(
     ).astype(np.float32)
 
     # Logically this will still always be positive.
-    final = update_contributions + (new_user_weights_nd - discard_contributions)
-    final[np.abs(final) < 1e-6] = 0 # Floating point precision
-
+    final = update_contributions + new_user_weights_nd - discard_contributions
+    caps = np.concatenate([
+        np.full(NUM_TAGS, W_MAX_GOING, dtype=np.float32),
+        np.full(NUM_TAGS, W_MAX_INTERESTED, dtype=np.float32),
+        np.full(NUM_TAGS, W_MAX_BLOCKED, dtype=np.float32),
+    ])
+    final = np.minimum(final, caps)
+    final[np.abs(final) < 1e-6] = 0
     return final
 
 
@@ -279,7 +278,7 @@ def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
       [going_weights | interested_weights | uninterested_weights]
     """
     # Single-user path. Main batched flow doesn't use this.
-    user_last_updated, user_raw_weights_nd = get_user_raw_weights_and_last_updated(
+    user_last_updated, user_raw_weights_nd, _ = get_user_raw_weights_and_last_updated(
         user_id
     )
 
@@ -299,8 +298,9 @@ def main(users: list[str], update_db: bool) -> None:
     user_feature_vectors: dict[str, NDArray[np.float32]] = {}
     user_raw_weights_by_id: dict[str, NDArray[np.float32]] = {}
     interaction_rows: list[dict[str, float | str]] = []
+    user_should_decay_by_id: dict[str, bool] = {}
 
-    user_weights_and_timestamps_by_id: dict[str, tuple[float, list[float] | None]] = {}
+    user_weights_and_timestamps_by_id: dict[str, tuple[float, list[float] | None, float]] = {}
     active_users = False
 
     # Resolve user list. ALL queries every user, ACTIVE only those with new
@@ -321,6 +321,7 @@ def main(users: list[str], update_db: bool) -> None:
                 user_weights_and_timestamps_by_id[row["userId"]] = (
                     float(row["updatedAt"]),
                     row["weights"],
+                    float(row["lastDecayedAt"]),
                 )
 
     # ACTIVE already returned weights+timestamps, so this query is only
@@ -333,18 +334,22 @@ def main(users: list[str], update_db: bool) -> None:
             user_weights_and_timestamps_by_id[row["userId"]] = (
                 float(row["updatedAt"]),
                 row["weights"],
+                float(row["lastDecayedAt"]),
             )
 
     # Build interaction request payload. sinceMs tells the TS layer which
     # attendance rows to consider (only those changed since the last weight
     # update for this user).
     for user_id in users:
-        user_last_updated, user_raw_weights = user_weights_and_timestamps_by_id[user_id]
+        user_last_updated, user_raw_weights, user_last_decayed = user_weights_and_timestamps_by_id[user_id]
         user_raw_weights_nd = np.array(user_raw_weights)
 
         user_raw_weights_by_id[user_id] = user_raw_weights_nd
 
         interaction_rows.append({"userId": user_id, "sinceMs": user_last_updated})
+
+        should_decay = (NOW_MS - user_last_decayed) >= DECAY_INTERVAL_MS
+        user_should_decay_by_id[user_id] = should_decay
 
     # Single batched call for all users' changed interactions. The TS mutation
     # also marks each returned row's previousStatus = status as a side effect,
@@ -372,14 +377,19 @@ def main(users: list[str], update_db: bool) -> None:
             user_raw_weights_by_id[user_id],
             interactions_by_user_id.get(user_id, []),
             event_tags_by_id,
+            should_decay=user_should_decay_by_id[user_id],
         )
 
     if update_db:
         # Single batched upsert for everyone updated this run.
-        rows = [
-            {"userId": user_id, "weights": vec.tolist()}
-            for user_id, vec in user_feature_vectors.items()
-        ]
+        rows = []
+        for user_id, vec in user_feature_vectors.items():
+            row: dict = {"userId": user_id, "weights": vec.tolist()}
+            if user_should_decay_by_id[user_id]:
+                row["lastDecayedAt"] = int(NOW_MS)
+
+            rows.append(row)
+
         queries.upsert_user_tag_weights_batch(rows)
         print(f"Updated {len(user_feature_vectors)} users in Convex.")
     else:

@@ -127,7 +127,7 @@ def get_user_tag_weights_with_timestamp(user_id: str, num_tags: int) -> dict[str
         result = dict(results[0])
         result.pop("userId", None)
         return result
-    return {"weights": [0] * (num_tags * 3), "lastUpdatedAt": 0}
+    return {"weights": [0] * (num_tags * 3), "updatedAt": 0, "lastDecayedAt": 0,}
 
 
 def get_user_tag_weights_with_timestamps(
