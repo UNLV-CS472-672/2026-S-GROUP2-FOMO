@@ -51,7 +51,7 @@ export default function CreateScreen() {
   return (
     <Screen>
       <GuestOnly>
-        <GuestMode />
+        <GuestMode compensateForOverlayTabBar />
       </GuestOnly>
 
       <Authenticated>
