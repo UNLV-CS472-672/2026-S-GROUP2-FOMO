@@ -1,6 +1,4 @@
-import { Button, ButtonText } from '@/components/ui/button';
-import { useAppTheme } from '@/lib/use-app-theme';
-import { Ionicons } from '@expo/vector-icons';
+import { Image, Pressable, Text, useColorScheme } from 'react-native';
 
 type GoogleButtonProps = {
   onPress: () => void;
@@ -10,19 +8,43 @@ type GoogleButtonProps = {
 };
 
 export function GoogleButton({ onPress, loading, disabled, mode = 'login' }: GoogleButtonProps) {
-  const theme = useAppTheme();
-  const label = mode === 'signup' ? 'Sign up with Google' : 'Log in with Google';
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const label = mode === 'signup' ? 'Sign up with Google' : 'Sign in with Google';
 
   return (
-    <Button
-      variant="secondary"
-      size="lg"
+    <Pressable
       onPress={onPress}
       disabled={disabled || loading}
-      className="flex-row items-center justify-center gap-2"
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      className={
+        disabled || loading
+          ? 'h-12 w-full flex-row items-center justify-center opacity-50 rounded-full'
+          : 'h-12 w-full flex-row items-center justify-center rounded-full'
+      }
+      style={{
+        backgroundColor: isDark ? '#131314' : '#FFFFFF',
+        borderColor: isDark ? '#8E918F' : '#747775',
+        borderWidth: 1,
+      }}
     >
-      <Ionicons name="logo-google" size={20} color={theme.primaryText} />
-      <ButtonText variant="secondary">{label}</ButtonText>
-    </Button>
+      <Image
+        source={require('../../../../../../assets/auth/google/g-logo.png')}
+        style={{ width: 16, height: 16, marginRight: 5 }}
+        resizeMode="contain"
+        accessible={false}
+      />
+      <Text
+        style={{
+          color: isDark ? '#E3E3E3' : '#1F1F1F',
+          fontSize: 17,
+          lineHeight: 26,
+          fontWeight: '600',
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }

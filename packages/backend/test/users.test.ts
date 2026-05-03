@@ -16,7 +16,6 @@ function makeUser(overrides: Record<string, unknown> = {}) {
     bio: '',
     clerkId: 'token_default',
     username: 'default',
-    displayName: 'Default',
     avatarUrl: '',
     ...overrides,
   };
@@ -56,7 +55,7 @@ describe('api.users', () => {
       const missingUserId = await t.run(async (ctx) => {
         const id = await ctx.db.insert(
           'users',
-          makeUser({ clerkId: 'token_ghost', username: 'ghost', displayName: 'ghost' })
+          makeUser({ clerkId: 'token_ghost', username: 'ghost' })
         );
         await ctx.db.delete(id);
         return id;
@@ -72,17 +71,14 @@ describe('api.users', () => {
       const t = setup();
 
       const userId = await t.run(async (ctx) => {
-        return await ctx.db.insert(
-          'users',
-          makeUser({ clerkId: 'token_solo', username: 'solo', displayName: 'solo' })
-        );
+        return await ctx.db.insert('users', makeUser({ clerkId: 'token_solo', username: 'solo' }));
       });
 
       const profile = await t.query(api.users.getProfileById, { userId });
 
       expect(profile).not.toBeNull();
       expect(profile!.user._id).toEqual(userId);
-      expect(profile!.user.displayName).toBe('solo');
+      expect(profile!.user.username).toBe('solo');
       expect(profile!.posts).toEqual([]);
       expect(profile!.comments).toEqual([]);
       expect(profile!.events).toEqual([]);
@@ -101,7 +97,7 @@ describe('api.users', () => {
       const userId = await t.run(async (ctx) => {
         const uid = await ctx.db.insert(
           'users',
-          makeUser({ clerkId: 'token_author', username: 'author', displayName: 'author' })
+          makeUser({ clerkId: 'token_author', username: 'author' })
         );
         await ctx.db.insert('posts', {
           caption: 'older',
@@ -127,7 +123,7 @@ describe('api.users', () => {
       const userId = await t.run(async (ctx) => {
         const uid = await ctx.db.insert(
           'users',
-          makeUser({ clerkId: 'token_commenter', username: 'commenter', displayName: 'commenter' })
+          makeUser({ clerkId: 'token_commenter', username: 'commenter' })
         );
         const pid = await ctx.db.insert('posts', {
           caption: 'p',
@@ -151,7 +147,7 @@ describe('api.users', () => {
       const userId = await t.run(async (ctx) => {
         const uid = await ctx.db.insert(
           'users',
-          makeUser({ clerkId: 'token_attendee', username: 'attendee', displayName: 'attendee' })
+          makeUser({ clerkId: 'token_attendee', username: 'attendee' })
         );
         const later = await ctx.db.insert(
           'events',
@@ -171,8 +167,8 @@ describe('api.users', () => {
             location: { latitude: 1, longitude: 1, h3Index: 'h' },
           })
         );
-        await ctx.db.insert('attendance', { userId: uid, eventId: later });
-        await ctx.db.insert('attendance', { userId: uid, eventId: earlier });
+        await ctx.db.insert('attendance', { userId: uid, eventId: later, updatedAt: Date.now() });
+        await ctx.db.insert('attendance', { userId: uid, eventId: earlier, updatedAt: Date.now() });
         return uid;
       });
 
@@ -188,13 +184,13 @@ describe('api.users', () => {
       const userId = await t.run(async (ctx) => {
         const uid = await ctx.db.insert(
           'users',
-          makeUser({ clerkId: 'token_orphan', username: 'orphan-link', displayName: 'orphan-link' })
+          makeUser({ clerkId: 'token_orphan', username: 'orphan-link' })
         );
         const eid = await ctx.db.insert(
           'events',
           makeEvent({ name: 'gone', startDate: 1, endDate: 2 })
         );
-        await ctx.db.insert('attendance', { userId: uid, eventId: eid });
+        await ctx.db.insert('attendance', { userId: uid, eventId: eid, updatedAt: Date.now() });
         await ctx.db.delete(eid);
         return uid;
       });
@@ -211,15 +207,15 @@ describe('api.users', () => {
       const userId = await t.run(async (ctx) => {
         const uid = await ctx.db.insert(
           'users',
-          makeUser({ clerkId: 'token_main', username: 'main', displayName: 'main' })
+          makeUser({ clerkId: 'token_main', username: 'main' })
         );
         const kept = await ctx.db.insert(
           'users',
-          makeUser({ clerkId: 'token_kept', username: 'kept', displayName: 'kept' })
+          makeUser({ clerkId: 'token_kept', username: 'kept' })
         );
         const removed = await ctx.db.insert(
           'users',
-          makeUser({ clerkId: 'token_removed', username: 'removed', displayName: 'removed' })
+          makeUser({ clerkId: 'token_removed', username: 'removed' })
         );
 
         await ctx.db.insert('friendRecs', {
@@ -239,7 +235,7 @@ describe('api.users', () => {
       const profile = await t.query(api.users.getProfileById, { userId });
 
       expect(profile!.recommendations).toHaveLength(1);
-      expect(profile!.recommendations[0].user.displayName).toBe('kept');
+      expect(profile!.recommendations[0].user.username).toBe('kept');
       expect(profile!.recommendations[0].score).toBe(0.9);
       expect(profile!.stats.recommendationCount).toBe(1);
     });
@@ -250,7 +246,7 @@ describe('api.users', () => {
       const userId = await t.run(async (ctx) => {
         return await ctx.db.insert(
           'users',
-          makeUser({ clerkId: 'token_no_recs', username: 'no-recs', displayName: 'no-recs' })
+          makeUser({ clerkId: 'token_no_recs', username: 'no-recs' })
         );
       });
 
@@ -266,11 +262,11 @@ describe('api.users', () => {
       const userId = await t.run(async (ctx) => {
         const uid = await ctx.db.insert(
           'users',
-          makeUser({ clerkId: 'token_full', username: 'full', displayName: 'full' })
+          makeUser({ clerkId: 'token_full', username: 'full' })
         );
         const other = await ctx.db.insert(
           'users',
-          makeUser({ clerkId: 'token_friend', username: 'friend', displayName: 'friend' })
+          makeUser({ clerkId: 'token_friend', username: 'friend' })
         );
         const pid = await ctx.db.insert('posts', {
           caption: 'only',
@@ -287,7 +283,7 @@ describe('api.users', () => {
             location: { latitude: 0, longitude: 0, h3Index: 'h8' },
           })
         );
-        await ctx.db.insert('attendance', { userId: uid, eventId: eid });
+        await ctx.db.insert('attendance', { userId: uid, eventId: eid, updatedAt: Date.now() });
         await ctx.db.insert('friendRecs', {
           userId: uid,
           recs: [{ userId: other, score: 0.42 }],

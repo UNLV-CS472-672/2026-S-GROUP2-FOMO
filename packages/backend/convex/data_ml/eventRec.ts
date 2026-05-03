@@ -1,50 +1,101 @@
 import { v } from 'convex/values';
-import { internalMutation, internalQuery } from '../_generated/server';
+import { Id } from '../_generated/dataModel';
+import { internalMutation, internalQuery, MutationCtx, query } from '../_generated/server';
+import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../auth';
 
-export const getByUserId = internalQuery({
-  args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
+async function getInteractionsForUser(ctx: MutationCtx, userId: Id<'users'>, sinceMs?: number) {
+  if (sinceMs === undefined) {
     return await ctx.db
       .query('attendance')
       .withIndex('by_userId', (q) => q.eq('userId', userId))
-      .filter((q) => q.eq(q.field('status'), 'going'))
       .collect();
+  }
+  // Incremental path: only rows touched since last weight update,
+  // and only where status actually differs from what we last folded in.
+  const attendanceRows = await ctx.db
+    .query('attendance')
+    .withIndex('by_userId_updatedAt', (q) => q.eq('userId', userId).gte('updatedAt', sinceMs))
+    .filter((q) => q.neq(q.field('status'), q.field('previousStatus'))) // Only get rows where the interaction is different from last we updated weights
+    .collect();
+
+  // Mark these rows as processed by setting previousStatus = status.
+  await Promise.all(
+    attendanceRows.map((row) => ctx.db.patch(row._id, { previousStatus: row.status }))
+  );
+
+  return attendanceRows;
+}
+
+async function upsertUserTagWeightsRow(ctx: MutationCtx, userId: Id<'users'>, weights: number[]) {
+  const existing = await ctx.db
+    .query('userTagWeights')
+    .withIndex('by_userId', (q) => q.eq('userId', userId))
+    .first();
+
+  if (existing) {
+    await ctx.db.patch(existing._id, {
+      weights,
+      updatedAt: Date.now(),
+    });
+  } else {
+    await ctx.db.insert('userTagWeights', {
+      userId,
+      weights,
+      updatedAt: Date.now(),
+    });
+  }
+}
+
+function formatUserTagWeightsWithTimestamp(
+  result: { weights: number[]; updatedAt: number } | null,
+  numTags: number
+) {
+  if (!result) {
+    return {
+      weights: new Array(numTags * 3).fill(0),
+      updatedAt: 0,
+    };
+  }
+
+  return {
+    weights: result.weights,
+    updatedAt: result.updatedAt,
+  };
+}
+
+export const getByEventIds = internalQuery({
+  args: { eventIds: v.array(v.id('events')) },
+  handler: async (ctx, { eventIds }) => {
+    const uniqueEventIds = [...new Set(eventIds)];
+    const results = await Promise.all(
+      uniqueEventIds.map((eventId) =>
+        ctx.db
+          .query('eventTags')
+          .withIndex('by_event', (q) => q.eq('eventId', eventId))
+          .collect()
+      )
+    );
+
+    return results.flat();
   },
 });
 
-export const getByEventId = internalQuery({
-  args: { eventId: v.id('events') },
-  handler: async (ctx, { eventId }) => {
-    return await ctx.db
-      .query('eventTags')
-      .withIndex('by_event', (q) => q.eq('eventId', eventId))
-      .collect();
-  },
-});
-
-export const upsertUserTagWeights = internalMutation({
+export const upsertUserTagWeightsBatch = internalMutation({
   args: {
-    userId: v.id('users'),
-    weights: v.array(v.number()),
+    rows: v.array(
+      v.object({
+        userId: v.id('users'),
+        weights: v.array(v.number()),
+      })
+    ),
   },
-  handler: async (ctx, { userId, weights }) => {
-    const existing = await ctx.db
-      .query('userTagWeights')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
-      .first();
-
-    if (existing) {
-      await ctx.db.patch(existing._id, {
-        weights,
-        updatedAt: Date.now(),
-      });
-    } else {
-      await ctx.db.insert('userTagWeights', {
-        userId,
-        weights,
-        updatedAt: Date.now(),
-      });
-    }
+  handler: async (ctx, { rows }) => {
+    await Promise.all(
+      rows.map(async ({ userId, weights }) => {
+        await upsertUserTagWeightsRow(ctx, userId, weights);
+        await ctx.db.patch(userId, { eventRecNeedsUpdate: true });
+      })
+    );
   },
 });
 
@@ -66,72 +117,96 @@ export const getUserTagWeights = internalQuery({
   },
 });
 
-export const getInteractionsByUserId = internalQuery({
-  args: { userId: v.id('users'), sinceMs: v.optional(v.number()) },
-  handler: async (ctx, { userId, sinceMs }) => {
-    const attendanceRows = await ctx.db
-      .query('attendance')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
-      .collect();
-    // { userId, eventId, status }[]
-
-    // No value passed for sinceMs, Don't want to filter
-    if (sinceMs === undefined) return attendanceRows;
-
-    const withEvents = await Promise.all(
-      attendanceRows.map(async (row) => {
-        const event = await ctx.db.get(row.eventId);
-        return { row, event };
+export const getInteractionsByUsers = internalMutation({
+  args: {
+    rows: v.array(
+      v.object({
+        userId: v.id('users'),
+        sinceMs: v.optional(v.number()),
       })
+    ),
+  },
+  handler: async (ctx, { rows }) => {
+    const results = await Promise.all(
+      rows.map(({ userId, sinceMs }) => getInteractionsForUser(ctx, userId, sinceMs))
     );
 
-    return withEvents
-      .filter(({ event }) => event !== null && event.endDate >= sinceMs)
-      .map(({ row }) => row);
+    return results.flat();
   },
 });
 
-export const upsertEventRecs = internalMutation({
-  args: {
-    userId: v.id('users'),
-    eventIds: v.array(v.id('events')),
-  },
-  handler: async (ctx, { userId, eventIds }) => {
-    const existing = await ctx.db
-      .query('eventRecs')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
-      .first();
+export const getInteractionsByUserIds = internalQuery({
+  args: { userIds: v.array(v.id('users')) },
+  handler: async (ctx, { userIds }) => {
+    const results = await Promise.all(
+      userIds.map((userId) =>
+        ctx.db
+          .query('attendance')
+          .withIndex('by_userId', (q) => q.eq('userId', userId))
+          .collect()
+      )
+    );
 
-    if (existing) {
-      await ctx.db.patch(existing._id, { eventIds });
-    } else {
-      await ctx.db.insert('eventRecs', { userId, eventIds });
-    }
+    return results.flat();
+  },
+});
+
+export const upsertEventRecsBatch = internalMutation({
+  args: {
+    rows: v.array(
+      v.object({
+        userId: v.id('users'),
+        eventIds: v.array(v.id('events')),
+      })
+    ),
+  },
+  handler: async (ctx, { rows }) => {
+    await Promise.all(
+      rows.map(async ({ userId, eventIds }) => {
+        const existing = await ctx.db
+          .query('eventRecs')
+          .withIndex('by_userId', (q) => q.eq('userId', userId))
+          .first();
+
+        if (existing) {
+          await ctx.db.patch(existing._id, { eventIds });
+        } else {
+          await ctx.db.insert('eventRecs', { userId, eventIds });
+        }
+
+        await ctx.db.patch(userId, { eventRecNeedsUpdate: false });
+      })
+    );
+  },
+});
+
+// Returns the current user's top-K event IDs in rank order
+// (index 0 = #1 rec). Returns null when no recs have been computed yet.
+export const getCurrentUserEventRecs = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    const doc = await ctx.db
+      .query('eventRecs')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .unique();
+    return doc?.eventIds ?? null;
   },
 });
 
 export const getUserTagWeightsWithTimestamp = internalQuery({
   args: {
-    userId: v.id('users'),
+    userIds: v.array(v.id('users')),
     numTags: v.number(),
   },
-  handler: async (ctx, { userId, numTags }) => {
-    const result = await ctx.db
-      .query('userTagWeights')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
-      .unique();
+  handler: async (ctx, { userIds, numTags }) => {
+    const rows = await ctx.db.query('userTagWeights').collect();
+    const rowsByUserId = new Map(rows.map((row) => [row.userId, row]));
 
-    if (!result) {
-      return {
-        weights: new Array(numTags * 3).fill(0),
-        lastUpdatedAt: 0,
-      };
-    }
-
-    return {
-      weights: result.weights,
-      lastUpdatedAt: result.updatedAt,
-    };
+    return userIds.map((userId) => ({
+      userId,
+      ...formatUserTagWeightsWithTimestamp(rowsByUserId.get(userId) ?? null, numTags),
+    }));
   },
 });
 
@@ -147,5 +222,85 @@ export const getPreferredTagsByUserId = internalQuery({
         return doc?.tags ?? [];
       })
     );
+  },
+});
+
+export const getUsersWithRecentActivity = internalMutation({
+  args: { numTags: v.optional(v.number()) },
+  handler: async (ctx, { numTags }) => {
+    const allUsers = await ctx.db.query('users').collect();
+
+    const results = await Promise.all(
+      allUsers.map(async (user) => {
+        const userId = user._id;
+
+        const weightsRow = await ctx.db
+          .query('userTagWeights')
+          .withIndex('by_userId', (q) => q.eq('userId', userId))
+          .unique();
+
+        const updatedAt = weightsRow?.updatedAt ?? 0;
+
+        const newestInteraction = await ctx.db
+          .query('attendance')
+          .withIndex('by_userId_updatedAt', (q) => q.eq('userId', userId))
+          .order('desc')
+          .first();
+
+        const needsSeeding = weightsRow === null;
+        const hasRecentActivity =
+          newestInteraction !== null && newestInteraction.updatedAt > updatedAt;
+
+        if (!hasRecentActivity) {
+          if (needsSeeding && numTags !== undefined) {
+            await ctx.db.insert('userTagWeights', {
+              userId,
+              weights: new Array(numTags * 3).fill(0),
+              updatedAt: Date.now(),
+            });
+          }
+          return null;
+        }
+
+        const weights =
+          weightsRow?.weights ?? (numTags !== undefined ? new Array(numTags * 3).fill(0) : null);
+
+        return {
+          userId,
+          updatedAt,
+          weights,
+        };
+      })
+    );
+
+    return results.filter((r): r is NonNullable<typeof r> => r !== null);
+  },
+});
+
+export const getUsersNeedingEventRec = internalQuery({
+  handler: async (ctx) => {
+    const users = await ctx.db.query('users').collect();
+    return users.filter((u) => u.eventRecNeedsUpdate === true).map((u) => u._id);
+  },
+});
+
+export const getAllEventsAfterNow = internalQuery({
+  handler: async (ctx) => {
+    const now = Date.now();
+
+    const events = await ctx.db
+      .query('events')
+      .withIndex('by_endDate', (q) => q.gte('endDate', now))
+      .collect();
+
+    const externalEvents = await ctx.db
+      .query('externalEvents')
+      .withIndex('by_endDate', (q) => q.gte('endDate', now))
+      .collect();
+
+    return [
+      ...events.map((e) => ({ ...e, source: 'internal' as const })),
+      ...externalEvents.map((e) => ({ ...e, source: 'external' as const })),
+    ];
   },
 });

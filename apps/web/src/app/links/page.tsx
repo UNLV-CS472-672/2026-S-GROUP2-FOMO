@@ -13,19 +13,33 @@ function StoreBadge({
   storeName,
   label,
 }: {
-  href: string;
+  href?: string;
   icon: React.ReactNode;
   storeName: string;
   label: string;
 }) {
+  const content = (
+    <>
+      {icon}
+      <div className="flex flex-col leading-tight">
+        <span className="text-[11px] font-medium opacity-80">{label}</span>
+        <span className="text-lg font-semibold -mt-0.5">{storeName}</span>
+      </div>
+    </>
+  );
+
+  if (!href) {
+    return (
+      <Button className="py-6 px-4 h-14 w-44" variant="outline" disabled>
+        <span className="flex items-center gap-3 opacity-70">{content}</span>
+      </Button>
+    );
+  }
+
   return (
     <Button asChild className="py-6 px-4 h-14 w-44" variant="outline">
       <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3">
-        {icon}
-        <div className="flex flex-col leading-tight">
-          <span className="text-[11px] font-medium opacity-80">{label}</span>
-          <span className="text-lg font-semibold -mt-0.5">{storeName}</span>
-        </div>
+        {content}
       </a>
     </Button>
   );
@@ -58,56 +72,52 @@ export default function LinksPage() {
         </section>
 
         <div className="flex flex-col items-center gap-6 mt-10 min-h-20">
-          {appStoreUrl && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 1.4 }}
-            >
-              <StoreBadge
-                href={appStoreUrl}
-                icon={
-                  <span
-                    className="size-7 bg-current"
-                    style={{
-                      maskImage: 'url(/links/apple.svg)',
-                      maskSize: 'contain',
-                      maskRepeat: 'no-repeat',
-                      maskPosition: 'center',
-                    }}
-                  />
-                }
-                label="Download on the"
-                storeName="App Store"
-              />
-            </motion.div>
-          )}
-          {playStoreUrl && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 1.6 }}
-            >
-              <StoreBadge
-                href={playStoreUrl}
-                icon={
-                  <span
-                    className="size-7 bg-current"
-                    style={{
-                      maskImage: 'url(/links/android.svg)',
-                      maskSize: 'contain',
-                      maskRepeat: 'no-repeat',
-                      maskPosition: 'center',
-                    }}
-                  />
-                }
-                label="Get it on"
-                storeName="Google Play"
-              />
-            </motion.div>
-          )}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 1.4 }}
+          >
+            <StoreBadge
+              href={appStoreUrl}
+              icon={
+                <span
+                  className="size-7 bg-current"
+                  style={{
+                    maskImage: 'url(/links/apple.svg)',
+                    maskSize: 'contain',
+                    maskRepeat: 'no-repeat',
+                    maskPosition: 'center',
+                  }}
+                />
+              }
+              label={appStoreUrl ? 'Download on the' : 'Coming soon'}
+              storeName="App Store"
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 1.6 }}
+          >
+            <StoreBadge
+              href={playStoreUrl}
+              icon={
+                <span
+                  className="size-7 bg-current"
+                  style={{
+                    maskImage: 'url(/links/android.svg)',
+                    maskSize: 'contain',
+                    maskRepeat: 'no-repeat',
+                    maskPosition: 'center',
+                  }}
+                />
+              }
+              label={playStoreUrl ? 'Get it on' : 'Coming soon'}
+              storeName="Google Play"
+            />
+          </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}

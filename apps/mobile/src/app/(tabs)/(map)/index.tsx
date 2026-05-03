@@ -185,6 +185,8 @@ export default function MapScreen() {
         </MapboxGL.ShapeSource>
       </MapboxGL.MapView>
 
+      <FeedTabs value={feedMode} onChange={setFeedMode} />
+
       <SearchDrawer
         onSelectEvent={(eventId) => push(`/(tabs)/(map)/event/${eventId}`)}
         onSelectLocation={({ longitude, latitude }) =>
@@ -214,8 +216,6 @@ export default function MapScreen() {
           })
         }
       />
-
-      <FeedTabs value={feedMode} onChange={setFeedMode} />
     </View>
   );
 }
