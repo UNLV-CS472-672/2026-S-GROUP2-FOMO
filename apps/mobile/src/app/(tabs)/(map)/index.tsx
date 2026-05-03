@@ -1,4 +1,5 @@
 import type { EventSummary, ExternalEventSummary } from '@/features/events/types';
+import { ClusterMarker } from '@/features/map/components/cluster-marker';
 import { EventMarker } from '@/features/map/components/event-marker';
 import { FeedTabs, type FeedMode } from '@/features/map/components/feed-tabs';
 import { RecenterButton } from '@/features/map/components/recenter-button';
@@ -97,9 +98,30 @@ export default function MapScreen() {
       weight: getWeight(event.id),
     }))
   );
-  const visibleWeights = visibleEvents.map((event) => getWeight(event.id));
-  const minWeight = visibleWeights.length === 0 ? 0 : Math.min(...visibleWeights);
-  const maxWeight = visibleWeights.length === 0 ? 1 : Math.max(...visibleWeights);
+
+  // Group events by H3 cell so co-located events render as a single cluster marker.
+  const eventClusters = useMemo(() => {
+    const groups = new Map<string, (EventSummary | ExternalEventSummary)[]>();
+    for (const event of visibleEvents) {
+      const key = event.location.h3Index;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.push(event);
+      } else {
+        groups.set(key, [event]);
+      }
+    }
+    return Array.from(groups.entries()).map(([h3Index, members]) => {
+      const sorted = [...members].sort((a, b) => getWeight(b.id) - getWeight(a.id));
+      const primary = sorted[0];
+      const totalWeight = members.reduce((sum, e) => sum + getWeight(e.id), 0);
+      return { h3Index, members, primary, count: members.length, weight: totalWeight };
+    });
+  }, [visibleEvents, eventWeights]);
+
+  const clusterWeights = eventClusters.map((c) => c.weight);
+  const minWeight = clusterWeights.length === 0 ? 0 : Math.min(...clusterWeights);
+  const maxWeight = clusterWeights.length === 0 ? 1 : Math.max(...clusterWeights);
 
   if (!centerCoordinate) {
     return (
@@ -161,31 +183,61 @@ export default function MapScreen() {
           />
         )}
 
-        {visibleEvents.map((event) => (
-          <EventMarker
-            key={event.id}
-            id={event.id}
-            coordinate={[event.location.longitude, event.location.latitude]}
-            label={event.name}
-            mediaId={event.mediaId}
-            weight={getWeight(event.id)}
-            minWeight={minWeight}
-            maxWeight={maxWeight}
-            onPress={() => {
-              if ('externalKey' in event) {
-                push({
-                  pathname: '/(tabs)/(map)/external-event/[eventId]',
-                  params: { eventId: event.id },
-                });
-              } else {
-                push({
-                  pathname: '/(tabs)/(map)/event/[eventId]',
-                  params: { eventId: event.id },
-                });
+        {eventClusters.map((cluster) => {
+          const { primary, count, weight } = cluster;
+          const coordinate: [number, number] = [
+            primary.location.longitude,
+            primary.location.latitude,
+          ];
+          if (count === 1) {
+            return (
+              <EventMarker
+                key={primary.id}
+                id={primary.id}
+                coordinate={coordinate}
+                label={primary.name}
+                mediaId={primary.mediaId}
+                weight={weight}
+                minWeight={minWeight}
+                maxWeight={maxWeight}
+                onPress={() => {
+                  if ('externalKey' in primary) {
+                    push({
+                      pathname: '/(tabs)/(map)/external-event/[eventId]',
+                      params: { eventId: primary.id },
+                    });
+                  } else {
+                    push({
+                      pathname: '/(tabs)/(map)/event/[eventId]',
+                      params: { eventId: primary.id },
+                    });
+                  }
+                }}
+              />
+            );
+          }
+          return (
+            <ClusterMarker
+              key={cluster.h3Index}
+              id={cluster.h3Index}
+              coordinate={coordinate}
+              primaryLabel={primary.name}
+              primaryMediaId={primary.mediaId}
+              count={count}
+              weight={weight}
+              minWeight={minWeight}
+              maxWeight={maxWeight}
+              onPress={() =>
+                cameraRef.current?.setCamera({
+                  centerCoordinate: coordinate,
+                  zoomLevel: 16,
+                  animationMode: 'flyTo',
+                  animationDuration: 600,
+                })
               }
-            }}
-          />
-        ))}
+            />
+          );
+        })}
 
         <MapboxGL.ShapeSource id="activity" shape={heatmapGeoJSON}>
           <MapboxGL.HeatmapLayer
