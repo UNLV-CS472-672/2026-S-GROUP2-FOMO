@@ -87,7 +87,8 @@ export default function MapScreen() {
     return new Map(allEvents.map((event) => [event.id, event.attendeeCount]));
   }, [allEvents, eventRecs, feedMode]);
 
-  const getWeight = (eventId: EventSummary['id']) => eventWeights.get(eventId) ?? 0;
+  const getWeight = (eventId: EventSummary['id'] | ExternalEventSummary['id']) =>
+    eventWeights.get(eventId) ?? 0;
 
   const heatmapGeoJSON = pointsToGeoJSON(
     visibleEvents.map((event) => ({
@@ -173,7 +174,7 @@ export default function MapScreen() {
             onPress={() => {
               if ('externalKey' in event) {
                 push({
-                  pathname: '/(tabs)/(map)/event/external/[eventId]',
+                  pathname: '/(tabs)/(map)/external-event/[eventId]',
                   params: { eventId: event.id },
                 });
               } else {
