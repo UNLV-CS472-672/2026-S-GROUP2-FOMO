@@ -17,6 +17,8 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 
 const MAPBOX_TOKEN = env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
 const emptySubscribe = () => () => {};
+const STATIC_MAP_WIDTH = 1280;
+const STATIC_MAP_HEIGHT = 900;
 type Events = NonNullable<FunctionReturnType<typeof api.events.queries.getEvents>>;
 type MapEvent = Events[number];
 
@@ -125,10 +127,10 @@ export default function MapPage() {
     const [lng, lat] = centerCoordinate;
 
     if (isDark) {
-      return `https://api.mapbox.com/styles/v1/fomo-map-dev/cmnl4s1kk001601rhc5gx0ih7/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
+      return `https://api.mapbox.com/styles/v1/fomo-map-dev/cmnl4s1kk001601rhc5gx0ih7/static/${lng},${lat},13,0/${STATIC_MAP_WIDTH}x${STATIC_MAP_HEIGHT}?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
     }
 
-    return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
+    return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${lng},${lat},13,0/${STATIC_MAP_WIDTH}x${STATIC_MAP_HEIGHT}?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
   }, [centerCoordinate, isDark, mounted]);
 
   return (
