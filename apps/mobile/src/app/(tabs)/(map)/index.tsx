@@ -6,6 +6,7 @@ import { RecenterButton } from '@/features/map/components/recenter-button';
 import { SearchDrawer } from '@/features/map/components/search';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { pointsToGeoJSON } from '@/features/map/utils/h3';
+import { useUser } from '@clerk/expo';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { env } from '@fomo/env/mobile';
 import { useIsFocused } from '@react-navigation/native';
@@ -23,6 +24,7 @@ const DEFAULT_ZOOM_LEVEL = 13;
 
 export default function MapScreen() {
   const { push } = useRouter();
+  const { isSignedIn } = useUser();
   const eventsRaw = useQuery(api.events.queries.getEvents);
   const externalEventsRaw = useQuery(api.events.queries.getExternalEvents);
   const events: EventSummary[] = useMemo(() => eventsRaw ?? [], [eventsRaw]);
@@ -31,10 +33,6 @@ export default function MapScreen() {
     [externalEventsRaw]
   );
   const allEvents = useMemo(() => [...events, ...externalEvents], [events, externalEvents]);
-  const eventRecs = useQuery(
-    api.data_ml.eventRec.getCurrentUserEventRecs,
-    isSignedIn ? {} : 'skip'
-  );
   const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const [feedMode, setFeedMode] = useState<FeedMode>('foryou');
@@ -47,15 +45,12 @@ export default function MapScreen() {
     if (feedMode === 'popular') {
       return [...allEvents].sort((a, b) => b.attendeeCount - a.attendeeCount);
     }
-    if (eventRecs && eventRecs.length > 0) {
-      const eventById = new Map(events.map((event) => [event.id, event]));
-      const recEvents = eventRecs
-        .map((id) => eventById.get(id))
-        .filter((event): event is EventSummary => event !== undefined);
-      return [...recEvents, ...externalEvents];
-    }
-    return allEvents;
-  }, [allEvents, events, externalEvents, eventRecs, feedMode]);
+    // For You: internal events sorted by recommendation score, external events appended
+    const sortedInternal = [...events].sort(
+      (a, b) => (b.recommendationScore ?? 0) - (a.recommendationScore ?? 0)
+    );
+    return [...sortedInternal, ...externalEvents];
+  }, [allEvents, events, externalEvents, feedMode]);
 
   const savedCameraRef = useRef<{
     centerCoordinate: [number, number];
@@ -83,7 +78,7 @@ export default function MapScreen() {
       return new Map(visibleEvents.map((event, index) => [event.id, k - index]));
     }
     return new Map(allEvents.map((event) => [event.id, event.attendeeCount]));
-  }, [allEvents, eventRecs, feedMode]);
+  }, [allEvents, visibleEvents, feedMode]);
 
   const getWeight = (eventId: EventSummary['id'] | ExternalEventSummary['id']) =>
     eventWeights.get(eventId) ?? 0;
