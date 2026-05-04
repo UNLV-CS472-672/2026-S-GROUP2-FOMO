@@ -125,7 +125,7 @@ export default function MapPage() {
     const [lng, lat] = centerCoordinate;
 
     if (isDark) {
-      return `https://api.mapbox.com/styles/v1/fomo-map-dev/cmnl4z51o002k01sl36v21n8r/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
+      return `https://api.mapbox.com/styles/v1/fomo-map-dev/cmnl4s1kk001601rhc5gx0ih7/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
     }
 
     return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;

@@ -3,7 +3,7 @@ export type Coordinates = [number, number];
 export type MapboxMapEventHandler<T = Record<string, unknown>> = (e: T) => void;
 const MAPBOX_GL_VERSION = 'v3.21.0';
 
-export const MAPBOX_STYLE_DARK = 'mapbox://styles/fomo-map-dev/cmnl4z51o002k01sl36v21n8r';
+export const MAPBOX_STYLE_DARK = 'mapbox://styles/fomo-map-dev/cmnl4s1kk001601rhc5gx0ih7';
 export const MAPBOX_STYLE_LIGHT = 'mapbox://styles/mapbox/streets-v12';
 
 export type MapboxMap = {
