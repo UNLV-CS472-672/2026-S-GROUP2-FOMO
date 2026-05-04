@@ -352,40 +352,40 @@ def test_build_feature_vector_new_going_event_adds_to_going_slice(
     interactions = [{"eventId": "e1", "status": "going"}]
     vec = build_user_feature_vector_from_interactions(stored, interactions, event_tags_by_id_e1_e2)
     going = vec[:3]
-    # e1 has 2 tags, normalized: 0.5 each, row_weight=1.0
-    np.testing.assert_allclose(going, [0.5, 0.5, 0.0])
+    # e1 has 2 tags, normalized: 0.5 each, row_weight=1.25
+    np.testing.assert_allclose(going, [0.625, 0.625, 0.0])
     assert np.all(vec[3:] == 0.0)
 
 
-def test_build_feature_vector_uninterested_uses_2x_row_weight(
+def test_build_feature_vector_uninterested_uses_1x_row_weight(
     tags_initialized: None,
     event_tags_by_id_e1_e2: dict[str, list[dict[str, str]]],
 ) -> None:
-    """Uninterested has row_weight=2.0, so e1's contribution is 1.0 per tag."""
+    """Uninterested has row_weight=1.0, so e1's contribution is 0.5 per tag."""
     stored = np.zeros(9, dtype=np.float32)
     interactions = [{"eventId": "e1", "status": "uninterested"}]
     vec = build_user_feature_vector_from_interactions(stored, interactions, event_tags_by_id_e1_e2)
     uninterested = vec[6:]
-    np.testing.assert_allclose(uninterested, [1.0, 1.0, 0.0])
+    np.testing.assert_allclose(uninterested, [0.5, 0.5, 0.0])
 
 
 def test_build_feature_vector_toggle_going_to_uninterested(
     tags_initialized: None,
     event_tags_by_id_e1_e2: dict[str, list[dict[str, str]]],
 ) -> None:
-    """Toggle: subtract from going (-0.5), add to uninterested (+1.0 due to 2x weight)."""
-    # Stored: e1 was previously going, contributing 0.5 to going[0] and going[1]
+    """Toggle: subtract from going (-0.625), add to uninterested (+0.5 due to 1x weight)."""
+    # Stored: e1 was previously going, contributing 0.625 to going[0] and going[1]
     stored = np.zeros(9, dtype=np.float32)
-    stored[0] = 0.5
-    stored[1] = 0.5
+    stored[0] = 0.625
+    stored[1] = 0.625
     interactions = [{"eventId": "e1", "status": "uninterested", "previousStatus": "going"}]
     vec = build_user_feature_vector_from_interactions(stored, interactions, event_tags_by_id_e1_e2)
-    # going slice: 0.5 - 0.5 = 0
+    # going slice: 0.625 - 0.625 = 0
     np.testing.assert_allclose(vec[:3], [0.0, 0.0, 0.0])
     # interested slice: untouched
     np.testing.assert_allclose(vec[3:6], [0.0, 0.0, 0.0])
-    # uninterested slice: + 1.0 each (row_weight 2.0 * 0.5 normalized)
-    np.testing.assert_allclose(vec[6:], [1.0, 1.0, 0.0])
+    # uninterested slice: + 0.5 each (row_weight 1.0 * 0.5 normalized)
+    np.testing.assert_allclose(vec[6:], [0.5, 0.5, 0.0])
 
 
 def test_build_feature_vector_snaps_small_values_to_zero(
@@ -428,7 +428,7 @@ def mock_main_dependencies(
 def test_main_calls_init_tags(mock_main_dependencies: dict[str, MagicMock]) -> None:
     # User exists in weights table so the loop processes them.
     mock_main_dependencies["queries"]["get_user_tag_weights_with_timestamps"].return_value = [
-        {"userId": "u1", "weights": [0.0] * 9, "updatedAt": 0.0},
+        {"userId": "u1", "weights": [0.0] * 9, "updatedAt": 0.0, "lastDecayedAt": 0.0},
     ]
     main(["u1"], update_db=False)
     mock_main_dependencies["init_tags"].assert_called_once()
@@ -436,8 +436,8 @@ def test_main_calls_init_tags(mock_main_dependencies: dict[str, MagicMock]) -> N
 
 def test_main_calls_build_per_user(mock_main_dependencies: dict[str, MagicMock]) -> None:
     mock_main_dependencies["queries"]["get_user_tag_weights_with_timestamps"].return_value = [
-        {"userId": "u1", "weights": [0.0] * 9, "updatedAt": 0.0},
-        {"userId": "u2", "weights": [0.0] * 9, "updatedAt": 0.0},
+        {"userId": "u1", "weights": [0.0] * 9, "updatedAt": 0.0, "lastDecayedAt": 0.0},
+        {"userId": "u2", "weights": [0.0] * 9, "updatedAt": 0.0, "lastDecayedAt": 0.0},
     ]
     main(["u1", "u2"], update_db=False)
     assert mock_main_dependencies["build_user_feature_vector_from_interactions"].call_count == 2
@@ -450,9 +450,9 @@ def test_main_expands_all(mock_main_dependencies: dict[str, MagicMock]) -> None:
         {"_id": "u3"},
     ]
     mock_main_dependencies["queries"]["get_user_tag_weights_with_timestamps"].return_value = [
-        {"userId": "u1", "weights": [0.0] * 9, "updatedAt": 0.0},
-        {"userId": "u2", "weights": [0.0] * 9, "updatedAt": 0.0},
-        {"userId": "u3", "weights": [0.0] * 9, "updatedAt": 0.0},
+        {"userId": "u1", "weights": [0.0] * 9, "updatedAt": 0.0, "lastDecayedAt": 0.0},
+        {"userId": "u2", "weights": [0.0] * 9, "updatedAt": 0.0, "lastDecayedAt": 0.0},
+        {"userId": "u3", "weights": [0.0] * 9, "updatedAt": 0.0, "lastDecayedAt": 0.0},
     ]
     main(["ALL"], update_db=False)
     assert mock_main_dependencies["build_user_feature_vector_from_interactions"].call_count == 3
@@ -461,8 +461,8 @@ def test_main_expands_all(mock_main_dependencies: dict[str, MagicMock]) -> None:
 def test_main_expands_active(mock_main_dependencies: dict[str, MagicMock]) -> None:
     """ACTIVE path uses prefetched weights/timestamps from query_active."""
     mock_main_dependencies["queries"]["query_active"].return_value = [
-        {"userId": "u1", "updatedAt": 1700000000.0, "weights": [0.0] * 9},
-        {"userId": "u2", "updatedAt": 1700000001.0, "weights": [0.1] * 9},
+        {"userId": "u1", "updatedAt": 1700000000.0, "weights": [0.0] * 9, "lastDecayedAt": 0.0},
+        {"userId": "u2", "updatedAt": 1700000001.0, "weights": [0.1] * 9, "lastDecayedAt": 0.0},
     ]
     main(["ACTIVE"], update_db=False)
     assert mock_main_dependencies["build_user_feature_vector_from_interactions"].call_count == 2
@@ -471,7 +471,7 @@ def test_main_expands_active(mock_main_dependencies: dict[str, MagicMock]) -> No
 def test_main_active_skips_weights_query(mock_main_dependencies: dict[str, MagicMock]) -> None:
     """ACTIVE already has weights/timestamps, so the bulk-fetch query shouldn't run."""
     mock_main_dependencies["queries"]["query_active"].return_value = [
-        {"userId": "u1", "updatedAt": 1700000000.0, "weights": [0.0] * 9},
+        {"userId": "u1", "updatedAt": 1700000000.0, "weights": [0.0] * 9, "lastDecayedAt": 0.0},
     ]
     main(["ACTIVE"], update_db=False)
     mock_main_dependencies["queries"]["get_user_tag_weights_with_timestamps"].assert_not_called()
@@ -480,8 +480,8 @@ def test_main_active_skips_weights_query(mock_main_dependencies: dict[str, Magic
 def test_main_batches_event_tag_query(mock_main_dependencies: dict[str, MagicMock]) -> None:
     """All event ids across all users go through a single get_by_event_ids call."""
     mock_main_dependencies["queries"]["get_user_tag_weights_with_timestamps"].return_value = [
-        {"userId": "u1", "weights": [0.0] * 9, "updatedAt": 0.0},
-        {"userId": "u2", "weights": [0.0] * 9, "updatedAt": 0.0},
+        {"userId": "u1", "weights": [0.0] * 9, "updatedAt": 0.0, "lastDecayedAt": 0.0},
+        {"userId": "u2", "weights": [0.0] * 9, "updatedAt": 0.0, "lastDecayedAt": 0.0},
     ]
     mock_main_dependencies["queries"]["get_interactions_by_users"].return_value = [
         {"userId": "u1", "eventId": "e1", "status": "going"},
@@ -499,7 +499,7 @@ def test_main_calls_mutation_when_update_db_true(
     mock_main_dependencies: dict[str, MagicMock],
 ) -> None:
     mock_main_dependencies["queries"]["get_user_tag_weights_with_timestamps"].return_value = [
-        {"userId": "u1", "weights": [0.0] * 9, "updatedAt": 0.0},
+        {"userId": "u1", "weights": [0.0] * 9, "updatedAt": 0.0, "lastDecayedAt": 0.0},
     ]
     main(["u1"], update_db=True)
     mock_main_dependencies["queries"]["upsert_user_tag_weights_batch"].assert_called_once()
@@ -509,7 +509,7 @@ def test_main_does_not_call_mutation_when_update_db_false(
     mock_main_dependencies: dict[str, MagicMock],
 ) -> None:
     mock_main_dependencies["queries"]["get_user_tag_weights_with_timestamps"].return_value = [
-        {"userId": "u1", "weights": [0.0] * 9, "updatedAt": 0.0},
+        {"userId": "u1", "weights": [0.0] * 9, "updatedAt": 0.0, "lastDecayedAt": 0.0},
     ]
     main(["u1"], update_db=False)
     mock_main_dependencies["queries"]["upsert_user_tag_weights_batch"].assert_not_called()
@@ -519,7 +519,7 @@ def test_main_mutation_payload_correct_keys(
     mock_main_dependencies: dict[str, MagicMock],
 ) -> None:
     mock_main_dependencies["queries"]["get_user_tag_weights_with_timestamps"].return_value = [
-        {"userId": "u1", "weights": [0.0] * 9, "updatedAt": 0.0},
+        {"userId": "u1", "weights": [0.0] * 9, "updatedAt": 0.0, "lastDecayedAt": 0.0},
     ]
     main(["u1"], update_db=True)
     rows = mock_main_dependencies["queries"]["upsert_user_tag_weights_batch"].call_args.args[0]
