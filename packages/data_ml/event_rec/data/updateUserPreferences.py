@@ -3,7 +3,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from dotenv import load_dotenv
-from typing import Optional
+from typing import Any, Optional
 from lib import queries
 
 import time
@@ -39,8 +39,13 @@ def init_tags() -> None:
 
 
 def apply_weight_decay(
-    stored_weights, update_contribution, discard_contribution,
-    threshold, decay_rate, floor, ceiling,
+    stored_weights: NDArray[np.float32],
+    update_contribution: NDArray[np.float32],
+    discard_contribution: NDArray[np.float32],
+    threshold: float,
+    decay_rate: float,
+    floor: float,
+    ceiling: float,
 ) -> NDArray[np.float32]:
     touched = (update_contribution != 0) | (discard_contribution != 0)
     above_threshold = stored_weights > threshold
@@ -50,7 +55,7 @@ def apply_weight_decay(
     max_drop_floor = stored_weights - ceiling
     decayed = np.maximum(decayed, max_drop_floor)
     decayed = np.maximum(decayed, floor)
-    return decayed
+    return decayed.astype(np.float32)
 
 
 def event_multihot_from_rows(event_tags: list[dict[str, str]]) -> NDArray[np.float32]:
@@ -184,9 +189,9 @@ def get_user_raw_weights_and_last_updated(
     """Loads stored user weights and normalizes them to the expected shape."""
     user_weights_and_timestamp = queries.get_user_tag_weights_with_timestamp(user_id, NUM_TAGS)
 
-    user_last_updated = float(result["updatedAt"])
-    user_raw_weights_nd = np.array(result["weights"])
-    last_decayed_at = float(result["lastDecayedAt"])
+    user_last_updated = float(user_weights_and_timestamp["updatedAt"])
+    user_raw_weights_nd = np.array(user_weights_and_timestamp["weights"], dtype=np.float32)
+    last_decayed_at = float(user_weights_and_timestamp["lastDecayedAt"])
 
     return user_last_updated, user_raw_weights_nd, last_decayed_at
 
@@ -269,7 +274,7 @@ def build_user_feature_vector_from_interactions(
     ])
     final = np.minimum(final, caps)
     final[np.abs(final) < 1e-6] = 0
-    return final
+    return final.astype(np.float32)
 
 
 def build_user_feature_vector(user_id: str) -> NDArray[np.float32]:
@@ -384,11 +389,11 @@ def main(users: list[str], update_db: bool) -> None:
         # Single batched upsert for everyone updated this run.
         rows = []
         for user_id, vec in user_feature_vectors.items():
-            row: dict = {"userId": user_id, "weights": vec.tolist()}
+            upsert_row: dict[str, Any] = {"userId": user_id, "weights": vec.tolist()}
             if user_should_decay_by_id[user_id]:
-                row["lastDecayedAt"] = int(NOW_MS)
+                upsert_row["lastDecayedAt"] = int(NOW_MS)
 
-            rows.append(row)
+            rows.append(upsert_row)
 
         queries.upsert_user_tag_weights_batch(rows)
         print(f"Updated {len(user_feature_vectors)} users in Convex.")
