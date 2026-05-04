@@ -324,7 +324,7 @@ export default function MapScreen() {
         </MapboxGL.ShapeSource>
       </MapboxGL.MapView>
 
-      <FeedTabs value={feedMode} onChange={setFeedMode} />
+      {isSignedIn && <FeedTabs value={feedMode} onChange={setFeedMode} />}
 
       <SearchDrawer
         onSelectEvent={(eventId) => push(`/(tabs)/(map)/event/${eventId}`)}
