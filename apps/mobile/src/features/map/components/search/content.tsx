@@ -42,19 +42,20 @@ export function SearchContent({
     resolveCoordinates,
   } = useLocationSearch(query);
   const events = useQuery(api.events.queries.getEvents) ?? [];
-  const popularTagsQuery = useQuery(api.tags.getPopularEventTags);
-  const popularTags = useMemo(() => popularTagsQuery ?? [], [popularTagsQuery]);
+  const userTagPreferences = useQuery(api.tags.getCurrentUserTagPreferences);
   const [activeFilter, setActiveFilter] = useState('all');
 
   const exploreFilters = useMemo(() => {
+    const preferredTags = (userTagPreferences?.tags ?? []).filter((tag) => tag.selected);
+
     return [
       { type: 'all', label: 'All' } satisfies ExploreFilter,
-      ...popularTags.map(
+      ...preferredTags.map(
         (tag) =>
           ({ type: 'tag', label: tag.name, value: tag.name.toLowerCase() }) satisfies ExploreFilter
       ),
     ];
-  }, [popularTags]);
+  }, [userTagPreferences]);
 
   const filteredEvents = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
