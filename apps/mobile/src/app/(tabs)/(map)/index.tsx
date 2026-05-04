@@ -40,6 +40,8 @@ export default function MapScreen() {
   const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const [feedMode, setFeedMode] = useState<FeedMode>('foryou');
+  const [zoomLevel, setZoomLevel] = useState(DEFAULT_ZOOM_LEVEL);
+  const CLUSTER_DISABLE_ZOOM = 15;
 
   // 'popular' sorts by attendance (objective). 'foryou' uses the Two-Tower top-K recs in
   // rank order (index 0 = #1 rec); we use array order rather than score because the model's
@@ -100,7 +102,23 @@ export default function MapScreen() {
   );
 
   // Group events by H3 cell so co-located events render as a single cluster marker.
+  // Above CLUSTER_DISABLE_ZOOM each event renders individually so users can tap them.
   const eventClusters = useMemo(() => {
+    const now = Date.now();
+    const shouldCluster = zoomLevel < CLUSTER_DISABLE_ZOOM;
+
+    if (!shouldCluster) {
+      return visibleEvents.map((event) => ({
+        h3Index: event.id,
+        members: [event],
+        primary: event,
+        secondary: null,
+        count: 1,
+        weight: getWeight(event.id),
+        isActive: event.endDate >= now,
+      }));
+    }
+
     const groups = new Map<string, (EventSummary | ExternalEventSummary)[]>();
     for (const event of visibleEvents) {
       const key = event.location.h3Index;
@@ -114,10 +132,20 @@ export default function MapScreen() {
     return Array.from(groups.entries()).map(([h3Index, members]) => {
       const sorted = [...members].sort((a, b) => getWeight(b.id) - getWeight(a.id));
       const primary = sorted[0];
+      const secondary = sorted[1] ?? null;
       const totalWeight = members.reduce((sum, e) => sum + getWeight(e.id), 0);
-      return { h3Index, members, primary, count: members.length, weight: totalWeight };
+      const isActive = members.some((e) => e.endDate >= now);
+      return {
+        h3Index,
+        members,
+        primary,
+        secondary,
+        count: members.length,
+        weight: totalWeight,
+        isActive,
+      };
     });
-  }, [visibleEvents, eventWeights]);
+  }, [visibleEvents, eventWeights, zoomLevel]);
 
   const clusterWeights = eventClusters.map((c) => c.weight);
   const minWeight = clusterWeights.length === 0 ? 0 : Math.min(...clusterWeights);
@@ -163,6 +191,7 @@ export default function MapScreen() {
             heading: state.properties.heading,
             pitch: state.properties.pitch,
           };
+          setZoomLevel(state.properties.zoom);
         }}
       >
         <MapboxGL.Camera
@@ -184,7 +213,7 @@ export default function MapScreen() {
         )}
 
         {eventClusters.map((cluster) => {
-          const { primary, count, weight } = cluster;
+          const { primary, count, weight, isActive } = cluster;
           const coordinate: [number, number] = [
             primary.location.longitude,
             primary.location.latitude,
@@ -200,6 +229,7 @@ export default function MapScreen() {
                 weight={weight}
                 minWeight={minWeight}
                 maxWeight={maxWeight}
+                isActive={isActive}
                 onPress={() => {
                   if ('externalKey' in primary) {
                     push({
@@ -216,6 +246,7 @@ export default function MapScreen() {
               />
             );
           }
+          const { secondary } = cluster;
           return (
             <ClusterMarker
               key={cluster.h3Index}
@@ -223,18 +254,26 @@ export default function MapScreen() {
               coordinate={coordinate}
               primaryLabel={primary.name}
               primaryMediaId={primary.mediaId}
+              secondaryLabel={secondary?.name ?? null}
+              secondaryMediaId={secondary?.mediaId ?? null}
               count={count}
               weight={weight}
               minWeight={minWeight}
               maxWeight={maxWeight}
-              onPress={() =>
-                cameraRef.current?.setCamera({
-                  centerCoordinate: coordinate,
-                  zoomLevel: 16,
-                  animationMode: 'flyTo',
-                  animationDuration: 600,
-                })
-              }
+              isActive={isActive}
+              onPress={() => {
+                if ('externalKey' in primary) {
+                  push({
+                    pathname: '/(tabs)/(map)/external-event/[eventId]',
+                    params: { eventId: primary.id },
+                  });
+                } else {
+                  push({
+                    pathname: '/(tabs)/(map)/event/[eventId]',
+                    params: { eventId: primary.id },
+                  });
+                }
+              }}
             />
           );
         })}

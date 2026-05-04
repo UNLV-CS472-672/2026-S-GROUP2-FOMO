@@ -19,8 +19,10 @@ export default defineSchema({
     // clerk handles below this
     clerkId: v.string(), // For Clerk integration
     username: v.string(), // should be unique and this is the main display/handle on frontend
-    displayName: v.string(), // display names that can be changed often/whenever? --- not sure if this will be a clerk value tbh
+    displayName: v.optional(v.string()),
     avatarUrl: v.string(), // should get from clerk
+    eventRecNeedsUpdate: v.optional(v.boolean()),
+    friendRecNeedsUpdate: v.optional(v.boolean()),
   })
     .index('by_clerkId', ['clerkId'])
     .index('by_username', ['username']),
@@ -89,6 +91,7 @@ export default defineSchema({
       v.union(v.literal('going'), v.literal('interested'), v.literal('uninterested'))
     ),
     notification: v.optional(v.union(v.literal('all'), v.literal('friends'), v.literal('none'))),
+    updatedAt: v.optional(v.number()),
   })
     .index('by_userId', ['userId'])
     .index('by_event', ['eventId'])
