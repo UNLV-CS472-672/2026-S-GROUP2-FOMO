@@ -1,6 +1,6 @@
+import { FomoLogo } from '@/components/fomo-logo';
 import { DrawerModal } from '@/components/ui/drawer';
 import { signOutClerkExpo } from '@/features/auth/utils/clerk-sign-out';
-import { DeleteAccountDrawer } from '@/features/profile/components/delete-account-drawer';
 import { InterestsPicker } from '@/features/profile/components/interests-picker';
 import { SettingsRow } from '@/features/profile/components/settings-row';
 import { SettingsSectionLabel } from '@/features/profile/components/settings-section-label';
@@ -9,6 +9,7 @@ import { useClerk, useUser } from '@clerk/expo';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useQuery } from 'convex/react';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
@@ -18,14 +19,13 @@ const TERMS_URL = 'https://fomo-app.dev/terms';
 const PRIVACY_URL = 'https://fomo-app.dev/privacy';
 const DRAWER_INTERACTION_LOCK_MS = 300;
 
-type SettingsDrawer = 'appearance' | 'interests' | 'delete-account' | null;
+type SettingsDrawer = 'appearance' | 'interests' | null;
 
 export default function SettingsScreen() {
   const clerk = useClerk();
   const { user } = useUser();
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState<SettingsDrawer>(null);
   const [isInteractionLocked, setIsInteractionLocked] = useState(false);
 
@@ -35,6 +35,7 @@ export default function SettingsScreen() {
   const initials =
     [user?.firstName?.[0], user?.lastName?.[0]].filter(Boolean).join('').toUpperCase() || '?';
   const isDrawerOpen = activeDrawer !== null;
+  const appVersion = Constants.expoConfig?.version ?? 'Unknown';
 
   useEffect(() => {
     if (!isInteractionLocked) {
@@ -73,26 +74,6 @@ export default function SettingsScreen() {
       await signOutClerkExpo(clerk);
     } finally {
       setIsSigningOut(false);
-    }
-  }
-
-  async function handleDeleteAccount() {
-    if (isDeletingAccount || !user) return;
-
-    setIsDeletingAccount(true);
-
-    try {
-      await user.delete();
-      closeDrawer();
-      await signOutClerkExpo(clerk);
-      Alert.alert('Account deleted', 'Your account has been permanently deleted.');
-    } catch (error) {
-      Alert.alert(
-        'Unable to delete account',
-        error instanceof Error ? error.message : 'Please try again.'
-      );
-    } finally {
-      setIsDeletingAccount(false);
     }
   }
 
@@ -144,18 +125,12 @@ export default function SettingsScreen() {
             <SettingsRow
               icon="person-outline"
               label="Edit Profile"
-              onPress={() => router.push('/(tabs)/profile/settings/edit')}
+              onPress={() => router.push('/(tabs)/profile/settings/edit-profile')}
             />
             <SettingsRow
-              icon="link-outline"
-              label="Connected Accounts"
-              onPress={() => router.push('/(tabs)/profile/settings/connected-accounts')}
-            />
-            <SettingsRow
-              icon="trash-outline"
-              label="Delete Account"
-              onPress={() => openDrawer('delete-account')}
-              destructive
+              icon="lock-closed-outline"
+              label="Security"
+              onPress={() => router.push('/(tabs)/profile/settings/security')}
               isLast
             />
           </View>
@@ -168,7 +143,7 @@ export default function SettingsScreen() {
             <SettingsRow
               icon="ban-outline"
               label="Blocked Users"
-              value={blockedCount}
+              value={blockedCount || undefined}
               onPress={() => router.push('/(tabs)/profile/settings/blocked-users')}
             />
             <SettingsRow
@@ -208,6 +183,11 @@ export default function SettingsScreen() {
               isLast
             />
           </View>
+        </View>
+
+        <View className="items-center gap-2 pb-2 pt-5">
+          <FomoLogo width={100} height={48} />
+          <Text className="text-xs text-muted-foreground">Version {appVersion}</Text>
         </View>
       </ScrollView>
 
@@ -254,15 +234,6 @@ export default function SettingsScreen() {
             />
           </BottomSheetScrollView>
         </DrawerModal>
-      ) : null}
-
-      {activeDrawer === 'delete-account' ? (
-        <DeleteAccountDrawer
-          open
-          isDeletingAccount={isDeletingAccount}
-          onClose={closeDrawer}
-          onDeleteAccount={() => void handleDeleteAccount()}
-        />
       ) : null}
     </>
   );
