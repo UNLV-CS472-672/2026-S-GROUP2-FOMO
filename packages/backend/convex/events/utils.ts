@@ -3,6 +3,7 @@ import { latLngToCell } from 'h3-js';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { QueryCtx } from '../_generated/server';
 import { getThreadedCommentsByPost } from '../comments';
+import { getAvatarUrlForUser, getDisplayNameForUser, getUsernameForUser } from '../user_identity';
 import { getAttendeeCount } from './attendance';
 
 export function latLngToH3Index(lat: number, lng: number, resolution: number = 9): string {
@@ -87,9 +88,9 @@ export async function serializeEventFeedPost(
     id: post._id,
     caption: post.caption ?? '',
     creationTime: post._creationTime,
-    authorName: author?.displayName || author?.username || 'Unknown user',
-    authorUsername: author?.username ?? '',
-    authorAvatarUrl: author?.avatarUrl || '',
+    authorName: getDisplayNameForUser(author),
+    authorUsername: getUsernameForUser(author),
+    authorAvatarUrl: getAvatarUrlForUser(author),
     likes: post.likeCount ?? likes.length,
     liked: viewerId ? likes.some((like) => like.userId === viewerId) : false,
     mediaIds,
