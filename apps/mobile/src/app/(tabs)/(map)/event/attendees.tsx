@@ -84,7 +84,6 @@ export default function EventAttendeesPage() {
                 <FriendCell
                   key={attendee.id}
                   username={attendee.username}
-                  displayName={attendee.name}
                   avatarUrl={attendee.avatarUrl ?? undefined}
                   onPress={() =>
                     currentUser?.username === attendee.username

@@ -6,9 +6,12 @@ import {
   __backend_only_getAndAuthenticateCurrentConvexUser,
   __backend_only_guestOrAuthenticatedUser,
 } from './auth';
+import { getHiddenUserIds } from './moderation/block';
+import { getAvatarUrlForUser, getDisplayNameForUser } from './user_identity';
 
 export type SerializedComment = {
   id: Id<'comments'>;
+  authorId: Id<'users'>;
   text: string;
   authorName: string;
   authorAvatarUrl: string;
@@ -79,6 +82,9 @@ function normalizeThread(comments: SerializedComment[]): SerializedComment[] {
 export async function getThreadedCommentsByPost(ctx: QueryCtx, postId: Doc<'posts'>['_id']) {
   const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
   const viewerId = guestMode ? undefined : viewer._id;
+  const blockedUserIds = guestMode
+    ? new Set<Id<'users'>>()
+    : await getHiddenUserIds(ctx, viewer._id);
   const [comments, viewerLikes] = await Promise.all([
     ctx.db
       .query('comments')
@@ -92,20 +98,23 @@ export async function getThreadedCommentsByPost(ctx: QueryCtx, postId: Doc<'post
       : Promise.resolve([]),
   ]);
 
-  comments.sort((a, b) => a._creationTime - b._creationTime);
+  const visibleComments = comments.filter((comment) => !blockedUserIds.has(comment.authorId));
+
+  visibleComments.sort((a, b) => a._creationTime - b._creationTime);
   const likedCommentIds = new Set(
     viewerLikes.flatMap((like) => (like.commentId ? [like.commentId] : []))
   );
 
   const commentsWithAuthors = await Promise.all(
-    comments.map(async (comment) => {
+    visibleComments.map(async (comment) => {
       const commentAuthor = await ctx.db.get(comment.authorId);
 
       return {
         id: comment._id,
+        authorId: comment.authorId,
         text: comment.text,
-        authorName: commentAuthor?.displayName || commentAuthor?.username || 'Unknown user',
-        authorAvatarUrl: commentAuthor?.avatarUrl || '',
+        authorName: getDisplayNameForUser(commentAuthor),
+        authorAvatarUrl: getAvatarUrlForUser(commentAuthor),
         creationTime: comment._creationTime,
         likes: comment.likeCount ?? 0,
         liked: likedCommentIds.has(comment._id),

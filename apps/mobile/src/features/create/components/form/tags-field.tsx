@@ -1,5 +1,6 @@
 import { Icon } from '@/components/icon';
 import type { CreateFormValues, CreateMode } from '@/features/create/types';
+import { cn } from '@/lib/utils';
 import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useWatch, type Control, type UseFormSetValue } from 'react-hook-form';
@@ -124,18 +125,20 @@ export function TagsField({
                     <Pressable
                       key={tag.id}
                       accessibilityRole="button"
-                      className={`flex-row items-center gap-1.5 rounded-full border px-3 py-2 ${
-                        isSelected ? 'border-primary bg-primary' : 'border-border bg-background'
-                      }`}
+                      accessibilityState={{ selected: isSelected }}
+                      className={cn(
+                        'rounded-full border px-3.5 py-2',
+                        isSelected
+                          ? 'border-primary bg-primary'
+                          : 'border-border bg-background dark:bg-secondary'
+                      )}
                       onPress={() => toggleTag(tag.name)}
                     >
-                      {isSelected ? (
-                        <Icon name="check" size={12} className="text-primary-foreground" />
-                      ) : null}
                       <Text
-                        className={`text-[13px] font-medium ${
+                        className={cn(
+                          'text-xs font-semibold capitalize',
                           isSelected ? 'text-primary-foreground' : 'text-foreground'
-                        }`}
+                        )}
                       >
                         {tag.name}
                       </Text>

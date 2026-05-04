@@ -5,12 +5,17 @@ import { PasswordStep } from '@/features/auth/components/steps/password';
 import { UsernameStep } from '@/features/auth/components/steps/username';
 import { VerificationStep } from '@/features/auth/components/steps/verification';
 import { AuthWrapper } from '@/features/auth/components/wrapper';
-import { useGoogleSignIn } from '@/features/auth/hooks/use-google-sign-in';
 import { useSignup } from '@/features/auth/hooks/use-signup';
+import { useSocialSignIn } from '@/features/auth/hooks/use-social-sign-in';
+import { setPendingSignupAvatar } from '@/features/auth/utils/pending-signup-avatar';
 import { useAppTheme } from '@/lib/use-app-theme';
-import { useNavigation } from 'expo-router';
-import { useLayoutEffect } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import { useEffect, useLayoutEffect } from 'react';
+import { ActivityIndicator, Platform, Text, View } from 'react-native';
+
+const TERMS_URL = 'https://fomo-app.dev/terms';
+const PRIVACY_URL = 'https://fomo-app.dev/privacy';
 
 export default function SignUpScreen() {
   const theme = useAppTheme();
@@ -22,6 +27,7 @@ export default function SignUpScreen() {
     setEmailAddress,
     setPassword,
     setCode,
+    setAvatarUri,
     clearErrors,
     handleSsoError,
     completeSignUpWithUsername: completeEmailSignUpWithUsername,
@@ -37,15 +43,37 @@ export default function SignUpScreen() {
     pendingUsernameSetup,
     isCompletingUsername,
     completeSignUpWithUsername,
-  } = useGoogleSignIn({
+  } = useSocialSignIn({
     clearErrors,
     handleError: handleSsoError,
     intent: 'signup',
     setEmailAddress,
   });
   const navigation = useNavigation();
+  const params = useLocalSearchParams<{
+    avatarUri?: string | string[];
+    avatarFileName?: string | string[];
+    avatarNonce?: string | string[];
+  }>();
+
+  const avatarUriParam = Array.isArray(params.avatarUri) ? params.avatarUri[0] : params.avatarUri;
+  const avatarFileNameParam = Array.isArray(params.avatarFileName)
+    ? params.avatarFileName[0]
+    : params.avatarFileName;
+  const avatarNonceParam = Array.isArray(params.avatarNonce)
+    ? params.avatarNonce[0]
+    : params.avatarNonce;
+
+  useEffect(() => {
+    // console.log('[signup] avatar param effect fired, avatarUriParam:', avatarUriParam);
+    if (!avatarUriParam) return;
+    setAvatarUri(avatarUriParam, avatarFileNameParam);
+    // console.log('[signup] setAvatarUri called with:', avatarUriParam);
+  }, [avatarFileNameParam, avatarNonceParam, avatarUriParam]);
+
   const isGoogleUsernameStep = Boolean(pendingUsernameSetup);
   const screenStep = isGoogleUsernameStep ? 'username' : state.step;
+  // console.log('[signup] render — step:', screenStep, 'avatarUri:', state.avatarUri);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -67,6 +95,28 @@ export default function SignUpScreen() {
     );
   }
 
+  const signupFooter = (
+    <View className="gap-3">
+      <Text className="text-sm leading-6 text-muted-foreground">
+        By continuing, you agree to the{' '}
+        <Text
+          className="font-medium text-foreground"
+          onPress={() => void WebBrowser.openBrowserAsync(TERMS_URL)}
+        >
+          Terms of Use
+        </Text>{' '}
+        and acknowledge the{' '}
+        <Text
+          className="font-medium text-foreground"
+          onPress={() => void WebBrowser.openBrowserAsync(PRIVACY_URL)}
+        >
+          Privacy Policy
+        </Text>
+        .
+      </Text>
+    </View>
+  );
+
   return (
     <AuthWrapper
       eyebrow="Join fomo"
@@ -81,7 +131,7 @@ export default function SignUpScreen() {
       }
       subtitle={
         screenStep === 'identifier'
-          ? 'Start with Google or email, then we will guide you through the rest.'
+          ? 'Choose how you want to sign up.'
           : screenStep === 'verify'
             ? 'We already sent your code, so you can finish verifying this email now.'
             : screenStep === 'password'
@@ -105,10 +155,14 @@ export default function SignUpScreen() {
           buttonLabel="Continue with email"
           dividerLabel="or sign up with email"
           isBusy={state.isBusy}
+          isAppleLoading={loadingProvider === 'apple'}
+          isAppleDisabled={loadingProvider !== null}
           isGoogleLoading={loadingProvider === 'google'}
           isGoogleDisabled={loadingProvider !== null}
           isPrimaryLoading={state.isSendingCode}
           error={state.errors?.email}
+          footer={signupFooter}
+          onApplePress={Platform.OS === 'ios' ? () => signInWith('apple') : undefined}
           onChangeText={setEmailAddress}
           onPrimaryPress={onStartEmailSignUp}
           onGooglePress={() => signInWith('google')}
@@ -145,12 +199,17 @@ export default function SignUpScreen() {
           username={state.username}
           usernameError={state.errors?.username}
           isSubmitting={state.isSubmittingUsername || isCompletingUsername}
+          avatarUri={state.avatarUri}
           onChangeUsername={setUsername}
-          onSubmit={() =>
-            pendingUsernameSetup
+          onSubmit={() => {
+            if (state.avatarUri) {
+              // console.log('[signup] storing pending avatar before completion:', state.avatarUri);
+              setPendingSignupAvatar(state.avatarUri, avatarFileNameParam ?? null);
+            }
+            void (pendingUsernameSetup
               ? completeSignUpWithUsername(state.username)
-              : completeEmailSignUpWithUsername(state.username)
-          }
+              : completeEmailSignUpWithUsername(state.username));
+          }}
         />
       )}
     </AuthWrapper>

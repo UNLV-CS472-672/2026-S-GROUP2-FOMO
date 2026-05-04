@@ -3,7 +3,7 @@ import { env } from '@fomo/env/mobile';
 import { ConvexReactClient } from 'convex/react';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 
-const convexUrl = env.EXPO_PUBLIC_CONVEX_URL;
+const convexUrl = env.EXPO_PUBLIC_CONVEX_URL.replace(/\/+$/, '');
 
 const convex = new ConvexReactClient(convexUrl);
 

@@ -24,6 +24,11 @@ export function VerificationCodeInput({
   );
 
   useEffect(() => {
+    const timeout = setTimeout(() => inputRef.current?.focus(), 100);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
     if (value.length !== 6) {
       lastSubmittedValueRef.current = null;
       return;
@@ -50,9 +55,9 @@ export function VerificationCodeInput({
               key={index}
               className={`h-14 flex-1 items-center justify-center rounded-xl border ${
                 isActive
-                  ? 'border-primary bg-primary-soft'
+                  ? 'border-primary bg-primary/10'
                   : isFilled
-                    ? 'border-foreground/40 bg-background'
+                    ? 'border-foreground/40 bg-card'
                     : 'border-muted-foreground/30 bg-background'
               }`}
             >

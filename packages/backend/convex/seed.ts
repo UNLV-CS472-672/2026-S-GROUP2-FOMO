@@ -281,7 +281,6 @@ export const seedData = internalMutation({
           (await ctx.db.insert('users', {
             clerkId: u.clerkId,
             username: u.name.toLowerCase(),
-            displayName: u.name,
             avatarUrl: '',
             bio: '',
           }))
@@ -462,7 +461,9 @@ export const seedData = internalMutation({
           q.and(q.eq(q.field('userId'), pair.userId), q.eq(q.field('eventId'), pair.eventId))
         )
         .first();
-      if (!existing) await ctx.db.insert('attendance', pair);
+      if (!existing) {
+        await ctx.db.insert('attendance', { ...pair, updatedAt: Date.now() });
+      }
     }
 
     //  Event Tags (Convex: eventTags)

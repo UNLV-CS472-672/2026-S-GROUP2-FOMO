@@ -40,13 +40,13 @@ export function RecenterButton({
         accessibilityLabel="Recenter map on your location"
         accessibilityRole="button"
         android_ripple={{ color: 'rgba(0,0,0,0.08)', radius: 24 }}
-        className="size-12 items-center justify-center rounded-full bg-card shadow-sm"
+        className="size-12 items-center justify-center rounded-full bg-card shadow-sm border border-border"
         disabled={disabled}
         hitSlop={10}
         style={({ pressed }) => [pressed && { opacity: 0.9, transform: [{ scale: 0.96 }] }]}
         onPress={onPress}
       >
-        <Icon name="near-me" size={20} className="text-primary" />
+        <Icon name="my-location" size={20} className="text-primary" />
       </Pressable>
     </Animated.View>
   );

@@ -7,12 +7,13 @@ import {
   isUsernameMissing,
 } from '@/features/auth/utils/username-requirements';
 import { useAuth } from '@clerk/expo';
+import { useSignInWithApple } from '@clerk/expo/apple';
 import { useSignInWithGoogle } from '@clerk/expo/google';
 import type { SignUpResource } from '@clerk/shared/types';
 import { useState } from 'react';
 import { Platform } from 'react-native';
 
-type SocialProvider = 'google';
+type SocialProvider = 'apple' | 'google';
 
 type SignInMeta = {
   status?: string | null;
@@ -46,7 +47,7 @@ type AuthFlowError = {
   message?: string;
 };
 
-type UseGoogleSignInArgs = {
+type UseSocialSignInArgs = {
   clearErrors: () => void;
   handleError: (error: unknown) => void;
   intent?: 'signin' | 'signup';
@@ -61,21 +62,33 @@ function isAuthFlowError(error: unknown): error is AuthFlowError {
   return !!error && typeof error === 'object';
 }
 
-function isGoogleFlowCancelled(error: unknown) {
-  return isAuthFlowError(error) && (error.code === 'SIGN_IN_CANCELLED' || error.code === '-5');
+function isSocialFlowCancelled(provider: SocialProvider, error: unknown) {
+  if (!isAuthFlowError(error)) return false;
+
+  return provider === 'google'
+    ? error.code === 'SIGN_IN_CANCELLED' || error.code === '-5'
+    : error.code === 'ERR_REQUEST_CANCELED';
 }
 
-function buildNoGoogleAccountMessage() {
-  return 'There is no account connected to this Google login yet. Sign up first, or use your email and password instead.';
+function getProviderLabel(provider: SocialProvider) {
+  return provider === 'apple' ? 'Apple' : 'Google';
 }
 
-function buildUnhandledGoogleAuthMessage({
+function buildNoSocialAccountMessage(provider: SocialProvider) {
+  const providerLabel = getProviderLabel(provider);
+  return `There is no account connected to this ${providerLabel} login yet. Sign up first, or use your email and password instead.`;
+}
+
+function buildUnhandledSocialAuthMessage({
+  provider,
   signIn,
   signUp,
 }: {
+  provider: SocialProvider;
   signIn?: SignInMeta;
   signUp?: SignUpMeta;
 }) {
+  const providerLabel = getProviderLabel(provider);
   const details = [
     getClerkStatus(signIn) ? `sign in status: ${getClerkStatus(signIn)}` : null,
     getClerkStatus(signUp) ? `sign up status: ${getClerkStatus(signUp)}` : null,
@@ -91,10 +104,10 @@ function buildUnhandledGoogleAuthMessage({
   ].filter(Boolean);
 
   if (details.length === 0) {
-    return 'Google authentication did not return a completed Clerk session. Please try again.';
+    return `${providerLabel} authentication did not return a completed Clerk session. Please try again.`;
   }
 
-  return `Google authentication did not finish. Clerk returned ${details.join('; ')}.`;
+  return `${providerLabel} authentication did not finish. Clerk returned ${details.join('; ')}.`;
 }
 
 function getResolvedSessionId({
@@ -109,32 +122,35 @@ function getResolvedSessionId({
   return createdSessionId ?? signIn?.createdSessionId ?? signUp?.createdSessionId ?? null;
 }
 
-export function useGoogleSignIn({
+export function useSocialSignIn({
   clearErrors,
   handleError,
   intent = 'signin',
   setEmailAddress,
-}: UseGoogleSignInArgs) {
+}: UseSocialSignInArgs) {
   const { isSignedIn } = useAuth({ treatPendingAsSignedOut: false });
   const { startGoogleAuthenticationFlow } = useSignInWithGoogle();
+  const { startAppleAuthenticationFlow } = useSignInWithApple();
   const onSignInComplete = useOnSignInComplete();
 
-  // state
   const [loadingProvider, setLoadingProvider] = useState<SocialProvider | null>(null);
   const [pendingUsernameSetup, setPendingUsernameSetup] = useState<PendingUsernameSetup | null>(
     null
   );
   const [isCompletingUsername, setIsCompletingUsername] = useState(false);
 
-  // derived state
   const isSignupIntent = intent === 'signup';
 
-  // ------- actions -------
   const signInWith = async (provider: SocialProvider) => {
-    if (provider !== 'google' || isSignedIn || loadingProvider) return;
+    if (isSignedIn || loadingProvider) return;
 
-    if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
+    if (provider === 'google' && Platform.OS !== 'ios' && Platform.OS !== 'android') {
       handleError(new Error('Google sign in is only available on iOS and Android builds.'));
+      return;
+    }
+
+    if (provider === 'apple' && Platform.OS !== 'ios') {
+      handleError(new Error('Apple sign in is only available on iOS builds.'));
       return;
     }
 
@@ -143,10 +159,13 @@ export function useGoogleSignIn({
     clearErrors();
 
     try {
-      const result = await startGoogleAuthenticationFlow();
+      const result =
+        provider === 'apple'
+          ? await startAppleAuthenticationFlow()
+          : await startGoogleAuthenticationFlow();
 
       if (__DEV__) {
-        console.log('[google auth] completed', {
+        console.log(`[${provider} auth] completed`, {
           createdSessionId: result.createdSessionId,
           hasSetActive: Boolean(result.setActive),
           signInStatus: getClerkStatus(result.signIn as SignInMeta | undefined),
@@ -169,8 +188,15 @@ export function useGoogleSignIn({
       }
 
       if (isUsernameMissing(signUpResource, signUpMeta)) {
+        if (!isSignupIntent) {
+          handleError(new Error(buildNoSocialAccountMessage(provider)));
+          return;
+        }
+
         if (!signUpResource) {
-          handleError(new Error('Unable to continue Google sign up. Please try again.'));
+          handleError(
+            new Error(`Unable to continue ${getProviderLabel(provider)} sign up. Please try again.`)
+          );
           return;
         }
 
@@ -207,18 +233,20 @@ export function useGoogleSignIn({
 
       if (getClerkStatus(signIn) === 'needs_new_password') {
         handleError(
-          new Error('This account requires a password reset before Google sign in can continue.')
+          new Error(
+            `This account requires a password reset before ${getProviderLabel(provider)} sign in can continue.`
+          )
         );
         return;
       }
 
       if (!isSignupIntent && getClerkStatus(signUpMeta) === 'abandoned') {
-        handleError(new Error(buildNoGoogleAccountMessage()));
+        handleError(new Error(buildNoSocialAccountMessage(provider)));
         return;
       }
 
       if (__DEV__) {
-        console.warn('[google auth] unhandled result', {
+        console.warn(`[${provider} auth] unhandled result`, {
           createdSessionId: result.createdSessionId,
           signInStatus: getClerkStatus(signIn),
           signInFirstFactorStatus: signIn?.firstFactorVerification?.status ?? null,
@@ -229,14 +257,16 @@ export function useGoogleSignIn({
         });
       }
 
-      handleError(new Error(buildUnhandledGoogleAuthMessage({ signIn, signUp: signUpMeta })));
+      handleError(
+        new Error(buildUnhandledSocialAuthMessage({ provider, signIn, signUp: signUpMeta }))
+      );
     } catch (error) {
-      if (isGoogleFlowCancelled(error)) {
+      if (isSocialFlowCancelled(provider, error)) {
         return;
       }
 
       if (__DEV__) {
-        console.error('Google auth flow failed', error);
+        console.error(`${getProviderLabel(provider)} auth flow failed`, error);
       }
 
       handleError(error);

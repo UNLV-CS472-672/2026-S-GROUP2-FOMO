@@ -35,7 +35,9 @@ function countsAsAttendee(attendance: Doc<'attendance'>) {
   return (attendance.status ?? 'going') === 'going';
 }
 
-export async function getAttendeeCount(ctx: QueryCtx, eventId: Id<'events'>) {
+type AttendanceEventId = Id<'events'> | Id<'externalEvents'>;
+
+export async function getAttendeeCount(ctx: QueryCtx, eventId: AttendanceEventId) {
   const attendees = await ctx.db
     .query('attendance')
     .withIndex('by_event', (q) => q.eq('eventId', eventId))
@@ -69,7 +71,7 @@ export const getEventAttendees = query({
       .filter((attendee): attendee is Doc<'users'> => attendee !== null)
       .map((attendee) => ({
         id: attendee._id,
-        name: attendee.displayName || attendee.username,
+        name: attendee.username,
         username: attendee.username,
         avatarUrl: attendee.avatarUrl || null,
       }));
@@ -112,21 +114,29 @@ export const setViewerAttendance = mutation({
     if (attendance === null) {
       if (existingAttendance) {
         await ctx.db.delete(existingAttendance._id);
+        await ctx.db.patch(user._id, { friendRecNeedsUpdate: true });
       }
 
       return { attendance: null, notification };
     }
 
     if (existingAttendance) {
-      await ctx.db.patch(existingAttendance._id, { status: attendance, notification });
+      await ctx.db.patch(existingAttendance._id, {
+        status: attendance,
+        notification,
+        updatedAt: Date.now(),
+      });
     } else {
       await ctx.db.insert('attendance', {
         userId: user._id,
         eventId,
         status: attendance,
         notification,
+        updatedAt: Date.now(),
       });
     }
+
+    await ctx.db.patch(user._id, { friendRecNeedsUpdate: true });
 
     return { attendance, notification };
   },

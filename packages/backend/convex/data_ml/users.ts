@@ -3,18 +3,19 @@
 // -----------------------------------------------------
 
 import { v } from 'convex/values';
-import { query } from '../_generated/server';
+import { internalQuery } from '../_generated/server';
 
 // Checks if a user exists in "users" via id.
-export const userExists = query({
+export const userExists = internalQuery({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
-    return await ctx.db.get(userId);
+    const user = await ctx.db.get(userId);
+    return user;
   },
 });
 
 // Extracts all userIds from the `users` table.
-export const getAllUserIds = query({
+export const getAllUserIds = internalQuery({
   args: {},
   handler: async (ctx) => {
     const users = await ctx.db.query('users').collect();
@@ -23,10 +24,10 @@ export const getAllUserIds = query({
 });
 
 // Given a "userId", return the display name.
-export const getNameById = query({
+export const getNameById = internalQuery({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
-    return user?.displayName ?? null;
+    return user?.username ?? null;
   },
 });

@@ -18,9 +18,12 @@
     "typecheck": "tsc -p convex/tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@clerk/backend": "^3.4.1",
+    "@convex-dev/migrations": "^0.3.4",
     "@fomo/env": "workspace:*",
     "convex": "^1.32.0",
-    "h3-js": "^4.4.0"
+    "h3-js": "^4.4.0",
+    "svix": "^1.92.2"
   },
   "devDependencies": {
     "@edge-runtime/vm": "^5.0.0",

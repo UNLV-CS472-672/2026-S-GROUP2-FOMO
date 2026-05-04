@@ -16,7 +16,6 @@ async function serializeFriendUser(ctx: QueryCtx, userId: Id<'users'>, requested
   return {
     id: user._id,
     username: user.username,
-    displayName: user.displayName,
     avatarUrl: user.avatarUrl,
     requestedAt,
   };
@@ -200,6 +199,23 @@ export const cancelFriendRequest = mutation({
 
     await ctx.db.patch(pendingRequest._id, { status: 'rejected' });
     return { status: 'none' as const };
+  },
+});
+
+export const removeFriend = mutation({
+  args: { friendId: v.id('users') },
+  handler: async (ctx, { friendId }) => {
+    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+    const { direct, reverse } = await getFriendshipsForPair(ctx, user._id, friendId);
+
+    const record =
+      direct.find((f) => f.status === 'accepted') ?? reverse.find((f) => f.status === 'accepted');
+
+    if (!record) {
+      throw new Error('Friendship not found');
+    }
+
+    await ctx.db.delete(record._id);
   },
 });
 

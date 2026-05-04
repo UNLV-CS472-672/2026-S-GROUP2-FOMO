@@ -1,5 +1,6 @@
 import type { EventSummary } from '@/features/events/types';
 import { EventMarker } from '@/features/map/components/event-marker';
+import { FeedTabs, type FeedMode } from '@/features/map/components/feed-tabs';
 import { RecenterButton } from '@/features/map/components/recenter-button';
 import { SearchDrawer } from '@/features/map/components/search';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
@@ -10,7 +11,7 @@ import { useIsFocused } from '@react-navigation/native';
 import MapboxGL from '@rnmapbox/maps';
 import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
-import { useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
@@ -21,9 +22,20 @@ const DEFAULT_ZOOM_LEVEL = 13;
 
 export default function MapScreen() {
   const { push } = useRouter();
-  const events: EventSummary[] = useQuery(api.events.queries.getEvents) ?? [];
+  const eventsRaw = useQuery(api.events.queries.getEvents);
+  const events: EventSummary[] = useMemo(() => eventsRaw ?? [], [eventsRaw]);
   const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);
+  const [feedMode, setFeedMode] = useState<FeedMode>('foryou');
+
+  // `getEvents` includes recommendation scores when available. For "For You", prioritize
+  // higher scores and otherwise keep backend order for stable fallback behavior.
+  const visibleEvents = useMemo(() => {
+    if (feedMode === 'popular') {
+      return [...events].sort((a, b) => b.attendeeCount - a.attendeeCount);
+    }
+    return [...events].sort((a, b) => (b.recommendationScore ?? 0) - (a.recommendationScore ?? 0));
+  }, [events, feedMode]);
 
   const savedCameraRef = useRef<{
     centerCoordinate: [number, number];
@@ -44,19 +56,27 @@ export default function MapScreen() {
   const drawerAnimatedIndex = useSharedValue(0);
   const drawerAnimatedPosition = useSharedValue(0);
 
+  // In "For You", weight by ranked order in the already-sorted visible list.
+  const eventWeights = useMemo(() => {
+    if (feedMode === 'foryou' && visibleEvents.length > 0) {
+      const k = visibleEvents.length;
+      return new Map(visibleEvents.map((event, index) => [event.id, k - index]));
+    }
+    return new Map(events.map((event) => [event.id, event.attendeeCount]));
+  }, [events, feedMode, visibleEvents]);
+
+  const getWeight = (eventId: EventSummary['id']) => eventWeights.get(eventId) ?? 0;
+
   const heatmapGeoJSON = pointsToGeoJSON(
-    events.map((event) => ({
+    visibleEvents.map((event) => ({
       latitude: event.location.latitude,
       longitude: event.location.longitude,
-      weight: event.attendeeCount,
+      weight: getWeight(event.id),
     }))
   );
-  const minWeight =
-    events.length === 0 ? 0 : Math.min(...events.map((event) => event.attendeeCount));
-  const maxWeight =
-    events.length === 0 ? 1 : Math.max(...events.map((event) => event.attendeeCount));
-
-  // TODO: Add a map toggle to size icons by recommendation score or popularity.
+  const visibleWeights = visibleEvents.map((event) => getWeight(event.id));
+  const minWeight = visibleWeights.length === 0 ? 0 : Math.min(...visibleWeights);
+  const maxWeight = visibleWeights.length === 0 ? 1 : Math.max(...visibleWeights);
 
   if (!centerCoordinate) {
     return (
@@ -118,14 +138,14 @@ export default function MapScreen() {
           />
         )}
 
-        {events.map((event) => (
+        {visibleEvents.map((event) => (
           <EventMarker
             key={event.id}
             id={event.id}
             coordinate={[event.location.longitude, event.location.latitude]}
             label={event.name}
             mediaId={event.mediaId}
-            weight={event.attendeeCount}
+            weight={getWeight(event.id)}
             minWeight={minWeight}
             maxWeight={maxWeight}
             onPress={() =>
@@ -164,6 +184,8 @@ export default function MapScreen() {
           />
         </MapboxGL.ShapeSource>
       </MapboxGL.MapView>
+
+      <FeedTabs value={feedMode} onChange={setFeedMode} />
 
       <SearchDrawer
         onSelectEvent={(eventId) => push(`/(tabs)/(map)/event/${eventId}`)}

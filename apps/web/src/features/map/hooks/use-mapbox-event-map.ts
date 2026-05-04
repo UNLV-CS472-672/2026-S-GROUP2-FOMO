@@ -1,10 +1,7 @@
 'use client';
 
 import { useSidebar } from '@/components/ui/sidebar';
-import {
-  createEventMarkerMount,
-  getEventMarkerImage,
-} from '@/features/map/components/event-marker';
+import { createEventMarkerMount } from '@/features/map/components/event-marker';
 import { createLocationPuckMount } from '@/features/map/components/location-puck';
 import {
   MAPBOX_STYLE_DARK,
@@ -26,6 +23,7 @@ type MapEvent = {
   id: string;
   name?: string;
   attendeeCount: number;
+  markerImageUrl?: string | null;
   location: {
     longitude: number;
     latitude: number;
@@ -96,7 +94,7 @@ export function useMapboxEventMap({
     let didLoad = false;
 
     async function initMap() {
-      if (!mapboxToken || !mapContainerRef.current || mapRef.current || !hasResolvedLocation) {
+      if (!mapContainerRef.current || mapRef.current) {
         return;
       }
 
@@ -158,7 +156,7 @@ export function useMapboxEventMap({
       mapRef.current = null;
       mapboxRef.current = null;
     };
-  }, [centerCoordinate, clearEventMarkers, clearLocationMarker, hasResolvedLocation, mapboxToken]);
+  }, [centerCoordinate, clearEventMarkers, clearLocationMarker, mapboxToken]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) {
@@ -228,11 +226,11 @@ export function useMapboxEventMap({
     const minWeight = Math.min(...weights);
     const maxWeight = Math.max(...weights);
 
-    events.forEach((event, index) => {
+    events.forEach((event) => {
       const weightDelta = maxWeight - minWeight || 1;
       const normalizedWeight = (event.attendeeCount - minWeight) / weightDelta;
       const markerMount = createEventMarkerMount({
-        imageSrc: getEventMarkerImage(index),
+        imageSrc: event.markerImageUrl ?? null,
         name: event.name ?? 'Event',
         size: 44 + normalizedWeight * 44,
       });

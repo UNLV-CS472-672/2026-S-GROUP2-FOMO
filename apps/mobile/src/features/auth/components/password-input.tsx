@@ -16,10 +16,11 @@ export function AuthPasswordInput({ label, error, className, ...props }: AuthPas
   return (
     <View>
       <Text className="text-sm font-semibold text-foreground">{label}</Text>
-      <View className="mt-2 flex-row items-center rounded-xl border border-muted-foreground/30 bg-background px-4">
+      <View className="mt-2 flex-row items-center rounded-xl border border-muted-foreground/30 bg-background px-4 h-12">
         <TextInput
           placeholderTextColor={theme.mutedText}
           secureTextEntry={!showPassword}
+          style={{ textAlignVertical: 'center' }}
           className={`flex-1 py-3 text-base text-foreground ${className ?? ''}`.trim()}
           {...props}
         />

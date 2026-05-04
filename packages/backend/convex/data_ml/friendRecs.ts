@@ -3,11 +3,18 @@
 // -------------------------------------------------------
 
 import { v } from 'convex/values';
-import { mutation } from '../_generated/server';
+import { internalMutation, internalQuery } from '../_generated/server';
+
+export const getUsersNeedingFriendRec = internalQuery({
+  handler: async (ctx) => {
+    const users = await ctx.db.query('users').collect();
+    return users.filter((u) => u.friendRecNeedsUpdate === true).map((u) => u._id);
+  },
+});
 
 // If target user already has a row in "friendRecs", update the row.
 // If target doesn't exist in "friendRecs", add the row.
-export const upsert = mutation({
+export const upsert = internalMutation({
   args: {
     userId: v.id('users'),
     recs: v.array(
@@ -34,5 +41,7 @@ export const upsert = mutation({
         updatedAt: Date.now(),
       });
     }
+
+    await ctx.db.patch(args.userId, { friendRecNeedsUpdate: false });
   },
 });

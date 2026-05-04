@@ -33,6 +33,24 @@ export function useCapture({ mode, cameraRef, device, flash, onPreview }: UseCap
     setMicrophonePermission(Camera.getMicrophonePermissionStatus());
   }, []);
 
+  const handleCaptureTypeChange = async (nextType: CaptureType) => {
+    if (nextType === 'photo') {
+      setCaptureType('photo');
+      return;
+    }
+
+    if (microphonePermission === 'granted') {
+      setCaptureType('video');
+      return;
+    }
+
+    const status = await Camera.requestMicrophonePermission();
+    setMicrophonePermission(status);
+    if (status === 'granted') {
+      setCaptureType('video');
+    }
+  };
+
   const autoSave = async (path: string) => {
     const uri = path.startsWith('file://') ? path : `file://${path}`;
     try {
@@ -110,5 +128,13 @@ export function useCapture({ mode, cameraRef, device, flash, onPreview }: UseCap
     await startRecording();
   };
 
-  return { captureType, setCaptureType, isBusy, isRecording, handleCapture, isEventFlow };
+  return {
+    captureType,
+    setCaptureType: handleCaptureTypeChange,
+    isBusy,
+    isRecording,
+    handleCapture,
+    isEventFlow,
+    microphonePermission,
+  };
 }

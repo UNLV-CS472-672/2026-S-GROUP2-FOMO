@@ -1,6 +1,7 @@
 import { ButtonText } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { Authenticated, GuestOnly } from '@/features/auth/components/auth-gate';
+import { GuestMode } from '@/features/profile/components/guest-mode';
 import { ProfilePage } from '@/features/profile/profile-page';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -8,9 +9,6 @@ import { api } from '@fomo/backend/convex/_generated/api';
 import { useConvexAuth, useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, View } from 'react-native';
-
-// imports for authentication and guest mode
-import { GuestMode } from '@/features/profile/components/guest-mode';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -31,26 +29,27 @@ export default function ProfileScreen() {
       </GuestOnly>
       <Authenticated>
         {profile ? (
-          <ProfilePage
-            profile={profile}
-            feedPosts={feedPosts ?? []}
-            secondaryStat={{
-              label: 'Friends',
-              value: friends?.length ?? 0,
-              onPress: () => router.push('/profile/friends?source=profile'),
-            }}
-            activityLabel="Recent Activity"
-            onPressSettings={() => router.push('/profile/settings')}
-            topPaddingClassName="pt-20"
-            bioFallback="No bio yet."
-            viewerUserId={profile.user._id}
-            profileAction={
-              <ProfileRequestsButton
-                count={friendRequests?.received.length ?? 0}
-                onPress={() => router.push('/profile/friend-requests')}
-              />
-            }
-          />
+          <>
+            <ProfilePage
+              profile={profile}
+              feedPosts={feedPosts ?? []}
+              secondaryStat={{
+                label: 'Friends',
+                value: friends?.length ?? 0,
+                onPress: () => router.push('/profile/friends?source=profile'),
+              }}
+              activityLabel="Recent Activity"
+              onPressSettings={() => router.push('/profile/settings')}
+              topPaddingClassName="pt-16"
+              viewerUserId={profile.user._id}
+              profileAction={
+                <ProfileRequestsButton
+                  count={friendRequests?.received.length ?? 0}
+                  onPress={() => router.push('/profile/friend-requests')}
+                />
+              }
+            />
+          </>
         ) : (
           <ScrollView className="flex-1 bg-background" />
         )}
