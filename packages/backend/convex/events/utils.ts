@@ -88,6 +88,7 @@ export async function serializeEventFeedPost(
     id: post._id,
     caption: post.caption ?? '',
     creationTime: post._creationTime,
+    authorId: post.authorId,
     authorName: getDisplayNameForUser(author),
     authorUsername: getUsernameForUser(author),
     authorAvatarUrl: getAvatarUrlForUser(author),
