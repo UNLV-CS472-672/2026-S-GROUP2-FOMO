@@ -104,8 +104,8 @@ export const upsertUserTagWeightsBatch = internalMutation({
   },
   handler: async (ctx, { rows }) => {
     await Promise.all(
-      rows.map(async ({ userId, weights }) => {
-        await upsertUserTagWeightsRow(ctx, userId, weights, lastDecayedAt)
+      rows.map(async ({ userId, weights, lastDecayedAt }) => {
+        await upsertUserTagWeightsRow(ctx, userId, weights, lastDecayedAt);
         await ctx.db.patch(userId, { eventRecNeedsUpdate: true });
       })
     );
