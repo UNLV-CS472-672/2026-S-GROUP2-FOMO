@@ -14,7 +14,7 @@ type ThemeToggleProps = {
   iconClassName?: string;
 };
 export function ThemeToggle({ className, iconClassName }: ThemeToggleProps) {
-  const { theme = 'system', resolvedTheme, setTheme } = useTheme();
+  const { theme = 'system', setTheme } = useTheme();
 
   const mode = useMemo(() => {
     // When theme is "system", resolvedTheme is the actual light/dark choice.
