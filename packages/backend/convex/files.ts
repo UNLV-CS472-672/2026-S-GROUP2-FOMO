@@ -20,6 +20,10 @@ export async function serializeStorageFile(ctx: QueryCtx, storageId: Id<'_storag
   };
 }
 
+export async function serializeStorageFiles(ctx: QueryCtx, storageIds: Array<Id<'_storage'>>) {
+  return await Promise.all(storageIds.map((id) => serializeStorageFile(ctx, id)));
+}
+
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {

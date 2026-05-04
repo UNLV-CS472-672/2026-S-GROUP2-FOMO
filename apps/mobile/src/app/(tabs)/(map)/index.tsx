@@ -144,7 +144,7 @@ export default function MapScreen() {
             id={event.id}
             coordinate={[event.location.longitude, event.location.latitude]}
             label={event.name}
-            mediaId={event.mediaId}
+            mediaUrl={event.mediaUrl}
             weight={getWeight(event.id)}
             minWeight={minWeight}
             maxWeight={maxWeight}

@@ -89,7 +89,7 @@ export function FeedCard({
           </View>
         </View>
 
-        <FeedCardMedia mediaIds={post.mediaIds} onPressMedia={setCarouselIndex} />
+        <FeedCardMedia mediaFiles={post.mediaFiles} onPressMedia={setCarouselIndex} />
 
         {post.caption ? (
           <Text className="text-[15px] leading-[21px] text-foreground">{post.caption}</Text>

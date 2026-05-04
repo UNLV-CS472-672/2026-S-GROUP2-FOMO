@@ -58,7 +58,7 @@ export function EventField({ control, setValue, formActive }: EventFieldProps) {
         {selectedEvent ? (
           <View className="flex-row items-center gap-2 px-4 py-3">
             <EventSearchImage
-              mediaId={selectedEvent.mediaId}
+              mediaUrl={selectedEvent.mediaUrl}
               className="size-[18px] overflow-hidden rounded-full bg-primary/10"
             />
             <Text className="flex-1 text-[15px] text-foreground" numberOfLines={1}>
@@ -108,7 +108,7 @@ export function EventField({ control, setValue, formActive }: EventFieldProps) {
                 className={`flex-row items-center gap-3 px-4 py-3 ${index < filtered.length - 1 ? 'border-b border-muted' : ''}`}
               >
                 <EventSearchImage
-                  mediaId={event.mediaId}
+                  mediaUrl={event.mediaUrl}
                   className="size-10 overflow-hidden rounded-full bg-primary/10"
                 />
                 <View className="flex-1">

@@ -1,39 +1,28 @@
 import { Image } from '@/components/image';
-import { api } from '@fomo/backend/convex/_generated/api';
-import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import MapboxGL from '@rnmapbox/maps';
-import { useQuery } from 'convex/react';
 import { Pressable, Text, View } from 'react-native';
 
 interface EventMarkerProps {
   id: string;
   coordinate: [number, number];
   label: string;
-  mediaId: Id<'_storage'> | null;
-  // Raw attendee weight — same value passed to the heatmap layer (0–6 scale).
+  mediaUrl: string | null;
   weight: number;
   minWeight: number;
   maxWeight: number;
   onPress: () => void;
 }
 
-/*
- * function provides event markers similar to life360
- * size scales with heatmap layer (one to one match)
- */
 export function EventMarker({
   id,
   coordinate,
   label,
-  mediaId,
+  mediaUrl,
   weight,
   minWeight,
   maxWeight,
   onPress,
 }: EventMarkerProps) {
-  const file = useQuery(api.files.getFile, mediaId ? { storageId: mediaId } : 'skip');
-
-  // normalize against actual min/max so the full range is always used
   const t = (weight - minWeight) / (maxWeight - minWeight || 1);
   const size = 44 + t * 44;
   const stemWidth = size * 0.28;
@@ -53,8 +42,8 @@ export function EventMarker({
             elevation: 10,
           }}
         >
-          {file?.url ? (
-            <Image source={file.url} className="h-full w-full" contentFit="cover" />
+          {mediaUrl ? (
+            <Image source={mediaUrl} className="h-full w-full" contentFit="cover" />
           ) : (
             <View className="h-full w-full items-center justify-center bg-primary/10 px-2">
               <Text className="text-lg font-bold uppercase text-foreground">
