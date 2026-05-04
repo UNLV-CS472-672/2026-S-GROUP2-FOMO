@@ -1,15 +1,17 @@
-import { latLngToCell } from 'h3-js';
-
 import { v } from 'convex/values';
-import type { Doc } from '../_generated/dataModel';
-import { query, type QueryCtx } from '../_generated/server';
+import { query } from '../_generated/server';
 import { __backend_only_guestOrAuthenticatedUser } from '../auth';
 import { getThreadedCommentsByPost } from '../comments';
-import { getEventRecIdsForUser, recommendationScoresFromRecIds } from '../eventRecs';
 import { getHiddenUserIds } from '../moderation/block';
 import { getHiddenPostIds } from '../moderation/report';
 import { getAvatarUrlForUser, getDisplayNameForUser, getUsernameForUser } from '../user_identity';
 import { getAttendeeCount } from './attendance';
+import {
+  getEventRecIdsForUser,
+  recommendationScoresFromRecIds,
+  serializeEvent,
+  serializeEventFeedPost,
+} from './utils';
 
 export function latLngToH3Index(lat: number, lng: number, resolution: number = 9): string {
   if (lat < -90 || lat > 90) {
@@ -119,13 +121,10 @@ export const getEvents = query({
     const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
     const events = await ctx.db.query('events').withIndex('by_startDate').collect();
 
-    let scoreByEventId: ReturnType<typeof recommendationScoresFromRecIds> | undefined;
-    if (!guestMode && viewer) {
-      const ids = await getEventRecIdsForUser(ctx, viewer._id);
-      if (ids.length) {
-        scoreByEventId = recommendationScoresFromRecIds(ids);
-      }
-    }
+    const shouldLoadRecommendations = !guestMode && viewer !== null;
+    const scoreByEventId = shouldLoadRecommendations
+      ? recommendationScoresFromRecIds(await getEventRecIdsForUser(ctx, viewer._id))
+      : undefined;
 
     return await Promise.all(
       events.map((event) => serializeEvent(ctx, event, scoreByEventId?.get(event._id)))

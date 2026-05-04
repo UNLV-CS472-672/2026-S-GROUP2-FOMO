@@ -2,7 +2,7 @@ import { env } from '@fomo/env/backend';
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
 import { action, internalMutation } from '../_generated/server';
-import { latLngToH3Index } from './queries';
+import { latLngToH3Index } from './utils';
 
 const normalizedEventValidator = v.object({
   name: v.string(),
