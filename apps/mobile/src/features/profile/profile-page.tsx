@@ -30,8 +30,7 @@ type ProfilePageProps = {
   activityLabel: string;
   emptyPostsMessage?: string;
   onPressSettings?: () => void;
-  topPaddingClassName?: string;
-  bioFallback?: string;
+  topPaddingClassName: string;
   mediaFeedPathname?: string;
   viewerUserId?: Id<'users'>;
   profileAction?: ReactNode;
@@ -103,8 +102,7 @@ export function ProfilePage({
   activityLabel,
   emptyPostsMessage = 'No posts yet',
   onPressSettings,
-  topPaddingClassName = 'pt-20',
-  bioFallback,
+  topPaddingClassName,
   mediaFeedPathname = '/profile/media-feed',
   viewerUserId,
   profileAction,
@@ -121,6 +119,8 @@ export function ProfilePage({
   const declineFriendRequest = useMutation(api.friends.declineFriendRequest);
   const removeFriend = useMutation(api.friends.removeFriend);
   const [activeTab, setActiveTab] = useState<'feed' | 'media'>('feed');
+  const [isBioExpanded, setIsBioExpanded] = useState(false);
+  const [bioIsTruncated, setBioIsTruncated] = useState(false);
   const [isSendingFriendRequest, setIsSendingFriendRequest] = useState(false);
   const [isUpdatingFriendship, setIsUpdatingFriendship] = useState(false);
   const friendship = useQuery(
@@ -142,8 +142,10 @@ export function ProfilePage({
       postId: p.id,
       mediaId: p.mediaIds[0] as Id<'_storage'>,
     }));
-  const profileBio = profile.user.bio ?? bioFallback;
+
+  const profileBio = profile.user.bio;
   const relationshipStatus = friendship?.status;
+
   async function handleSendFriendRequest() {
     if (!viewerUserId || viewerUserId === userId || isSendingFriendRequest) {
       return;
@@ -187,6 +189,7 @@ export function ProfilePage({
     viewerUserId && viewerUserId !== userId && relationshipStatus === 'pending_received';
   const showHeaderFriendAction =
     viewerUserId && viewerUserId !== userId && relationshipStatus !== 'pending_received';
+
   return (
     <Screen className="flex-1">
       <ScrollView
@@ -206,7 +209,7 @@ export function ProfilePage({
                 <Text className="text-lg font-bold text-foreground">{profile.user.username}</Text>
               </View>
               {profileAction || showHeaderFriendAction || onPressSettings ? (
-                <View className="-mr-3 flex-row items-center gap-1">
+                <View className="flex-row items-center gap-1">
                   {profileAction ? <View>{profileAction}</View> : null}
                   {showHeaderFriendAction ? (
                     <ProfileIconAction
@@ -276,7 +279,9 @@ export function ProfilePage({
                                     if (isUpdatingFriendship) return;
                                     setIsUpdatingFriendship(true);
                                     try {
-                                      await cancelFriendRequest({ recipientId: userId });
+                                      await cancelFriendRequest({
+                                        recipientId: userId,
+                                      });
                                     } catch (error) {
                                       console.error('Failed to cancel friend request', error);
                                       Alert.alert(
@@ -306,25 +311,51 @@ export function ProfilePage({
                     onAfterBlock={() => router.back()}
                   />
                   {onPressSettings ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onPress={onPressSettings}
-                      className="rounded-full"
+                    <ProfileIconAction
                       accessibilityLabel="Open settings"
-                    >
-                      <MaterialIcons name="settings" size={22} color={theme.mutedText} />
-                    </Button>
+                      iconName="settings"
+                      iconColor={theme.mutedText}
+                      onPress={onPressSettings}
+                    />
                   ) : null}
                 </View>
               ) : null}
             </View>
+            {/* bio */}
             {profileBio ? (
-              <Text className="mt-1 text-sm leading-5 text-foreground">{profileBio}</Text>
+              <View className="mt-1">
+                <Text
+                  className="absolute text-sm leading-5 text-foreground opacity-0"
+                  numberOfLines={0}
+                  onTextLayout={(e) => setBioIsTruncated(e.nativeEvent.lines.length > 3)}
+                  aria-hidden
+                >
+                  {profileBio}
+                </Text>
+                <Text
+                  className="text-sm leading-5 text-foreground"
+                  numberOfLines={isBioExpanded ? undefined : 3}
+                >
+                  {profileBio}
+                </Text>
+                {bioIsTruncated || isBioExpanded ? (
+                  <TouchableOpacity
+                    onPress={() => setIsBioExpanded((prev) => !prev)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={isBioExpanded ? 'Show less bio' : 'Show more bio'}
+                  >
+                    <Text className="mt-0.5 text-sm font-semibold text-primary">
+                      {isBioExpanded ? 'Less' : 'More'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             ) : null}
           </View>
         </View>
 
+        {/* stats */}
         <View className="px-4 pb-4">
           <View className="w-full flex-row">
             <View className="flex-1 items-center">
@@ -365,13 +396,7 @@ export function ProfilePage({
           ) : null}
         </View>
 
-        {/* TODO :: SEE WHAT TO DO HERE */}
-        {/* <View className="mb-4 flex-row px-4"> */}
-        {/*   <Button variant="tertiary" className="h-[82px] flex-1 rounded-none"> */}
-        {/*     <ButtonText variant="tertiary">{activityLabel}</ButtonText> */}
-        {/*   </Button> */}
-        {/* </View> */}
-
+        {/* tabs */}
         <View className="flex-row border-y border-primary-soft-border">
           <TouchableOpacity
             className={`flex-1 items-center py-3 ${
@@ -407,30 +432,11 @@ export function ProfilePage({
               Media
             </Text>
           </TouchableOpacity>
-          {/* Tagged tab - TODO :: uncommment when ready
-          <TouchableOpacity
-            className={`flex-1 items-center py-3 ${
-              activeTab === 'tagged' ? 'border-b-[5px] border-b-primary' : ''
-            }`}
-            onPress={() => setActiveTab('tagged')}
-            accessibilityRole="tab"
-            accessibilityLabel="Tagged posts tab"
-            accessibilityState={{ selected: activeTab === 'tagged' }}
-          >
-            <Text
-              className={
-                activeTab === 'tagged' ? 'font-semibold text-primary' : 'text-muted-foreground'
-              }
-            >
-              Tagged
-            </Text>
-          </TouchableOpacity>
-          */}
         </View>
 
         {activeTab === 'feed' ? (
           feedPosts.length > 0 ? (
-            <View className="gap-3 pt-4 px-4">
+            <View className="gap-3 px-4 pt-4">
               {feedPosts.map((post) => (
                 <FeedCard
                   key={post.id}
@@ -440,7 +446,9 @@ export function ProfilePage({
                   disableAuthorPress
                   onToggleLike={() => {
                     if (isGuestMode) return;
-                    void togglePostLike({ postId: post.id as Id<'posts'> }).catch((error) => {
+                    void togglePostLike({
+                      postId: post.id as Id<'posts'>,
+                    }).catch((error) => {
                       console.error('Failed to toggle profile post like', error);
                     });
                   }}

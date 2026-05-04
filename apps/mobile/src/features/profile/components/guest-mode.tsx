@@ -1,10 +1,17 @@
+import { FomoLogo } from '@/components/fomo-logo';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 
 import { Button, ButtonText } from '@/components/ui/button';
 
-export function GuestMode() {
+type GuestModeProps = {
+  compensateForOverlayTabBar?: boolean;
+};
+
+export function GuestMode({ compensateForOverlayTabBar = false }: GuestModeProps) {
   const router = useRouter();
+  const tabBarHeight = useBottomTabBarHeight();
   const handleSignIn = async () => {
     router.push('/(auth)/login');
   };
@@ -13,10 +20,14 @@ export function GuestMode() {
     router.push('/(auth)/signup');
   };
   return (
-    <View className="flex-1 justify-center px-8">
-      <Text className="mb-6 text-center text-3xl font-bold text-foreground">
-        Welcome to <Text className="font-heading text-4xl font-black">fomo</Text>
-      </Text>
+    <View
+      className="flex-1 justify-center px-8"
+      style={compensateForOverlayTabBar ? { paddingBottom: tabBarHeight } : undefined}
+    >
+      <View className="mb-6 items-center">
+        <Text className="text-center text-3xl font-bold text-foreground">Welcome to</Text>
+        <FomoLogo width={220} height={96} className="mt-4" />
+      </View>
       <Text className="mb-6 text-center leading-6 text-foreground">
         You are browsing in guest mode. This is a read-only experience.
       </Text>
