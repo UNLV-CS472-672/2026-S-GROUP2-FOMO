@@ -23,6 +23,7 @@ type MapEvent = {
   id: string;
   name?: string;
   attendeeCount: number;
+  endDate: number;
   markerImageUrl?: string | null;
   location: {
     longitude: number;
@@ -225,6 +226,7 @@ export function useMapboxEventMap({
     const weights = events.map((event) => event.attendeeCount);
     const minWeight = Math.min(...weights);
     const maxWeight = Math.max(...weights);
+    const now = Date.now();
 
     events.forEach((event) => {
       const weightDelta = maxWeight - minWeight || 1;
@@ -233,6 +235,7 @@ export function useMapboxEventMap({
         imageSrc: event.markerImageUrl ?? null,
         name: event.name ?? 'Event',
         size: 44 + normalizedWeight * 44,
+        isActive: event.endDate >= now,
       });
 
       markerMount.element.addEventListener('click', () => {
