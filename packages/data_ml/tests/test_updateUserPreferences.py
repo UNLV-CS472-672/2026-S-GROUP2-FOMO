@@ -227,32 +227,35 @@ def test_build_matrix_from_rows_unknown_event_zero_row(
 
 def test_build_weights_both_empty(tags_initialized: None) -> None:
     empty = np.zeros((0, 3), dtype=np.float32)
-    weights = build_weights(empty, empty)
-    assert weights.shape == (3,)
-    assert np.all(weights == 0.0)
+    update_w, discard_w = build_weights(empty, empty)
+    assert update_w.shape == (3,)
+    assert discard_w.shape == (3,)
+    assert np.all(update_w == 0.0)
+    assert np.all(discard_w == 0.0)
 
 
 def test_build_weights_update_only_normalization(tags_initialized: None) -> None:
     """A single 2-tag event should contribute 0.5 to each of its tags."""
     mat = np.array([[1.0, 1.0, 0.0]], dtype=np.float32)
     empty = np.zeros((0, 3), dtype=np.float32)
-    weights = build_weights(mat, empty, row_weight=1.0)
-    np.testing.assert_allclose(weights, [0.5, 0.5, 0.0])
+    update_w, discard_w = build_weights(mat, empty, row_weight=1.0)
+    np.testing.assert_allclose(update_w, [0.5, 0.5, 0.0])
+    np.testing.assert_allclose(discard_w, [0.0, 0.0, 0.0])
 
 
 def test_build_weights_discard_subtracts(tags_initialized: None) -> None:
     """Same event in update and discard should net to zero."""
     mat = np.array([[1.0, 1.0, 0.0]], dtype=np.float32)
-    weights = build_weights(mat, mat, row_weight=1.0)
-    np.testing.assert_allclose(weights, [0.0, 0.0, 0.0])
+    update_w, discard_w = build_weights(mat, mat, row_weight=1.0)
+    np.testing.assert_allclose(update_w - discard_w, [0.0, 0.0, 0.0])
 
 
 def test_build_weights_can_be_negative(tags_initialized: None) -> None:
-    """Pure discard with no update should produce negative weights."""
+    """Pure discard with no update should produce negative net weights."""
     empty = np.zeros((0, 3), dtype=np.float32)
     discard = np.array([[1.0, 1.0, 0.0]], dtype=np.float32)
-    weights = build_weights(empty, discard, row_weight=1.0)
-    np.testing.assert_allclose(weights, [-0.5, -0.5, 0.0])
+    update_w, discard_w = build_weights(empty, discard, row_weight=1.0)
+    np.testing.assert_allclose(update_w - discard_w, [-0.5, -0.5, 0.0])
 
 
 def test_build_weights_higher_attendance_higher_weight(tags_initialized: None) -> None:
@@ -267,17 +270,17 @@ def test_build_weights_higher_attendance_higher_weight(tags_initialized: None) -
     empty = np.zeros((0, 2), dtype=np.float32)
     # Adjust NUM_TAGS for this 2-tag test
     updateUserPreferences.NUM_TAGS = 2
-    weights = build_weights(update, empty)
-    assert weights[0] > weights[1]
+    update_w, _ = build_weights(update, empty)
+    assert update_w[0] > update_w[1]
 
 
 def test_build_weights_row_weight_scales(tags_initialized: None) -> None:
     mat = np.array([[1.0, 0.0, 0.0]], dtype=np.float32)
     empty = np.zeros((0, 3), dtype=np.float32)
-    low = build_weights(mat, empty, row_weight=0.5)
-    high = build_weights(mat, empty, row_weight=2.0)
-    assert high[0] > low[0]
-    np.testing.assert_allclose(high[0], low[0] * 4.0)
+    low_u, _ = build_weights(mat, empty, row_weight=0.5)
+    high_u, _ = build_weights(mat, empty, row_weight=2.0)
+    assert high_u[0] > low_u[0]
+    np.testing.assert_allclose(high_u[0], low_u[0] * 4.0)
 
 
 # ------------------------------
