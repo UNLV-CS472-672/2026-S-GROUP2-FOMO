@@ -36,18 +36,20 @@ export function MapSearchOverlay({ onSelectEvent, onSelectLocation }: MapSearchO
       return undefined;
     }
 
-    const indexedEvents = events.slice(0, 8);
+    const sortByPersonalizedRank = (list: Events) =>
+      list.slice().sort((a, b) => (b.recommendationScore ?? -1) - (a.recommendationScore ?? -1));
+
     if (!debouncedQuery) {
-      return indexedEvents;
+      return sortByPersonalizedRank(events).slice(0, 8);
     }
 
     const normalizedSearch = debouncedQuery.toLowerCase();
-    return events
-      .filter((event) => {
+    return sortByPersonalizedRank(
+      events.filter((event) => {
         const haystack = `${event.name} ${event.caption}`.toLowerCase();
         return haystack.includes(normalizedSearch);
       })
-      .slice(0, 8);
+    ).slice(0, 8);
   }, [debouncedQuery, events]);
 
   const duplicateEventNames = useMemo(() => {

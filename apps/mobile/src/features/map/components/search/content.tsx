@@ -82,6 +82,11 @@ export function SearchContent({
             return bLive - aLive;
           }
 
+          const recCmp = (b.recommendationScore ?? -1) - (a.recommendationScore ?? -1);
+          if (recCmp !== 0) {
+            return recCmp;
+          }
+
           const aDistance = Math.abs(a.startDate - now);
           const bDistance = Math.abs(b.startDate - now);
           return aDistance - bDistance;
