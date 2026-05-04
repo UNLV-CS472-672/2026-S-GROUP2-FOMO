@@ -51,7 +51,7 @@ def apply_weight_decay(
     above_threshold = stored_weights > threshold
     decay_mask = (~touched) & above_threshold
 
-    decayed = np.where(decay_mask, stored_weights * decay_rate, stored_weights)
+    decayed: NDArray[np.float32] = np.where(decay_mask, stored_weights * decay_rate, stored_weights)
     max_drop_floor = stored_weights - ceiling
     decayed = np.maximum(decayed, max_drop_floor)
     decayed = np.maximum(decayed, floor)
@@ -266,7 +266,7 @@ def build_user_feature_vector_from_interactions(
     ).astype(np.float32)
 
     # Logically this will still always be positive.
-    final = update_contributions + new_user_weights_nd - discard_contributions
+    final: NDArray[np.float32] = update_contributions + new_user_weights_nd - discard_contributions
     caps = np.concatenate([
         np.full(NUM_TAGS, W_MAX_GOING, dtype=np.float32),
         np.full(NUM_TAGS, W_MAX_INTERESTED, dtype=np.float32),
