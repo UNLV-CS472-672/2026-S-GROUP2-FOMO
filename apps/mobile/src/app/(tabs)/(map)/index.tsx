@@ -98,15 +98,43 @@ export default function MapScreen() {
     const shouldCluster = zoomLevel < CLUSTER_DISABLE_ZOOM;
 
     if (!shouldCluster) {
-      return visibleEvents.map((event) => ({
-        h3Index: event.id,
-        members: [event],
-        primary: event,
-        secondary: null,
-        count: 1,
-        weight: getWeight(event.id),
-        isActive: event.endDate >= now,
-      }));
+      // Group by H3 so co-located events get spread into a circle rather than stacking.
+      const groups = new Map<string, (EventSummary | ExternalEventSummary)[]>();
+      for (const event of visibleEvents) {
+        const key = event.location.h3Index;
+        const existing = groups.get(key);
+        if (existing) existing.push(event);
+        else groups.set(key, [event]);
+      }
+      const SPREAD_DEG = 0.0003; // ~30m spread radius
+      const result: {
+        h3Index: string;
+        members: (EventSummary | ExternalEventSummary)[];
+        primary: EventSummary | ExternalEventSummary;
+        secondary: null;
+        count: number;
+        weight: number;
+        isActive: boolean;
+        coordinate: [number, number];
+      }[] = [];
+      for (const [h3Index, members] of groups.entries()) {
+        members.forEach((event, i) => {
+          const angle = (2 * Math.PI * i) / members.length;
+          const offsetLng = members.length > 1 ? Math.cos(angle) * SPREAD_DEG : 0;
+          const offsetLat = members.length > 1 ? Math.sin(angle) * SPREAD_DEG : 0;
+          result.push({
+            h3Index: event.id,
+            members: [event],
+            primary: event,
+            secondary: null,
+            count: 1,
+            weight: getWeight(event.id),
+            isActive: event.endDate >= now,
+            coordinate: [event.location.longitude + offsetLng, event.location.latitude + offsetLat],
+          });
+        });
+      }
+      return result;
     }
 
     const groups = new Map<string, (EventSummary | ExternalEventSummary)[]>();
@@ -204,10 +232,10 @@ export default function MapScreen() {
 
         {eventClusters.map((cluster) => {
           const { primary, count, weight, isActive } = cluster;
-          const coordinate: [number, number] = [
-            primary.location.longitude,
-            primary.location.latitude,
-          ];
+          const coordinate: [number, number] =
+            'coordinate' in cluster
+              ? cluster.coordinate
+              : [primary.location.longitude, primary.location.latitude];
           if (count === 1) {
             return (
               <EventMarker
