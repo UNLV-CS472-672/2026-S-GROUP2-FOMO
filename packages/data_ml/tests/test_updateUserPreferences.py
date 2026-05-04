@@ -5,9 +5,9 @@ import pytest
 from unittest.mock import patch, MagicMock
 from typing import Generator
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "event_rec", "data"))
-import updateUserPreferences
-from updateUserPreferences import (
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+import event_rec.data.updateUserPreferences as updateUserPreferences
+from event_rec.data.updateUserPreferences import (
     init_tags,
     event_multihot_from_rows,
     build_matrix,
@@ -26,13 +26,13 @@ from updateUserPreferences import (
 
 @pytest.fixture(autouse=True)
 def mock_queries() -> Generator[dict[str, MagicMock], None, None]:
-    with patch("updateUserPreferences.queries.query_all", return_value=[]) as mock_query_all, \
-         patch("updateUserPreferences.queries.query_active", return_value=[]) as mock_query_active, \
-         patch("updateUserPreferences.queries.get_by_event_ids", return_value=[]) as mock_get_by_events, \
-         patch("updateUserPreferences.queries.get_interactions_by_user_id", return_value=[]) as mock_get_interactions, \
-         patch("updateUserPreferences.queries.get_interactions_by_users", return_value=[]) as mock_get_interactions_batch, \
-         patch("updateUserPreferences.queries.get_user_tag_weights_with_timestamps", return_value=[]) as mock_get_weights_tss, \
-         patch("updateUserPreferences.queries.upsert_user_tag_weights_batch") as mock_upsert_batch:
+    with patch("event_rec.data.updateUserPreferences.queries.query_all", return_value=[]) as mock_query_all, \
+         patch("event_rec.data.updateUserPreferences.queries.query_active", return_value=[]) as mock_query_active, \
+         patch("event_rec.data.updateUserPreferences.queries.get_by_event_ids", return_value=[]) as mock_get_by_events, \
+         patch("event_rec.data.updateUserPreferences.queries.get_interactions_by_user_id", return_value=[]) as mock_get_interactions, \
+         patch("event_rec.data.updateUserPreferences.queries.get_interactions_by_users", return_value=[]) as mock_get_interactions_batch, \
+         patch("event_rec.data.updateUserPreferences.queries.get_user_tag_weights_with_timestamps", return_value=[]) as mock_get_weights_tss, \
+         patch("event_rec.data.updateUserPreferences.queries.upsert_user_tag_weights_batch") as mock_upsert_batch:
         yield {
             "query_all": mock_query_all,
             "query_active": mock_query_active,
@@ -407,8 +407,8 @@ def test_build_feature_vector_snaps_small_values_to_zero(
 def mock_main_dependencies(
     mock_queries: dict[str, MagicMock],
 ) -> Generator[dict[str, MagicMock | dict[str, MagicMock]], None, None]:
-    with patch("updateUserPreferences.init_tags") as mock_init, \
-         patch("updateUserPreferences.build_user_feature_vector_from_interactions") as mock_build:
+    with patch("event_rec.data.updateUserPreferences.init_tags") as mock_init, \
+         patch("event_rec.data.updateUserPreferences.build_user_feature_vector_from_interactions") as mock_build:
 
         mock_build.return_value = np.array(
             [0.5, 0.3, 0.2, 0.1, 0.4, 0.0, 0.2, 0.1, 0.0], dtype=np.float32
