@@ -94,7 +94,7 @@ export function useMapboxEventMap({
     let didLoad = false;
 
     async function initMap() {
-      if (!mapboxToken || !mapContainerRef.current || mapRef.current || !hasResolvedLocation) {
+      if (!mapContainerRef.current || mapRef.current) {
         return;
       }
 
@@ -156,7 +156,7 @@ export function useMapboxEventMap({
       mapRef.current = null;
       mapboxRef.current = null;
     };
-  }, [centerCoordinate, clearEventMarkers, clearLocationMarker, hasResolvedLocation, mapboxToken]);
+  }, [centerCoordinate, clearEventMarkers, clearLocationMarker, mapboxToken]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) {
