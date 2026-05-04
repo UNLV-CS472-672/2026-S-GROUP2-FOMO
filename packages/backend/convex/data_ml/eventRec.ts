@@ -1,7 +1,6 @@
 import { v } from 'convex/values';
 import { Id } from '../_generated/dataModel';
-import { internalMutation, internalQuery, MutationCtx, query } from '../_generated/server';
-import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../auth';
+import { internalMutation, internalQuery, MutationCtx } from '../_generated/server';
 
 async function getInteractionsForUser(ctx: MutationCtx, userId: Id<'users'>, sinceMs?: number) {
   if (sinceMs === undefined) {
@@ -190,20 +189,6 @@ export const upsertEventRecsBatch = internalMutation({
         await ctx.db.patch(userId, { eventRecNeedsUpdate: false });
       })
     );
-  },
-});
-
-// Returns the current user's top-K event IDs in rank order
-// (index 0 = #1 rec). Returns null when no recs have been computed yet.
-export const getCurrentUserEventRecs = query({
-  args: {},
-  handler: async (ctx) => {
-    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
-    const doc = await ctx.db
-      .query('eventRecs')
-      .withIndex('by_userId', (q) => q.eq('userId', user._id))
-      .unique();
-    return doc?.eventIds ?? null;
   },
 });
 
