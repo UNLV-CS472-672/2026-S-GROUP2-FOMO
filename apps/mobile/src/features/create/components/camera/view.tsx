@@ -4,7 +4,6 @@ import { LatestGalleryImage } from '@/features/create/components/latest-gallery-
 import { useCapture } from '@/features/create/hooks/use-capture';
 import type { CreateMode } from '@/features/create/types';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -43,25 +42,6 @@ export function CreateCameraCaptureView({
     setCameraPermission(Camera.getCameraPermissionStatus());
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      refreshCameraPermission();
-    }, [refreshCameraPermission])
-  );
-
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') {
-        refreshCameraPermission();
-      }
-    });
-    return () => sub.remove();
-  }, [refreshCameraPermission]);
-
-  const hasPermission = cameraPermission === 'granted';
-  const mustOpenSettingsForCamera =
-    cameraPermission === 'denied' || cameraPermission === 'restricted';
-
   const requestCameraAccess = useCallback(async () => {
     setIsRequestingCameraPermission(true);
     try {
@@ -82,6 +62,29 @@ export function CreateCameraCaptureView({
     }
   }, [refreshCameraPermission]);
 
+  useEffect(() => {
+    refreshCameraPermission();
+
+    if (!isActive || Camera.getCameraPermissionStatus() !== 'not-determined') {
+      return;
+    }
+
+    void requestCameraAccess();
+  }, [isActive, refreshCameraPermission, requestCameraAccess]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        refreshCameraPermission();
+      }
+    });
+    return () => sub.remove();
+  }, [refreshCameraPermission]);
+
+  const hasPermission = cameraPermission === 'granted';
+  const mustOpenSettingsForCamera =
+    cameraPermission === 'denied' || cameraPermission === 'restricted';
+
   const [cameraFacing, setCameraFacing] = useState<'front' | 'back'>('back');
   const [flash, setFlash] = useState<'on' | 'off'>('off');
   const device = useCameraDevice(cameraFacing);
@@ -93,8 +96,25 @@ export function CreateCameraCaptureView({
     });
   };
 
-  const { captureType, setCaptureType, isBusy, isRecording, handleCapture, isEventFlow } =
-    useCapture({ mode, cameraRef, device, flash, onPreview: openPreview });
+  const {
+    captureType,
+    setCaptureType,
+    isBusy,
+    isRecording,
+    handleCapture,
+    isEventFlow,
+    microphonePermission,
+  } = useCapture({ mode, cameraRef, device, flash, onPreview: openPreview });
+  const shouldEnableAudio =
+    !isEventFlow && captureType === 'video' && microphonePermission === 'granted';
+
+  if (cameraPermission === 'not-determined' || isRequestingCameraPermission) {
+    return (
+      <View className="flex-1 items-center justify-center bg-black">
+        <ActivityIndicator color="#fff" />
+      </View>
+    );
+  }
 
   if (!hasPermission) {
     return (
@@ -113,7 +133,7 @@ export function CreateCameraCaptureView({
           >
             {isRequestingCameraPermission ? <ActivityIndicator color="#fff" /> : null}
             <Text className="font-semibold text-white">
-              {mustOpenSettingsForCamera ? 'Open Settings' : 'Allow Camera Access'}
+              {mustOpenSettingsForCamera ? 'Open Settings' : 'Continue'}
             </Text>
           </Pressable>
           {mustOpenSettingsForCamera ? (
@@ -136,7 +156,7 @@ export function CreateCameraCaptureView({
           isActive={isActive}
           photo
           video
-          audio
+          audio={shouldEnableAudio}
         />
       )}
 

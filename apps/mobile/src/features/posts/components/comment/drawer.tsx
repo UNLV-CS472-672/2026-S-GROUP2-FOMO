@@ -121,16 +121,12 @@ export function CommentDrawer({ open, onClose, post, readOnly }: CommentDrawerPr
                   <CommentItem
                     comment={comment}
                     readOnly={readOnly}
+                    onAfterBlock={onClose}
                     onReply={handleReply}
                     onToggleLike={() => {
-                      if (readOnly) {
-                        return;
-                      }
-
+                      if (readOnly) return;
                       void toggleCommentLike({ commentId: comment.id as Id<'comments'> }).catch(
-                        (error) => {
-                          console.error('Failed to toggle comment like', error);
-                        }
+                        (error) => console.error('Failed to toggle comment like', error)
                       );
                     }}
                   />
@@ -146,17 +142,15 @@ export function CommentDrawer({ open, onClose, post, readOnly }: CommentDrawerPr
                           <CommentItem
                             comment={reply}
                             readOnly={readOnly}
+                            onAfterBlock={onClose}
                             onReply={handleReply}
                             onToggleLike={() => {
-                              if (readOnly) {
-                                return;
-                              }
-
+                              if (readOnly) return;
                               void toggleCommentLike({
                                 commentId: reply.id as Id<'comments'>,
-                              }).catch((error) => {
-                                console.error('Failed to toggle comment like', error);
-                              });
+                              }).catch((error) =>
+                                console.error('Failed to toggle comment like', error)
+                              );
                             }}
                           />
                         </View>

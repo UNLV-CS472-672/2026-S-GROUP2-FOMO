@@ -72,7 +72,19 @@ def get_event_features(num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[li
     Only returns events that haven't ended yet.
     Shape: (num_events, num_tags + 4)
     """
-    all_events = queries.query_all("events")
+    all_events = queries.get_all_events_after_now()
+
+    if not all_events:
+        return [], np.zeros((0, num_tags + 4), dtype=np.float32)
+
+    all_event_ids = [event["_id"] for event in all_events]
+    all_event_tags = queries.get_by_event_ids(all_event_ids)
+    event_tags_by_id: dict[str, list[dict[str, str]]] = {}
+    for row in all_event_tags:
+        event_id = row["eventId"]
+        if event_id not in event_tags_by_id:
+            event_tags_by_id[event_id] = []
+        event_tags_by_id[event_id].append(row)
 
     event_ids = []
     event_rows = []
@@ -81,7 +93,7 @@ def get_event_features(num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[li
         eid = event["_id"]
         tags = np.zeros(num_tags, dtype=np.float32)
 
-        event_tags = queries.get_by_event_id(eid)
+        event_tags = event_tags_by_id.get(eid, [])
         for row in event_tags:
             if row["tagId"] in tag_id_to_idx:
                 tags[tag_id_to_idx[row["tagId"]]] = 1.0
@@ -102,15 +114,20 @@ def get_event_features(num_tags: int, tag_id_to_idx: dict[str, int]) -> tuple[li
 
 
 def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> None:
-    # Preprocessing
+    if len(users) == 1:
+        if users[0] == "ALL":
+            all_users = queries.query_all("users")
+            users = [row["_id"] for row in all_users]
+        elif users[0] == "DIRTY":
+            users = queries.get_users_needing_event_rec()
+            if not users:
+                log("No users need event rec update.")
+                return
+
+    # Preprocessing — deferred until we know there's work to do
     num_tags, tag_id_to_idx = queries.get_tag_info()
 
-    if len(users) == 1 and users[0] == "ALL":
-        all_users = queries.query_all("users")
-        users     = [row["_id"] for row in all_users]
-
     user_features          = get_user_features(users, num_tags).to(DEVICE)
-    print(user_features)
     event_ids, event_array = get_event_features(num_tags, tag_id_to_idx)
     event_features         = torch.from_numpy(event_array).to(DEVICE)
 
@@ -133,9 +150,15 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
     scores = (raw_scores + 1.0) / 2.0
 
     # Hard mask blocked events so they can never surface in recommendations.
+    all_interactions = queries.get_interactions_by_user_ids(users)
+    blocked_ids_by_user: dict[str, set[str]] = {user_id: set() for user_id in users}
+    for row in all_interactions:
+        user_id = row["userId"]
+        if row["status"] == "uninterested" and user_id in blocked_ids_by_user:
+            blocked_ids_by_user[user_id].add(row["eventId"])
+
     for i, user_id in enumerate(users):
-        interactions = queries.get_interactions_by_user_id(user_id)
-        blocked_ids = {r["eventId"] for r in interactions if r["status"] == "uninterested"}
+        blocked_ids = blocked_ids_by_user.get(user_id, set())
         for j, eid in enumerate(event_ids):
             if eid in blocked_ids:
                 scores[i, j] = -1.0
@@ -153,9 +176,11 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
 
     # Write to Convex / Print
     if update_db:
+        rows = []
         for user_id, recs in recommendations.items():
             event_ids_ranked = [event_id for event_id, _ in recs]
-            queries.upsert_event_recs(user_id, event_ids_ranked)
+            rows.append({"userId": user_id, "eventIds": event_ids_ranked})
+        queries.upsert_event_recs_batch(rows)
 
         print(f"Updated {len(recommendations)} users in Convex with {k} recs each.")
     else:
@@ -180,7 +205,7 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
                 )
 
 
-USERS = ["ALL"]
+USERS = ["DIRTY"]
 UPDATE_DB = True
 
 if __name__ == "__main__":  # pragma: no cover
@@ -192,12 +217,7 @@ if __name__ == "__main__":  # pragma: no cover
 
 """ 
 TODO: 
-    1. (updateUserPreferences.py) Currently collects all attended events and cold start info and then performs calculations
-       Need to update it so it performs running calculations. 
-            - Could be done by checking when the weights were calculated last and only select events 
-               that fall after that date.
-            - Problem: Formula may need to be adjusted to acomodate for this
-            - Could just ignore this issue. MVP!
+    1. Query optimizaiton
     2. (updateUserPreferences.py) Optional: Add weight decay so weights can also decrease. Possibly could be done by decrementing
                  some weights if a user hasn't attended an event with said tag for the past X events.
                  Idk how to really do that with a running weight adjustment though

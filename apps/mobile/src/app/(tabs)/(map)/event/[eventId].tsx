@@ -7,10 +7,12 @@ import { RsvpButton } from '@/features/events/components/rsvp-button';
 import { RsvpSheet } from '@/features/events/components/rsvp-sheet';
 import { TopMoments } from '@/features/events/components/top-moments/preview';
 import type { AttendanceStatus, NotificationPref } from '@/features/events/types';
+import { EventActionMenu } from '@/features/moderation/event-action-menu';
 import { Avatar } from '@/features/posts/components/avatar';
 import { MediaCarousel } from '@/features/posts/components/media-carousel';
 import { useGuest } from '@/integrations/session/guest';
 import { formatDateTimeRange } from '@/lib/format';
+import { useAppTheme } from '@/lib/use-app-theme';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
@@ -27,6 +29,7 @@ const ROW_GAP = 10; // gap-2.5
 export default function EventPage() {
   const { isGuestMode } = useGuest();
   const router = useRouter();
+  const theme = useAppTheme();
   const { eventId: rawEventId } = useLocalSearchParams<{ eventId?: string | string[] }>();
   const eventId = (Array.isArray(rawEventId) ? rawEventId[0] : rawEventId) as
     | Id<'events'>
@@ -155,7 +158,6 @@ export default function EventPage() {
     }
     return 0;
   })();
-
   return (
     <Screen>
       <Stack.Screen options={{ title: event.name }} />
@@ -196,9 +198,12 @@ export default function EventPage() {
             onLayout={(e) => setRightSideHeight(e.nativeEvent.layout.height)}
           >
             <View className="gap-1.5">
-              <Text className="text-lg font-bold text-foreground" numberOfLines={2}>
-                {event.name}
-              </Text>
+              <View className="flex-row items-start gap-2">
+                <Text className="flex-1 text-lg font-bold text-foreground" numberOfLines={2}>
+                  {event.name}
+                </Text>
+                <EventActionMenu eventId={eventId} mutedColor={theme.mutedText} />
+              </View>
               <Text className="text-sm text-muted-foreground">
                 {formatDateTimeRange(event.startDate, event.endDate)}
               </Text>
