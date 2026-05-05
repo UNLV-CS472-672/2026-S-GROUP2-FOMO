@@ -12,7 +12,6 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -131,7 +130,7 @@ function EditProfileForm({ profile }: { profile: Profile }) {
         contentContainerClassName="p-6 gap-6"
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.avatarContainer}>
+        <View className="items-center gap-3">
           <TouchableOpacity
             onPress={openGallery}
             accessibilityLabel="Change profile picture"
@@ -173,7 +172,12 @@ function EditProfileForm({ profile }: { profile: Profile }) {
           <TextInput
             className="rounded-xl bg-card px-4 py-3 text-base text-foreground"
             value={description}
-            onChangeText={setDescription}
+            onChangeText={(v) => {
+              // allow at most 6 newlines
+              const newlineCount = (v.match(/\n/g) ?? []).length;
+              if (newlineCount >= 6) return;
+              setDescription(v);
+            }}
             multiline
             numberOfLines={4}
             maxLength={BIO_MAX_LENGTH}
@@ -203,9 +207,3 @@ function EditProfileForm({ profile }: { profile: Profile }) {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  avatarContainer: {
-    alignItems: 'center',
-  },
-});

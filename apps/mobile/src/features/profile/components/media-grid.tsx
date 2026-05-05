@@ -1,15 +1,12 @@
 import { Image } from '@/components/image';
 import { VideoThumbnail } from '@/components/video';
-import { api } from '@fomo/backend/convex/_generated/api';
-import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { FlashList } from '@shopify/flash-list';
-import { useQuery } from 'convex/react';
 import { TouchableOpacity, useWindowDimensions, View } from 'react-native';
 
 export type GridMediaItem = {
   id: string;
   postId: string;
-  mediaId: Id<'_storage'>;
+  thumbnailFile: { url: string | null; isVideo: boolean } | null;
 };
 
 type MediaGridProps = {
@@ -26,7 +23,7 @@ function MediaGridItem({
   onPress: () => void;
   size: number;
 }) {
-  const file = useQuery(api.files.getFile, { storageId: item.mediaId });
+  const file = item.thumbnailFile;
   const mediaTypeResolved = file !== undefined;
 
   return (

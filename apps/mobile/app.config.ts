@@ -4,12 +4,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Fomo',
   slug: 'fomo',
-  version: '1.0.0',
+  version: '1.0.1',
   orientation: 'portrait',
   icon: './assets/logos/icon.png',
   scheme: 'fomo',
   userInterfaceStyle: 'automatic',
   platforms: ['ios', 'android'],
+  updates: {
+    url: 'https://u.expo.dev/7e8eeb89-68f2-4ecb-b307-052383bb1f68',
+  },
+  runtimeVersion: {
+    policy: 'appVersion',
+  },
   ios: {
     icon: {
       light: './assets/logos/icon-ios-light.png',

@@ -8,7 +8,7 @@ export default function ProfileGalleryPickerScreen() {
   const router = useRouter();
   const handleSelectAsset = (uri: string, _type: 'photo' | 'video', fileName?: string) => {
     router.dismissTo({
-      pathname: '/(tabs)/profile/settings/edit',
+      pathname: '/(tabs)/profile/settings/edit-profile',
       params: {
         avatarUri: uri,
         avatarFileName: fileName,

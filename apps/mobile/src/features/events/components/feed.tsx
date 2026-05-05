@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 
 type FeedProps = {
-  eventId: Id<'events'>;
+  eventId: Id<'events'> | Id<'externalEvents'>;
 };
 
 export function Feed({ eventId }: FeedProps) {

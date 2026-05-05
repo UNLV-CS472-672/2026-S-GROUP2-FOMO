@@ -13,3 +13,31 @@ export const setDefaultUpdatedAt = migrations.define({
     }
   },
 });
+
+export const setDefaultLastPostAt = migrations.define({
+  table: 'events',
+  migrateOne: async (ctx, doc) => {
+    if (doc.lastPostAt === undefined) {
+      const latestPost = await ctx.db
+        .query('posts')
+        .withIndex('by_event', (q) => q.eq('eventId', doc._id))
+        .order('desc')
+        .first();
+      await ctx.db.patch(doc._id, { lastPostAt: latestPost?._creationTime ?? 0 });
+    }
+  },
+});
+
+export const setDefaultLastPostAtExternal = migrations.define({
+  table: 'externalEvents',
+  migrateOne: async (ctx, doc) => {
+    if (doc.lastPostAt === undefined) {
+      const latestPost = await ctx.db
+        .query('posts')
+        .withIndex('by_event', (q) => q.eq('eventId', doc._id))
+        .order('desc')
+        .first();
+      await ctx.db.patch(doc._id, { lastPostAt: latestPost?._creationTime ?? 0 });
+    }
+  },
+});

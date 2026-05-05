@@ -11,6 +11,10 @@ const sharedEventFields = {
     longitude: v.number(),
     h3Index: v.string(),
   }),
+  // Timestamp of the most recent post on this event. Used to keep events visible
+  // on the map while post activity is ongoing. 0 = no posts yet.
+  // IMPORTANT: optional only during migration. Run setDefaultLastPostAt, then remove optional.
+  lastPostAt: v.number(),
 };
 
 export default defineSchema({
@@ -47,6 +51,7 @@ export default defineSchema({
     .index('by_startDate', ['startDate'])
     .index('by_endDate', ['endDate'])
     .index('by_startDate_endDate', ['startDate', 'endDate'])
+    .index('by_lastPostAt', ['lastPostAt'])
     .index('by_h3Index', ['location.h3Index'])
     .searchIndex('search_name', {
       searchField: 'name',
@@ -61,7 +66,8 @@ export default defineSchema({
     .index('by_externalKey', ['externalKey'])
     .index('by_startDate', ['startDate'])
     .index('by_endDate', ['endDate'])
-    .index('by_startDate_endDate', ['startDate', 'endDate']),
+    .index('by_startDate_endDate', ['startDate', 'endDate'])
+    .index('by_lastPostAt', ['lastPostAt']),
 
   attendance: defineTable({
     userId: v.id('users'),
@@ -91,7 +97,7 @@ export default defineSchema({
 
   // ------------------------- posts -------------------------
   posts: defineTable({
-    eventId: v.optional(v.id('events')),
+    eventId: v.optional(v.union(v.id('events'), v.id('externalEvents'))),
     caption: v.optional(v.string()), // necessary if no mediaIds
     mediaIds: v.array(v.id('_storage')), // necessary if no caption
     authorId: v.id('users'),
@@ -147,6 +153,7 @@ export default defineSchema({
     userId: v.id('users'),
     weights: v.array(v.number()),
     updatedAt: v.number(),
+    lastDecayedAt: v.number(),
   }).index('by_userId', ['userId']),
 
   friendRecs: defineTable({

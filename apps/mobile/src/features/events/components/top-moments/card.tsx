@@ -2,22 +2,19 @@ import { Image } from '@/components/image';
 import { VideoThumbnail } from '@/components/video';
 import type { TopMediaPost } from '@/features/events/types';
 import { Ionicons } from '@expo/vector-icons';
-import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
-import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
 type EventMediaTileProps = {
   post: TopMediaPost;
   cell: number;
-  eventId: Id<'events'>;
+  eventId: Id<'events'> | Id<'externalEvents'>;
 };
 
 export function EventMediaTile({ post, cell, eventId }: EventMediaTileProps) {
   const router = useRouter();
-  const thumbnailId = post.mediaIds[0]!;
-  const file = useQuery(api.files.getFile, thumbnailId ? { storageId: thumbnailId } : 'skip');
+  const file = post.thumbnailFile;
   const mediaTypeResolved = file !== undefined;
 
   return (

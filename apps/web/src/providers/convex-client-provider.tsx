@@ -6,7 +6,8 @@ import { ConvexReactClient } from 'convex/react';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import type { ReactNode } from 'react';
 
-const convex = new ConvexReactClient(env.NEXT_PUBLIC_CONVEX_URL);
+const convexUrl = env.NEXT_PUBLIC_CONVEX_URL.replace(/\/+$/, '');
+const convex = new ConvexReactClient(convexUrl);
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
   return (
