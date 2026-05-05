@@ -120,7 +120,10 @@ export function ProfilePage({
   const declineFriendRequest = useMutation(api.friends.declineFriendRequest);
   const removeFriend = useMutation(api.friends.removeFriend);
   const [activeTab, setActiveTab] = useState<'feed' | 'media' | 'past'>('feed');
-  const pastEvents = useQuery(api.events.queries.getPastEvents);
+  const pastEvents = useQuery(
+    api.events.queries.getAttendedPastEvents,
+    isAuthenticated && !isGuestMode ? {} : 'skip'
+  );
   const [isBioExpanded, setIsBioExpanded] = useState(false);
   const [bioIsTruncated, setBioIsTruncated] = useState(false);
   const [isSendingFriendRequest, setIsSendingFriendRequest] = useState(false);
