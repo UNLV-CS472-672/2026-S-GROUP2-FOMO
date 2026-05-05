@@ -73,7 +73,7 @@ export const EventMarker = memo(function EventMarker({
 
   const borderClass = isActive ? 'border-primary' : 'border-muted-foreground';
   const stemColorClass = isActive ? 'border-t-primary' : 'border-t-muted-foreground';
-  const fallbackBgClass = isActive ? 'bg-primary' : 'bg-muted';
+  const fallbackBgClass = isActive ? 'bg-primary/10' : 'bg-muted';
 
   return (
     <MapboxGL.MarkerView
@@ -90,30 +90,16 @@ export const EventMarker = memo(function EventMarker({
           style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
         >
           <View
+            className={`bg-background border-2 ${borderClass} rounded-full overflow-hidden`}
             style={{
               width: size,
               height: size,
-              borderRadius: size / 2,
             }}
           >
-            <View
-              className={`border-2 ${borderClass}`}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                borderRadius: size / 2,
-                zIndex: 1,
-              }}
-            />
             {file?.url ? (
-              <Image source={file.url} className="h-full w-full rounded-full" contentFit="cover" />
+              <Image source={file.url} className="h-full w-full" contentFit="cover" />
             ) : (
-              <View
-                className={`h-full w-full items-center justify-center ${fallbackBgClass} rounded-full`}
-              >
+              <View className={`flex-1 items-center justify-center ${fallbackBgClass}`}>
                 <Text
                   style={{ fontSize: Math.round(size * 0.38), fontWeight: '700' }}
                   className="uppercase text-foreground"
