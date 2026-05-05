@@ -214,39 +214,6 @@ export const getExternalEventsById = query({
   },
 });
 
-export const getPastEvents = query({
-  args: {},
-  handler: async (ctx) => {
-    await __backend_only_guestOrAuthenticatedUser(ctx);
-
-    const now = Date.now();
-    const [internal, external] = await Promise.all([
-      ctx.db
-        .query('events')
-        .withIndex('by_endDate', (q) => q.lt('endDate', now))
-        .collect(),
-      ctx.db
-        .query('externalEvents')
-        .withIndex('by_endDate', (q) => q.lt('endDate', now))
-        .collect(),
-    ]);
-
-    const all: (Doc<'events'> | Doc<'externalEvents'>)[] = [...internal, ...external];
-    all.sort((a, b) => b.endDate - a.endDate);
-
-    return all.map((event) => ({
-      id: event._id,
-      name: event.name,
-      caption: event.caption,
-      organization: 'organization' in event ? event.organization : null,
-      startDate: event.startDate,
-      endDate: event.endDate,
-      mediaId: 'mediaId' in event ? (event.mediaId ?? null) : null,
-      isExternal: 'externalKey' in event,
-    }));
-  },
-});
-
 export const getAttendedPastEvents = query({
   args: {},
   handler: async (ctx) => {

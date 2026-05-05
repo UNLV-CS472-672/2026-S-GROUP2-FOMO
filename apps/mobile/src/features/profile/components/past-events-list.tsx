@@ -5,7 +5,9 @@ import type { FunctionReturnType } from 'convex/server';
 import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
-type PastEvent = NonNullable<FunctionReturnType<typeof api.events.queries.getPastEvents>>[number];
+type PastEvent = NonNullable<
+  FunctionReturnType<typeof api.events.queries.getAttendedPastEvents>
+>[0];
 
 interface PastEventsListProps {
   events: PastEvent[];
