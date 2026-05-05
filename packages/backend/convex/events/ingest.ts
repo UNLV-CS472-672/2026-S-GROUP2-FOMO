@@ -346,6 +346,7 @@ export const upsertNormalizedEvents = internalMutation({
           startDate: event.startDate,
           endDate: event.endDate,
           location: event.location,
+          lastPostAt: 0,
         });
         inserted += 1;
         continue;

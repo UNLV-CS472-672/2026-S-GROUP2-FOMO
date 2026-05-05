@@ -170,7 +170,7 @@ class TestGetEventFeatures:
 
         with patch("event_rec.recommendEvent.queries.get_all_events_after_now", return_value=sample_events), \
              patch("event_rec.recommendEvent.queries.get_by_event_ids", return_value=flat_event_tag_rows):
-            event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
+            event_ids, event_features, _, _ = get_event_features(num_tags, tag_id_to_idx)
 
         assert len(event_ids) == 2
         assert event_features.shape == (2, num_tags + 4)
@@ -182,7 +182,7 @@ class TestGetEventFeatures:
 
         with patch("event_rec.recommendEvent.queries.get_all_events_after_now", return_value=[]), \
              patch("event_rec.recommendEvent.queries.get_by_event_ids", return_value=[]) as mock_batch:
-            event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
+            event_ids, event_features, _, _ = get_event_features(num_tags, tag_id_to_idx)
 
         assert event_ids == []
         assert event_features.shape == (0, num_tags + 4)
@@ -199,7 +199,7 @@ class TestGetEventFeatures:
 
         with patch("event_rec.recommendEvent.queries.get_all_events_after_now", return_value=sample_events), \
              patch("event_rec.recommendEvent.queries.get_by_event_ids", return_value=flat_event_tag_rows):
-            event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
+            event_ids, event_features, _, _ = get_event_features(num_tags, tag_id_to_idx)
 
         assert event_features[0, 0] == 1.0
         assert event_features[0, 1] == 0.0
@@ -218,7 +218,7 @@ class TestGetEventFeatures:
 
         with patch("event_rec.recommendEvent.queries.get_all_events_after_now", return_value=[sample_events[0]]), \
              patch("event_rec.recommendEvent.queries.get_by_event_ids", return_value=flat_rows):
-            event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
+            event_ids, event_features, _, _ = get_event_features(num_tags, tag_id_to_idx)
 
         assert abs(event_features[0, num_tags] - 2.0 / MAX_TAGS) < 1e-6
 
@@ -235,7 +235,7 @@ class TestGetEventFeatures:
 
         with patch("event_rec.recommendEvent.queries.get_all_events_after_now", return_value=[sample_events[0]]), \
              patch("event_rec.recommendEvent.queries.get_by_event_ids", return_value=flat_rows):
-            event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
+            event_ids, event_features, _, _ = get_event_features(num_tags, tag_id_to_idx)
 
         assert abs(event_features[0, num_tags + 1] - 5.0 / 6.0) < 1e-6
         assert abs(event_features[0, num_tags + 2] - 19.0 / 23.0) < 1e-6
@@ -250,7 +250,7 @@ class TestGetEventFeatures:
 
         with patch("event_rec.recommendEvent.queries.get_all_events_after_now", return_value=sample_events), \
              patch("event_rec.recommendEvent.queries.get_by_event_ids", return_value=flat_event_tag_rows):
-            event_ids, event_features = get_event_features(num_tags, tag_id_to_idx)
+            event_ids, event_features, _, _ = get_event_features(num_tags, tag_id_to_idx)
 
         assert event_features[0, num_tags + 3] == 0.0
         assert event_features[1, num_tags + 3] == 1.0
@@ -315,10 +315,15 @@ def _setup_main_mocks(
     mocks["user_tower"].return_value = _make_tower_mock(user_tower_fn)
     mocks["event_tower"].return_value = _make_tower_mock(event_tower_fn)
 
+    # Friend data: no friends by default so reranker sees clean signals.
+    user_ids = [u["_id"] for u in sample_users]
+    mocks["get_friend_ids_batch"].return_value = {uid: [] for uid in user_ids}
+
     return num_tags
 
 
 class TestMain:
+    @patch("event_rec.recommendEvent.queries.get_friend_ids_batch")
     @patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id")
     @patch("event_rec.recommendEvent.queries.upsert_event_recs_batch")
     @patch("event_rec.recommendEvent.queries.get_interactions_by_user_ids")
@@ -343,6 +348,7 @@ class TestMain:
         mock_get_interactions: MagicMock,
         mock_upsert: MagicMock,
         mock_get_preferred_tags: MagicMock,
+        mock_get_friend_ids_batch: MagicMock,
         sample_tags: List[Dict[str, Any]],
         sample_users: List[Dict[str, Any]],
         sample_events: List[Dict[str, Any]],
@@ -361,6 +367,7 @@ class TestMain:
                 "get_by_events": mock_get_by_events,
                 "get_interactions": mock_get_interactions,
                 "get_preferred_tags": mock_get_preferred_tags,
+                "get_friend_ids_batch": mock_get_friend_ids_batch,
             },
             sample_tags, sample_users, sample_events, flat_event_tag_rows, sample_interactions,
         )
@@ -370,6 +377,7 @@ class TestMain:
         except Exception as e:
             pytest.fail(f"main() raised {type(e).__name__} unexpectedly: {e}")
 
+    @patch("event_rec.recommendEvent.queries.get_friend_ids_batch")
     @patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id")
     @patch("event_rec.recommendEvent.queries.upsert_event_recs_batch")
     @patch("event_rec.recommendEvent.queries.get_interactions_by_user_ids")
@@ -394,6 +402,7 @@ class TestMain:
         mock_get_interactions: MagicMock,
         mock_upsert: MagicMock,
         mock_get_preferred_tags: MagicMock,
+        mock_get_friend_ids_batch: MagicMock,
         sample_tags: List[Dict[str, Any]],
         sample_users: List[Dict[str, Any]],
         sample_events: List[Dict[str, Any]],
@@ -412,6 +421,7 @@ class TestMain:
                 "get_by_events": mock_get_by_events,
                 "get_interactions": mock_get_interactions,
                 "get_preferred_tags": mock_get_preferred_tags,
+                "get_friend_ids_batch": mock_get_friend_ids_batch,
             },
             sample_tags, sample_users, sample_events, flat_event_tag_rows, sample_interactions,
         )
@@ -421,6 +431,7 @@ class TestMain:
         except Exception as e:
             pytest.fail(f"main() with 'ALL' users raised {type(e).__name__} unexpectedly: {e}")
 
+    @patch("event_rec.recommendEvent.queries.get_friend_ids_batch")
     @patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id")
     @patch("event_rec.recommendEvent.queries.upsert_event_recs_batch")
     @patch("event_rec.recommendEvent.queries.get_interactions_by_user_ids")
@@ -445,6 +456,7 @@ class TestMain:
         mock_get_interactions: MagicMock,
         mock_upsert: MagicMock,
         mock_get_preferred_tags: MagicMock,
+        mock_get_friend_ids_batch: MagicMock,
         sample_tags: List[Dict[str, Any]],
         sample_users: List[Dict[str, Any]],
         sample_events: List[Dict[str, Any]],
@@ -465,6 +477,7 @@ class TestMain:
                 "get_by_events": mock_get_by_events,
                 "get_interactions": mock_get_interactions,
                 "get_preferred_tags": mock_get_preferred_tags,
+                "get_friend_ids_batch": mock_get_friend_ids_batch,
             },
             sample_tags, sample_users, sample_events, flat_event_tag_rows, sample_interactions,
             # Make every score identical pre-mask so ranking is purely about the mask.
@@ -479,6 +492,7 @@ class TestMain:
         # event2 is blocked for user1; it must not be the top rec.
         assert user1_recs[0] != "event2"
 
+    @patch("event_rec.recommendEvent.queries.get_friend_ids_batch")
     @patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id")
     @patch("event_rec.recommendEvent.queries.upsert_event_recs_batch")
     @patch("event_rec.recommendEvent.queries.get_interactions_by_user_ids")
@@ -503,12 +517,16 @@ class TestMain:
         mock_get_interactions: MagicMock,
         mock_upsert: MagicMock,
         mock_get_preferred_tags: MagicMock,
+        mock_get_friend_ids_batch: MagicMock,
         sample_tags: List[Dict[str, Any]],
         sample_users: List[Dict[str, Any]],
         sample_events: List[Dict[str, Any]],
         flat_event_tag_rows: List[Dict[str, Any]],
         sample_interactions: Dict[str, List[Dict[str, Any]]],
     ) -> None:
+        # Use empty interactions so no events are blocked, allowing both users
+        # to receive the full k=2 recommendations.
+        clean_interactions: Dict[str, List[Dict[str, Any]]] = {"user1": [], "user2": []}
         _setup_main_mocks(
             {
                 "event_tower": mock_event_tower,
@@ -521,8 +539,9 @@ class TestMain:
                 "get_by_events": mock_get_by_events,
                 "get_interactions": mock_get_interactions,
                 "get_preferred_tags": mock_get_preferred_tags,
+                "get_friend_ids_batch": mock_get_friend_ids_batch,
             },
-            sample_tags, sample_users, sample_events, flat_event_tag_rows, sample_interactions,
+            sample_tags, sample_users, sample_events, flat_event_tag_rows, clean_interactions,
         )
 
         main(["user1", "user2"], update_db=True, model_path="dummy.pt", k=2)
@@ -533,7 +552,6 @@ class TestMain:
         for row in rows:
             assert isinstance(row["eventIds"], list)
             assert len(row["eventIds"]) == 2
-
 
     @patch("event_rec.recommendEvent.queries.get_tag_info")
     @patch("event_rec.recommendEvent.queries.get_users_needing_event_rec")
@@ -547,6 +565,7 @@ class TestMain:
         mock_get_tag_info.assert_not_called()
 
     @patch("event_rec.recommendEvent.queries.get_users_needing_event_rec")
+    @patch("event_rec.recommendEvent.queries.get_friend_ids_batch")
     @patch("event_rec.recommendEvent.queries.get_preferred_tags_by_user_id")
     @patch("event_rec.recommendEvent.queries.upsert_event_recs_batch")
     @patch("event_rec.recommendEvent.queries.get_interactions_by_user_ids")
@@ -571,6 +590,7 @@ class TestMain:
         mock_get_interactions: MagicMock,
         mock_upsert: MagicMock,
         mock_get_preferred_tags: MagicMock,
+        mock_get_friend_ids_batch: MagicMock,
         mock_get_dirty: MagicMock,
         sample_tags: List[Dict[str, Any]],
         sample_users: List[Dict[str, Any]],
@@ -591,6 +611,7 @@ class TestMain:
                 "get_by_events": mock_get_by_events,
                 "get_interactions": mock_get_interactions,
                 "get_preferred_tags": mock_get_preferred_tags,
+                "get_friend_ids_batch": mock_get_friend_ids_batch,
             },
             sample_tags, sample_users, sample_events, flat_event_tag_rows, sample_interactions,
         )

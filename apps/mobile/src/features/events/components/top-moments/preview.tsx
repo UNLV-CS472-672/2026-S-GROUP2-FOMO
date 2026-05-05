@@ -5,7 +5,7 @@ import { EventMediaTile } from './card';
 
 type TopMomentsProps = {
   posts: TopMediaPost[];
-  eventId: Id<'events'>;
+  eventId: Id<'events'> | Id<'externalEvents'>;
 };
 
 const H_PAD = 16;

@@ -1,7 +1,6 @@
 import { v } from 'convex/values';
 import { Id } from '../_generated/dataModel';
-import { internalMutation, internalQuery, MutationCtx, query } from '../_generated/server';
-import { __backend_only_getAndAuthenticateCurrentConvexUser } from '../auth';
+import { internalMutation, internalQuery, MutationCtx } from '../_generated/server';
 
 async function getInteractionsForUser(ctx: MutationCtx, userId: Id<'users'>, sinceMs?: number) {
   if (sinceMs === undefined) {
@@ -26,40 +25,52 @@ async function getInteractionsForUser(ctx: MutationCtx, userId: Id<'users'>, sin
   return attendanceRows;
 }
 
-async function upsertUserTagWeightsRow(ctx: MutationCtx, userId: Id<'users'>, weights: number[]) {
+async function upsertUserTagWeightsRow(
+  ctx: MutationCtx,
+  userId: Id<'users'>,
+  weights: number[],
+  lastDecayedAt?: number
+) {
   const existing = await ctx.db
     .query('userTagWeights')
     .withIndex('by_userId', (q) => q.eq('userId', userId))
     .first();
 
   if (existing) {
-    await ctx.db.patch(existing._id, {
+    const patch: { weights: number[]; updatedAt: number; lastDecayedAt?: number } = {
       weights,
       updatedAt: Date.now(),
-    });
+    };
+    if (lastDecayedAt !== undefined) {
+      patch.lastDecayedAt = lastDecayedAt;
+    }
+    await ctx.db.patch(existing._id, patch);
   } else {
     await ctx.db.insert('userTagWeights', {
       userId,
       weights,
       updatedAt: Date.now(),
+      lastDecayedAt: lastDecayedAt !== undefined ? lastDecayedAt : Date.now(),
     });
   }
 }
 
 function formatUserTagWeightsWithTimestamp(
-  result: { weights: number[]; updatedAt: number } | null,
+  result: { weights: number[]; updatedAt: number; lastDecayedAt: number } | null,
   numTags: number
 ) {
   if (!result) {
     return {
       weights: new Array(numTags * 3).fill(0),
       updatedAt: 0,
+      lastDecayedAt: Date.now(),
     };
   }
 
   return {
     weights: result.weights,
     updatedAt: result.updatedAt,
+    lastDecayedAt: result.lastDecayedAt,
   };
 }
 
@@ -89,13 +100,14 @@ export const upsertUserTagWeightsBatch = internalMutation({
       v.object({
         userId: v.id('users'),
         weights: v.array(v.number()),
+        lastDecayedAt: v.optional(v.number()),
       })
     ),
   },
   handler: async (ctx, { rows }) => {
     await Promise.all(
-      rows.map(async ({ userId, weights }) => {
-        await upsertUserTagWeightsRow(ctx, userId, weights);
+      rows.map(async ({ userId, weights, lastDecayedAt }) => {
+        await upsertUserTagWeightsRow(ctx, userId, weights, lastDecayedAt);
         await ctx.db.patch(userId, { eventRecNeedsUpdate: true });
       })
     );
@@ -183,20 +195,6 @@ export const upsertEventRecsBatch = internalMutation({
   },
 });
 
-// Returns the current user's top-K event IDs in rank order
-// (index 0 = #1 rec). Returns null when no recs have been computed yet.
-export const getCurrentUserEventRecs = query({
-  args: {},
-  handler: async (ctx) => {
-    const user = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
-    const doc = await ctx.db
-      .query('eventRecs')
-      .withIndex('by_userId', (q) => q.eq('userId', user._id))
-      .unique();
-    return doc?.eventIds ?? null;
-  },
-});
-
 export const getUserTagWeightsWithTimestamps = internalQuery({
   args: {
     userIds: v.array(v.id('users')),
@@ -243,6 +241,7 @@ export const getUsersWithRecentActivity = internalMutation({
           .unique();
 
         const updatedAt = weightsRow?.updatedAt ?? 0;
+        const lastDecayedAt = weightsRow?.lastDecayedAt ?? Date.now();
 
         const newestInteraction = await ctx.db
           .query('attendance')
@@ -260,6 +259,7 @@ export const getUsersWithRecentActivity = internalMutation({
               userId,
               weights: new Array(numTags * 3).fill(0),
               updatedAt: Date.now(),
+              lastDecayedAt: Date.now(),
             });
           }
           return null;
@@ -272,6 +272,7 @@ export const getUsersWithRecentActivity = internalMutation({
           userId,
           updatedAt,
           weights,
+          lastDecayedAt,
         };
       })
     );
@@ -305,5 +306,35 @@ export const getAllEventsAfterNow = internalQuery({
       ...events.map((e) => ({ ...e, source: 'internal' as const })),
       ...externalEvents.map((e) => ({ ...e, source: 'external' as const })),
     ];
+  },
+});
+
+export const getFriendIdsBatch = internalQuery({
+  args: { userIds: v.array(v.id('users')) },
+  handler: async (ctx, { userIds }) => {
+    return await Promise.all(
+      userIds.map(async (userId) => {
+        const [requested, received] = await Promise.all([
+          ctx.db
+            .query('friends')
+            .withIndex('by_requesterId', (q) => q.eq('requesterId', userId))
+            .filter((q) => q.eq(q.field('status'), 'accepted'))
+            .collect(),
+          ctx.db
+            .query('friends')
+            .withIndex('by_recipientId', (q) => q.eq('recipientId', userId))
+            .filter((q) => q.eq(q.field('status'), 'accepted'))
+            .collect(),
+        ]);
+
+        return {
+          userId,
+          friendIds: [
+            ...requested.map((f) => f.recipientId),
+            ...received.map((f) => f.requesterId),
+          ],
+        };
+      })
+    );
   },
 });
