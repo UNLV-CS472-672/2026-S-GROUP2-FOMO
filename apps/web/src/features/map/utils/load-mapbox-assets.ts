@@ -1,8 +1,9 @@
 export type Coordinates = [number, number];
 
 export type MapboxMapEventHandler<T = Record<string, unknown>> = (e: T) => void;
+const MAPBOX_GL_VERSION = 'v3.21.0';
 
-export const MAPBOX_STYLE_DARK = 'mapbox://styles/mapbox/dark-v11';
+export const MAPBOX_STYLE_DARK = 'mapbox://styles/fomo-map-dev/cmnl4s1kk001601rhc5gx0ih7';
 export const MAPBOX_STYLE_LIGHT = 'mapbox://styles/mapbox/streets-v12';
 
 export type MapboxMap = {
@@ -59,7 +60,7 @@ export function loadMapboxAssets() {
   if (!existingStylesheet) {
     const stylesheet = document.createElement('link');
     stylesheet.rel = 'stylesheet';
-    stylesheet.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
+    stylesheet.href = `https://api.mapbox.com/mapbox-gl-js/${MAPBOX_GL_VERSION}/mapbox-gl.css`;
     stylesheet.dataset.mapboxGl = 'true';
     document.head.appendChild(stylesheet);
   }
@@ -86,7 +87,7 @@ export function loadMapboxAssets() {
 
   return new Promise<MapboxGlobal>((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
+    script.src = `https://api.mapbox.com/mapbox-gl-js/${MAPBOX_GL_VERSION}/mapbox-gl.js`;
     script.async = true;
     script.dataset.mapboxGl = 'true';
     script.onload = () => {
