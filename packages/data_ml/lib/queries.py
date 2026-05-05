@@ -42,6 +42,17 @@ def get_friend_ids(user_id: str) -> list[str]:
     return _get("/data-ml/get-friend-ids", {"userId": user_id})  # type: ignore[no-any-return]
 
 
+def get_friend_ids_batch(user_ids: list[str]) -> dict[str, list[str]]:
+    resp = requests.get(
+        f"{_get_base_url()}/data-ml/get-friend-ids-batch",
+        headers=_headers(),
+        params=[("userId", uid) for uid in user_ids],
+    )
+    resp.raise_for_status()
+    rows: list[dict[str, Any]] = resp.json()
+    return {row["userId"]: row["friendIds"] for row in rows}
+
+
 def query_all(table_name: str) -> list[dict[str, Any]]:
     return _get("/data-ml/query-all", {"table_name": table_name})  # type: ignore[no-any-return]
 

@@ -305,3 +305,33 @@ export const getAllEventsAfterNow = internalQuery({
     ];
   },
 });
+
+export const getFriendIdsBatch = internalQuery({
+  args: { userIds: v.array(v.id('users')) },
+  handler: async (ctx, { userIds }) => {
+    return await Promise.all(
+      userIds.map(async (userId) => {
+        const [requested, received] = await Promise.all([
+          ctx.db
+            .query('friends')
+            .withIndex('by_requesterId', (q) => q.eq('requesterId', userId))
+            .filter((q) => q.eq(q.field('status'), 'accepted'))
+            .collect(),
+          ctx.db
+            .query('friends')
+            .withIndex('by_recipientId', (q) => q.eq('recipientId', userId))
+            .filter((q) => q.eq(q.field('status'), 'accepted'))
+            .collect(),
+        ]);
+
+        return {
+          userId,
+          friendIds: [
+            ...requested.map((f) => f.recipientId),
+            ...received.map((f) => f.requesterId),
+          ],
+        };
+      })
+    );
+  },
+});
