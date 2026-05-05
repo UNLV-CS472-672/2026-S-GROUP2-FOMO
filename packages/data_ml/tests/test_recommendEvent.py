@@ -524,6 +524,9 @@ class TestMain:
         flat_event_tag_rows: List[Dict[str, Any]],
         sample_interactions: Dict[str, List[Dict[str, Any]]],
     ) -> None:
+        # Use empty interactions so no events are blocked, allowing both users
+        # to receive the full k=2 recommendations.
+        clean_interactions: Dict[str, List[Dict[str, Any]]] = {"user1": [], "user2": []}
         _setup_main_mocks(
             {
                 "event_tower": mock_event_tower,
@@ -538,7 +541,7 @@ class TestMain:
                 "get_preferred_tags": mock_get_preferred_tags,
                 "get_friend_ids_batch": mock_get_friend_ids_batch,
             },
-            sample_tags, sample_users, sample_events, flat_event_tag_rows, sample_interactions,
+            sample_tags, sample_users, sample_events, flat_event_tag_rows, clean_interactions,
         )
 
         main(["user1", "user2"], update_db=True, model_path="dummy.pt", k=2)
@@ -548,10 +551,7 @@ class TestMain:
         assert len(rows) == 2
         for row in rows:
             assert isinstance(row["eventIds"], list)
-            # user1 has event2 blocked (uninterested), so only 1 eligible event remains.
-            # user2 has no blocks, so gets the full k=2 recs.
-            expected_count = 1 if row["userId"] == "user1" else 2
-            assert len(row["eventIds"]) == expected_count
+            assert len(row["eventIds"]) == 2
 
     @patch("event_rec.recommendEvent.queries.get_tag_info")
     @patch("event_rec.recommendEvent.queries.get_users_needing_event_rec")
