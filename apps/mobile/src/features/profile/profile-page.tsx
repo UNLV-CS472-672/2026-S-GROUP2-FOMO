@@ -145,7 +145,7 @@ export function ProfilePage({
     .map((p) => ({
       id: p.id,
       postId: p.id,
-      mediaId: p.mediaIds[0] as Id<'_storage'>,
+      thumbnailFile: p.mediaFiles[0] ?? null,
     }));
 
   const profileBio = profile.user.bio;

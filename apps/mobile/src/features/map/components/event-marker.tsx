@@ -30,6 +30,10 @@ interface EventMarkerProps {
   onPress: () => void;
 }
 
+/*
+ * function provides event markers similar to life360
+ * size scales with heatmap layer (one to one match)
+ */
 export const EventMarker = memo(function EventMarker({
   id,
   coordinate,
@@ -44,6 +48,7 @@ export const EventMarker = memo(function EventMarker({
 }: EventMarkerProps) {
   const file = useQuery(api.files.getFile, mediaId ? { storageId: mediaId } : 'skip');
 
+  // normalize against actual min/max so the full range is always used
   const t = (weight - minWeight) / (maxWeight - minWeight || 1);
   // inactive (past) events render at 70% size so active events dominate the map visually
   const size = (40 + t * 30) * (isActive ? 1 : 0.7);

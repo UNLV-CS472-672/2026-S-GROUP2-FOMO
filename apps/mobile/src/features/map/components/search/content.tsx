@@ -195,7 +195,7 @@ export function SearchContent({
                 onSelectEvent(event.id);
               }}
             >
-              <EventSearchImage mediaId={event.mediaId} />
+              <EventSearchImage mediaUrl={event.mediaUrl} />
 
               <View className="flex-1 gap-1">
                 <Text className="text-[15px] font-semibold text-foreground" numberOfLines={1}>
