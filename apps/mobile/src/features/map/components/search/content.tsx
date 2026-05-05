@@ -8,7 +8,7 @@ import { api } from '@fomo/backend/convex/_generated/api';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useQuery } from 'convex/react';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, Text, View } from 'react-native';
 
 const MAX_SUGGESTED_EVENTS = 6;
 
@@ -150,6 +150,7 @@ export function SearchContent({
                 accessibilityRole="button"
                 className="flex-row items-center gap-3 rounded-[22px] bg-background/80 px-3 py-3"
                 onPress={async () => {
+                  Keyboard.dismiss();
                   onSaveRecentSearch({ type: 'query', label: loc.name });
                   const coords = await resolveCoordinates(loc.mapbox_id);
                   if (coords) onSelectLocation(coords);
