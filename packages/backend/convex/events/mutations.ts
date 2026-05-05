@@ -25,6 +25,7 @@ export const createEvent = mutation({
       endDate,
       location,
       hostIds: [user._id],
+      lastPostAt: 0,
       ...(mediaId !== undefined && { mediaId }),
     });
     await Promise.all(tagIds.map((tagId) => ctx.db.insert('eventTags', { eventId, tagId })));
