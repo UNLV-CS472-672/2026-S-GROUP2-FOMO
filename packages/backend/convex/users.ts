@@ -9,6 +9,7 @@ import {
   __backend_only_guestOrAuthenticatedUser,
 } from './auth';
 import { getThreadedCommentsByPost } from './comments';
+import { serializeStorageFiles } from './files';
 import { getHiddenUserIds } from './moderation/block';
 import { getHiddenPostIds } from './moderation/report';
 import { getAvatarUrlForUser, getDisplayNameForUser, getUsernameForUser } from './user_identity';
@@ -326,7 +327,8 @@ async function serializeProfileFeedPost(
   post: Doc<'posts'>,
   viewerId?: Doc<'users'>['_id']
 ) {
-  const [author, comments, likes, event] = await Promise.all([
+  const mediaIds = post.mediaIds ?? [];
+  const [author, comments, likes, event, mediaFiles] = await Promise.all([
     ctx.db.get(post.authorId),
     getThreadedCommentsByPost(ctx, post._id),
     ctx.db
@@ -334,6 +336,7 @@ async function serializeProfileFeedPost(
       .withIndex('by_postId', (q) => q.eq('postId', post._id))
       .collect(),
     post.eventId ? ctx.db.get(post.eventId) : Promise.resolve(null),
+    serializeStorageFiles(ctx, mediaIds),
   ]);
 
   return {
@@ -346,7 +349,8 @@ async function serializeProfileFeedPost(
     authorAvatarUrl: getAvatarUrlForUser(author),
     likes: post.likeCount ?? likes.length,
     liked: viewerId ? likes.some((like) => like.userId === viewerId) : false,
-    mediaIds: post.mediaIds ?? [],
+    mediaIds,
+    mediaFiles,
     eventId: post.eventId ?? null,
     eventName: event?.name ?? '',
     commentCount: countComments(comments),

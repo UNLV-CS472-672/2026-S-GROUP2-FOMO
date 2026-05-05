@@ -1,13 +1,12 @@
 import { Image } from '@/components/image';
 import { VideoPlayer } from '@/components/video';
-import { api } from '@fomo/backend/convex/_generated/api';
-import type { Id } from '@fomo/backend/convex/_generated/dataModel';
-import { useQuery } from 'convex/react';
 import type { ImageLoadEventData } from 'expo-image';
 import { TouchableOpacity, View } from 'react-native';
 
+type ResolvedFile = { url: string | null; isVideo: boolean } | null | undefined;
+
 type MediaItemProps = {
-  mediaId: Id<'_storage'>;
+  file: ResolvedFile;
   width: number;
   height: number;
   isActive: boolean;
@@ -16,14 +15,13 @@ type MediaItemProps = {
 };
 
 export function MediaItem({
-  mediaId,
+  file,
   width,
   height,
   isActive,
   onPress,
   onNaturalSize,
 }: MediaItemProps) {
-  const file = useQuery(api.files.getFile, { storageId: mediaId });
   const mediaTypeResolved = file !== undefined;
 
   function handleImageLoad(e: ImageLoadEventData) {

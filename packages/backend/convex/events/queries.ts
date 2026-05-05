@@ -8,6 +8,7 @@ import {
   __backend_only_guestOrAuthenticatedUser,
 } from '../auth';
 import { getThreadedCommentsByPost } from '../comments';
+import { serializeStorageFile, serializeStorageFiles } from '../files';
 import { getHiddenUserIds } from '../moderation/block';
 import { getHiddenPostIds } from '../moderation/report';
 import { getAvatarUrlForUser, getDisplayNameForUser, getUsernameForUser } from '../user_identity';
@@ -27,12 +28,13 @@ export function latLngToH3Index(lat: number, lng: number, resolution: number = 9
 }
 
 async function serializeEvent(ctx: QueryCtx, event: Doc<'events'>, recommendationScore?: number) {
-  const [attendeeCount, eventTagLinks] = await Promise.all([
+  const [attendeeCount, eventTagLinks, mediaFile] = await Promise.all([
     getAttendeeCount(ctx, event._id),
     ctx.db
       .query('eventTags')
       .withIndex('by_event', (q) => q.eq('eventId', event._id))
       .collect(),
+    event.mediaId ? serializeStorageFile(ctx, event.mediaId) : Promise.resolve(null),
   ]);
 
   const tags = await Promise.all(eventTagLinks.map(async (link) => await ctx.db.get(link.tagId)));
@@ -47,6 +49,7 @@ async function serializeEvent(ctx: QueryCtx, event: Doc<'events'>, recommendatio
     startDate: event.startDate,
     endDate: event.endDate,
     mediaId: event.mediaId ?? null,
+    mediaUrl: mediaFile?.url ?? null,
     hostIds: event.hostIds,
     recommendationScore,
   };
@@ -83,15 +86,17 @@ async function serializeEventFeedPost(
 ) {
   const mediaIds = post.mediaIds ?? [];
 
-  const [author, comments, likes, event] = await Promise.all([
+  const [author, comments, likes, event, mediaFiles] = await Promise.all([
     ctx.db.get(post.authorId),
     getThreadedCommentsByPost(ctx, post._id),
     ctx.db
       .query('likes')
       .withIndex('by_postId', (q) => q.eq('postId', post._id))
       .collect(),
-    // Convex resolves the correct table from the ID prefix at runtime.
-    post.eventId ? ctx.db.get(post.eventId as Id<'events'>) : Promise.resolve(null),
+    post.eventId
+      ? ctx.db.get(post.eventId as Id<'events'> | Id<'externalEvents'>)
+      : Promise.resolve(null),
+    serializeStorageFiles(ctx, mediaIds),
   ]);
 
   return {
@@ -105,6 +110,7 @@ async function serializeEventFeedPost(
     likes: post.likeCount ?? likes.length,
     liked: viewerId ? likes.some((like) => like.userId === viewerId) : false,
     mediaIds,
+    mediaFiles,
     eventId: post.eventId ?? null,
     eventName: event?.name ?? '',
     commentCount: countComments(comments),
@@ -318,8 +324,7 @@ export const getTopMediaPosts = query({
 
     return await Promise.all(
       topPosts.map(async (post) => {
-        // check if the view has liked the post
-        const [author, like] = await Promise.all([
+        const [author, like, thumbnailFile] = await Promise.all([
           ctx.db.get(post.authorId),
           guestMode
             ? Promise.resolve(null)
@@ -329,12 +334,16 @@ export const getTopMediaPosts = query({
                   q.eq('userId', viewer._id).eq('postId', post._id)
                 )
                 .unique(),
+          post.mediaIds?.[0] != null
+            ? serializeStorageFile(ctx, post.mediaIds[0])
+            : Promise.resolve(null),
         ]);
 
         return {
           id: post._id,
           caption: post.caption ?? '',
           mediaIds: post.mediaIds,
+          thumbnailFile,
           likeCount: post.likeCount ?? 0,
           liked: like !== null,
           matchedTagCount: 0,
