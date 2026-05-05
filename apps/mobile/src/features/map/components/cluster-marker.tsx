@@ -1,12 +1,17 @@
 import { Image } from '@/components/image';
+import { markerFadeZooms } from '@/features/map/utils/marker-zoom-fade';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import MapboxGL from '@rnmapbox/maps';
 import { useQuery } from 'convex/react';
-import { useEffect } from 'react';
+import { memo, useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import type { SharedValue } from 'react-native-reanimated';
 import Animated, {
+  Extrapolation,
+  interpolate,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -24,10 +29,11 @@ interface ClusterMarkerProps {
   minWeight: number;
   maxWeight: number;
   isActive?: boolean;
+  zoom: SharedValue<number>;
   onPress: () => void;
 }
 
-export function ClusterMarker({
+export const ClusterMarker = memo(function ClusterMarker({
   id,
   coordinate,
   primaryLabel,
@@ -39,6 +45,7 @@ export function ClusterMarker({
   minWeight,
   maxWeight,
   isActive = true,
+  zoom,
   onPress,
 }: ClusterMarkerProps) {
   const primaryFile = useQuery(
@@ -52,9 +59,9 @@ export function ClusterMarker({
 
   const t = (weight - minWeight) / (maxWeight - minWeight || 1);
   const size = 44 + t * 44;
-  const secondarySize = size * 0.72;
-  const stemWidth = size * 0.28;
-  const stemHeight = size * 0.22;
+  const secondarySize = size * 0.8;
+  const stemWidth = size * 0.25;
+  const stemHeight = size * 0.25;
   const badgeSize = Math.max(18, size * 0.34);
   const remainder = count - 2;
 
@@ -64,7 +71,15 @@ export function ClusterMarker({
       ? withTiming(1, { duration: 300 })
       : withRepeat(withTiming(0.45, { duration: 1800 }), -1, true);
   }, [isActive, opacity]);
-  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  const { fadeInZoom, fadeOutZoom } = markerFadeZooms(t);
+  const zoomOpacity = useDerivedValue(() =>
+    interpolate(zoom.value, [fadeOutZoom, fadeInZoom], [0, 1], Extrapolation.CLAMP)
+  );
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value * zoomOpacity.value,
+  }));
 
   const borderClass = isActive ? 'border-primary' : 'border-muted-foreground';
   const stemColorClass = isActive ? 'border-t-primary' : 'border-t-muted-foreground';
@@ -78,7 +93,13 @@ export function ClusterMarker({
   const stemOffset = -(secondarySize * 0.55) / 2;
 
   return (
-    <MapboxGL.MarkerView id={id} coordinate={coordinate} allowOverlap anchor={{ x: anchorX, y: 1 }}>
+    <MapboxGL.MarkerView
+      id={id}
+      coordinate={coordinate}
+      allowOverlap
+      allowOverlapWithPuck
+      anchor={{ x: anchorX, y: 1 }}
+    >
       <Animated.View style={animatedStyle}>
         <Pressable onPress={onPress} className="items-center">
           <View
@@ -87,21 +108,24 @@ export function ClusterMarker({
               height: size,
             }}
           >
+            {/* outer shell: shadow + border — no overflow:hidden so shadow isn't clipped on iOS */}
             <View
-              className={`absolute overflow-hidden rounded-full border-2 bg-background shadow-sm ${borderClass}`}
+              className={`absolute bg-background shadow-sm ${borderClass}`}
               style={{
                 width: size,
                 height: size,
+                borderRadius: size / 2,
+                borderWidth: 2,
                 left: 0,
                 top: 0,
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.35,
-                shadowRadius: 6,
-                elevation: 10,
               }}
             >
               {primaryFile?.url ? (
-                <Image source={primaryFile.url} className="h-full w-full" contentFit="cover" />
+                <Image
+                  source={primaryFile.url}
+                  className="h-full w-full rounded-full"
+                  contentFit="cover"
+                />
               ) : (
                 <View
                   className={`h-full w-full items-center justify-center px-2 ${fallbackBgClass}`}
@@ -113,30 +137,32 @@ export function ClusterMarker({
               )}
             </View>
 
+            {/* outer shell: shadow + border */}
             <View
-              className={`absolute overflow-hidden rounded-full border-2 bg-background ${borderClass}`}
+              className={`absolute bg-background ${borderClass}`}
               style={{
                 width: secondarySize,
                 height: secondarySize,
+                borderRadius: secondarySize / 2,
+                borderWidth: 2,
                 right: 0,
                 top: -(secondarySize * 0.18),
-                elevation: 12,
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.35,
-                shadowRadius: 6,
               }}
             >
-              {secondaryFile?.url ? (
-                <Image source={secondaryFile.url} className="h-full w-full" contentFit="cover" />
-              ) : (
-                <View
-                  className={`h-full w-full items-center justify-center px-1 ${fallbackBgClass}`}
-                >
-                  <Text className="text-base font-bold uppercase text-foreground">
-                    {(secondaryLabel ?? '').trim().charAt(0) || '?'}
-                  </Text>
-                </View>
-              )}
+              {/* inner clip */}
+              <View style={{ flex: 1, borderRadius: secondarySize / 2, overflow: 'hidden' }}>
+                {secondaryFile?.url ? (
+                  <Image source={secondaryFile.url} className="h-full w-full" contentFit="cover" />
+                ) : (
+                  <View
+                    className={`h-full w-full items-center justify-center px-1 ${fallbackBgClass}`}
+                  >
+                    <Text className="text-base font-bold uppercase text-foreground">
+                      {(secondaryLabel ?? '').trim().charAt(0) || '?'}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
 
             {remainder > 0 ? (
@@ -156,13 +182,15 @@ export function ClusterMarker({
           </View>
 
           <View
-            className={`-mt-px border-l-transparent border-r-transparent ${stemColorClass}`}
+            className={`border-l-transparent border-r-transparent -z-1 ${stemColorClass}`}
             style={{
               width: 0,
               height: 0,
+              marginTop: -5,
+              marginRight: 12,
               marginLeft: stemOffset,
-              borderLeftWidth: stemWidth / 2,
-              borderRightWidth: stemWidth / 2,
+              borderLeftWidth: stemWidth,
+              borderRightWidth: stemWidth,
               borderTopWidth: stemHeight,
             }}
           />
@@ -170,4 +198,4 @@ export function ClusterMarker({
       </Animated.View>
     </MapboxGL.MarkerView>
   );
-}
+});
