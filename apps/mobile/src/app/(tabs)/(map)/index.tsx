@@ -252,17 +252,10 @@ export default function MapScreen() {
                 isActive={isActive}
                 zoom={zoomShared}
                 onPress={() => {
-                  if ('externalKey' in primary) {
-                    push({
-                      pathname: '/(tabs)/(map)/external-event/[eventId]',
-                      params: { eventId: primary.id },
-                    });
-                  } else {
-                    push({
-                      pathname: '/(tabs)/(map)/event/[eventId]',
-                      params: { eventId: primary.id },
-                    });
-                  }
+                  push({
+                    pathname: '/(tabs)/(map)/event/[eventId]',
+                    params: { eventId: primary.id },
+                  });
                 }}
               />
             );
@@ -284,17 +277,10 @@ export default function MapScreen() {
               isActive={isActive}
               zoom={zoomShared}
               onPress={() => {
-                if ('externalKey' in primary) {
-                  push({
-                    pathname: '/(tabs)/(map)/external-event/[eventId]',
-                    params: { eventId: primary.id },
-                  });
-                } else {
-                  push({
-                    pathname: '/(tabs)/(map)/event/[eventId]',
-                    params: { eventId: primary.id },
-                  });
-                }
+                push({
+                  pathname: '/(tabs)/(map)/event/[eventId]',
+                  params: { eventId: primary.id },
+                });
               }}
             />
           );

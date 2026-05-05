@@ -1,4 +1,3 @@
-import { AppHeaderBackButton } from '@/components/navigation/header-back-button';
 import { Stack } from 'expo-router';
 
 export default function MapLayout() {
@@ -10,14 +9,7 @@ export default function MapLayout() {
       }}
     >
       <Stack.Screen name="index" />
-      <Stack.Screen
-        name="external-event/[eventId]"
-        options={{
-          headerShown: true,
-          title: 'Event Details',
-          headerLeft: () => <AppHeaderBackButton />,
-        }}
-      />
+      <Stack.Screen name="external-event/[eventId]" />
     </Stack>
   );
 }

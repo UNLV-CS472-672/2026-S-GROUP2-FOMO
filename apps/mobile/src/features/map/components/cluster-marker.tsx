@@ -58,7 +58,7 @@ export const ClusterMarker = memo(function ClusterMarker({
   );
 
   const t = (weight - minWeight) / (maxWeight - minWeight || 1);
-  const size = 44 + t * 44;
+  const size = 40 + t * 30;
   const secondarySize = size * 0.8;
   const stemWidth = size * 0.25;
   const stemHeight = size * 0.25;
@@ -187,7 +187,7 @@ export const ClusterMarker = memo(function ClusterMarker({
               width: 0,
               height: 0,
               marginTop: -5,
-              marginRight: 12,
+              marginRight: -stemOffset,
               marginLeft: stemOffset,
               borderLeftWidth: stemWidth,
               borderRightWidth: stemWidth,

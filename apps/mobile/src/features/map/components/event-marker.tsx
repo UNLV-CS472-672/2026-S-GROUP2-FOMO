@@ -46,7 +46,7 @@ export const EventMarker = memo(function EventMarker({
 
   const t = (weight - minWeight) / (maxWeight - minWeight || 1);
   // inactive (past) events render at 70% size so active events dominate the map visually
-  const size = (44 + t * 44) * (isActive ? 1 : 0.7);
+  const size = (40 + t * 30) * (isActive ? 1 : 0.7);
   const stemWidth = size * 0.25;
   const stemHeight = size * 0.25;
 
@@ -68,7 +68,7 @@ export const EventMarker = memo(function EventMarker({
 
   const borderClass = isActive ? 'border-primary' : 'border-muted-foreground';
   const stemColorClass = isActive ? 'border-t-primary' : 'border-t-muted-foreground';
-  const fallbackBgClass = isActive ? 'bg-primary/10' : 'bg-muted';
+  const fallbackBgClass = isActive ? 'bg-primary' : 'bg-muted';
 
   return (
     <MapboxGL.MarkerView

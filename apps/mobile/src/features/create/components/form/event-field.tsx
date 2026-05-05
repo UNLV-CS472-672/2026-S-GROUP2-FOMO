@@ -17,9 +17,13 @@ export function EventField({ control, setValue, formActive }: EventFieldProps) {
   const [search, setSearch] = useState('');
   const [isFocused, setIsFocused] = useState(false);
 
-  const allEventsRaw = useQuery(api.events.queries.getAllInternalEvents);
-  const isLoadingEvents = allEventsRaw === undefined;
-  const allEvents = allEventsRaw ?? [];
+  const internalEventsRaw = useQuery(api.events.queries.getAllInternalEvents);
+  const externalEventsRaw = useQuery(api.events.queries.getExternalEvents);
+  const isLoadingEvents = internalEventsRaw === undefined || externalEventsRaw === undefined;
+  const allEvents = useMemo(
+    () => [...(internalEventsRaw ?? []), ...(externalEventsRaw ?? [])],
+    [internalEventsRaw, externalEventsRaw]
+  );
   const { field, fieldState } = useController({
     control,
     name: 'post.eventId',
