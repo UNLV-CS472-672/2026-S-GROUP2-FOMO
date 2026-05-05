@@ -272,9 +272,5 @@ if __name__ == "__main__":  # pragma: no cover
 
 """ 
 TODO: 
-    1. Query optimizaiton
-    2. (updateUserPreferences.py) Optional: Add weight decay so weights can also decrease. Possibly could be done by decrementing
-                 some weights if a user hasn't attended an event with said tag for the past X events.
-                 Idk how to really do that with a running weight adjustment though
-    3. (recommendEvent.py) Need to fix day_norm, hour_norm, and is_free fields in get_event_features. Commented "FIX:" at the spot
+    3. (recommendEvent.py) Need to fix day_norm, hour_norm, and is_free fields in get_event_features. Commented "FIX:" at the spot. Tbh with how the model is trained right now, probably don't need to worry about this for comp
 """
