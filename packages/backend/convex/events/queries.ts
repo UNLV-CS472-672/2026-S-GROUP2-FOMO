@@ -3,7 +3,10 @@ import { latLngToCell } from 'h3-js';
 import { v } from 'convex/values';
 import type { Doc } from '../_generated/dataModel';
 import { query, type QueryCtx } from '../_generated/server';
-import { __backend_only_guestOrAuthenticatedUser } from '../auth';
+import {
+  __backend_only_getAndAuthenticateCurrentConvexUser,
+  __backend_only_guestOrAuthenticatedUser,
+} from '../auth';
 import { getThreadedCommentsByPost } from '../comments';
 import { getHiddenUserIds } from '../moderation/block';
 import { getHiddenPostIds } from '../moderation/report';
@@ -232,6 +235,40 @@ export const getPastEvents = query({
     all.sort((a, b) => b.endDate - a.endDate);
 
     return all.map((event) => ({
+      id: event._id,
+      name: event.name,
+      caption: event.caption,
+      organization: 'organization' in event ? event.organization : null,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      mediaId: 'mediaId' in event ? (event.mediaId ?? null) : null,
+      isExternal: 'externalKey' in event,
+    }));
+  },
+});
+
+export const getAttendedPastEvents = query({
+  args: {},
+  handler: async (ctx) => {
+    const viewer = await __backend_only_getAndAuthenticateCurrentConvexUser(ctx);
+
+    const now = Date.now();
+    const attendanceRecords = await ctx.db
+      .query('attendance')
+      .withIndex('by_userId', (q) => q.eq('userId', viewer._id))
+      .collect();
+
+    const goingEventIds = attendanceRecords
+      .filter((r) => (r.status ?? 'going') === 'going')
+      .map((r) => r.eventId);
+
+    const events = await Promise.all(goingEventIds.map((id) => ctx.db.get(id)));
+
+    const pastEvents = events
+      .filter((e): e is NonNullable<typeof e> => e !== null && e.endDate < now)
+      .sort((a, b) => b.endDate - a.endDate);
+
+    return pastEvents.map((event) => ({
       id: event._id,
       name: event.name,
       caption: event.caption,
