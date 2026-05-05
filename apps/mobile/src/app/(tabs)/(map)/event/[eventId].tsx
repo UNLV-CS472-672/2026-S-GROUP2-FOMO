@@ -57,7 +57,6 @@ export default function EventPage() {
     api.files.getFile,
     headerStorageId ? { storageId: headerStorageId } : 'skip'
   );
-
   const [attendance, setAttendance] = useState<AttendanceStatus>(null);
   const [notification, setNotification] = useState<NotificationPref>('all');
   const [isRsvpOpen, setIsRsvpOpen] = useState(false);
@@ -154,6 +153,8 @@ export default function EventPage() {
     return 0;
   })();
 
+  const headerUrl = ('mediaUrl' in event ? event.mediaUrl : null) ?? eventImage?.url ?? null;
+
   return (
     <Screen>
       <Stack.Screen options={{ title: event.name }} />
@@ -164,19 +165,19 @@ export default function EventPage() {
           <Pressable
             className="w-35 overflow-hidden rounded-2xl border border-border bg-surface-muted"
             style={rightSideHeight !== undefined ? { height: rightSideHeight } : { height: 180 }}
-            onPress={() => eventImage?.url && !event.isExternal && setHeaderCarouselOpen(true)}
-            disabled={!eventImage?.url || event.isExternal}
+            onPress={() => headerUrl && !event.isExternal && setHeaderCarouselOpen(true)}
+            disabled={!headerUrl || event.isExternal}
           >
-            {eventImage?.url ? (
+            {headerUrl != null ? (
               <>
-                {headerCarouselOpen && event.mediaId && (
+                {headerCarouselOpen && headerStorageId && !event.isExternal && (
                   <MediaCarousel
-                    mediaIds={[event.mediaId]}
+                    mediaIds={[headerStorageId]}
                     initialIndex={0}
                     onClose={() => setHeaderCarouselOpen(false)}
                   />
                 )}
-                <Image source={eventImage.url} className="h-full w-full" contentFit="cover" />
+                <Image source={headerUrl} className="h-full w-full" contentFit="cover" />
               </>
             ) : (
               <View

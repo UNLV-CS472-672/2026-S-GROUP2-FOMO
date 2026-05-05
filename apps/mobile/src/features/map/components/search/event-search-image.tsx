@@ -7,18 +7,22 @@ import { useQuery } from 'convex/react';
 import { View } from 'react-native';
 
 type EventSearchImageProps = {
-  mediaId: Id<'_storage'> | null;
+  /** Prefer this when the parent query already resolved a public URL (avoids an extra fetch). */
+  mediaUrl?: string | null;
+  /** When `mediaUrl` is absent, loads the file URL from storage (may be null). */
+  mediaId?: Id<'_storage'> | null;
   className?: string;
 };
 
-export function EventSearchImage({ mediaId, className }: EventSearchImageProps) {
+export function EventSearchImage({ mediaUrl, mediaId, className }: EventSearchImageProps) {
   const theme = useAppTheme();
-  const file = useQuery(api.files.getFile, mediaId ? { storageId: mediaId } : 'skip');
+  const file = useQuery(api.files.getFile, !mediaUrl && mediaId ? { storageId: mediaId } : 'skip');
+  const url = mediaUrl ?? file?.url ?? null;
 
   return (
     <View className={className ?? 'size-12 overflow-hidden rounded-2xl bg-primary/10'}>
-      {file?.url ? (
-        <Image source={file.url} className="h-full w-full" contentFit="cover" />
+      {url ? (
+        <Image source={url} className="h-full w-full" contentFit="cover" />
       ) : (
         <View className="h-full w-full items-center justify-center">
           <Icon name="place" size={22} color={theme.tint} />
