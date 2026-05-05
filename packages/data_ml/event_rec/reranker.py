@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import numpy as np
 from numpy.typing import NDArray
 from dataclasses import dataclass, field
+from typing import Any
 
 
 # constants
@@ -75,8 +76,8 @@ def _ms_to_temporal_vector(start_ms: float) -> NDArray[np.float32]:
 
 def build_user_temporal_profile(
     user_id: str,
-    user_interactions: list[dict],
-    events_by_id: dict[str, dict],
+    user_interactions: list[dict[str, Any]],
+    events_by_id: dict[str, dict[str, Any]],
 ) -> NDArray[np.float32]:
     """
     Build a temporal preference profile for a user from their attendance history.
@@ -162,13 +163,13 @@ class CandidateReranker:
         self,
         user_id: str,
         candidates: list[tuple[str, float]],
-        events_by_id: dict[str, dict],
+        events_by_id: dict[str, dict[str, Any]],
         event_tags_by_id: dict[str, list[dict[str, str]]],
         tag_id_to_idx: dict[str, int],
         num_tags: int,
         friend_ids: list[str] | None = None,
-        friend_attendance: dict[str, list[dict]] | None = None,
-        user_interactions: list[dict] | None = None,
+        friend_attendance: dict[str, list[dict[str, Any]]] | None = None,
+        user_interactions: list[dict[str, Any]] | None = None,
     ):
         self.user_id = user_id
         self.num_tags = num_tags
@@ -218,7 +219,7 @@ class CandidateReranker:
     def _populate_friend_signals(
         self,
         friend_ids: list[str] | None,
-        friend_attendance: dict[str, list[dict]] | None,
+        friend_attendance: dict[str, list[dict[str, Any]]] | None,
     ) -> None:
         """Count how many friends are going per event."""
         if friend_ids is None or friend_attendance is None:

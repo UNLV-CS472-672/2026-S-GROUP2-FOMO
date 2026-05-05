@@ -3,7 +3,7 @@ import sys
 import time
 import pytest
 import numpy as np
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
@@ -68,19 +68,19 @@ def event_tags_by_id() -> Dict[str, List[Dict[str, str]]]:
 
 
 @pytest.fixture
-def default_candidates() -> List[tuple]:
+def default_candidates() -> List[Tuple[str, float]]:
     return [("e1", 0.8), ("e2", 0.7), ("e3", 0.6)]
 
 
 def _make_reranker(
-    candidates: List[tuple],
+    candidates: List[Tuple[str, float]],
     events_by_id: Dict[str, Any],
     event_tags_by_id: Dict[str, Any],
     tag_id_to_idx: Dict[str, int],
     num_tags: int,
     friend_ids: List[str] | None = None,
-    friend_attendance: Dict[str, List[Dict]] | None = None,
-    user_interactions: List[Dict] | None = None,
+    friend_attendance: Dict[str, List[Dict[str, Any]]] | None = None,
+    user_interactions: List[Dict[str, Any]] | None = None,
 ) -> CandidateReranker:
     return CandidateReranker(
         user_id="u1",
@@ -218,7 +218,7 @@ class TestDampenedCosine:
 class TestCandidateRerankerInit:
     def test_candidates_are_populated(
         self,
-        default_candidates: List[tuple],
+        default_candidates: List[Tuple[str, float]],
         events_by_id: Dict[str, Any],
         event_tags_by_id: Dict[str, Any],
         tag_id_to_idx: Dict[str, int],
@@ -229,7 +229,7 @@ class TestCandidateRerankerInit:
 
     def test_tag_vectors_correct_shape(
         self,
-        default_candidates: List[tuple],
+        default_candidates: List[Tuple[str, float]],
         events_by_id: Dict[str, Any],
         event_tags_by_id: Dict[str, Any],
         tag_id_to_idx: Dict[str, int],
@@ -241,7 +241,7 @@ class TestCandidateRerankerInit:
 
     def test_tag_vector_values(
         self,
-        default_candidates: List[tuple],
+        default_candidates: List[Tuple[str, float]],
         events_by_id: Dict[str, Any],
         event_tags_by_id: Dict[str, Any],
         tag_id_to_idx: Dict[str, int],
@@ -256,7 +256,7 @@ class TestCandidateRerankerInit:
 
     def test_hours_until_start_positive(
         self,
-        default_candidates: List[tuple],
+        default_candidates: List[Tuple[str, float]],
         events_by_id: Dict[str, Any],
         event_tags_by_id: Dict[str, Any],
         tag_id_to_idx: Dict[str, int],
@@ -268,7 +268,7 @@ class TestCandidateRerankerInit:
 
     def test_hours_since_created_positive(
         self,
-        default_candidates: List[tuple],
+        default_candidates: List[Tuple[str, float]],
         events_by_id: Dict[str, Any],
         event_tags_by_id: Dict[str, Any],
         tag_id_to_idx: Dict[str, int],
@@ -347,7 +347,7 @@ class TestFriendSignals:
 
     def test_no_friend_data_gives_zero_boost(
         self,
-        default_candidates: List[tuple],
+        default_candidates: List[Tuple[str, float]],
         events_by_id: Dict[str, Any],
         event_tags_by_id: Dict[str, Any],
         tag_id_to_idx: Dict[str, int],
@@ -417,7 +417,7 @@ class TestTemporalProximityScore:
 class TestTemporalPrefScore:
     def test_no_history_gives_zero_score(
         self,
-        default_candidates: List[tuple],
+        default_candidates: List[Tuple[str, float]],
         events_by_id: Dict[str, Any],
         event_tags_by_id: Dict[str, Any],
         tag_id_to_idx: Dict[str, int],
@@ -452,7 +452,7 @@ class TestTemporalPrefScore:
 class TestMmrSelect:
     def test_returns_k_candidates(
         self,
-        default_candidates: List[tuple],
+        default_candidates: List[Tuple[str, float]],
         events_by_id: Dict[str, Any],
         event_tags_by_id: Dict[str, Any],
         tag_id_to_idx: Dict[str, int],
@@ -465,7 +465,7 @@ class TestMmrSelect:
 
     def test_returns_all_when_k_exceeds_candidates(
         self,
-        default_candidates: List[tuple],
+        default_candidates: List[Tuple[str, float]],
         events_by_id: Dict[str, Any],
         event_tags_by_id: Dict[str, Any],
         tag_id_to_idx: Dict[str, int],
@@ -588,7 +588,7 @@ class TestFreshnessInjection:
 class TestRerank:
     def test_returns_list_of_event_ids(
         self,
-        default_candidates: List[tuple],
+        default_candidates: List[Tuple[str, float]],
         events_by_id: Dict[str, Any],
         event_tags_by_id: Dict[str, Any],
         tag_id_to_idx: Dict[str, int],
@@ -601,7 +601,7 @@ class TestRerank:
 
     def test_result_length_capped_at_k(
         self,
-        default_candidates: List[tuple],
+        default_candidates: List[Tuple[str, float]],
         events_by_id: Dict[str, Any],
         event_tags_by_id: Dict[str, Any],
         tag_id_to_idx: Dict[str, int],
@@ -623,7 +623,7 @@ class TestRerank:
 
     def test_result_contains_only_known_event_ids(
         self,
-        default_candidates: List[tuple],
+        default_candidates: List[Tuple[str, float]],
         events_by_id: Dict[str, Any],
         event_tags_by_id: Dict[str, Any],
         tag_id_to_idx: Dict[str, int],
@@ -656,7 +656,7 @@ class TestRerank:
 
     def test_no_duplicate_event_ids_in_result(
         self,
-        default_candidates: List[tuple],
+        default_candidates: List[Tuple[str, float]],
         events_by_id: Dict[str, Any],
         event_tags_by_id: Dict[str, Any],
         tag_id_to_idx: Dict[str, int],
@@ -668,7 +668,7 @@ class TestRerank:
 
     def test_k_larger_than_candidates_returns_all(
         self,
-        default_candidates: List[tuple],
+        default_candidates: List[Tuple[str, float]],
         events_by_id: Dict[str, Any],
         event_tags_by_id: Dict[str, Any],
         tag_id_to_idx: Dict[str, int],
