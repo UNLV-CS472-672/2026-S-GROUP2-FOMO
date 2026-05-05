@@ -9,6 +9,7 @@ export default function MapLayout() {
       }}
     >
       <Stack.Screen name="index" />
+      <Stack.Screen name="external-event/[eventId]" />
     </Stack>
   );
 }

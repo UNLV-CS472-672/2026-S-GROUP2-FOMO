@@ -91,10 +91,10 @@ export function useCreateForm(selectedMode: CreateMode) {
         return found ? [found.id as Id<'tags'>] : [];
       });
 
-      let eventId: Id<'events'>;
+      let eventId: Id<'events'> | Id<'externalEvents'>;
       if (selectedMode === 'post') {
         const postValues = values.post;
-        eventId = postValues.eventId as Id<'events'>;
+        eventId = postValues.eventId as Id<'events'> | Id<'externalEvents'>;
         const caption = postValues.description.trim() || undefined;
 
         const mediaItems = Array.isArray(postValues.media) ? postValues.media : [];
@@ -109,6 +109,9 @@ export function useCreateForm(selectedMode: CreateMode) {
         }
 
         await createPost({ caption, mediaIds, eventId, tagIds });
+        reset();
+        router.replace(`/(tabs)/(map)/event/${eventId}`);
+        return;
       } else {
         const eventValues = values.event;
         let location;

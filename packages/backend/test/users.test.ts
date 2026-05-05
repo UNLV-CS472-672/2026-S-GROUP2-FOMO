@@ -29,6 +29,7 @@ function makeEvent(overrides: Record<string, unknown> = {}) {
     endDate: 2000,
     location: { latitude: 0, longitude: 0, h3Index: 'h' },
     hostIds: [],
+    lastPostAt: 0,
     ...overrides,
   };
 }

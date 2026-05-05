@@ -7,6 +7,7 @@ import { RecenterButton } from '@/features/map/components/recenter-button';
 import { useMapboxEventMap } from '@/features/map/hooks/use-mapbox-event-map';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { pointsToGeoJSON } from '@/features/map/utils/h3';
+import { useAuth } from '@clerk/nextjs';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { env } from '@fomo/env/web';
 import { useQuery } from 'convex/react';
@@ -18,13 +19,18 @@ const MAPBOX_TOKEN = env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
 const emptySubscribe = () => () => {};
 const STATIC_MAP_WIDTH = 1280;
 const STATIC_MAP_HEIGHT = 900;
-type Events = NonNullable<FunctionReturnType<typeof api.events.queries.getEvents>>;
-type MapEvent = Events[number];
+type InternalEvents = NonNullable<FunctionReturnType<typeof api.events.queries.getEvents>>;
+type ExternalEvents = NonNullable<FunctionReturnType<typeof api.events.queries.getExternalEvents>>;
+type InternalMapEvent = InternalEvents[number] & { markerImageUrl?: string | null };
+type ExternalMapEvent = ExternalEvents[number] & { markerImageUrl?: string | null };
+type MapEvent = InternalMapEvent | ExternalMapEvent;
 
 export default function MapPage() {
+  const { isSignedIn } = useAuth();
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
   const { resolvedTheme } = useTheme();
   const queriedEvents = useQuery(api.events.queries.getEvents);
+  const queriedExternalEvents = useQuery(api.events.queries.getExternalEvents);
   const [feedMode, setFeedMode] = useState<FeedMode>('foryou');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [markerImageUrls, setMarkerImageUrls] = useState<Record<string, string | null>>({});
@@ -35,7 +41,12 @@ export default function MapPage() {
   );
 
   const isDark = mounted && resolvedTheme === 'dark';
-  const events = useMemo(() => queriedEvents ?? [], [queriedEvents]);
+  const internalEvents = useMemo(() => queriedEvents ?? [], [queriedEvents]);
+  const externalEvents = useMemo(() => queriedExternalEvents ?? [], [queriedExternalEvents]);
+  const events = useMemo(
+    () => [...internalEvents, ...externalEvents] as MapEvent[],
+    [internalEvents, externalEvents]
+  );
 
   useEffect(() => {
     if (queriedEvents === undefined) {
@@ -64,12 +75,15 @@ export default function MapPage() {
 
   // `getEvents` includes recommendation scores when available. For "For You", prioritize
   // higher scores and otherwise keep backend order for stable fallback behavior.
+  // External events don't have recommendationScore so they sort to the end.
   const visibleEvents = useMemo(() => {
     if (feedMode === 'popular') {
       return [...eventsWithMarkerImages].sort((a, b) => b.attendeeCount - a.attendeeCount);
     }
     return [...eventsWithMarkerImages].sort(
-      (a, b) => (b.recommendationScore ?? 0) - (a.recommendationScore ?? 0)
+      (a, b) =>
+        (('recommendationScore' in b ? b.recommendationScore : null) ?? 0) -
+        (('recommendationScore' in a ? a.recommendationScore : null) ?? 0)
     );
   }, [eventsWithMarkerImages, feedMode]);
 
@@ -147,7 +161,7 @@ export default function MapPage() {
         onClick={recenterMap}
       />
 
-      <FeedTabs value={feedMode} onChange={setFeedMode} />
+      {isSignedIn && <FeedTabs value={feedMode} onChange={setFeedMode} />}
 
       <MapEventFeedPanel event={selectedEvent} onClose={() => setSelectedEventId(null)} />
     </>
@@ -161,10 +175,11 @@ function EventMarkerImageResolver({
   event: MapEvent;
   onResolve: (eventId: string, imageUrl: string | null) => void;
 }) {
-  const file = useQuery(api.files.getFile, event.mediaId ? { storageId: event.mediaId } : 'skip');
+  const mediaId = 'mediaId' in event ? event.mediaId : null;
+  const file = useQuery(api.files.getFile, mediaId ? { storageId: mediaId } : 'skip');
 
   useEffect(() => {
-    if (!event.mediaId) {
+    if (!mediaId) {
       onResolve(event.id, null);
       return;
     }
@@ -174,7 +189,7 @@ function EventMarkerImageResolver({
     }
 
     onResolve(event.id, file.isVideo ? null : (file.url ?? null));
-  }, [event.id, event.mediaId, file, onResolve]);
+  }, [event.id, mediaId, file, onResolve]);
 
   return null;
 }

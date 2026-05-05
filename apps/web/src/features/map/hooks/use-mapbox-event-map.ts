@@ -23,6 +23,7 @@ type MapEvent = {
   id: string;
   name?: string;
   attendeeCount: number;
+  endDate: number;
   markerImageUrl?: string | null;
   location: {
     longitude: number;
@@ -185,15 +186,15 @@ export function useMapboxEventMap({
             ['linear'],
             ['heatmap-density'],
             0,
-            'rgba(0,0,0,0)',
-            0.2,
-            'rgba(245,158,11,0.3)',
-            0.5,
-            'rgba(245,158,11,0.6)',
-            0.8,
-            'rgba(245,158,11,0.85)',
+            'rgba(255,120,0,0)',
+            0.1,
+            'rgba(255,150,50,0.2)',
+            0.4,
+            'rgba(255,120,0,0.6)',
+            0.7,
+            'rgba(255,80,0,0.85)',
             1,
-            'rgba(255,255,255,0.95)',
+            'rgba(255,60,0,1)',
           ],
           'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 10, 30, 15, 60],
           'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 10, 1, 16, 0.6],
@@ -225,6 +226,7 @@ export function useMapboxEventMap({
     const weights = events.map((event) => event.attendeeCount);
     const minWeight = Math.min(...weights);
     const maxWeight = Math.max(...weights);
+    const now = Date.now();
 
     events.forEach((event) => {
       const weightDelta = maxWeight - minWeight || 1;
@@ -233,6 +235,7 @@ export function useMapboxEventMap({
         imageSrc: event.markerImageUrl ?? null,
         name: event.name ?? 'Event',
         size: 44 + normalizedWeight * 44,
+        isActive: event.endDate >= now,
       });
 
       markerMount.element.addEventListener('click', () => {
