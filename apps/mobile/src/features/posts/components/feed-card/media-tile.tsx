@@ -1,19 +1,17 @@
 import { Image } from '@/components/image';
 import { VideoPlayer } from '@/components/video';
-import type { FeedPost } from '@/features/posts/types';
-import { api } from '@fomo/backend/convex/_generated/api';
-import { useQuery } from 'convex/react';
 import { Pressable, Text, View } from 'react-native';
 
+type ResolvedFile = { url: string | null; isVideo: boolean } | null | undefined;
+
 type MediaTileProps = {
-  mediaId: FeedPost['mediaIds'][number] | undefined;
+  file: ResolvedFile;
   className: string;
   overlayLabel?: string;
   onPress?: () => void;
 };
 
-export function MediaTile({ mediaId, className, overlayLabel, onPress }: MediaTileProps) {
-  const file = useQuery(api.files.getFile, mediaId ? { storageId: mediaId } : 'skip');
+export function MediaTile({ file, className, overlayLabel, onPress }: MediaTileProps) {
   const mediaTypeResolved = file !== undefined;
 
   const inner = (

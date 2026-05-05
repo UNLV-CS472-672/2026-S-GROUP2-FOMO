@@ -282,7 +282,7 @@ export function MediaCarousel({
                 dismissOpacity={dismissOpacity}
               />
             )}
-            keyExtractor={(item, i) => `${item}-${i}`}
+            keyExtractor={(item) => item}
           />
         </View>
 

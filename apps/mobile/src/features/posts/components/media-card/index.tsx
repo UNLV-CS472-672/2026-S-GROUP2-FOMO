@@ -121,10 +121,10 @@ export function MediaCard({
         onMomentumScrollEnd={handleScroll}
         scrollEnabled={post.mediaIds.length > 1}
       >
-        {post.mediaIds.map((mediaId, index) => (
+        {post.mediaIds.map((_, index) => (
           <MediaItem
             key={`${post.id}-${index}`}
-            mediaId={mediaId}
+            file={post.mediaFiles[index] ?? null}
             width={width}
             height={mediaHeight}
             isActive={index === activeIndex}
