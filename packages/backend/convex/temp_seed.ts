@@ -190,6 +190,7 @@ export const seedData = internalMutation({
           startDate: startMs,
           endDate: startMs + 4 * HOUR,
           location: e.location,
+          lastPostAt: 0,
         })
       );
     }

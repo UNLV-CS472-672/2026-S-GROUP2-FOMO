@@ -19,6 +19,7 @@ export default function EventAttendeesPage() {
   }>();
   const eventId = (Array.isArray(rawEventId) ? rawEventId[0] : rawEventId) as
     | Id<'events'>
+    | Id<'externalEvents'>
     | undefined;
   const resolvedEventName = Array.isArray(eventName) ? eventName[0] : eventName;
   const [searchText, setSearchText] = useState('');
