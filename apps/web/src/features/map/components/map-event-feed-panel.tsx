@@ -28,8 +28,11 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
-type Events = NonNullable<FunctionReturnType<typeof api.events.queries.getEvents>>;
-type MapEvent = Events[number];
+type InternalEvents = NonNullable<FunctionReturnType<typeof api.events.queries.getEvents>>;
+type ExternalEvents = NonNullable<FunctionReturnType<typeof api.events.queries.getExternalEvents>>;
+type MapEvent = (InternalEvents[number] | ExternalEvents[number]) & {
+  markerImageUrl?: string | null;
+};
 type EventFeed = NonNullable<FunctionReturnType<typeof api.events.queries.getEventFeed>>;
 type EventFeedPost = EventFeed[number];
 type TopMediaPosts = NonNullable<FunctionReturnType<typeof api.events.queries.getTopMediaPosts>>;

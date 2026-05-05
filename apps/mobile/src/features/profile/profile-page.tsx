@@ -5,6 +5,7 @@ import { Avatar } from '@/features/posts/components/avatar';
 import { FeedCard } from '@/features/posts/components/feed-card';
 import type { FeedPost } from '@/features/posts/types';
 import { MediaGrid, type GridMediaItem } from '@/features/profile/components/media-grid';
+import { PastEventsList } from '@/features/profile/components/past-events-list';
 import StatLabel from '@/features/profile/components/stat-label';
 import { useGuest } from '@/integrations/session/guest';
 import { useAppTheme } from '@/lib/use-app-theme';
@@ -118,7 +119,11 @@ export function ProfilePage({
   const cancelFriendRequest = useMutation(api.friends.cancelFriendRequest);
   const declineFriendRequest = useMutation(api.friends.declineFriendRequest);
   const removeFriend = useMutation(api.friends.removeFriend);
-  const [activeTab, setActiveTab] = useState<'feed' | 'media'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'media' | 'past'>('feed');
+  const pastEvents = useQuery(
+    api.events.queries.getAttendedPastEvents,
+    isAuthenticated && !isGuestMode ? {} : 'skip'
+  );
   const [isBioExpanded, setIsBioExpanded] = useState(false);
   const [bioIsTruncated, setBioIsTruncated] = useState(false);
   const [isSendingFriendRequest, setIsSendingFriendRequest] = useState(false);
@@ -432,6 +437,23 @@ export function ProfilePage({
               Media
             </Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            className={`flex-1 items-center py-3 ${
+              activeTab === 'past' ? 'border-b-[5px] border-b-primary' : ''
+            }`}
+            onPress={() => setActiveTab('past')}
+            accessibilityRole="tab"
+            accessibilityLabel="Past events tab"
+            accessibilityState={{ selected: activeTab === 'past' }}
+          >
+            <Text
+              className={
+                activeTab === 'past' ? 'font-semibold text-primary' : 'text-muted-foreground'
+              }
+            >
+              Past
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {activeTab === 'feed' ? (
@@ -460,12 +482,16 @@ export function ProfilePage({
               <Text className="text-muted-foreground">{emptyPostsMessage}</Text>
             </View>
           )
-        ) : mediaItems.length > 0 ? (
-          <MediaGrid posts={mediaItems} onPressItem={handlePressGridItem} />
+        ) : activeTab === 'media' ? (
+          mediaItems.length > 0 ? (
+            <MediaGrid posts={mediaItems} onPressItem={handlePressGridItem} />
+          ) : (
+            <View className="items-center justify-center py-8">
+              <Text className="text-muted-foreground">No media posts yet</Text>
+            </View>
+          )
         ) : (
-          <View className="items-center justify-center py-8">
-            <Text className="text-muted-foreground">No media posts yet</Text>
-          </View>
+          <PastEventsList events={pastEvents ?? []} />
         )}
       </ScrollView>
     </Screen>
