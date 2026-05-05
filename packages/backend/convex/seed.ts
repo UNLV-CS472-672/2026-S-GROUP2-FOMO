@@ -1123,6 +1123,7 @@ export const seedData = internalMutation({
         userId: entry.userId,
         weights: buildColdStartWeights(entry.preferred),
         updatedAt: Date.now(),
+        lastDecayedAt: Date.now(),
       });
     }
 
