@@ -20,7 +20,6 @@ export default defineSchema({
     // clerk handles below this
     clerkId: v.string(), // For Clerk integration
     username: v.string(), // should be unique and this is the main display/handle on frontend
-    displayName: v.optional(v.string()),
     avatarUrl: v.string(), // should get from clerk
     deletedAt: v.optional(v.number()),
     eventRecNeedsUpdate: v.optional(v.boolean()),
