@@ -33,9 +33,7 @@ export function PastEventsList({ events }: PastEventsListProps) {
           className="flex-row items-center gap-3 border-b border-border/60 px-4 py-3"
           onPress={() =>
             router.push({
-              pathname: event.isExternal
-                ? '/(tabs)/(map)/external-event/[eventId]'
-                : '/(tabs)/(map)/event/[eventId]',
+              pathname: '/(tabs)/(map)/event/[eventId]',
               params: { eventId: event.id },
             })
           }

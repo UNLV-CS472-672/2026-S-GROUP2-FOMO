@@ -46,7 +46,7 @@ export async function getAttendeeCount(ctx: QueryCtx, eventId: AttendanceEventId
   return attendees.filter(countsAsAttendee).length;
 }
 
-export const getAttendeesByEventId = async (ctx: QueryCtx, eventId: Id<'events'>) => {
+export const getAttendeesByEventId = async (ctx: QueryCtx, eventId: AttendanceEventId) => {
   const attendees = await ctx.db
     .query('attendance')
     .withIndex('by_event', (q) => q.eq('eventId', eventId))
@@ -56,7 +56,7 @@ export const getAttendeesByEventId = async (ctx: QueryCtx, eventId: Id<'events'>
 };
 
 export const getEventAttendees = query({
-  args: { eventId: v.id('events') },
+  args: { eventId: v.union(v.id('events'), v.id('externalEvents')) },
   handler: async (ctx, { eventId }) => {
     const attendanceRecords = await ctx.db
       .query('attendance')
@@ -79,7 +79,7 @@ export const getEventAttendees = query({
 });
 
 export const getViewerAttendance = query({
-  args: { eventId: v.id('events') },
+  args: { eventId: v.union(v.id('events'), v.id('externalEvents')) },
   handler: async (ctx, { eventId }) => {
     const [user, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
     if (guestMode || !user) {
@@ -100,7 +100,7 @@ export const getViewerAttendance = query({
 
 export const setViewerAttendance = mutation({
   args: {
-    eventId: v.id('events'),
+    eventId: v.union(v.id('events'), v.id('externalEvents')),
     attendance: attendanceStatusValidator,
     notification: notificationPrefValidator,
   },

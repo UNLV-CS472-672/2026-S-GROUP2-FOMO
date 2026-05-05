@@ -68,12 +68,8 @@ export default function MapPage() {
       })),
     [events, markerImageUrls]
   );
-  // Panel only supports internal events (external events have no posts/feed).
   const selectedEvent = useMemo(
-    () =>
-      (eventsWithMarkerImages.find(
-        (event) => event.id === selectedEventId && !('externalKey' in event)
-      ) as InternalMapEvent | undefined) ?? null,
+    () => eventsWithMarkerImages.find((event) => event.id === selectedEventId) ?? null,
     [eventsWithMarkerImages, selectedEventId]
   );
 
