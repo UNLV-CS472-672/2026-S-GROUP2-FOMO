@@ -548,7 +548,10 @@ class TestMain:
         assert len(rows) == 2
         for row in rows:
             assert isinstance(row["eventIds"], list)
-            assert len(row["eventIds"]) == 2
+            # user1 has event2 blocked (uninterested), so only 1 eligible event remains.
+            # user2 has no blocks, so gets the full k=2 recs.
+            expected_count = 1 if row["userId"] == "user1" else 2
+            assert len(row["eventIds"]) == expected_count
 
     @patch("event_rec.recommendEvent.queries.get_tag_info")
     @patch("event_rec.recommendEvent.queries.get_users_needing_event_rec")
