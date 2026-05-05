@@ -75,11 +75,14 @@ function formatUserTagWeightsWithTimestamp(
 }
 
 export const getByEventIds = internalQuery({
-  args: { eventIds: v.array(v.id('events')) },
+  args: { eventIds: v.array(v.union(v.id('events'), v.id('externalEvents'))) },
   handler: async (ctx, { eventIds }) => {
     const uniqueEventIds = [...new Set(eventIds)];
+    const internalEventIds = uniqueEventIds.filter(
+      (id): id is Id<'events'> => ctx.db.normalizeId('events', id) !== null
+    );
     const results = await Promise.all(
-      uniqueEventIds.map((eventId) =>
+      internalEventIds.map((eventId) =>
         ctx.db
           .query('eventTags')
           .withIndex('by_event', (q) => q.eq('eventId', eventId))
@@ -168,7 +171,7 @@ export const upsertEventRecsBatch = internalMutation({
     rows: v.array(
       v.object({
         userId: v.id('users'),
-        eventIds: v.array(v.id('events')),
+        eventIds: v.array(v.union(v.id('events'), v.id('externalEvents'))),
       })
     ),
   },
