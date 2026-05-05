@@ -201,7 +201,6 @@ export default function MapScreen() {
   return (
     <View className="absolute inset-0">
       <MapboxGL.MapView
-        key={isDark ? 'dark-map' : 'light-map'}
         style={StyleSheet.absoluteFill}
         styleURL={isDark ? MapboxGL.StyleURL.Dark : MapboxGL.StyleURL.Street}
         logoEnabled={false}
