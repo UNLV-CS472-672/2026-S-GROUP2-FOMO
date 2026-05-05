@@ -37,6 +37,7 @@ export default function MapScreen() {
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const [feedMode, setFeedMode] = useState<FeedMode>('foryou');
   const [zoomLevel, setZoomLevel] = useState(DEFAULT_ZOOM_LEVEL);
+  const zoomShared = useSharedValue(DEFAULT_ZOOM_LEVEL);
   const CLUSTER_DISABLE_ZOOM = 15;
 
   // `getEvents` includes recommendation scores when available. For "For You", prioritize
@@ -210,6 +211,7 @@ export default function MapScreen() {
             pitch: state.properties.pitch,
           };
           setZoomLevel(state.properties.zoom);
+          zoomShared.value = state.properties.zoom;
         }}
       >
         <MapboxGL.Camera
@@ -226,7 +228,7 @@ export default function MapScreen() {
           <MapboxGL.LocationPuck
             puckBearing="heading"
             puckBearingEnabled
-            pulsing={{ isEnabled: true, color: '#f59e0b', radius: 50 }}
+            pulsing={{ isEnabled: true, color: '#ff7f50', radius: 25 }}
           />
         )}
 
@@ -248,6 +250,7 @@ export default function MapScreen() {
                 minWeight={minWeight}
                 maxWeight={maxWeight}
                 isActive={isActive}
+                zoom={zoomShared}
                 onPress={() => {
                   if ('externalKey' in primary) {
                     push({
@@ -279,6 +282,7 @@ export default function MapScreen() {
               minWeight={minWeight}
               maxWeight={maxWeight}
               isActive={isActive}
+              zoom={zoomShared}
               onPress={() => {
                 if ('externalKey' in primary) {
                   push({
