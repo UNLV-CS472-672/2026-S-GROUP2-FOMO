@@ -153,6 +153,7 @@ export default defineSchema({
     userId: v.id('users'),
     weights: v.array(v.number()),
     updatedAt: v.number(),
+    lastDecayedAt: v.number(),
   }).index('by_userId', ['userId']),
 
   friendRecs: defineTable({
