@@ -6,6 +6,7 @@ import { RecenterButton } from '@/features/map/components/recenter-button';
 import { SearchDrawer } from '@/features/map/components/search';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { pointsToGeoJSON } from '@/features/map/utils/h3';
+import { useGuest } from '@/integrations/session/guest';
 import { useUser } from '@clerk/expo';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { env } from '@fomo/env/mobile';
@@ -13,7 +14,7 @@ import { useIsFocused } from '@react-navigation/native';
 import MapboxGL from '@rnmapbox/maps';
 import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
@@ -25,6 +26,7 @@ const DEFAULT_ZOOM_LEVEL = 13;
 export default function MapScreen() {
   const { push } = useRouter();
   const { isSignedIn } = useUser();
+  const { isGuestMode } = useGuest();
   const eventsRaw = useQuery(api.events.queries.getEvents);
   const externalEventsRaw = useQuery(api.events.queries.getExternalEvents);
   const events: EventSummary[] = useMemo(() => eventsRaw ?? [], [eventsRaw]);
@@ -44,14 +46,14 @@ export default function MapScreen() {
   // higher scores and otherwise keep backend order for stable fallback behavior.
   const visibleEvents = useMemo(() => {
     if (feedMode === 'popular') {
-      return [...allEvents].sort((a, b) => b.attendeeCount - a.attendeeCount);
+      return [...events, ...externalEvents].sort((a, b) => b.attendeeCount - a.attendeeCount);
     }
     // For You: internal events sorted by recommendation score, external events appended
     const sortedInternal = [...events].sort(
       (a, b) => (b.recommendationScore ?? 0) - (a.recommendationScore ?? 0)
     );
     return [...sortedInternal, ...externalEvents];
-  }, [allEvents, events, externalEvents, feedMode]);
+  }, [events, externalEvents, feedMode]);
 
   const savedCameraRef = useRef<{
     centerCoordinate: [number, number];
@@ -81,8 +83,10 @@ export default function MapScreen() {
     return new Map(allEvents.map((event) => [event.id, event.attendeeCount]));
   }, [allEvents, visibleEvents, feedMode]);
 
-  const getWeight = (eventId: EventSummary['id'] | ExternalEventSummary['id']) =>
-    eventWeights.get(eventId) ?? 0;
+  const getWeight = useCallback(
+    (eventId: EventSummary['id'] | ExternalEventSummary['id']) => eventWeights.get(eventId) ?? 0,
+    [eventWeights]
+  );
 
   const heatmapGeoJSON = pointsToGeoJSON(
     visibleEvents.map((event) => ({
@@ -164,7 +168,7 @@ export default function MapScreen() {
         isActive,
       };
     });
-  }, [visibleEvents, eventWeights, zoomLevel]);
+  }, [visibleEvents, getWeight, zoomLevel]);
 
   const clusterWeights = eventClusters.map((c) => c.weight);
   const minWeight = clusterWeights.length === 0 ? 0 : Math.min(...clusterWeights);
@@ -314,7 +318,7 @@ export default function MapScreen() {
         </MapboxGL.ShapeSource>
       </MapboxGL.MapView>
 
-      {isSignedIn && <FeedTabs value={feedMode} onChange={setFeedMode} />}
+      {isSignedIn && !isGuestMode && <FeedTabs value={feedMode} onChange={setFeedMode} />}
 
       <SearchDrawer
         onSelectEvent={(eventId) => push(`/(tabs)/(map)/event/${eventId}`)}

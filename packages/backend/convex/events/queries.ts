@@ -274,7 +274,7 @@ export const getAttendedPastEvents = query({
       .collect();
 
     const goingEventIds = attendanceRecords
-      .filter((r) => (r.status ?? 'going') === 'going')
+      .filter((r) => r.status === 'going')
       .map((r) => r.eventId);
 
     const events = await Promise.all(goingEventIds.map((id) => ctx.db.get(id)));
