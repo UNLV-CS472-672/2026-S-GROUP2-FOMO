@@ -162,7 +162,7 @@ export default defineSchema({
 
   eventRecs: defineTable({
     userId: v.id('users'),
-    eventIds: v.array(v.id('events')),
+    eventIds: v.array(v.union(v.id('events'), v.id('externalEvents'))),
   }).index('by_userId', ['userId']),
   // --------------------------------------------------------
 
