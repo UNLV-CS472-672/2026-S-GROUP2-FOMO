@@ -357,8 +357,9 @@ class CandidateReranker:
         """
         Full re-ranking pipeline:
           1. Score all candidates (model + friend + temporal proximity + temporal pref)
-          2. MMR-select top (k - FRESHNESS_SLOTS) for diversity
-          3. Inject up to FRESHNESS_SLOTS fresh events
+          2. MMR-select top k for diversity (full budget — freshness pulls from this pool)
+          3. Inject up to FRESHNESS_SLOTS fresh events from the full candidate pool,
+             replacing tail MMR slots so the total never shrinks below min(k, candidates)
           4. Trim to final k
           5. Return ordered event IDs
 
@@ -370,9 +371,12 @@ class CandidateReranker:
 
         self._compute_final_scores()
 
-        mmr_k = max(1, k - FRESHNESS_SLOTS)
-        mmr_selected = self._mmr_select(self.candidates, mmr_k)
+        mmr_selected = self._mmr_select(self.candidates, k)
 
+        # Inject fresh events from the *full* pool (including what MMR didn't pick).
+        # _inject_fresh_events already excludes ids already in the ranked list, so
+        # it will preferentially pull from outside mmr_selected — but if there aren't
+        # enough fresh events outside it, the ranked list is still length k (no shrinkage).
         final = self._inject_fresh_events(mmr_selected, self.candidates)
         final = final[:k]
 
