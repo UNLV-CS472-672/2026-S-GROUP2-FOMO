@@ -2,6 +2,7 @@ import os
 import torch
 import numpy as np
 from numpy.typing import NDArray
+from typing import Any
 
 from pathlib import Path
 from lib import queries, log
@@ -72,7 +73,7 @@ def get_event_features(
 ) -> tuple[
     list[str],
     NDArray[np.float32],
-    dict[str, dict],  # events_by_id
+    dict[str, dict[str, Any]],  # events_by_id
     dict[str, list[dict[str, str]]],  # event_tags_by_id
 ]:
     """
@@ -99,7 +100,7 @@ def get_event_features(
             event_tags_by_id[event_id] = []
         event_tags_by_id[event_id].append(row)
 
-    events_by_id: dict[str, dict] = {e["_id"]: e for e in all_events}
+    events_by_id: dict[str, dict[str, Any]] = {e["_id"]: e for e in all_events}
 
     event_ids = []
     event_rows = []
@@ -191,7 +192,7 @@ def main(users: list[str], update_db: bool, model_path : str, k: int = 10) -> No
     )
 
     # Group attendance by friend user ID for the reranker
-    friend_attendance_by_user: dict[str, list[dict]] = {}
+    friend_attendance_by_user: dict[str, list[dict[str, Any]]] = {}
     for row in friend_attendance_rows:
         uid = row["userId"]
         if uid not in friend_attendance_by_user:
