@@ -11,7 +11,7 @@ import { Pressable, Text, View } from 'react-native';
 type EventMediaTileProps = {
   post: TopMediaPost;
   cell: number;
-  eventId: Id<'events'>;
+  eventId: Id<'events'> | Id<'externalEvents'>;
 };
 
 export function EventMediaTile({ post, cell, eventId }: EventMediaTileProps) {

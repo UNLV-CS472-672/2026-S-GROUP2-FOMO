@@ -353,6 +353,7 @@ export const seedData = internalMutation({
           startDate: Date.now() + 24 * 60 * 60 * 1000,
           endDate: Date.now() + 26 * 60 * 60 * 1000,
           location: e.location,
+          lastPostAt: 0,
         })
       );
     }
