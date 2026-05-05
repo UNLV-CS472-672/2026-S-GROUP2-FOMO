@@ -42,6 +42,17 @@ def get_friend_ids(user_id: str) -> list[str]:
     return _get("/data-ml/get-friend-ids", {"userId": user_id})  # type: ignore[no-any-return]
 
 
+def get_friend_ids_batch(user_ids: list[str]) -> dict[str, list[str]]:
+    resp = requests.get(
+        f"{_get_base_url()}/data-ml/get-friend-ids-batch",
+        headers=_headers(),
+        params=[("userId", uid) for uid in user_ids],
+    )
+    resp.raise_for_status()
+    rows: list[dict[str, Any]] = resp.json()
+    return {row["userId"]: row["friendIds"] for row in rows}
+
+
 def query_all(table_name: str) -> list[dict[str, Any]]:
     return _get("/data-ml/query-all", {"table_name": table_name})  # type: ignore[no-any-return]
 
@@ -127,7 +138,7 @@ def get_user_tag_weights_with_timestamp(user_id: str, num_tags: int) -> dict[str
         result = dict(results[0])
         result.pop("userId", None)
         return result
-    return {"weights": [0] * (num_tags * 3), "lastUpdatedAt": 0}
+    return {"weights": [0] * (num_tags * 3), "updatedAt": 0, "lastDecayedAt": 0,}
 
 
 def get_user_tag_weights_with_timestamps(
