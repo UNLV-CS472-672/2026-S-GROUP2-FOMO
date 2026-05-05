@@ -1,5 +1,5 @@
 // Zoom level where the smallest marker (t=0) is fully gone.
-const SMALL_MARKER_HIDE_ZOOM = 8;
+const SMALL_MARKER_HIDE_ZOOM = 10;
 // Zoom level where the largest marker (t=1) is fully gone.
 const LARGE_MARKER_HIDE_ZOOM = 7;
 // How many zoom levels the fade takes (same for all markers).
