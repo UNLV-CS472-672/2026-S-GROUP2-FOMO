@@ -13,11 +13,7 @@ export function LatestGalleryImage({ onPress }: LatestGalleryImageProps) {
   const [latestUri, setLatestUri] = useState<string | null>(null);
 
   const loadLatestImage = useCallback(async () => {
-    const currentPermission = await MediaLibrary.getPermissionsAsync();
-    const permission = currentPermission.granted
-      ? currentPermission
-      : await MediaLibrary.requestPermissionsAsync();
-
+    const permission = await MediaLibrary.getPermissionsAsync();
     if (!permission.granted) {
       setLatestUri(null);
       return;

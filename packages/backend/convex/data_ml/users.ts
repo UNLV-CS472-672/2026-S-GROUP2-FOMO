@@ -28,6 +28,6 @@ export const getNameById = internalQuery({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
-    return user?.displayName ?? null;
+    return user?.username ?? null;
   },
 });

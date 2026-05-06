@@ -483,6 +483,7 @@ export const upsertNormalizedEvents = internalMutation({
           startDate: event.startDate,
           endDate: event.endDate,
           location: event.location,
+          lastPostAt: 0,
         });
         await syncExternalEventTags(ctx, eventId, tagIds);
         inserted += 1;

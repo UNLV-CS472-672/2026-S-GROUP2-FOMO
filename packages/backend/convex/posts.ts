@@ -1,13 +1,15 @@
 import { v } from 'convex/values';
 
+import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 import { __backend_only_getAndAuthenticateCurrentConvexUser } from './auth';
+import { getAvatarUrlForUser, getDisplayNameForUser } from './user_identity';
 
 export const createPost = mutation({
   args: {
     caption: v.optional(v.string()),
     mediaIds: v.array(v.id('_storage')),
-    eventId: v.id('events'),
+    eventId: v.union(v.id('events'), v.id('externalEvents')),
     tagIds: v.array(v.id('tags')),
   },
   handler: async (ctx, { caption, mediaIds, eventId, tagIds }) => {
@@ -20,12 +22,21 @@ export const createPost = mutation({
       eventId,
     });
     await Promise.all(tagIds.map((tagId) => ctx.db.insert('postTags', { postId, tagId })));
+    await ctx.db.patch(user._id, { friendRecNeedsUpdate: true });
+
+    // Stamp lastPostAt so the event stays visible on the map while post activity continues.
+    // ctx.db.get resolves the correct table from the ID prefix at runtime.
+    const eventDoc = await ctx.db.get(eventId as Id<'events'>);
+    if (eventDoc) {
+      await ctx.db.patch(eventDoc._id as Id<'events'>, { lastPostAt: Date.now() });
+    }
+
     return postId;
   },
 });
 
 export const getPostsByEventId = query({
-  args: { eventId: v.id('events') },
+  args: { eventId: v.union(v.id('events'), v.id('externalEvents')) },
   handler: async (ctx, { eventId }) => {
     return await ctx.db
       .query('posts')
@@ -58,8 +69,8 @@ export const getPostById = query({
 
         return {
           id: comment._id,
-          authorName: commentAuthor?.displayName || commentAuthor?.username || 'Unknown user',
-          authorAvatarUrl: commentAuthor?.avatarUrl || '',
+          authorName: getDisplayNameForUser(commentAuthor),
+          authorAvatarUrl: getAvatarUrlForUser(commentAuthor),
           text: comment.text,
         };
       })
@@ -70,8 +81,8 @@ export const getPostById = query({
       caption: post.caption ?? '',
       mediaIds,
       likeCount: post.likeCount ?? 0,
-      authorName: author?.displayName || author?.username || 'Unknown user',
-      authorAvatarUrl: author?.avatarUrl || '',
+      authorName: getDisplayNameForUser(author),
+      authorAvatarUrl: getAvatarUrlForUser(author),
       comments: commentsWithAuthors,
     };
   },

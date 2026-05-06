@@ -16,7 +16,6 @@ async function serializeFriendUser(ctx: QueryCtx, userId: Id<'users'>, requested
   return {
     id: user._id,
     username: user.username,
-    displayName: user.displayName,
     avatarUrl: user.avatarUrl,
     requestedAt,
   };

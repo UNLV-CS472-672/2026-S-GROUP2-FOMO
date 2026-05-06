@@ -63,7 +63,7 @@ export default function EventProfileScreen() {
           value: profile.stats.eventCount,
         }}
         activityLabel="Recent Events"
-        topPaddingClassName="pt-5"
+        topPaddingClassName="pt-2"
         mediaFeedPathname="/(tabs)/(map)/event/profile/media-feed"
         viewerUserId={viewerProfile?.id}
       />

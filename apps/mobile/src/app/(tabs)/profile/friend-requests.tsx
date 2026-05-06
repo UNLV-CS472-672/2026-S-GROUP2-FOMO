@@ -81,7 +81,6 @@ export default function FriendRequestsScreen() {
                     <ReceivedRequestRow
                       key={`received-${request.id}`}
                       username={request.username}
-                      displayName={request.displayName}
                       avatarUrl={request.avatarUrl}
                       isPending={isPending}
                       onPress={() =>
@@ -113,7 +112,6 @@ export default function FriendRequestsScreen() {
                     <SentRequestRow
                       key={`sent-${request.id}`}
                       username={request.username}
-                      displayName={request.displayName}
                       avatarUrl={request.avatarUrl}
                       isPending={isPending}
                       onPress={() =>
@@ -148,14 +146,12 @@ function RequestSection({ title, children }: { title: string; children: ReactNod
 
 function SentRequestRow({
   username,
-  displayName,
   avatarUrl,
   isPending,
   onPress,
   onRemove,
 }: {
   username: string;
-  displayName?: string;
   avatarUrl?: string;
   isPending: boolean;
   onPress: () => void;
@@ -164,7 +160,6 @@ function SentRequestRow({
   return (
     <FriendCell
       username={username}
-      displayName={displayName}
       avatarUrl={avatarUrl}
       onPress={onPress}
       className="py-3"
@@ -183,7 +178,6 @@ function SentRequestRow({
 
 function ReceivedRequestRow({
   username,
-  displayName,
   avatarUrl,
   isPending,
   onPress,
@@ -191,7 +185,6 @@ function ReceivedRequestRow({
   onDecline,
 }: {
   username: string;
-  displayName?: string;
   avatarUrl?: string;
   isPending: boolean;
   onPress: () => void;
@@ -201,7 +194,6 @@ function ReceivedRequestRow({
   return (
     <FriendCell
       username={username}
-      displayName={displayName}
       avatarUrl={avatarUrl}
       onPress={onPress}
       className="py-3"

@@ -50,18 +50,12 @@ export function FriendsScreenContent() {
 
   const filteredRecommended = useMemo(() => {
     const q = searchText.trim().toLowerCase();
-    return recommendedFriends.filter(
-      (friend) =>
-        friend.username.toLowerCase().includes(q) || friend.displayName?.toLowerCase().includes(q)
-    );
+    return recommendedFriends.filter((friend) => friend.username.toLowerCase().includes(q));
   }, [recommendedFriends, searchText]);
 
   const filteredFriends = useMemo(() => {
     const q = searchText.trim().toLowerCase();
-    return (friendsResult ?? []).filter(
-      (friend) =>
-        friend.username.toLowerCase().includes(q) || friend.displayName?.toLowerCase().includes(q)
-    );
+    return (friendsResult ?? []).filter((friend) => friend.username.toLowerCase().includes(q));
   }, [friendsResult, searchText]);
 
   const handleFriendPress = (friendId: string, username: string) => {
@@ -104,7 +98,6 @@ export function FriendsScreenContent() {
                   <FriendCell
                     key={f.id}
                     username={f.username}
-                    displayName={f.displayName}
                     avatarUrl={f.avatarUrl}
                     onPress={() => handleFriendPress(String(f.id), f.username)}
                   />
@@ -130,7 +123,6 @@ export function FriendsScreenContent() {
               <FriendCell
                 key={f.id}
                 username={f.username}
-                displayName={f.displayName}
                 avatarUrl={f.avatarUrl}
                 onPress={() => handleFriendPress(String(f.id), f.username)}
                 rightAccessory={

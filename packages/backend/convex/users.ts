@@ -3,12 +3,16 @@ import { env } from '@fomo/env/backend';
 import { v, type Validator } from 'convex/values';
 
 import { Doc, Id } from './_generated/dataModel';
-import { internalMutation, mutation, query, QueryCtx } from './_generated/server';
+import { internalMutation, mutation, query, QueryCtx, type MutationCtx } from './_generated/server';
 import {
   __backend_only_getAndAuthenticateCurrentConvexUser,
   __backend_only_guestOrAuthenticatedUser,
 } from './auth';
 import { getThreadedCommentsByPost } from './comments';
+import { serializeStorageFiles } from './files';
+import { getHiddenUserIds } from './moderation/block';
+import { getHiddenPostIds } from './moderation/report';
+import { getAvatarUrlForUser, getDisplayNameForUser, getUsernameForUser } from './user_identity';
 
 export const BIO_MAX_LENGTH = 250;
 
@@ -95,20 +99,101 @@ export const getCurrentProfileMinimal = query({
     return {
       id: user._id,
       username: user.username,
-      displayName: user.displayName,
       avatarUrl: user.avatarUrl,
       bio: user.bio,
     };
   },
 });
 
-function getDisplayName(data: UserJSON): string {
-  return data.username!;
-}
-
 function clerkIdFromClerkUserId(clerkUserId: string): string {
   // NOTE :: match the id as ctx.auth.getIdentity returns
   return `${env.CLERK_JWT_ISSUER_DOMAIN}|${clerkUserId}`;
+}
+
+async function anonymizeDeletedUser(ctx: MutationCtx, user: Doc<'users'>) {
+  const [
+    attendance,
+    sentFriendships,
+    receivedFriendships,
+    friendRecs,
+    userTagWeights,
+    userTagPrefs,
+    eventRecs,
+    hostedEvents,
+  ] = await Promise.all([
+    ctx.db
+      .query('attendance')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .collect(),
+    ctx.db
+      .query('friends')
+      .withIndex('by_requesterId', (q) => q.eq('requesterId', user._id))
+      .collect(),
+    ctx.db
+      .query('friends')
+      .withIndex('by_recipientId', (q) => q.eq('recipientId', user._id))
+      .collect(),
+    ctx.db
+      .query('friendRecs')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .collect(),
+    ctx.db
+      .query('userTagWeights')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .collect(),
+    ctx.db
+      .query('userTagPreferences')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .collect(),
+    ctx.db
+      .query('eventRecs')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .collect(),
+    ctx.db.query('events').collect(),
+  ]);
+
+  for (const row of attendance) {
+    await ctx.db.delete(row._id);
+  }
+
+  for (const friendship of [...sentFriendships, ...receivedFriendships]) {
+    const existingFriendship = await ctx.db.get(friendship._id);
+    if (existingFriendship) {
+      await ctx.db.delete(friendship._id);
+    }
+  }
+
+  for (const rec of friendRecs) {
+    await ctx.db.delete(rec._id);
+  }
+
+  for (const row of userTagWeights) {
+    await ctx.db.delete(row._id);
+  }
+
+  for (const row of userTagPrefs) {
+    await ctx.db.delete(row._id);
+  }
+
+  for (const row of eventRecs) {
+    await ctx.db.delete(row._id);
+  }
+
+  for (const event of hostedEvents) {
+    if (!event.hostIds.includes(user._id)) {
+      continue;
+    }
+
+    await ctx.db.patch(event._id, {
+      hostIds: event.hostIds.filter((hostId: Id<'users'>) => hostId !== user._id),
+    });
+  }
+
+  await ctx.db.patch(user._id, {
+    deletedAt: Date.now(),
+    avatarUrl: '',
+    bio: '',
+  });
 }
 
 export const upsertFromClerk = internalMutation({
@@ -120,7 +205,6 @@ export const upsertFromClerk = internalMutation({
     const userAttributes = {
       clerkId: normalizedClerkId,
       username: data.username!,
-      displayName: getDisplayName(data),
       avatarUrl: data.image_url ?? '',
     };
 
@@ -137,7 +221,10 @@ export const upsertFromClerk = internalMutation({
       return;
     }
 
-    await ctx.db.patch(existing._id, userAttributes);
+    await ctx.db.patch(existing._id, {
+      ...userAttributes,
+      deletedAt: undefined,
+    });
   },
 });
 
@@ -148,7 +235,7 @@ export const updateBio = mutation({
     const nextBio = normalizeBio(bio);
     validateBio(nextBio);
 
-    // Username/displayName/avatarUrl are Clerk-owned; webhook updates those fields.
+    // Username/avatarUrl are Clerk-owned; webhook updates those fields.
     await ctx.db.patch(user._id, { bio: nextBio });
 
     return {
@@ -169,7 +256,7 @@ export const deleteFromClerk = internalMutation({
       .unique();
 
     if (existing !== null) {
-      await ctx.db.delete(existing._id);
+      await anonymizeDeletedUser(ctx, existing);
     }
   },
 });
@@ -187,10 +274,18 @@ export const getProfileById = query({
     userId: v.id('users'),
   },
   handler: async (ctx, { userId }) => {
+    const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
     const user = await ctx.db.get(userId);
 
-    if (!user) {
+    if (!user || user.deletedAt != null) {
       return null;
+    }
+
+    if (!guestMode) {
+      const blockedUserIds = await getHiddenUserIds(ctx, viewer._id);
+      if (blockedUserIds.has(userId)) {
+        return null;
+      }
     }
 
     return await buildProfile(ctx, user);
@@ -202,13 +297,21 @@ export const getProfileByUsername = query({
     username: v.string(),
   },
   handler: async (ctx, { username }) => {
+    const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
     const user = await ctx.db
       .query('users')
       .withIndex('by_username', (q) => q.eq('username', username))
       .first();
 
-    if (!user) {
+    if (!user || user.deletedAt != null) {
       return null;
+    }
+
+    if (!guestMode) {
+      const blockedUserIds = await getHiddenUserIds(ctx, viewer._id);
+      if (blockedUserIds.has(user._id)) {
+        return null;
+      }
     }
 
     return await buildProfile(ctx, user);
@@ -224,7 +327,8 @@ async function serializeProfileFeedPost(
   post: Doc<'posts'>,
   viewerId?: Doc<'users'>['_id']
 ) {
-  const [author, comments, likes, event] = await Promise.all([
+  const mediaIds = post.mediaIds ?? [];
+  const [author, comments, likes, event, mediaFiles] = await Promise.all([
     ctx.db.get(post.authorId),
     getThreadedCommentsByPost(ctx, post._id),
     ctx.db
@@ -232,18 +336,21 @@ async function serializeProfileFeedPost(
       .withIndex('by_postId', (q) => q.eq('postId', post._id))
       .collect(),
     post.eventId ? ctx.db.get(post.eventId) : Promise.resolve(null),
+    serializeStorageFiles(ctx, mediaIds),
   ]);
 
   return {
     id: post._id,
     caption: post.caption ?? '',
     creationTime: post._creationTime,
-    authorName: author?.displayName || author?.username || 'Unknown user',
-    authorUsername: author?.username ?? '',
-    authorAvatarUrl: author?.avatarUrl || '',
+    authorId: post.authorId,
+    authorName: getDisplayNameForUser(author),
+    authorUsername: getUsernameForUser(author),
+    authorAvatarUrl: getAvatarUrlForUser(author),
     likes: post.likeCount ?? likes.length,
     liked: viewerId ? likes.some((like) => like.userId === viewerId) : false,
-    mediaIds: post.mediaIds ?? [],
+    mediaIds,
+    mediaFiles,
     eventId: post.eventId ?? null,
     eventName: event?.name ?? '',
     commentCount: countComments(comments),
@@ -255,6 +362,9 @@ export const getProfileFeed = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
     const [viewer, guestMode] = await __backend_only_guestOrAuthenticatedUser(ctx);
+    const [blockedUserIds, hiddenPostIds] = guestMode
+      ? [new Set<Id<'users'>>(), new Set<Id<'posts'>>()]
+      : await Promise.all([getHiddenUserIds(ctx, viewer._id), getHiddenPostIds(ctx, viewer._id)]);
 
     const posts = await ctx.db
       .query('posts')
@@ -263,7 +373,10 @@ export const getProfileFeed = query({
       .collect();
 
     return await Promise.all(
-      posts.map((post) => serializeProfileFeedPost(ctx, post, guestMode ? undefined : viewer._id))
+      posts
+        .filter((post) => !blockedUserIds.has(post.authorId))
+        .filter((post) => !hiddenPostIds.has(post._id))
+        .map((post) => serializeProfileFeedPost(ctx, post, guestMode ? undefined : viewer._id))
     );
   },
 });

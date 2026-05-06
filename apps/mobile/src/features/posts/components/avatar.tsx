@@ -21,6 +21,7 @@ export function Avatar({ name, size = 36, color = '#94a3b8', source }: AvatarPro
       <Image
         source={source}
         style={{ width: size, height: size, borderRadius: size / 2 }}
+        className="bg-primary/10"
         resizeMode="cover"
       />
     );
@@ -28,7 +29,7 @@ export function Avatar({ name, size = 36, color = '#94a3b8', source }: AvatarPro
 
   return (
     <View
-      className="items-center justify-center rounded-full"
+      className="items-center justify-center rounded-full bg-primary/10"
       style={{ width: size, height: size, backgroundColor: color }}
     >
       <Text style={{ fontSize: Math.max(12, size * 0.33), fontWeight: '600', color: '#fff' }}>

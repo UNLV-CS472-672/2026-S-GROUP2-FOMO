@@ -19,6 +19,7 @@ export default function EventAttendeesPage() {
   }>();
   const eventId = (Array.isArray(rawEventId) ? rawEventId[0] : rawEventId) as
     | Id<'events'>
+    | Id<'externalEvents'>
     | undefined;
   const resolvedEventName = Array.isArray(eventName) ? eventName[0] : eventName;
   const [searchText, setSearchText] = useState('');
@@ -84,7 +85,6 @@ export default function EventAttendeesPage() {
                 <FriendCell
                   key={attendee.id}
                   username={attendee.username}
-                  displayName={attendee.name}
                   avatarUrl={attendee.avatarUrl ?? undefined}
                   onPress={() =>
                     currentUser?.username === attendee.username

@@ -1,3 +1,4 @@
+import { PostActionMenu } from '@/features/moderation/post-action-menu';
 import { PostActions } from '@/features/posts/components/actions';
 import { Avatar } from '@/features/posts/components/avatar';
 import { MediaCarousel } from '@/features/posts/components/media-carousel';
@@ -84,10 +85,11 @@ export function FeedCard({
             <Text className="text-[12px] text-muted-foreground">
               {formatRelativeTime(post.creationTime)}
             </Text>
+            <PostActionMenu post={post} />
           </View>
         </View>
 
-        <FeedCardMedia mediaIds={post.mediaIds} onPressMedia={setCarouselIndex} />
+        <FeedCardMedia mediaFiles={post.mediaFiles} onPressMedia={setCarouselIndex} />
 
         {post.caption ? (
           <Text className="text-[15px] leading-[21px] text-foreground">{post.caption}</Text>

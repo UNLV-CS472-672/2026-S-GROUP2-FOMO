@@ -73,7 +73,6 @@ export const getFriendRecs = query({
           return {
             id: friend._id,
             username: friend.username,
-            displayName: friend.displayName,
             avatarUrl: friend.avatarUrl,
           };
         })
@@ -118,7 +117,6 @@ export const getFriends = query({
       .map((friend) => ({
         id: friend._id,
         username: friend.username,
-        displayName: friend.displayName,
         avatarUrl: friend.avatarUrl,
       }))
       .sort((a, b) => a.username.localeCompare(b.username));

@@ -40,8 +40,7 @@ export default function ProfileScreen() {
               }}
               activityLabel="Recent Activity"
               onPressSettings={() => router.push('/profile/settings')}
-              topPaddingClassName="pt-20"
-              bioFallback="No bio yet."
+              topPaddingClassName="pt-16"
               viewerUserId={profile.user._id}
               profileAction={
                 <ProfileRequestsButton

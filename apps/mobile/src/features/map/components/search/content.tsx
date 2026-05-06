@@ -8,7 +8,7 @@ import { api } from '@fomo/backend/convex/_generated/api';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useQuery } from 'convex/react';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, Text, View } from 'react-native';
 
 const MAX_SUGGESTED_EVENTS = 6;
 
@@ -42,19 +42,20 @@ export function SearchContent({
     resolveCoordinates,
   } = useLocationSearch(query);
   const events = useQuery(api.events.queries.getEvents) ?? [];
-  const popularTagsQuery = useQuery(api.tags.getPopularEventTags);
-  const popularTags = useMemo(() => popularTagsQuery ?? [], [popularTagsQuery]);
+  const userTagPreferences = useQuery(api.tags.getCurrentUserTagPreferences);
   const [activeFilter, setActiveFilter] = useState('all');
 
   const exploreFilters = useMemo(() => {
+    const preferredTags = (userTagPreferences?.tags ?? []).filter((tag) => tag.selected);
+
     return [
       { type: 'all', label: 'All' } satisfies ExploreFilter,
-      ...popularTags.map(
+      ...preferredTags.map(
         (tag) =>
           ({ type: 'tag', label: tag.name, value: tag.name.toLowerCase() }) satisfies ExploreFilter
       ),
     ];
-  }, [popularTags]);
+  }, [userTagPreferences]);
 
   const filteredEvents = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -149,6 +150,7 @@ export function SearchContent({
                 accessibilityRole="button"
                 className="flex-row items-center gap-3 rounded-[22px] bg-background/80 px-3 py-3"
                 onPress={async () => {
+                  Keyboard.dismiss();
                   onSaveRecentSearch({ type: 'query', label: loc.name });
                   const coords = await resolveCoordinates(loc.mapbox_id);
                   if (coords) onSelectLocation(coords);
@@ -194,7 +196,7 @@ export function SearchContent({
                 onSelectEvent(event.id);
               }}
             >
-              <EventSearchImage mediaId={event.mediaId} />
+              <EventSearchImage mediaUrl={event.mediaUrl} />
 
               <View className="flex-1 gap-1">
                 <Text className="text-[15px] font-semibold text-foreground" numberOfLines={1}>

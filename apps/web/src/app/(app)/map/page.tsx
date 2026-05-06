@@ -7,7 +7,7 @@ import { RecenterButton } from '@/features/map/components/recenter-button';
 import { useMapboxEventMap } from '@/features/map/hooks/use-mapbox-event-map';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { pointsToGeoJSON } from '@/features/map/utils/h3';
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@clerk/nextjs';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { env } from '@fomo/env/web';
 import { useQuery } from 'convex/react';
@@ -17,18 +17,20 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 
 const MAPBOX_TOKEN = env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
 const emptySubscribe = () => () => {};
-type Events = NonNullable<FunctionReturnType<typeof api.events.queries.getEvents>>;
-type MapEvent = Events[number];
+const STATIC_MAP_WIDTH = 1280;
+const STATIC_MAP_HEIGHT = 900;
+type InternalEvents = NonNullable<FunctionReturnType<typeof api.events.queries.getEvents>>;
+type ExternalEvents = NonNullable<FunctionReturnType<typeof api.events.queries.getExternalEvents>>;
+type InternalMapEvent = InternalEvents[number] & { markerImageUrl?: string | null };
+type ExternalMapEvent = ExternalEvents[number] & { markerImageUrl?: string | null };
+type MapEvent = InternalMapEvent | ExternalMapEvent;
 
 export default function MapPage() {
+  const { isSignedIn } = useAuth();
   const { centerCoordinate, hasResolvedLocation, locationGranted } = useUserLocation();
   const { resolvedTheme } = useTheme();
-  const { isSignedIn } = useUser();
   const queriedEvents = useQuery(api.events.queries.getEvents);
-  const eventRecs = useQuery(
-    api.data_ml.eventRec.getCurrentUserEventRecs,
-    isSignedIn ? {} : 'skip'
-  );
+  const queriedExternalEvents = useQuery(api.events.queries.getExternalEvents);
   const [feedMode, setFeedMode] = useState<FeedMode>('foryou');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [markerImageUrls, setMarkerImageUrls] = useState<Record<string, string | null>>({});
@@ -39,7 +41,20 @@ export default function MapPage() {
   );
 
   const isDark = mounted && resolvedTheme === 'dark';
-  const events = useMemo(() => queriedEvents ?? [], [queriedEvents]);
+  const internalEvents = useMemo(() => queriedEvents ?? [], [queriedEvents]);
+  const externalEvents = useMemo(() => queriedExternalEvents ?? [], [queriedExternalEvents]);
+  const events = useMemo(
+    () => [...internalEvents, ...externalEvents] as MapEvent[],
+    [internalEvents, externalEvents]
+  );
+
+  useEffect(() => {
+    if (queriedEvents === undefined) {
+      return;
+    }
+    console.log('[map] events received', queriedEvents);
+  }, [queriedEvents]);
+
   const handleResolveMarkerImage = useCallback((eventId: string, imageUrl: string | null) => {
     setMarkerImageUrls((current) =>
       current[eventId] === imageUrl ? current : { ...current, [eventId]: imageUrl }
@@ -58,32 +73,28 @@ export default function MapPage() {
     [eventsWithMarkerImages, selectedEventId]
   );
 
-  // 'popular' sorts by attendance (objective). 'foryou' uses the Two-Tower top-K recs in
-  // rank order (index 0 = #1 rec); we use array order rather than score because the model's
-  // probabilities aren't comparable across users (PR #140). Falls back to the full event
-  // list when recs haven't been computed for this user yet.
+  // `getEvents` includes recommendation scores when available. For "For You", prioritize
+  // higher scores and otherwise keep backend order for stable fallback behavior.
+  // External events don't have recommendationScore so they sort to the end.
   const visibleEvents = useMemo(() => {
     if (feedMode === 'popular') {
       return [...eventsWithMarkerImages].sort((a, b) => b.attendeeCount - a.attendeeCount);
     }
-    if (eventRecs && eventRecs.length > 0) {
-      const eventById = new Map(eventsWithMarkerImages.map((event) => [event.id, event]));
-      return eventRecs
-        .map((id) => eventById.get(id))
-        .filter((event): event is NonNullable<typeof event> => event !== undefined);
-    }
-    return eventsWithMarkerImages;
-  }, [eventsWithMarkerImages, eventRecs, feedMode]);
+    return [...eventsWithMarkerImages].sort(
+      (a, b) =>
+        (('recommendationScore' in b ? b.recommendationScore : null) ?? 0) -
+        (('recommendationScore' in a ? a.recommendationScore : null) ?? 0)
+    );
+  }, [eventsWithMarkerImages, feedMode]);
 
-  // In 'foryou' with recs, weight by inverse rank (#1 rec = K, #K = 1) so visual scale is
-  // comparable across users — model probabilities aren't (PR #140). Otherwise use attendance.
+  // In "For You", weight by ranked order in the already-sorted visible list.
   const eventWeights = useMemo(() => {
-    if (feedMode === 'foryou' && eventRecs && eventRecs.length > 0) {
-      const k = eventRecs.length;
-      return new Map<string, number>(eventRecs.map((id, index) => [id, k - index]));
+    if (feedMode === 'foryou' && visibleEvents.length > 0) {
+      const k = visibleEvents.length;
+      return new Map<string, number>(visibleEvents.map((event, index) => [event.id, k - index]));
     }
     return new Map<string, number>(events.map((event) => [event.id, event.attendeeCount]));
-  }, [events, eventRecs, feedMode]);
+  }, [events, feedMode, visibleEvents]);
 
   const heatmapGeoJSON = useMemo(
     () =>
@@ -124,7 +135,7 @@ export default function MapPage() {
 
     const styleId = isDark ? 'dark-v11' : 'streets-v12';
     const [lng, lat] = centerCoordinate;
-    return `https://api.mapbox.com/styles/v1/mapbox/${styleId}/static/${lng},${lat},13,0/1400x900?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
+    return `https://api.mapbox.com/styles/v1/mapbox/${styleId}/static/${lng},${lat},13,0/${STATIC_MAP_WIDTH}x${STATIC_MAP_HEIGHT}?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
   }, [centerCoordinate, isDark, mounted]);
 
   return (
@@ -150,7 +161,7 @@ export default function MapPage() {
         onClick={recenterMap}
       />
 
-      <FeedTabs value={feedMode} onChange={setFeedMode} />
+      {isSignedIn && <FeedTabs value={feedMode} onChange={setFeedMode} />}
 
       <MapEventFeedPanel event={selectedEvent} onClose={() => setSelectedEventId(null)} />
     </>
@@ -164,10 +175,11 @@ function EventMarkerImageResolver({
   event: MapEvent;
   onResolve: (eventId: string, imageUrl: string | null) => void;
 }) {
-  const file = useQuery(api.files.getFile, event.mediaId ? { storageId: event.mediaId } : 'skip');
+  const mediaId = 'mediaId' in event ? event.mediaId : null;
+  const file = useQuery(api.files.getFile, mediaId ? { storageId: mediaId } : 'skip');
 
   useEffect(() => {
-    if (!event.mediaId) {
+    if (!mediaId) {
       onResolve(event.id, null);
       return;
     }
@@ -177,7 +189,7 @@ function EventMarkerImageResolver({
     }
 
     onResolve(event.id, file.isVideo ? null : (file.url ?? null));
-  }, [event.id, event.mediaId, file, onResolve]);
+  }, [event.id, mediaId, file, onResolve]);
 
   return null;
 }

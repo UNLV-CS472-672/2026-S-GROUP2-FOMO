@@ -15,7 +15,6 @@ function userDoc(name: string, clerkId: string) {
     bio: '',
     clerkId,
     username: name,
-    displayName: name,
     avatarUrl: '',
   };
 }

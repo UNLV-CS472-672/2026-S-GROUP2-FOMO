@@ -17,7 +17,13 @@ export function EventField({ control, setValue, formActive }: EventFieldProps) {
   const [search, setSearch] = useState('');
   const [isFocused, setIsFocused] = useState(false);
 
-  const allEvents = useQuery(api.events.queries.getEvents) ?? [];
+  const internalEventsRaw = useQuery(api.events.queries.getAllInternalEvents);
+  const externalEventsRaw = useQuery(api.events.queries.getExternalEvents);
+  const isLoadingEvents = internalEventsRaw === undefined || externalEventsRaw === undefined;
+  const allEvents = useMemo(
+    () => [...(internalEventsRaw ?? []), ...(externalEventsRaw ?? [])],
+    [internalEventsRaw, externalEventsRaw]
+  );
   const { field, fieldState } = useController({
     control,
     name: 'post.eventId',
@@ -58,6 +64,7 @@ export function EventField({ control, setValue, formActive }: EventFieldProps) {
         {selectedEvent ? (
           <View className="flex-row items-center gap-2 px-4 py-3">
             <EventSearchImage
+              mediaUrl={'mediaUrl' in selectedEvent ? selectedEvent.mediaUrl : null}
               mediaId={selectedEvent.mediaId}
               className="size-[18px] overflow-hidden rounded-full bg-primary/10"
             />
@@ -108,6 +115,7 @@ export function EventField({ control, setValue, formActive }: EventFieldProps) {
                 className={`flex-row items-center gap-3 px-4 py-3 ${index < filtered.length - 1 ? 'border-b border-muted' : ''}`}
               >
                 <EventSearchImage
+                  mediaUrl={'mediaUrl' in event ? event.mediaUrl : null}
                   mediaId={event.mediaId}
                   className="size-10 overflow-hidden rounded-full bg-primary/10"
                 />
@@ -127,7 +135,7 @@ export function EventField({ control, setValue, formActive }: EventFieldProps) {
         ) : !selectedEvent && isFocused && search.trim().length > 0 ? (
           <View className="border-t border-muted px-4 py-3">
             <Text className="text-[13px] text-muted-foreground">
-              {allEvents.length === 0 ? 'Loading events...' : 'No events found.'}
+              {isLoadingEvents ? 'Loading events...' : "Can't find event"}
             </Text>
           </View>
         ) : null}

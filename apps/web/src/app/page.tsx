@@ -14,6 +14,9 @@ export default function HomePage() {
           <div className="flex flex-col items-center justify-between gap-3 text-sm text-muted-foreground md:flex-row">
             <p>Fomo</p>
             <div className="flex items-center gap-5">
+              <Link href="/terms" className="transition-colors hover:text-foreground">
+                Terms
+              </Link>
               <Link href="/privacy" className="transition-colors hover:text-foreground">
                 Privacy
               </Link>

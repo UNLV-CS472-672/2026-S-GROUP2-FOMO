@@ -48,6 +48,7 @@ describe('api.events.ingest', () => {
             longitude: -115.1,
             h3Index: 'exact-h3',
           },
+          lastPostAt: 0,
         });
 
         await ctx.db.insert('externalEvents', {
@@ -62,6 +63,7 @@ describe('api.events.ingest', () => {
             longitude: -115.2,
             h3Index: 'old-h3',
           },
+          lastPostAt: 0,
         });
       });
 

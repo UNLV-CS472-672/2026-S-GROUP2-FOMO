@@ -1,10 +1,12 @@
-import type { EventSummary } from '@/features/events/types';
+import type { EventSummary, ExternalEventSummary } from '@/features/events/types';
+import { ClusterMarker } from '@/features/map/components/cluster-marker';
 import { EventMarker } from '@/features/map/components/event-marker';
 import { FeedTabs, type FeedMode } from '@/features/map/components/feed-tabs';
 import { RecenterButton } from '@/features/map/components/recenter-button';
 import { SearchDrawer } from '@/features/map/components/search';
 import { useUserLocation } from '@/features/map/hooks/use-user-location';
 import { pointsToGeoJSON } from '@/features/map/utils/h3';
+import { useGuest } from '@/integrations/session/guest';
 import { useUser } from '@clerk/expo';
 import { api } from '@fomo/backend/convex/_generated/api';
 import { env } from '@fomo/env/mobile';
@@ -12,7 +14,7 @@ import { useIsFocused } from '@react-navigation/native';
 import MapboxGL from '@rnmapbox/maps';
 import { useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
@@ -24,32 +26,34 @@ const DEFAULT_ZOOM_LEVEL = 13;
 export default function MapScreen() {
   const { push } = useRouter();
   const { isSignedIn } = useUser();
+  const { isGuestMode } = useGuest();
   const eventsRaw = useQuery(api.events.queries.getEvents);
+  const externalEventsRaw = useQuery(api.events.queries.getExternalEvents);
   const events: EventSummary[] = useMemo(() => eventsRaw ?? [], [eventsRaw]);
-  const eventRecs = useQuery(
-    api.data_ml.eventRec.getCurrentUserEventRecs,
-    isSignedIn ? {} : 'skip'
+  const externalEvents: ExternalEventSummary[] = useMemo(
+    () => externalEventsRaw ?? [],
+    [externalEventsRaw]
   );
+  const allEvents = useMemo(() => [...events, ...externalEvents], [events, externalEvents]);
   const isFocused = useIsFocused();
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const [feedMode, setFeedMode] = useState<FeedMode>('foryou');
+  const [zoomLevel, setZoomLevel] = useState(DEFAULT_ZOOM_LEVEL);
+  const zoomShared = useSharedValue(DEFAULT_ZOOM_LEVEL);
+  const CLUSTER_DISABLE_ZOOM = 15;
 
-  // 'popular' sorts by attendance (objective). 'foryou' uses the Two-Tower top-K recs in
-  // rank order (index 0 = #1 rec); we use array order rather than score because the model's
-  // probabilities aren't comparable across users (PR #140). Falls back to the full event
-  // list when recs haven't been computed for this user yet.
+  // `getEvents` includes recommendation scores when available. For "For You", prioritize
+  // higher scores and otherwise keep backend order for stable fallback behavior.
   const visibleEvents = useMemo(() => {
     if (feedMode === 'popular') {
-      return [...events].sort((a, b) => b.attendeeCount - a.attendeeCount);
+      return [...events, ...externalEvents].sort((a, b) => b.attendeeCount - a.attendeeCount);
     }
-    if (eventRecs && eventRecs.length > 0) {
-      const eventById = new Map(events.map((event) => [event.id, event]));
-      return eventRecs
-        .map((id) => eventById.get(id))
-        .filter((event): event is EventSummary => event !== undefined);
-    }
-    return events;
-  }, [events, eventRecs, feedMode]);
+    // For You: internal events sorted by recommendation score, external events appended
+    const sortedInternal = [...events].sort(
+      (a, b) => (b.recommendationScore ?? 0) - (a.recommendationScore ?? 0)
+    );
+    return [...sortedInternal, ...externalEvents];
+  }, [events, externalEvents, feedMode]);
 
   const savedCameraRef = useRef<{
     centerCoordinate: [number, number];
@@ -70,17 +74,19 @@ export default function MapScreen() {
   const drawerAnimatedIndex = useSharedValue(0);
   const drawerAnimatedPosition = useSharedValue(0);
 
-  // In 'foryou' with recs, weight by inverse rank (#1 rec = K, #K = 1) so visual scale is
-  // comparable across users — model probabilities aren't (PR #140). Otherwise use attendance.
+  // In "For You", weight by ranked order in the already-sorted visible list.
   const eventWeights = useMemo(() => {
-    if (feedMode === 'foryou' && eventRecs && eventRecs.length > 0) {
-      const k = eventRecs.length;
-      return new Map(eventRecs.map((id, index) => [id, k - index]));
+    if (feedMode === 'foryou' && visibleEvents.length > 0) {
+      const k = visibleEvents.length;
+      return new Map(visibleEvents.map((event, index) => [event.id, k - index]));
     }
-    return new Map(events.map((event) => [event.id, event.attendeeCount]));
-  }, [events, eventRecs, feedMode]);
+    return new Map(allEvents.map((event) => [event.id, event.attendeeCount]));
+  }, [allEvents, visibleEvents, feedMode]);
 
-  const getWeight = (eventId: EventSummary['id']) => eventWeights.get(eventId) ?? 0;
+  const getWeight = useCallback(
+    (eventId: EventSummary['id'] | ExternalEventSummary['id']) => eventWeights.get(eventId) ?? 0,
+    [eventWeights]
+  );
 
   const heatmapGeoJSON = pointsToGeoJSON(
     visibleEvents.map((event) => ({
@@ -89,9 +95,84 @@ export default function MapScreen() {
       weight: getWeight(event.id),
     }))
   );
-  const visibleWeights = visibleEvents.map((event) => getWeight(event.id));
-  const minWeight = visibleWeights.length === 0 ? 0 : Math.min(...visibleWeights);
-  const maxWeight = visibleWeights.length === 0 ? 1 : Math.max(...visibleWeights);
+
+  // Group events by H3 cell so co-located events render as a single cluster marker.
+  // Above CLUSTER_DISABLE_ZOOM each event renders individually so users can tap them.
+  const eventClusters = useMemo(() => {
+    const now = Date.now();
+    const shouldCluster = zoomLevel < CLUSTER_DISABLE_ZOOM;
+
+    if (!shouldCluster) {
+      // Group by H3 so co-located events get spread into a circle rather than stacking.
+      const groups = new Map<string, (EventSummary | ExternalEventSummary)[]>();
+      for (const event of visibleEvents) {
+        const key = event.location.h3Index;
+        const existing = groups.get(key);
+        if (existing) existing.push(event);
+        else groups.set(key, [event]);
+      }
+      const SPREAD_DEG = 0.0003; // ~30m spread radius
+      const result: {
+        h3Index: string;
+        members: (EventSummary | ExternalEventSummary)[];
+        primary: EventSummary | ExternalEventSummary;
+        secondary: null;
+        count: number;
+        weight: number;
+        isActive: boolean;
+        coordinate: [number, number];
+      }[] = [];
+      for (const [h3Index, members] of groups.entries()) {
+        members.forEach((event, i) => {
+          const angle = (2 * Math.PI * i) / members.length;
+          const offsetLng = members.length > 1 ? Math.cos(angle) * SPREAD_DEG : 0;
+          const offsetLat = members.length > 1 ? Math.sin(angle) * SPREAD_DEG : 0;
+          result.push({
+            h3Index: event.id,
+            members: [event],
+            primary: event,
+            secondary: null,
+            count: 1,
+            weight: getWeight(event.id),
+            isActive: event.endDate >= now,
+            coordinate: [event.location.longitude + offsetLng, event.location.latitude + offsetLat],
+          });
+        });
+      }
+      return result;
+    }
+
+    const groups = new Map<string, (EventSummary | ExternalEventSummary)[]>();
+    for (const event of visibleEvents) {
+      const key = event.location.h3Index;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.push(event);
+      } else {
+        groups.set(key, [event]);
+      }
+    }
+    return Array.from(groups.entries()).map(([h3Index, members]) => {
+      const sorted = [...members].sort((a, b) => getWeight(b.id) - getWeight(a.id));
+      const primary = sorted[0];
+      const secondary = sorted[1] ?? null;
+      const totalWeight = members.reduce((sum, e) => sum + getWeight(e.id), 0);
+      const isActive = members.some((e) => e.endDate >= now);
+      return {
+        h3Index,
+        members,
+        primary,
+        secondary,
+        count: members.length,
+        weight: totalWeight,
+        isActive,
+      };
+    });
+  }, [visibleEvents, getWeight, zoomLevel]);
+
+  const clusterWeights = eventClusters.map((c) => c.weight);
+  const minWeight = clusterWeights.length === 0 ? 0 : Math.min(...clusterWeights);
+  const maxWeight = clusterWeights.length === 0 ? 1 : Math.max(...clusterWeights);
 
   if (!centerCoordinate) {
     return (
@@ -120,7 +201,6 @@ export default function MapScreen() {
   return (
     <View className="absolute inset-0">
       <MapboxGL.MapView
-        key={isDark ? 'dark-map' : 'light-map'}
         style={StyleSheet.absoluteFill}
         styleURL={isDark ? MapboxGL.StyleURL.Dark : MapboxGL.StyleURL.Street}
         logoEnabled={false}
@@ -133,6 +213,8 @@ export default function MapScreen() {
             heading: state.properties.heading,
             pitch: state.properties.pitch,
           };
+          setZoomLevel(state.properties.zoom);
+          zoomShared.value = state.properties.zoom;
         }}
       >
         <MapboxGL.Camera
@@ -149,28 +231,63 @@ export default function MapScreen() {
           <MapboxGL.LocationPuck
             puckBearing="heading"
             puckBearingEnabled
-            pulsing={{ isEnabled: true, color: '#f59e0b', radius: 50 }}
+            pulsing={{ isEnabled: true, color: '#ff7f50', radius: 25 }}
           />
         )}
 
-        {visibleEvents.map((event) => (
-          <EventMarker
-            key={event.id}
-            id={event.id}
-            coordinate={[event.location.longitude, event.location.latitude]}
-            label={event.name}
-            mediaId={event.mediaId}
-            weight={getWeight(event.id)}
-            minWeight={minWeight}
-            maxWeight={maxWeight}
-            onPress={() =>
-              push({
-                pathname: '/(tabs)/(map)/event/[eventId]',
-                params: { eventId: event.id },
-              })
-            }
-          />
-        ))}
+        {eventClusters.map((cluster) => {
+          const { primary, count, weight, isActive } = cluster;
+          const coordinate: [number, number] =
+            'coordinate' in cluster
+              ? cluster.coordinate
+              : [primary.location.longitude, primary.location.latitude];
+          if (count === 1) {
+            return (
+              <EventMarker
+                key={primary.id}
+                id={primary.id}
+                coordinate={coordinate}
+                label={primary.name}
+                mediaId={primary.mediaId}
+                weight={weight}
+                minWeight={minWeight}
+                maxWeight={maxWeight}
+                isActive={isActive}
+                zoom={zoomShared}
+                onPress={() => {
+                  push({
+                    pathname: '/(tabs)/(map)/event/[eventId]',
+                    params: { eventId: primary.id },
+                  });
+                }}
+              />
+            );
+          }
+          const { secondary } = cluster;
+          return (
+            <ClusterMarker
+              key={cluster.h3Index}
+              id={cluster.h3Index}
+              coordinate={coordinate}
+              primaryLabel={primary.name}
+              primaryMediaId={primary.mediaId}
+              secondaryLabel={secondary?.name ?? null}
+              secondaryMediaId={secondary?.mediaId ?? null}
+              count={count}
+              weight={weight}
+              minWeight={minWeight}
+              maxWeight={maxWeight}
+              isActive={isActive}
+              zoom={zoomShared}
+              onPress={() => {
+                push({
+                  pathname: '/(tabs)/(map)/event/[eventId]',
+                  params: { eventId: primary.id },
+                });
+              }}
+            />
+          );
+        })}
 
         <MapboxGL.ShapeSource id="activity" shape={heatmapGeoJSON}>
           <MapboxGL.HeatmapLayer
@@ -183,15 +300,15 @@ export default function MapScreen() {
                 ['linear'],
                 ['heatmap-density'],
                 0,
-                'rgba(0,0,0,0)',
-                0.2,
-                'rgba(245,158,11,0.3)',
-                0.5,
-                'rgba(245,158,11,0.6)',
-                0.8,
-                'rgba(245,158,11,0.85)',
+                'rgba(255,120,0,0)',
+                0.1,
+                'rgba(255,150,50,0.2)',
+                0.4,
+                'rgba(255,120,0,0.6)',
+                0.7,
+                'rgba(255,80,0,0.85)',
                 1,
-                'rgba(255,255,255,0.95)',
+                'rgba(255,60,0,1)',
               ],
               heatmapRadius: ['interpolate', ['linear'], ['zoom'], 10, 30, 15, 60],
               heatmapOpacity: ['interpolate', ['linear'], ['zoom'], 10, 1, 16, 0.6],
@@ -199,6 +316,8 @@ export default function MapScreen() {
           />
         </MapboxGL.ShapeSource>
       </MapboxGL.MapView>
+
+      {isSignedIn && !isGuestMode && <FeedTabs value={feedMode} onChange={setFeedMode} />}
 
       <SearchDrawer
         onSelectEvent={(eventId) => push(`/(tabs)/(map)/event/${eventId}`)}
@@ -229,8 +348,6 @@ export default function MapScreen() {
           })
         }
       />
-
-      <FeedTabs value={feedMode} onChange={setFeedMode} />
     </View>
   );
 }

@@ -71,9 +71,11 @@ export const saveCurrentUserTagPreferences = mutation({
         tags: selectedTagIds,
         updatedAt: Date.now(),
       });
+      await ctx.db.patch(user._id, { eventRecNeedsUpdate: true });
       return existing._id;
     }
 
+    await ctx.db.patch(user._id, { eventRecNeedsUpdate: true });
     return await ctx.db.insert('userTagPreferences', {
       userId: user._id,
       tags: selectedTagIds,

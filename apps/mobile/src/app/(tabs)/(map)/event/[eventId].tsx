@@ -7,10 +7,12 @@ import { RsvpButton } from '@/features/events/components/rsvp-button';
 import { RsvpSheet } from '@/features/events/components/rsvp-sheet';
 import { TopMoments } from '@/features/events/components/top-moments/preview';
 import type { AttendanceStatus, NotificationPref } from '@/features/events/types';
+import { EventActionMenu } from '@/features/moderation/event-action-menu';
 import { Avatar } from '@/features/posts/components/avatar';
 import { MediaCarousel } from '@/features/posts/components/media-carousel';
 import { useGuest } from '@/integrations/session/guest';
 import { formatDateTimeRange } from '@/lib/format';
+import { useAppTheme } from '@/lib/use-app-theme';
 import { api } from '@fomo/backend/convex/_generated/api';
 import type { Id } from '@fomo/backend/convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
@@ -18,21 +20,23 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-const AVATAR_W = 40; // size-36 + 2px border each side
-const AVATAR_STEP = 32; // minus 8px overlap
-const BUBBLE_W = 44; // min-w-10 + 2px border each side
-const BUBBLE_STEP = 36; // minus 8px overlap
-const ROW_GAP = 10; // gap-2.5
+const AVATAR_W = 40;
+const AVATAR_STEP = 32;
+const BUBBLE_W = 44;
+const BUBBLE_STEP = 36;
+const ROW_GAP = 10;
 
 export default function EventPage() {
   const { isGuestMode } = useGuest();
   const router = useRouter();
+  const theme = useAppTheme();
   const { eventId: rawEventId } = useLocalSearchParams<{ eventId?: string | string[] }>();
   const eventId = (Array.isArray(rawEventId) ? rawEventId[0] : rawEventId) as
     | Id<'events'>
+    | Id<'externalEvents'>
     | undefined;
 
-  const event = useQuery(api.events.queries.getEventById, eventId ? { eventId } : 'skip');
+  const event = useQuery(api.events.queries.getAnyEventById, eventId ? { eventId } : 'skip');
   const attendees = useQuery(
     api.events.attendance.getEventAttendees,
     eventId ? { eventId } : 'skip'
@@ -46,9 +50,12 @@ export default function EventPage() {
     eventId ? { eventId } : 'skip'
   );
   const setViewerAttendance = useMutation(api.events.attendance.setViewerAttendance);
+
+  // For internal events use the event cover; for external events fall back to the top moment.
+  const headerStorageId = event?.mediaId ?? topMediaPosts?.[0]?.mediaIds?.[0] ?? null;
   const eventImage = useQuery(
     api.files.getFile,
-    event?.mediaId ? { storageId: event.mediaId } : 'skip'
+    headerStorageId ? { storageId: headerStorageId } : 'skip'
   );
   const [attendance, setAttendance] = useState<AttendanceStatus>(null);
   const [notification, setNotification] = useState<NotificationPref>('all');
@@ -59,20 +66,14 @@ export default function EventPage() {
   const [rightSideHeight, setRightSideHeight] = useState<number | undefined>(undefined);
 
   useEffect(() => {
-    if (!viewerAttendance) {
-      return;
-    }
-
+    if (!viewerAttendance) return;
     setAttendance(viewerAttendance.attendance);
     setNotification(viewerAttendance.notification);
   }, [viewerAttendance]);
 
   const saveAttendance = useCallback(
     async (nextAttendance: AttendanceStatus, nextNotification: NotificationPref) => {
-      if (!eventId || isGuestMode) {
-        return;
-      }
-
+      if (!eventId || isGuestMode) return;
       await setViewerAttendance({
         eventId,
         attendance: nextAttendance,
@@ -84,11 +85,11 @@ export default function EventPage() {
 
   const handleAttendanceChange = useCallback(
     (nextAttendance: AttendanceStatus) => {
-      const previousAttendance = attendance;
+      const prev = attendance;
       setAttendance(nextAttendance);
       void saveAttendance(nextAttendance, notification).catch((error) => {
         console.error('Failed to update attendance', error);
-        setAttendance(previousAttendance);
+        setAttendance(prev);
       });
     },
     [attendance, notification, saveAttendance]
@@ -96,21 +97,18 @@ export default function EventPage() {
 
   const handleNotificationChange = useCallback(
     (nextNotification: NotificationPref) => {
-      const previousNotification = notification;
+      const prev = notification;
       setNotification(nextNotification);
       void saveAttendance(attendance, nextNotification).catch((error) => {
         console.error('Failed to update RSVP notification preference', error);
-        setNotification(previousNotification);
+        setNotification(prev);
       });
     },
     [attendance, notification, saveAttendance]
   );
 
   const openRsvpSheet = useCallback(() => {
-    if (isGuestMode) {
-      return;
-    }
-
+    if (isGuestMode) return;
     setIsRsvpOpen(true);
   }, [isGuestMode]);
 
@@ -139,7 +137,6 @@ export default function EventPage() {
   }
 
   const attendeeSample = attendees.slice(0, 3);
-
   const visibleAvatarCount = (() => {
     if (attendeeRowWidth === 0 || buttonsWidth === 0) return attendeeSample.length;
     const available = attendeeRowWidth - buttonsWidth - ROW_GAP;
@@ -156,6 +153,8 @@ export default function EventPage() {
     return 0;
   })();
 
+  const headerUrl = ('mediaUrl' in event ? event.mediaUrl : null) ?? eventImage?.url ?? null;
+
   return (
     <Screen>
       <Stack.Screen options={{ title: event.name }} />
@@ -166,19 +165,19 @@ export default function EventPage() {
           <Pressable
             className="w-35 overflow-hidden rounded-2xl border border-border bg-surface-muted"
             style={rightSideHeight !== undefined ? { height: rightSideHeight } : { height: 180 }}
-            onPress={() => eventImage?.url && setHeaderCarouselOpen(true)}
-            disabled={!eventImage?.url}
+            onPress={() => headerUrl && !event.isExternal && setHeaderCarouselOpen(true)}
+            disabled={!headerUrl || event.isExternal}
           >
-            {eventImage?.url ? (
+            {headerUrl != null ? (
               <>
-                {headerCarouselOpen && (
+                {headerCarouselOpen && headerStorageId && !event.isExternal && (
                   <MediaCarousel
-                    mediaIds={[event.mediaId!]}
+                    mediaIds={[headerStorageId]}
                     initialIndex={0}
                     onClose={() => setHeaderCarouselOpen(false)}
                   />
                 )}
-                <Image source={eventImage.url} className="h-full w-full" contentFit="cover" />
+                <Image source={headerUrl} className="h-full w-full" contentFit="cover" />
               </>
             ) : (
               <View
@@ -191,14 +190,25 @@ export default function EventPage() {
               </View>
             )}
           </Pressable>
+
           <View
             className="flex-1 justify-between"
             onLayout={(e) => setRightSideHeight(e.nativeEvent.layout.height)}
           >
             <View className="gap-1.5">
-              <Text className="text-lg font-bold text-foreground" numberOfLines={2}>
-                {event.name}
-              </Text>
+              <View className="flex-row items-start gap-2">
+                <Text className="flex-1 text-lg font-bold text-foreground" numberOfLines={2}>
+                  {event.name}
+                </Text>
+                {!event.isExternal && (
+                  <EventActionMenu eventId={eventId as Id<'events'>} mutedColor={theme.mutedText} />
+                )}
+              </View>
+              {event.organization ? (
+                <Text className="text-sm font-medium text-muted-foreground">
+                  {event.organization}
+                </Text>
+              ) : null}
               <Text className="text-sm text-muted-foreground">
                 {formatDateTimeRange(event.startDate, event.endDate)}
               </Text>
@@ -256,7 +266,6 @@ export default function EventPage() {
                     longitude={event.location.longitude}
                     label={event.name}
                   />
-
                   <RsvpButton
                     attendance={attendance}
                     disabled={isGuestMode}

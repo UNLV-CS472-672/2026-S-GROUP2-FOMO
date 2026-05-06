@@ -96,14 +96,14 @@ export default function RootLayout() {
       <ThemeProvider value={navigationTheme}>
         <ClerkProvider>
           <ConvexProvider>
-            <BottomSheetModalProvider>
-              <GuestProvider>
-                <UserProvider>
+            <GuestProvider>
+              <UserProvider>
+                <BottomSheetModalProvider>
                   <RootNavigator />
                   <StatusBar style={isDark ? 'light' : 'dark'} />
-                </UserProvider>
-              </GuestProvider>
-            </BottomSheetModalProvider>
+                </BottomSheetModalProvider>
+              </UserProvider>
+            </GuestProvider>
           </ConvexProvider>
         </ClerkProvider>
       </ThemeProvider>
