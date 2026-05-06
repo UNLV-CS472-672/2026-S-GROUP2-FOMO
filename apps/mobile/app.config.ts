@@ -4,7 +4,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Fomo',
   slug: 'fomo',
-  version: '1.0.1',
+  version: '1.1.0',
   orientation: 'portrait',
   icon: './assets/logos/icon.png',
   scheme: 'fomo',

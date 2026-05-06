@@ -30,7 +30,7 @@ export function GoogleButton({ onPress, loading, disabled, mode = 'login' }: Goo
       }}
     >
       <Image
-        source={require('../../../../../../assets/auth/google/g-logo.png')}
+        source={require('@/assets/auth/google/g-logo.png')}
         style={{ width: 16, height: 16, marginRight: 5 }}
         resizeMode="contain"
         accessible={false}

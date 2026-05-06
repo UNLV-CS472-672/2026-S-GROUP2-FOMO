@@ -1,9 +1,9 @@
+import googleGLogo from '@/assets/auth/google/g-logo.png';
 import { Screen } from '@/components/ui/screen';
 import { useAppTheme } from '@/lib/use-app-theme';
 import { useUser } from '@clerk/expo';
 import { Ionicons } from '@expo/vector-icons';
 import { Image, ScrollView, Text, View } from 'react-native';
-import googleGLogo from '../../../../../../../../assets/auth/google/g-logo.png';
 
 function ProviderIcon({ provider }: { provider: string }) {
   const theme = useAppTheme();

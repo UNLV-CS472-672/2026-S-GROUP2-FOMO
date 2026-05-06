@@ -16,7 +16,6 @@ import type * as data_ml_friends from "../data_ml/friends.js";
 import type * as data_ml_http from "../data_ml/http.js";
 import type * as data_ml_universal from "../data_ml/universal.js";
 import type * as data_ml_users from "../data_ml/users.js";
-import type * as eventSeedsStatic from "../eventSeedsStatic.js";
 import type * as events_attendance from "../events/attendance.js";
 import type * as events_ingest from "../events/ingest.js";
 import type * as events_mutations from "../events/mutations.js";
@@ -31,10 +30,8 @@ import type * as moderation_block from "../moderation/block.js";
 import type * as moderation_report from "../moderation/report.js";
 import type * as posts from "../posts.js";
 import type * as runMigrations from "../runMigrations.js";
-import type * as seed from "../seed.js";
 import type * as support from "../support.js";
 import type * as tags from "../tags.js";
-import type * as temp_seed from "../temp_seed.js";
 import type * as user_identity from "../user_identity.js";
 import type * as users from "../users.js";
 
@@ -53,7 +50,6 @@ declare const fullApi: ApiFromModules<{
   "data_ml/http": typeof data_ml_http;
   "data_ml/universal": typeof data_ml_universal;
   "data_ml/users": typeof data_ml_users;
-  eventSeedsStatic: typeof eventSeedsStatic;
   "events/attendance": typeof events_attendance;
   "events/ingest": typeof events_ingest;
   "events/mutations": typeof events_mutations;
@@ -68,10 +64,8 @@ declare const fullApi: ApiFromModules<{
   "moderation/report": typeof moderation_report;
   posts: typeof posts;
   runMigrations: typeof runMigrations;
-  seed: typeof seed;
   support: typeof support;
   tags: typeof tags;
-  temp_seed: typeof temp_seed;
   user_identity: typeof user_identity;
   users: typeof users;
 }>;
