@@ -133,9 +133,13 @@ export default function MapPage() {
       return '';
     }
 
-    const styleId = isDark ? 'dark-v11' : 'streets-v12';
     const [lng, lat] = centerCoordinate;
-    return `https://api.mapbox.com/styles/v1/mapbox/${styleId}/static/${lng},${lat},13,0/${STATIC_MAP_WIDTH}x${STATIC_MAP_HEIGHT}?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
+
+    if (isDark) {
+      return `https://api.mapbox.com/styles/v1/fomo-map-dev/cmnl4s1kk001601rhc5gx0ih7/static/${lng},${lat},13,0/${STATIC_MAP_WIDTH}x${STATIC_MAP_HEIGHT}?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
+    }
+
+    return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${lng},${lat},13,0/${STATIC_MAP_WIDTH}x${STATIC_MAP_HEIGHT}?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
   }, [centerCoordinate, isDark, mounted]);
 
   return (
